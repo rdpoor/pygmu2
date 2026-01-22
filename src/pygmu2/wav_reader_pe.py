@@ -1,0 +1,157 @@
+"""
+WavReaderPE - reads audio samples from a WAV file.
+
+Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+
+MIT License
+"""
+
+import numpy as np
+import soundfile as sf
+from typing import Optional
+
+from pygmu2.processing_element import SourcePE
+from pygmu2.extent import Extent
+from pygmu2.snippet import Snippet
+from pygmu2.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+class WavReaderPE(SourcePE):
+    """
+    A SourcePE that reads audio samples from a WAV file.
+    
+    The file is opened on on_start() and closed on on_stop().
+    Samples are read on demand via render().
+    
+    The extent is finite (0 to frame_count), based on the file's length.
+    Requests outside the file's extent return zeros.
+    
+    To shift the audio in time, use DelayPE.
+    
+    Args:
+        path: Path to the WAV file
+    
+    Example:
+        # Read a WAV file
+        reader = WavReaderPE("drums.wav")
+        
+        # Use in a graph
+        reader = WavReaderPE("input.wav")
+        processed = SomeEffectPE(reader)
+        renderer.set_source(processed)
+        
+        # Delay audio by 1 second (use DelayPE)
+        reader = WavReaderPE("vocals.wav")
+        delayed = DelayPE(reader, delay=44100)
+    """
+    
+    def __init__(self, path: str):
+        self._path = path
+        
+        # File info (populated on first access or on_start)
+        self._file: Optional[sf.SoundFile] = None
+        self._frame_count: Optional[int] = None
+        self._channels: Optional[int] = None
+        self._file_sample_rate: Optional[int] = None
+    
+    @property
+    def path(self) -> str:
+        """Path to the WAV file."""
+        return self._path
+    
+    @property
+    def file_sample_rate(self) -> Optional[int]:
+        """Sample rate of the WAV file (available after on_start or first render)."""
+        return self._file_sample_rate
+    
+    def _ensure_file_info(self) -> None:
+        """Read file metadata if not already loaded."""
+        if self._frame_count is None:
+            with sf.SoundFile(self._path) as f:
+                self._frame_count = f.frames
+                self._channels = f.channels
+                self._file_sample_rate = f.samplerate
+    
+    def on_start(self) -> None:
+        """Open the WAV file for reading."""
+        self._file = sf.SoundFile(self._path, mode='r')
+        self._frame_count = self._file.frames
+        self._channels = self._file.channels
+        self._file_sample_rate = self._file.samplerate
+        logger.info(
+            f"Opened {self._path}: {self._frame_count} frames, "
+            f"{self._channels} channels, {self._file_sample_rate} Hz"
+        )
+    
+    def on_stop(self) -> None:
+        """Close the WAV file."""
+        if self._file is not None:
+            self._file.close()
+            self._file = None
+            logger.info(f"Closed {self._path}")
+    
+    def render(self, start: int, duration: int) -> Snippet:
+        """
+        Read audio samples from the WAV file.
+        
+        Samples outside the file's extent (0 to frame_count) are zero-filled.
+        
+        Args:
+            start: Starting sample index
+            duration: Number of samples to read
+        
+        Returns:
+            Snippet containing the audio data
+        """
+        self._ensure_file_info()
+        
+        # Initialize output with zeros
+        data = np.zeros((duration, self._channels), dtype=np.float32)
+        
+        # Calculate overlap with file extent (0 to frame_count)
+        overlap_start = max(start, 0)
+        overlap_end = min(start + duration, self._frame_count)
+        
+        if overlap_start < overlap_end:
+            # There is data to read
+            read_count = overlap_end - overlap_start
+            
+            # Seek to position and read
+            if self._file is not None:
+                # File is open (between on_start/on_stop)
+                self._file.seek(overlap_start)
+                file_data = self._file.read(read_count, dtype='float32')
+            else:
+                # File not open - read directly (less efficient)
+                file_data, _ = sf.read(
+                    self._path,
+                    start=overlap_start,
+                    stop=overlap_end,
+                    dtype='float32'
+                )
+            
+            # Handle mono files (soundfile returns 1D for mono)
+            if file_data.ndim == 1:
+                file_data = file_data.reshape(-1, 1)
+            
+            # Copy into output buffer
+            output_start = overlap_start - start
+            output_end = output_start + read_count
+            data[output_start:output_end, :] = file_data
+        
+        return Snippet(start, data)
+    
+    def _compute_extent(self) -> Extent:
+        """Return the extent of the WAV file (0 to frame_count)."""
+        self._ensure_file_info()
+        return Extent(0, self._frame_count)
+    
+    def channel_count(self) -> int:
+        """Return the number of channels in the WAV file."""
+        self._ensure_file_info()
+        return self._channels
+    
+    def __repr__(self) -> str:
+        return f"WavReaderPE(path={self._path!r})"

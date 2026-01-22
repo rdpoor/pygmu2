@@ -1,0 +1,283 @@
+"""
+Tests for ProcessingElement and SourcePE classes.
+
+Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+
+MIT License
+"""
+
+import pytest
+import numpy as np
+from pygmu2 import ProcessingElement, SourcePE, Extent, Snippet
+
+
+# Concrete test implementations
+
+class ConstantPE(SourcePE):
+    """A simple source that outputs a constant value."""
+    
+    def __init__(self, value: float, duration: int, channels: int = 1):
+        self._value = value
+        self._duration = duration
+        self._channels = channels
+    
+    def render(self, start: int, duration: int) -> Snippet:
+        my_extent = self.extent()
+        data = np.zeros((duration, self._channels))
+        
+        # Fill in the portion that overlaps with our extent
+        for i in range(duration):
+            sample_idx = start + i
+            if my_extent.contains(sample_idx):
+                data[i, :] = self._value
+        
+        return Snippet(start, data)
+    
+    def extent(self) -> Extent:
+        return Extent(0, self._duration)
+    
+    def channel_count(self) -> int:
+        return self._channels
+
+
+class GainPE(ProcessingElement):
+    """A simple processor that applies gain to input."""
+    
+    def __init__(self, source: ProcessingElement, gain: float):
+        self._source = source
+        self._gain = gain
+    
+    def render(self, start: int, duration: int) -> Snippet:
+        snippet = self._source.render(start, duration)
+        return Snippet(start, snippet.data * self._gain)
+    
+    def extent(self) -> Extent:
+        return self._source.extent()
+    
+    def inputs(self) -> list[ProcessingElement]:
+        return [self._source]
+
+
+class StatefulPE(ProcessingElement):
+    """A processor with internal state (non-pure)."""
+    
+    def __init__(self, source: ProcessingElement):
+        self._source = source
+        self._call_count = 0
+    
+    def render(self, start: int, duration: int) -> Snippet:
+        self._call_count += 1
+        return self._source.render(start, duration)
+    
+    def extent(self) -> Extent:
+        return self._source.extent()
+    
+    def inputs(self) -> list[ProcessingElement]:
+        return [self._source]
+    
+    def is_pure(self) -> bool:
+        return False  # Has state
+
+
+class MixPE(ProcessingElement):
+    """A processor that mixes multiple inputs."""
+    
+    def __init__(self, sources: list[ProcessingElement]):
+        self._sources = sources
+    
+    def render(self, start: int, duration: int) -> Snippet:
+        if not self._sources:
+            return Snippet.from_zeros(start, duration, 1)
+        
+        # Get channel count from first source
+        channels = self._sources[0].render(0, 1).channels
+        result = np.zeros((duration, channels))
+        
+        for source in self._sources:
+            snippet = source.render(start, duration)
+            result += snippet.data
+        
+        return Snippet(start, result)
+    
+    def extent(self) -> Extent:
+        if not self._sources:
+            return Extent(0, 0)
+        result = self._sources[0].extent()
+        for source in self._sources[1:]:
+            result = result.union(source.extent())
+        return result
+    
+    def inputs(self) -> list[ProcessingElement]:
+        return self._sources
+
+
+class TestSourcePE:
+    """Test SourcePE base class."""
+    
+    def test_source_has_no_inputs(self):
+        """Test that sources have empty inputs list."""
+        source = ConstantPE(1.0, 100)
+        assert source.inputs() == []
+    
+    def test_source_is_pure_by_default(self):
+        """Test that sources are pure by default."""
+        source = ConstantPE(1.0, 100)
+        assert source.is_pure() is True
+    
+    def test_source_must_declare_channels(self):
+        """Test that source channel_count returns int."""
+        source = ConstantPE(1.0, 100, channels=2)
+        assert source.channel_count() == 2
+    
+    def test_source_render(self):
+        """Test source render returns correct snippet."""
+        source = ConstantPE(0.5, 100, channels=1)
+        snippet = source.render(0, 50)
+        assert snippet.start == 0
+        assert snippet.duration == 50
+        assert snippet.channels == 1
+        assert np.allclose(snippet.data, 0.5)
+    
+    def test_source_render_outside_extent(self):
+        """Test that rendering outside extent returns zeros."""
+        source = ConstantPE(1.0, 100)
+        snippet = source.render(100, 50)  # Beyond extent
+        assert np.all(snippet.data == 0)
+    
+    def test_source_render_partial_overlap(self):
+        """Test rendering with partial overlap."""
+        source = ConstantPE(1.0, 100)
+        snippet = source.render(50, 100)  # 50-99 has data, 100-149 is zeros
+        
+        # First 50 samples should be 1.0
+        assert np.allclose(snippet.data[:50], 1.0)
+        # Last 50 samples should be 0.0
+        assert np.all(snippet.data[50:] == 0)
+
+
+class TestProcessingElement:
+    """Test ProcessingElement base class."""
+    
+    def test_processor_has_inputs(self):
+        """Test that processors have inputs."""
+        source = ConstantPE(1.0, 100)
+        gain = GainPE(source, 0.5)
+        assert gain.inputs() == [source]
+    
+    def test_processor_default_not_pure(self):
+        """Test that processors are not pure by default."""
+        source = ConstantPE(1.0, 100)
+        gain = GainPE(source, 0.5)
+        # GainPE doesn't override is_pure, so it uses default False
+        assert gain.is_pure() is False
+    
+    def test_processor_passthrough_channels(self):
+        """Test that processors pass through channels by default."""
+        source = ConstantPE(1.0, 100, channels=2)
+        gain = GainPE(source, 0.5)
+        # channel_count() returns None (pass-through)
+        assert gain.channel_count() is None
+    
+    def test_processor_render(self):
+        """Test processor render applies transformation."""
+        source = ConstantPE(1.0, 100)
+        gain = GainPE(source, 0.5)
+        snippet = gain.render(0, 50)
+        assert np.allclose(snippet.data, 0.5)
+    
+    def test_processor_chain(self):
+        """Test chaining multiple processors."""
+        source = ConstantPE(1.0, 100)
+        gain1 = GainPE(source, 0.5)
+        gain2 = GainPE(gain1, 0.5)
+        snippet = gain2.render(0, 50)
+        assert np.allclose(snippet.data, 0.25)
+
+
+class TestMixPE:
+    """Test MixPE multi-input processor."""
+    
+    def test_mix_two_sources(self):
+        """Test mixing two sources."""
+        source1 = ConstantPE(0.3, 100)
+        source2 = ConstantPE(0.2, 100)
+        mix = MixPE([source1, source2])
+        snippet = mix.render(0, 50)
+        assert np.allclose(snippet.data, 0.5)
+    
+    def test_mix_extent_union(self):
+        """Test that mix extent is union of inputs."""
+        source1 = ConstantPE(1.0, 100)  # Extent [0, 100)
+        source2 = ConstantPE(1.0, 200)  # Extent [0, 200)
+        mix = MixPE([source1, source2])
+        assert mix.extent() == Extent(0, 200)
+    
+    def test_mix_inputs(self):
+        """Test mix returns all inputs."""
+        source1 = ConstantPE(1.0, 100)
+        source2 = ConstantPE(1.0, 100)
+        mix = MixPE([source1, source2])
+        assert mix.inputs() == [source1, source2]
+
+
+class TestResolveOutputChannels:
+    """Test resolve_channel_count behavior."""
+    
+    def test_default_resolution(self):
+        """Test default channel resolution uses first input."""
+        source = ConstantPE(1.0, 100, channels=2)
+        gain = GainPE(source, 0.5)
+        # Default resolution returns first input's channels
+        assert gain.resolve_channel_count([2]) == 2
+        assert gain.resolve_channel_count([2, 1, 4]) == 2
+
+
+class TestConfiguration:
+    """Test PE configuration (sample rate injection)."""
+    
+    def test_sample_rate_before_configure_raises(self):
+        """Test that accessing sample_rate before configure raises error."""
+        source = ConstantPE(1.0, 100)
+        with pytest.raises(RuntimeError, match="before configuration"):
+            _ = source.sample_rate
+    
+    def test_configure_sets_sample_rate(self):
+        """Test that configure sets the sample rate."""
+        source = ConstantPE(1.0, 100)
+        source.configure(44100)
+        assert source.sample_rate == 44100
+    
+    def test_configure_propagates_to_inputs(self):
+        """Test that configure propagates to all inputs."""
+        source = ConstantPE(1.0, 100)
+        gain = GainPE(source, 0.5)
+        
+        # Configure the processor (should propagate to source)
+        gain.configure(48000)
+        
+        assert gain.sample_rate == 48000
+        assert source.sample_rate == 48000
+    
+    def test_configure_propagates_through_chain(self):
+        """Test that configure propagates through entire chain."""
+        source = ConstantPE(1.0, 100)
+        gain1 = GainPE(source, 0.5)
+        gain2 = GainPE(gain1, 0.5)
+        
+        gain2.configure(96000)
+        
+        assert gain2.sample_rate == 96000
+        assert gain1.sample_rate == 96000
+        assert source.sample_rate == 96000
+    
+    def test_configure_propagates_to_multiple_inputs(self):
+        """Test that configure propagates to all inputs of a multi-input PE."""
+        source1 = ConstantPE(1.0, 100)
+        source2 = ConstantPE(1.0, 100)
+        mix = MixPE([source1, source2])
+        
+        mix.configure(44100)
+        
+        assert mix.sample_rate == 44100
+        assert source1.sample_rate == 44100
+        assert source2.sample_rate == 44100

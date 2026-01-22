@@ -1,0 +1,26 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+numpy = "*"
+sounddevice = "*"
+soundfile = "*"
+
+[dev-packages]
+pytest = ">=7.0.0"
+pytest-cov = ">=4.0.0"
+black = ">=23.0.0"
+flake8 = ">=6.0.0"
+mypy = ">=1.0.0"
+
+[requires]
+python_version = "3.12"
+
+[scripts]
+test = "pytest tests/ -v"
+test-cov = "pytest tests/ --cov=src --cov-report=html --cov-report=term-missing"
+format = "black src tests"
+lint = "flake8 src tests"
+typecheck = "mypy src"
