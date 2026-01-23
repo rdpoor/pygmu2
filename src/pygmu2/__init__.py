@@ -26,6 +26,7 @@ from pygmu2.ramp_pe import RampPE
 from pygmu2.sine_pe import SinePE
 from pygmu2.super_saw_pe import SuperSawPE
 from pygmu2.mix_pe import MixPE
+from pygmu2.sample_map import SampleMap
 from pygmu2.wav_reader_pe import WavReaderPE
 from pygmu2.wav_writer_pe import WavWriterPE
 from pygmu2.transform_pe import TransformPE
@@ -86,6 +87,7 @@ __all__ = [
     "IdentityPE",
     "LoopPE",
     "MixPE",
+    "SampleMap",
     "RampPE",
     "SinePE",
     "SuperSawPE",
