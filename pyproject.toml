@@ -44,6 +44,10 @@ dev = [
     "flake8>=6.0.0",
     "mypy>=1.0.0",
 ]
+# For systems with SSL certificate issues (common on macOS with python.org Python)
+ssl = [
+    "certifi>=2023.0.0",
+]
 
 [project.scripts]
 # Add CLI entry points here if needed

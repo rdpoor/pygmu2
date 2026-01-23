@@ -190,6 +190,7 @@ pipenv run python examples/01_hello_sine.py
 | `09_super_saw.py` | SuperSaw oscillator |
 | `10_compression.py` | Compression/limiting/gating |
 | `11_dynamics.py` | Advanced dynamics (sidechain) |
+| `12_strudel_sample_map.py` | Load samples from remote Strudel maps |
 
 ## Modulation and Automation
 
@@ -232,6 +233,20 @@ uv run pytest --cov=src --cov-report=html  # With coverage
 # Using pipenv
 pipenv run pytest
 pipenv run pytest --cov=src --cov-report=html  # With coverage
+```
+
+## Troubleshooting
+
+### SSL Certificate Errors (macOS)
+
+If you see `ssl.SSLCertVerificationError` when using `SampleMap.from_url()`, this is a common issue with Python installed from python.org on macOS. Fix it by running:
+
+```bash
+# Option 1: Run the certificate installer (in Finder)
+# Applications → Python 3.x → "Install Certificates.command"
+
+# Option 2: Install certifi
+uv add certifi   # or: pip install certifi
 ```
 
 ## Contributing
