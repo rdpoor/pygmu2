@@ -234,20 +234,60 @@ pygmu2/
 
 ## Installation
 
-### Prerequisites
+You can use either **uv**  or **pipenv** to manage dependencies.
 
-Install pipenv:
+### Option 1: Using uv (Recommended)
+
+[uv](https://docs.astral.sh/uv/) is an extremely fast Python package and project manager.
+
+#### Install uv
+
+```bash
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Or with pip
+pip install uv
+
+# Or with Homebrew (macOS)
+brew install uv
+```
+
+#### Install Dependencies
+
+```bash
+# Install with dev dependencies
+uv sync --extra dev
+```
+
+#### Run Commands
+
+```bash
+# Run tests
+uv run pytest
+
+# Run an example
+uv run python examples/01_hello_sine.py
+
+# Run any command in the virtual environment
+uv run python -c "import pygmu2; print('pygmu2 loaded!')"
+```
+
+### Option 2: Using pipenv
+
+#### Install pipenv
+
 ```bash
 pip install pipenv
 ```
 
-### Install Dependencies
+#### Install Dependencies
 
 ```bash
 pipenv install --dev
 ```
 
-### Activate Environment
+#### Activate Environment
 
 ```bash
 pipenv shell
@@ -261,10 +301,15 @@ pipenv run python -m pytest
 ## Running Tests
 
 ```bash
-# Run all tests
+# With uv
+uv run pytest
+
+# With pipenv
 pipenv run pytest
 
 # Run with coverage
+uv run pytest --cov=src --cov-report=html
+# or
 pipenv run pytest --cov=src --cov-report=html
 ```
 
@@ -272,16 +317,22 @@ pipenv run pytest --cov=src --cov-report=html
 
 ### Code Formatting
 ```bash
+uv run black src tests
+# or
 pipenv run black src tests
 ```
 
 ### Type Checking
 ```bash
+uv run mypy src
+# or
 pipenv run mypy src
 ```
 
 ### Linting
 ```bash
+uv run flake8 src tests
+# or
 pipenv run flake8 src tests
 ```
 
