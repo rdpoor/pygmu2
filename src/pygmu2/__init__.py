@@ -10,7 +10,7 @@ from pygmu2.config import ErrorMode, set_error_mode, get_error_mode, handle_erro
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 from pygmu2.processing_element import ProcessingElement, SourcePE
-from pygmu2.renderer import Renderer
+from pygmu2.renderer import Renderer, ProfileReport, PEProfile
 from pygmu2.audio_renderer import AudioRenderer
 from pygmu2.null_renderer import NullRenderer
 from pygmu2.blit_saw_pe import BlitSawPE
@@ -72,6 +72,8 @@ __all__ = [
     "ProcessingElement",
     "SourcePE",
     "Renderer",
+    "ProfileReport",
+    "PEProfile",
     "AudioRenderer",
     "NullRenderer",
     # Processing Elements
