@@ -150,81 +150,104 @@ class WindowPE(ProcessingElement):
     def _compute_windowed_max(
         self, x: np.ndarray, duration: int, half_window: int
     ) -> np.ndarray:
-        """Compute windowed maximum."""
+        """
+        Compute windowed maximum using vectorized operations.
+        
+        Uses scipy.ndimage.maximum_filter1d if available (O(n) algorithm),
+        otherwise falls back to numpy sliding_window_view.
+        """
+        window_size = 2 * half_window + 1
         channels = x.shape[1]
         output = np.zeros((duration, channels), dtype=np.float64)
         
-        for n in range(duration):
-            # Window is centered at position (n + half_window) in the fetched data
-            center = n + half_window
-            win_start = center - half_window
-            win_end = center + half_window + 1
-            
+        try:
+            from scipy.ndimage import maximum_filter1d
+            # scipy's maximum_filter1d uses an efficient O(n) algorithm
             for ch in range(channels):
-                output[n, ch] = np.max(x[win_start:win_end, ch])
+                filtered = maximum_filter1d(x[:, ch], size=window_size, mode='nearest')
+                # Extract the centered portion
+                output[:, ch] = filtered[half_window:half_window + duration]
+        except ImportError:
+            # Fallback: use numpy sliding_window_view (numpy >= 1.20)
+            for ch in range(channels):
+                windows = np.lib.stride_tricks.sliding_window_view(x[:, ch], window_size)
+                output[:, ch] = np.max(windows[:duration], axis=1)
         
         return output
     
     def _compute_windowed_min(
         self, x: np.ndarray, duration: int, half_window: int
     ) -> np.ndarray:
-        """Compute windowed minimum."""
+        """
+        Compute windowed minimum using vectorized operations.
+        
+        Uses scipy.ndimage.minimum_filter1d if available (O(n) algorithm),
+        otherwise falls back to numpy sliding_window_view.
+        """
+        window_size = 2 * half_window + 1
         channels = x.shape[1]
         output = np.zeros((duration, channels), dtype=np.float64)
         
-        for n in range(duration):
-            center = n + half_window
-            win_start = center - half_window
-            win_end = center + half_window + 1
-            
+        try:
+            from scipy.ndimage import minimum_filter1d
             for ch in range(channels):
-                output[n, ch] = np.min(x[win_start:win_end, ch])
+                filtered = minimum_filter1d(x[:, ch], size=window_size, mode='nearest')
+                output[:, ch] = filtered[half_window:half_window + duration]
+        except ImportError:
+            for ch in range(channels):
+                windows = np.lib.stride_tricks.sliding_window_view(x[:, ch], window_size)
+                output[:, ch] = np.min(windows[:duration], axis=1)
         
         return output
     
     def _compute_windowed_mean(
         self, x: np.ndarray, duration: int, half_window: int
     ) -> np.ndarray:
-        """Compute windowed mean using cumulative sum for efficiency."""
+        """
+        Compute windowed mean using vectorized cumulative sum.
+        
+        Fully vectorized O(n) implementation - no Python loops over samples.
+        """
+        window_size = 2 * half_window + 1
         channels = x.shape[1]
         output = np.zeros((duration, channels), dtype=np.float64)
-        window_size = 2 * half_window + 1
         
         for ch in range(channels):
-            # Cumulative sum for O(1) window sum computation
+            # Cumulative sum with leading zero for easy differencing
             cumsum = np.cumsum(np.concatenate([[0], x[:, ch]]))
             
-            for n in range(duration):
-                center = n + half_window
-                win_start = center - half_window
-                win_end = center + half_window + 1
-                
-                output[n, ch] = (cumsum[win_end] - cumsum[win_start]) / window_size
+            # Vectorized window sum: cumsum[end] - cumsum[start] for all positions
+            # Window for output[n] spans [n, n + window_size) in cumsum indices
+            starts = np.arange(duration)
+            ends = starts + window_size
+            output[:, ch] = (cumsum[ends] - cumsum[starts]) / window_size
         
         return output
     
     def _compute_windowed_rms(
         self, x: np.ndarray, duration: int, half_window: int
     ) -> np.ndarray:
-        """Compute windowed RMS using cumulative sum for efficiency."""
+        """
+        Compute windowed RMS using vectorized cumulative sum.
+        
+        Fully vectorized O(n) implementation.
+        """
+        window_size = 2 * half_window + 1
         channels = x.shape[1]
         output = np.zeros((duration, channels), dtype=np.float64)
-        window_size = 2 * half_window + 1
         
-        # Square the signal
+        # Square the signal once
         x_squared = x ** 2
         
         for ch in range(channels):
             # Cumulative sum of squared values
             cumsum = np.cumsum(np.concatenate([[0], x_squared[:, ch]]))
             
-            for n in range(duration):
-                center = n + half_window
-                win_start = center - half_window
-                win_end = center + half_window + 1
-                
-                mean_squared = (cumsum[win_end] - cumsum[win_start]) / window_size
-                output[n, ch] = np.sqrt(mean_squared)
+            # Vectorized: compute all window sums at once
+            starts = np.arange(duration)
+            ends = starts + window_size
+            mean_squared = (cumsum[ends] - cumsum[starts]) / window_size
+            output[:, ch] = np.sqrt(mean_squared)
         
         return output
     

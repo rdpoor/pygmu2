@@ -173,6 +173,28 @@ class EnvelopePE(ProcessingElement):
         output = np.zeros((duration, channels), dtype=np.float64)
         env = self._envelope.copy()
         
+        # Optimization: if attack == release, use scipy.signal.lfilter (much faster)
+        if self._attack == self._release and attack_coeff < 1.0:
+            try:
+                from scipy.signal import lfilter
+                # One-pole lowpass: y[n] = (1-coeff)*y[n-1] + coeff*x[n]
+                # Transfer function: b = [coeff], a = [1, -(1-coeff)]
+                b = np.array([attack_coeff])
+                a = np.array([1.0, -(1.0 - attack_coeff)])
+                
+                for ch in range(channels):
+                    # zi is the initial condition (scaled for lfilter's convention)
+                    zi = np.array([env[ch] * (1.0 - attack_coeff)])
+                    output[:, ch], zf = lfilter(b, a, x[:, ch], zi=zi)
+                    env[ch] = output[-1, ch]
+                
+                self._envelope = env
+                return Snippet(start, output.astype(np.float32))
+            except ImportError:
+                pass  # Fall through to manual implementation
+        
+        # For asymmetric attack/release, use simple loop
+        # (numpy vectorization per-sample adds overhead for small channel counts)
         for n in range(duration):
             for ch in range(channels):
                 target = x[n, ch]
@@ -190,24 +212,45 @@ class EnvelopePE(ProcessingElement):
         return Snippet(start, output.astype(np.float32))
     
     def _compute_rms(self, x: np.ndarray, window: int) -> np.ndarray:
-        """Compute windowed RMS of the signal."""
+        """
+        Compute windowed RMS of the signal.
+        
+        Vectorized implementation using cumulative sums.
+        """
         duration, channels = x.shape
+        half_window = window // 2
         
         # Square the signal
         x_squared = x ** 2
         
-        # Cumulative sum for efficient windowed mean
         result = np.zeros_like(x)
         
+        # Try scipy.ndimage.uniform_filter1d for optimal performance
+        try:
+            from scipy.ndimage import uniform_filter1d
+            for ch in range(channels):
+                # uniform_filter1d computes the mean, so we apply to squared signal
+                mean_squared = uniform_filter1d(x_squared[:, ch], size=window, mode='nearest')
+                result[:, ch] = np.sqrt(mean_squared)
+            return result
+        except ImportError:
+            pass
+        
+        # Fallback: vectorized cumulative sum approach
         for ch in range(channels):
             cumsum = np.cumsum(np.concatenate([[0], x_squared[:, ch]]))
             
-            for n in range(duration):
-                start_idx = max(0, n - window // 2)
-                end_idx = min(duration, n + window // 2 + 1)
-                window_sum = cumsum[end_idx] - cumsum[start_idx]
-                window_len = end_idx - start_idx
-                result[n, ch] = np.sqrt(window_sum / window_len)
+            # Compute start and end indices for all positions
+            # Handle boundary conditions
+            n = np.arange(duration)
+            start_idx = np.maximum(0, n - half_window)
+            end_idx = np.minimum(duration, n + half_window + 1)
+            
+            # Vectorized window sums
+            window_sum = cumsum[end_idx] - cumsum[start_idx]
+            window_len = end_idx - start_idx
+            
+            result[:, ch] = np.sqrt(window_sum / window_len)
         
         return result
     

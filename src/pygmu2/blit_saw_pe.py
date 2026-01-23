@@ -217,17 +217,34 @@ class BlitSawPE(ProcessingElement):
         
         # Leaky integration to produce sawtooth
         # y[n] = x[n] + leak * y[n-1]
-        saw = np.zeros(duration, dtype=np.float64)
-        y = self._integrator
+        # This is a one-pole IIR filter: lfilter(b=[1], a=[1, -leak], x)
         leak = self._leak
         
-        for i in range(duration):
-            y = blit_ac[i] + leak * y
-            saw[i] = y
+        try:
+            from scipy.signal import lfilter
+            # Transfer function: H(z) = 1 / (1 - leak*z^-1)
+            # b = [1.0], a = [1.0, -leak]
+            b = np.array([1.0])
+            a = np.array([1.0, -leak])
+            
+            # Initial condition for lfilter: zi = [leak * y_initial]
+            # This ensures continuity from previous render
+            zi = np.array([leak * self._integrator])
+            saw, zf = lfilter(b, a, blit_ac, zi=zi)
+            
+            # Update integrator state from final filter state
+            y = zf[0] / leak if leak != 0 else saw[-1]
+        except ImportError:
+            # Fallback to Python loop if scipy not available
+            saw = np.zeros(duration, dtype=np.float64)
+            y = self._integrator
+            for i in range(duration):
+                y = blit_ac[i] + leak * y
+                saw[i] = y
         
         # Update state
         self._phase = phase[-1]
-        self._integrator = y
+        self._integrator = saw[-1]  # Use actual output value for state
         self._last_render_end = start + duration
         
         # Scale output to approximately ±1

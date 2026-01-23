@@ -4,46 +4,44 @@ A Python framework for generating and processing digital audio, with a bias towa
 
 ## Overview
 
-pygmu2 provides a flexible, composable architecture for building audio processing pipelines. In its current form, pygmu2 is text-based and "offline" — you create Python scripts that assemble various processing elements into a directed acyclic graph (DAG), then render the results to audio output or files.
+pygmu2 provides a flexible, composable architecture for building audio processing pipelines. Audio is generated on-demand through a directed acyclic graph (DAG) of Processing Elements (PEs), enabling efficient processing of long or infinite streams.
 
 **Key Features:**
-- Lazy evaluation: audio is generated on-demand, enabling efficient processing of long or infinite streams
-- Composable design: processing elements connect together to form complex audio graphs
-- Extensible: easily create custom processing elements for new audio operations
+- Lazy evaluation: audio generated on-demand
+- Composable design: PEs connect to form complex audio graphs
+- Rich library of oscillators, filters, effects, and dynamics processors
 - Cross-platform audio playback via `sounddevice`
 - WAV file I/O via `soundfile`
 
-## Core Concepts
+## Installation
 
-### Processing Elements (PEs)
+### Using uv (recommended)
 
-A **Processing Element** is the fundamental building block of pygmu2. Each PE represents an audio operation — generating sound, transforming it, or combining multiple sources.
+[uv](https://docs.astral.sh/uv/) is a fast Python package manager:
 
-PEs form a **directed acyclic graph (DAG)** where:
-- Source PEs (like `SinePE` or `WavReaderPE`) generate audio from scratch
-- Transform PEs (like `GainPE` or `DelayPE`) process audio from upstream PEs
-- The graph is evaluated lazily via the `render(start, duration)` method
+```bash
+# Install uv if needed
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-### Snippets
+# Install dependencies
+uv sync
 
-A **Snippet** is a thin wrapper around a NumPy array containing audio samples. It represents a chunk of audio data with:
-- A `start` sample index (where this chunk begins in absolute time)
-- A `data` array of shape `(samples, channels)` with `float32` dtype
-- Derived properties: `duration`, `end`, `channels`
+# Run commands in the virtual environment
+uv run python examples/01_hello_sine.py
+```
 
-### Extents
+### Using pipenv
 
-An **Extent** defines the temporal bounds of a PE's output:
-- `start`: first valid sample index (inclusive), or `None` for "infinite past"
-- `end`: last valid sample index (exclusive), or `None` for "infinite future"
-- Utility methods: `intersects()`, `intersection()`, `union()`, `contains()`, `spans()`
+```bash
+# Install pipenv if needed
+pip install pipenv
 
-### Renderers
+# Install dependencies
+pipenv install
 
-A **Renderer** pulls audio from a PE graph and sends it somewhere:
-- `AudioRenderer`: plays audio through your system's audio device
-- `NullRenderer`: discards audio (useful for testing and benchmarking)
-- Custom renderers can write to files, streams, or other destinations
+# Activate environment
+pipenv shell
+```
 
 ## Quick Start
 
@@ -51,294 +49,168 @@ A **Renderer** pulls audio from a PE graph and sends it somewhere:
 from pygmu2 import SinePE, GainPE, AudioRenderer
 
 # Create a 440 Hz sine wave
-sine = SinePE(frequency=440.0, amplitude=0.3)
-
-# Apply gain (optional)
-output = GainPE(sine, gain=0.5)
+sine = SinePE(frequency=440.0, amplitude=0.5)
 
 # Play through speakers
-renderer = AudioRenderer(sample_rate=44100)
-renderer.set_source(output)
-
-with renderer:
-    renderer.play_extent(0, 44100 * 5)  # Play 5 seconds
+with AudioRenderer(sample_rate=44100) as renderer:
+    renderer.set_source(sine)
+    renderer.start()
+    renderer.play_range(0, 44100 * 3)  # Play 3 seconds
 ```
 
-## Primary Classes
+## Core Concepts
 
-### ProcessingElement (Abstract Base Class)
+### Processing Elements (PEs)
 
-The base class for all audio processing units.
+A **Processing Element** is the fundamental building block. Each PE generates or transforms audio:
 
 ```python
-class ProcessingElement(ABC):
-    def render(self, start: int, duration: int) -> Snippet
-        """Generate audio samples for the given range. Always returns a
-        Snippet of the requested size, zero-padded outside the PE's extent."""
-    
-    def extent(self) -> Extent
-        """Return the temporal bounds of this PE's output."""
-    
-    def inputs(self) -> list[ProcessingElement]
-        """Return list of input PEs (empty for source PEs)."""
-    
-    def is_pure(self) -> bool
-        """Return True if this PE is stateless and safe for multiple sinks."""
-    
-    def channel_count(self) -> int | None
-        """Return number of output channels, or None if determined by context."""
-    
-    def configure(self, sample_rate: int) -> None
-        """Called by Renderer to inject sample rate into the graph."""
-    
-    def on_start(self) -> None
-        """Lifecycle hook called when rendering begins (bottom-up)."""
-    
-    def on_stop(self) -> None
-        """Lifecycle hook called when rendering ends (top-down)."""
+# Source PE: generates audio
+sine = SinePE(frequency=440.0)
+
+# Transform PE: processes audio from another PE
+quieter = GainPE(sine, gain=0.5)
+
+# Combine PEs: mix multiple sources
+mix = MixPE(sine1, sine2, sine3)
 ```
 
-### SourcePE (Abstract Base Class)
+### Snippets
 
-A specialization of `ProcessingElement` for PEs with no inputs:
+A **Snippet** is a chunk of audio samples with a start position:
 
 ```python
-class SourcePE(ProcessingElement):
-    def inputs(self) -> list[ProcessingElement]:
-        return []  # Source PEs have no inputs
-    
-    def is_pure(self) -> bool:
-        return True  # Source PEs are typically stateless
+snippet = pe.render(start=0, duration=1024)
+# snippet.data: numpy array of shape (samples, channels)
+# snippet.start: sample index where this chunk begins
 ```
 
-### Snippet
+### Extents
 
-A container for audio sample data:
+An **Extent** defines the temporal bounds of a PE's output:
 
 ```python
-class Snippet:
-    def __init__(self, start: int, data: NDArray[np.floating])
-    
-    @property
-    def start(self) -> int          # Starting sample index
-    @property
-    def end(self) -> int            # Ending sample index (exclusive)
-    @property
-    def duration(self) -> int       # Number of samples
-    @property
-    def channels(self) -> int       # Number of audio channels
-    @property
-    def data(self) -> NDArray       # Shape: (samples, channels), dtype: float32
-    
-    @classmethod
-    def from_zeros(cls, start: int, duration: int, channels: int) -> Snippet
+# Finite extent (e.g., a WAV file)
+crop = CropPE(source, Extent(0, 44100))  # First second only
+
+# Infinite extent (e.g., oscillators)
+sine = SinePE(frequency=440.0)  # Extent(None, None) - plays forever
 ```
 
-### Extent
+### Renderers
 
-Defines temporal bounds for audio data:
-
-```python
-class Extent:
-    def __init__(self, start: int | None, end: int | None)
-    
-    @property
-    def start(self) -> int | None   # None = infinite past
-    @property
-    def end(self) -> int | None     # None = infinite future
-    @property
-    def duration(self) -> int | None  # None if unbounded
-    
-    def contains(self, sample: int) -> bool
-    def spans(self, start: int, end: int) -> bool
-    def intersects(self, other: Extent) -> bool
-    def intersection(self, other: Extent) -> Extent | None
-    def union(self, other: Extent) -> Extent
-```
-
-### Renderer (Abstract Base Class)
-
-Manages audio output and graph lifecycle:
+A **Renderer** pulls audio from the PE graph:
 
 ```python
-class Renderer(ABC):
-    def __init__(self, sample_rate: int, channel_count: int = 2)
-    
-    def set_source(self, source: ProcessingElement) -> None
-        """Set the root PE and configure/validate the graph."""
-    
-    def start(self) -> None
-        """Begin rendering (calls on_start() bottom-up through graph)."""
-    
-    def stop(self) -> None
-        """End rendering (calls on_stop() top-down through graph)."""
-    
-    def render(self, start: int, duration: int) -> Snippet
-        """Request audio from the source PE."""
-    
-    # Context manager support
-    def __enter__(self) -> Renderer
-    def __exit__(self, ...) -> None  # Calls stop()
+# Play to speakers
+with AudioRenderer(sample_rate=44100) as renderer:
+    renderer.set_source(my_pe)
+    renderer.start()
+    renderer.play_range(0, 44100 * 5)
+
+# Or render silently (for testing/processing)
+renderer = NullRenderer(sample_rate=44100)
 ```
 
 ## Available Processing Elements
 
-### Source PEs (Generate Audio)
-- `SinePE(frequency, amplitude, phase)` — Sine wave generator (supports PE inputs for modulation)
-- `ConstantPE(value, channels)` — Outputs a constant value
-- `RampPE(start_value, end_value, duration, channels)` — Linear ramp
-- `WavReaderPE(path)` — Reads audio from a WAV file
-- `IdentityPE(channels)` — Outputs the sample index
-- `DiracPE(channels)` — Unit impulse (1.0 at sample 0, 0.0 elsewhere)
+### Oscillators
+| PE | Description |
+|----|-------------|
+| `SinePE(frequency, amplitude, phase)` | Sine wave (supports modulation) |
+| `BlitSawPE(frequency, amplitude, m)` | Band-limited sawtooth (alias-free) |
+| `SuperSawPE(frequency, voices, detune_cents)` | Detuned unison sawtooth |
+| `WavetablePE(wavetable, indexer)` | Wavetable oscillator |
 
-### Transform PEs (Process Audio)
-- `GainPE(source, gain)` — Apply gain (float or PE for automation)
-- `DelayPE(source, delay)` — Delay by N samples
-- `CropPE(source, extent)` — Limit output to a specified extent
-- `MixPE(*sources)` — Sum multiple PE outputs together
+### Sources
+| PE | Description |
+|----|-------------|
+| `ConstantPE(value, channels)` | Constant value |
+| `RampPE(start, end, duration)` | Linear ramp |
+| `DiracPE(channels)` | Unit impulse |
+| `IdentityPE(channels)` | Sample index as output |
+| `WavReaderPE(path)` | Read from WAV file |
 
-### Output PEs (Side Effects)
-- `WavWriterPE(source, path, sample_rate)` — Write audio to a WAV file
+### Transforms
+| PE | Description |
+|----|-------------|
+| `GainPE(source, gain)` | Apply gain (supports automation) |
+| `MixPE(*sources)` | Sum multiple sources |
+| `DelayPE(source, delay)` | Delay by N samples |
+| `CropPE(source, extent)` | Limit to temporal range |
+| `LoopPE(source)` | Loop a finite source |
+| `TransformPE(source, func)` | Apply custom function |
 
-## Project Structure
+### Filters
+| PE | Description |
+|----|-------------|
+| `BiquadPE(source, mode, frequency, q)` | Biquad filter (lowpass, highpass, bandpass, etc.) |
 
-```
-pygmu2/
-├── src/pygmu2/
-│   ├── __init__.py           # Package exports
-│   ├── processing_element.py # PE and SourcePE base classes
-│   ├── snippet.py            # Snippet class
-│   ├── extent.py             # Extent class
-│   ├── renderer.py           # Renderer base class
-│   ├── audio_renderer.py     # Real-time audio playback
-│   ├── null_renderer.py      # Null output (for testing)
-│   ├── config.py             # Error handling configuration
-│   ├── logger.py             # Logging utilities
-│   ├── sine_pe.py            # Sine wave generator
-│   ├── constant_pe.py        # Constant value source
-│   ├── ramp_pe.py            # Linear ramp source
-│   ├── mix_pe.py             # Audio mixer
-│   ├── gain_pe.py            # Gain control
-│   ├── delay_pe.py           # Sample delay
-│   ├── crop_pe.py            # Temporal cropping
-│   ├── identity_pe.py        # Sample index output
-│   ├── dirac_pe.py           # Unit impulse
-│   ├── wav_reader_pe.py      # WAV file reader
-│   └── wav_writer_pe.py      # WAV file writer
-├── tests/                    # Comprehensive test suite
-├── examples/                 # Example scripts
-├── Pipfile                   # pipenv dependencies
-├── pyproject.toml            # Project configuration
-└── LICENSE                   # MIT License
-```
+### Dynamics
+| PE | Description |
+|----|-------------|
+| `CompressorPE(source, threshold, ratio, ...)` | All-in-one compressor |
+| `LimiterPE(source, ceiling, ...)` | Brick-wall limiter |
+| `GatePE(source, threshold, ...)` | Noise gate |
+| `DynamicsPE(source, envelope, ...)` | Flexible dynamics (sidechain support) |
+| `EnvelopePE(source, attack, release)` | Envelope follower |
 
-## Installation
+### Analysis
+| PE | Description |
+|----|-------------|
+| `WindowPE(source, window, mode)` | Windowed statistics (max, rms, mean) |
 
-You can use either **uv**  or **pipenv** to manage dependencies.
+### Output
+| PE | Description |
+|----|-------------|
+| `WavWriterPE(source, path)` | Write to WAV file |
 
-### Option 1: Using uv (Recommended)
+## Examples
 
-[uv](https://docs.astral.sh/uv/) is an extremely fast Python package and project manager.
-
-#### Install uv
+The `examples/` directory contains runnable demos:
 
 ```bash
-# macOS/Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Or with pip
-pip install uv
-
-# Or with Homebrew (macOS)
-brew install uv
-```
-
-#### Install Dependencies
-
-```bash
-# Install with dev dependencies
-uv sync --extra dev
-```
-
-#### Run Commands
-
-```bash
-# Run tests
-uv run pytest
-
-# Run an example
+# Using uv:
 uv run python examples/01_hello_sine.py
 
-# Run any command in the virtual environment
-uv run python -c "import pygmu2; print('pygmu2 loaded!')"
+# Using pipenv:
+pipenv run python examples/01_hello_sine.py
 ```
 
-### Option 2: Using pipenv
+| Example | Description |
+|---------|-------------|
+| `01_hello_sine.py` | Simple sine wave |
+| `02_play_wav.py` | Play a WAV file |
+| `03_looping.py` | Looping |
+| `04_filtering.py` | Filtering |
+| `05_flanging.py` | Flanging effect |
+| `06_autowah.py` | Auto-wah effect |
+| `07_soft_clipping.py` | Soft clipping |
+| `08_write_to_file.py` | Write to file |
+| `09_super_saw.py` | SuperSaw oscillator |
+| `10_compression.py` | Compression/limiting/gating |
+| `11_dynamics.py` | Advanced dynamics (sidechain) |
 
-#### Install pipenv
+## Modulation and Automation
 
-```bash
-pip install pipenv
-```
+Many PE parameters accept either constant values or other PEs for modulation:
 
-#### Install Dependencies
+```python
+# Constant frequency
+sine = SinePE(frequency=440.0)
 
-```bash
-pipenv install --dev
-```
+# Vibrato (frequency modulated by LFO)
+lfo = SinePE(frequency=5.0, amplitude=10.0)
+vibrato = SinePE(frequency=MixPE(ConstantPE(440.0), lfo))
 
-#### Activate Environment
-
-```bash
-pipenv shell
-```
-
-Or run commands directly:
-```bash
-pipenv run python -m pytest
-```
-
-## Running Tests
-
-```bash
-# With uv
-uv run pytest
-
-# With pipenv
-pipenv run pytest
-
-# Run with coverage
-uv run pytest --cov=src --cov-report=html
-# or
-pipenv run pytest --cov=src --cov-report=html
-```
-
-## Development
-
-### Code Formatting
-```bash
-uv run black src tests
-# or
-pipenv run black src tests
-```
-
-### Type Checking
-```bash
-uv run mypy src
-# or
-pipenv run mypy src
-```
-
-### Linting
-```bash
-uv run flake8 src tests
-# or
-pipenv run flake8 src tests
+# Tremolo (amplitude modulated)
+tremolo_lfo = GainPE(SinePE(frequency=4.0), gain=0.3)
+tremolo = GainPE(sine, gain=MixPE(ConstantPE(0.7), tremolo_lfo))
 ```
 
 ## Error Handling
 
-pygmu2 provides configurable error handling via `ErrorMode`:
+Configure error behavior for debugging vs production:
 
 ```python
 from pygmu2 import ErrorMode, set_error_mode
@@ -350,8 +222,24 @@ set_error_mode(ErrorMode.STRICT)
 set_error_mode(ErrorMode.LENIENT)
 ```
 
+## Running Tests
+
+```bash
+# Using uv
+uv run pytest
+uv run pytest --cov=src --cov-report=html  # With coverage
+
+# Using pipenv
+pipenv run pytest
+pipenv run pytest --cov=src --cov-report=html  # With coverage
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines, architecture details, and how to create new Processing Elements.
+
 ## License
 
 Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) for details.

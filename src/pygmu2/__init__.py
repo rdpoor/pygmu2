@@ -10,14 +10,16 @@ from pygmu2.config import ErrorMode, set_error_mode, get_error_mode, handle_erro
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 from pygmu2.processing_element import ProcessingElement, SourcePE
-from pygmu2.renderer import Renderer
+from pygmu2.renderer import Renderer, ProfileReport, PEProfile
 from pygmu2.audio_renderer import AudioRenderer
 from pygmu2.null_renderer import NullRenderer
 from pygmu2.blit_saw_pe import BlitSawPE
+from pygmu2.compressor_pe import CompressorPE, LimiterPE, GatePE
 from pygmu2.constant_pe import ConstantPE
 from pygmu2.crop_pe import CropPE
 from pygmu2.delay_pe import DelayPE
 from pygmu2.dirac_pe import DiracPE
+from pygmu2.dynamics_pe import DynamicsPE, DynamicsMode
 from pygmu2.envelope_pe import EnvelopePE, DetectionMode
 from pygmu2.gain_pe import GainPE
 from pygmu2.identity_pe import IdentityPE
@@ -73,18 +75,24 @@ __all__ = [
     "ProcessingElement",
     "SourcePE",
     "Renderer",
+    "ProfileReport",
+    "PEProfile",
     "AudioRenderer",
     "NullRenderer",
     # Processing Elements
     "BiquadPE",
     "BlitSawPE",
+    "CompressorPE",
     "ConstantPE",
     "CropPE",
     "DelayPE",
     "DiracPE",
+    "DynamicsPE",
     "EnvelopePE",
     "GainPE",
+    "GatePE",
     "IdentityPE",
+    "LimiterPE",
     "LoopPE",
     "MixPE",
     "SampleMap",
@@ -99,6 +107,7 @@ __all__ = [
     # Enums
     "BiquadMode",
     "DetectionMode",
+    "DynamicsMode",
     "InterpolationMode",
     "OutOfBoundsMode",
     "WindowMode",
