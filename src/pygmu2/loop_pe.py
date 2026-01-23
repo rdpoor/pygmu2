@@ -166,41 +166,57 @@ class LoopPE(ProcessingElement):
             total_length = self._count * self._loop_length
             if start >= total_length:
                 return Snippet(start, output)
+            # Clamp duration to not exceed total length
+            valid_duration = min(duration, total_length - start)
+        else:
+            valid_duration = duration
         
-        # For each output sample, calculate the source index
-        for i in range(duration):
-            out_idx = start + i
+        if valid_duration <= 0:
+            return Snippet(start, output)
+        
+        # Fetch the entire loop region from source once
+        loop_data = self._source.render(self._resolved_start, self._loop_length).data
+        
+        # Create array of output sample indices
+        out_indices = np.arange(start, start + valid_duration)
+        
+        # Map to positions within the loop (vectorized modulo)
+        loop_positions = out_indices % self._loop_length
+        
+        # Use fancy indexing to get all samples at once
+        output[:valid_duration, :] = loop_data[loop_positions, :]
+        
+        # Apply crossfade if enabled
+        if self._crossfade_samples > 0:
+            # Find samples in the crossfade region (near end of loop)
+            xfade_threshold = self._loop_length - self._crossfade_samples
+            in_xfade = loop_positions >= xfade_threshold
             
-            # Check bounds for finite loops
-            if self._count is not None:
-                total_length = self._count * self._loop_length
-                if out_idx >= total_length:
-                    break
-            
-            # Map to position within loop
-            loop_pos = out_idx % self._loop_length
-            source_idx = self._resolved_start + loop_pos
-            
-            # Get sample from source
-            snippet = self._source.render(source_idx, 1)
-            sample = snippet.data[0, :]
-            
-            # Apply crossfade if enabled
-            if self._crossfade_samples > 0:
-                # Near end of loop - fade out and blend with start
-                if loop_pos >= self._loop_length - self._crossfade_samples:
-                    fade_pos = loop_pos - (self._loop_length - self._crossfade_samples)
-                    fade_out = 1.0 - (fade_pos / self._crossfade_samples)
-                    fade_in = fade_pos / self._crossfade_samples
-                    
-                    # Get corresponding sample from start of loop
-                    blend_idx = self._resolved_start + fade_pos
-                    blend_snippet = self._source.render(blend_idx, 1)
-                    blend_sample = blend_snippet.data[0, :]
-                    
-                    sample = sample * fade_out + blend_sample * fade_in
-            
-            output[i, :] = sample
+            if np.any(in_xfade):
+                # Get indices of samples needing crossfade
+                xfade_indices = np.where(in_xfade)[0]
+                xfade_loop_pos = loop_positions[in_xfade]
+                
+                # Calculate fade position (0 to crossfade_samples)
+                fade_pos = xfade_loop_pos - xfade_threshold
+                
+                # Calculate fade coefficients (vectorized)
+                fade_out = 1.0 - (fade_pos / self._crossfade_samples)
+                fade_in = fade_pos / self._crossfade_samples
+                
+                # Reshape for broadcasting with channels
+                fade_out = fade_out[:, np.newaxis]
+                fade_in = fade_in[:, np.newaxis]
+                
+                # Get blend samples from start of loop (vectorized lookup)
+                blend_positions = fade_pos.astype(int)
+                blend_samples = loop_data[blend_positions, :]
+                
+                # Apply crossfade: out = current * fade_out + blend * fade_in
+                output[xfade_indices, :] = (
+                    output[xfade_indices, :] * fade_out +
+                    blend_samples * fade_in
+                )
         
         return Snippet(start, output.astype(np.float32))
     

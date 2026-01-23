@@ -99,9 +99,11 @@ class MixPE(ProcessingElement):
         """
         Return the channel count (same as inputs).
         
-        Returns None to indicate it passes through input channels.
-        Validation ensures all inputs have compatible channel counts.
+        Queries the first input's channel count. Validation ensures
+        all inputs have compatible channel counts.
         """
+        if self._inputs:
+            return self._inputs[0].channel_count()
         return None
     
     def required_input_channels(self) -> Optional[int]:

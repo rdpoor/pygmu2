@@ -5,8 +5,10 @@ name = "pypi"
 
 [packages]
 numpy = "*"
+scipy = "*"
 sounddevice = "*"
 soundfile = "*"
+numba = "*"
 
 [dev-packages]
 pytest = ">=7.0.0"

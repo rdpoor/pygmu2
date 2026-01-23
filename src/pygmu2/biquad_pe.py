@@ -12,10 +12,54 @@ from enum import Enum
 from typing import Optional, Union
 
 import numpy as np
+from scipy import signal
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
+
+# Try to import numba for JIT compilation (optional optimization)
+try:
+    from numba import jit
+    NUMBA_AVAILABLE = True
+except ImportError:
+    NUMBA_AVAILABLE = False
+    # Dummy decorator when numba isn't available
+    def jit(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+
+
+# JIT-compiled filter function for time-varying coefficients
+@jit(nopython=True, cache=True)
+def _biquad_varying_numba(
+    x: np.ndarray,
+    b0: np.ndarray, b1: np.ndarray, b2: np.ndarray,
+    a1: np.ndarray, a2: np.ndarray,
+    x1: np.ndarray, x2: np.ndarray,
+    y1: np.ndarray, y2: np.ndarray,
+) -> tuple:
+    """
+    Numba-accelerated biquad filter with time-varying coefficients.
+    
+    Returns (output, x1_final, x2_final, y1_final, y2_final).
+    """
+    duration = x.shape[0]
+    channels = x.shape[1]
+    y = np.zeros((duration, channels), dtype=np.float64)
+    
+    for n in range(duration):
+        for c in range(channels):
+            y0 = (b0[n] * x[n, c] + b1[n] * x1[c] + b2[n] * x2[c]
+                  - a1[n] * y1[c] - a2[n] * y2[c])
+            y[n, c] = y0
+            x2[c] = x1[c]
+            x1[c] = x[n, c]
+            y2[c] = y1[c]
+            y1[c] = y0
+    
+    return y, x1, x2, y1, y2
 
 
 class BiquadMode(Enum):
@@ -88,6 +132,8 @@ class BiquadPE(ProcessingElement):
         # Filter state: [x[n-1], x[n-2], y[n-1], y[n-2]] per channel
         # Initialized in on_start()
         self._state: Optional[np.ndarray] = None
+        # State for scipy.signal.lfilter (constant coefficient path)
+        self._lfilter_state: Optional[np.ndarray] = None
     
     @property
     def source(self) -> ProcessingElement:
@@ -158,12 +204,15 @@ class BiquadPE(ProcessingElement):
     def on_stop(self) -> None:
         """Clear filter state at end of rendering."""
         self._state = None
+        self._lfilter_state = None
     
     def _reset_state(self) -> None:
         """Initialize/reset the filter state to zeros."""
         channels = self._source.channel_count() or 1
-        # State: [x[n-1], x[n-2], y[n-1], y[n-2]] per channel
+        # State for scipy.signal.lfilter: shape (2, channels) for biquad
+        # Also keep legacy state for time-varying coefficient path
         self._state = np.zeros((4, channels), dtype=np.float64)
+        self._lfilter_state = np.zeros((2, channels), dtype=np.float64)
     
     def _compute_coefficients(
         self,
@@ -292,7 +341,7 @@ class BiquadPE(ProcessingElement):
             Snippet containing filtered audio
         """
         # Ensure state is initialized
-        if self._state is None:
+        if self._state is None or self._lfilter_state is None:
             self._reset_state()
         
         # Get source audio
@@ -303,6 +352,7 @@ class BiquadPE(ProcessingElement):
         # Ensure state has correct channel count
         if self._state.shape[1] != channels:
             self._state = np.zeros((4, channels), dtype=np.float64)
+            self._lfilter_state = np.zeros((2, channels), dtype=np.float64)
         
         # Get parameter values
         if self._freq_is_pe:
@@ -343,34 +393,17 @@ class BiquadPE(ProcessingElement):
         """
         Apply biquad filter with constant coefficients.
         
-        More efficient than per-sample coefficient version.
+        Uses scipy.signal.lfilter for optimized C implementation.
         """
-        duration, channels = x.shape
-        y = np.zeros_like(x)
+        # Coefficient arrays for lfilter
+        b = np.array([b0, b1, b2], dtype=np.float64)
+        a = np.array([1.0, a1, a2], dtype=np.float64)
         
-        # Extract state
-        x1 = self._state[0, :].copy()  # x[n-1]
-        x2 = self._state[1, :].copy()  # x[n-2]
-        y1 = self._state[2, :].copy()  # y[n-1]
-        y2 = self._state[3, :].copy()  # y[n-2]
-        
-        # Process samples
-        for n in range(duration):
-            x0 = x[n, :]
-            y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2
-            y[n, :] = y0
-            
-            # Shift state
-            x2 = x1
-            x1 = x0
-            y2 = y1
-            y1 = y0
-        
-        # Save state for next block
-        self._state[0, :] = x1
-        self._state[1, :] = x2
-        self._state[2, :] = y1
-        self._state[3, :] = y2
+        # Use scipy.signal.lfilter with state preservation
+        # lfilter processes along axis=0 by default
+        y, self._lfilter_state = signal.lfilter(
+            b, a, x, axis=0, zi=self._lfilter_state
+        )
         
         return y
     
@@ -383,28 +416,44 @@ class BiquadPE(ProcessingElement):
         """
         Apply biquad filter with time-varying coefficients.
         
-        Recalculates coefficients per sample for smooth modulation.
+        Uses Numba JIT when available, otherwise optimized numpy with
+        vectorized feedforward computation.
         """
         duration, channels = x.shape
-        y = np.zeros_like(x)
         
-        # Extract state
+        # Extract state as contiguous arrays
         x1 = self._state[0, :].copy()
         x2 = self._state[1, :].copy()
         y1 = self._state[2, :].copy()
         y2 = self._state[3, :].copy()
         
-        # Process samples with per-sample coefficients
-        for n in range(duration):
-            x0 = x[n, :]
-            y0 = b0[n] * x0 + b1[n] * x1 + b2[n] * x2 - a1[n] * y1 - a2[n] * y2
-            y[n, :] = y0
+        if NUMBA_AVAILABLE:
+            # Use Numba-accelerated version
+            y, x1, x2, y1, y2 = _biquad_varying_numba(
+                x, b0, b1, b2, a1, a2, x1, x2, y1, y2
+            )
+        else:
+            # Optimized numpy: vectorize feedforward, sequential feedback
+            # Build padded input for shifted access
+            # x_padded[0] = x2 (state), x_padded[1] = x1 (state), x_padded[2:] = x
+            x_padded = np.vstack([x2.reshape(1, -1), x1.reshape(1, -1), x])
             
-            # Shift state
-            x2 = x1
-            x1 = x0
-            y2 = y1
-            y1 = y0
+            # Vectorized feedforward computation
+            # ff[n] = b0[n]*x[n] + b1[n]*x[n-1] + b2[n]*x[n-2]
+            ff = (b0[:, np.newaxis] * x +
+                  b1[:, np.newaxis] * x_padded[1:-1, :] +
+                  b2[:, np.newaxis] * x_padded[:-2, :])
+            
+            # Sequential feedback loop (minimal work per iteration)
+            y = np.zeros_like(x)
+            for n in range(duration):
+                y[n, :] = ff[n, :] - a1[n] * y1 - a2[n] * y2
+                y2 = y1
+                y1 = y[n, :]
+            
+            # Update x state from end of input
+            x1 = x[-1, :].copy()
+            x2 = x[-2, :].copy() if duration > 1 else x2
         
         # Save state
         self._state[0, :] = x1

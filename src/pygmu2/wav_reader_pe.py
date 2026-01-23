@@ -63,7 +63,8 @@ class WavReaderPE(SourcePE):
     
     @property
     def file_sample_rate(self) -> Optional[int]:
-        """Sample rate of the WAV file (available after on_start or first render)."""
+        """Sample rate of the WAV file (reads file metadata if needed)."""
+        self._ensure_file_info()
         return self._file_sample_rate
     
     def _ensure_file_info(self) -> None:
