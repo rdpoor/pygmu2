@@ -13,10 +13,12 @@ from pygmu2.processing_element import ProcessingElement, SourcePE
 from pygmu2.renderer import Renderer
 from pygmu2.audio_renderer import AudioRenderer
 from pygmu2.null_renderer import NullRenderer
+from pygmu2.biquad_pe import BiquadPE, BiquadMode
 from pygmu2.constant_pe import ConstantPE
 from pygmu2.crop_pe import CropPE
 from pygmu2.delay_pe import DelayPE
 from pygmu2.dirac_pe import DiracPE
+from pygmu2.envelope_pe import EnvelopePE, DetectionMode
 from pygmu2.gain_pe import GainPE
 from pygmu2.identity_pe import IdentityPE
 from pygmu2.ramp_pe import RampPE
@@ -24,6 +26,19 @@ from pygmu2.sine_pe import SinePE
 from pygmu2.mix_pe import MixPE
 from pygmu2.wav_reader_pe import WavReaderPE
 from pygmu2.wav_writer_pe import WavWriterPE
+from pygmu2.transform_pe import TransformPE
+from pygmu2.wavetable_pe import WavetablePE, InterpolationMode, OutOfBoundsMode
+from pygmu2.window_pe import WindowPE, WindowMode
+from pygmu2.conversions import (
+    pitch_to_freq,
+    freq_to_pitch,
+    ratio_to_db,
+    db_to_ratio,
+    semitones_to_ratio,
+    ratio_to_semitones,
+    samples_to_seconds,
+    seconds_to_samples,
+)
 from pygmu2.logger import setup_logging, get_logger
 
 __version__ = "0.1.0"
@@ -43,17 +58,37 @@ __all__ = [
     "AudioRenderer",
     "NullRenderer",
     # Processing Elements
+    "BiquadPE",
     "ConstantPE",
     "CropPE",
     "DelayPE",
     "DiracPE",
+    "EnvelopePE",
     "GainPE",
     "IdentityPE",
     "MixPE",
     "RampPE",
     "SinePE",
+    "TransformPE",
     "WavReaderPE",
     "WavWriterPE",
+    "WavetablePE",
+    "WindowPE",
+    # Enums
+    "BiquadMode",
+    "DetectionMode",
+    "InterpolationMode",
+    "OutOfBoundsMode",
+    "WindowMode",
+    # Conversion functions
+    "pitch_to_freq",
+    "freq_to_pitch",
+    "ratio_to_db",
+    "db_to_ratio",
+    "semitones_to_ratio",
+    "ratio_to_semitones",
+    "samples_to_seconds",
+    "seconds_to_samples",
     # Logging utilities
     "setup_logging",
     "get_logger",
