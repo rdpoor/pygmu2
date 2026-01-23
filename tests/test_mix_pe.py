@@ -195,16 +195,16 @@ class TestMixPEChannels:
     def setup_method(self):
         self.renderer = NullRenderer(sample_rate=44100)
     
-    def test_channel_count_passthrough(self):
-        """MixPE passes through channel count from inputs."""
+    def test_channel_count_from_inputs(self):
+        """MixPE gets channel count from first input."""
         source1 = ConstantPE(0.5, channels=2)
         source2 = ConstantPE(0.3, channels=2)
         mix = MixPE(source1, source2)
         
-        # channel_count returns None (passthrough)
-        assert mix.channel_count() is None
+        # channel_count returns first input's channel count
+        assert mix.channel_count() == 2
         
-        # But after validation, we can check via renderer
+        # Renderer also reports same channel count
         self.renderer.set_source(mix)
         assert self.renderer.channel_count == 2
     

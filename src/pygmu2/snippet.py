@@ -40,9 +40,7 @@ class Snippet:
         elif data.ndim != 2:
             raise ValueError(f"data must be 1D or 2D, got {data.ndim}D")
         
-        if data.shape[0] == 0:
-            raise ValueError("data must have at least one sample")
-        
+        # Zero-length snippets are allowed (duration=0)
         self._start = start
         self._data = data
     

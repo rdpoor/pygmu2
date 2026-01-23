@@ -13,7 +13,7 @@ from pygmu2.processing_element import ProcessingElement, SourcePE
 from pygmu2.renderer import Renderer
 from pygmu2.audio_renderer import AudioRenderer
 from pygmu2.null_renderer import NullRenderer
-from pygmu2.biquad_pe import BiquadPE, BiquadMode
+from pygmu2.blit_saw_pe import BlitSawPE
 from pygmu2.constant_pe import ConstantPE
 from pygmu2.crop_pe import CropPE
 from pygmu2.delay_pe import DelayPE
@@ -44,6 +44,21 @@ from pygmu2.logger import setup_logging, get_logger
 
 __version__ = "0.1.0"
 
+# Lazy imports for modules with heavy dependencies (scipy)
+# These are loaded on first access to avoid slow startup for simple scripts
+_lazy_imports = {
+    "BiquadPE": ("pygmu2.biquad_pe", "BiquadPE"),
+    "BiquadMode": ("pygmu2.biquad_pe", "BiquadMode"),
+}
+
+def __getattr__(name):
+    if name in _lazy_imports:
+        module_name, attr_name = _lazy_imports[name]
+        import importlib
+        module = importlib.import_module(module_name)
+        return getattr(module, attr_name)
+    raise AttributeError(f"module 'pygmu2' has no attribute {name!r}")
+
 __all__ = [
     # Configuration
     "ErrorMode",
@@ -60,6 +75,7 @@ __all__ = [
     "NullRenderer",
     # Processing Elements
     "BiquadPE",
+    "BlitSawPE",
     "ConstantPE",
     "CropPE",
     "DelayPE",

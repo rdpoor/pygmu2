@@ -149,16 +149,24 @@ class Renderer(ABC):
         
         Args:
             start: Starting sample index
-            duration: Number of samples to render
+            duration: Number of samples to render (must be >= 1)
         
         Raises:
             RuntimeError: If no source set or not started (always fatal)
+            ValueError: If duration < 1 (always fatal)
         """
         if self._source is None:
             handle_error("No source set. Call set_source() first.", fatal=True)
             return
         if not self._started:
             handle_error("Not started. Call start() first.", fatal=True)
+            return
+        if duration < 1:
+            handle_error(
+                "Renderer.render() requires duration >= 1 to prevent infinite loops.",
+                fatal=True,
+                exception_class=ValueError,
+            )
             return
         
         snippet = self._source.render(start, duration)

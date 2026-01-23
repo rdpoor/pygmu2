@@ -9,6 +9,7 @@ scipy = "*"
 sounddevice = "*"
 soundfile = "*"
 numba = "*"
+pygmu2 = {path = ".", editable = true}
 
 [dev-packages]
 pytest = ">=7.0.0"

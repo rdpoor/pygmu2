@@ -168,6 +168,16 @@ class TestRendererBasics:
         with pytest.raises(RuntimeError, match="Not started"):
             renderer.render(0, 100)
     
+    def test_render_zero_duration_raises(self):
+        """Test that render with zero duration raises error to prevent infinite loops."""
+        renderer = MockRenderer()
+        source = ConstantPE(0.5, 100)
+        renderer.set_source(source)
+        renderer.start()
+        with pytest.raises(ValueError, match="duration >= 1"):
+            renderer.render(0, 0)
+        renderer.stop()
+    
     def test_render_outputs_snippet(self):
         """Test that render outputs snippet."""
         renderer = MockRenderer()

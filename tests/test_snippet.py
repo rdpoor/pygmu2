@@ -49,11 +49,23 @@ class TestSnippetBasics:
         with pytest.raises(ValueError):
             Snippet(0, data)
     
-    def test_empty_array_raises(self):
-        """Test that empty array raises ValueError."""
+    def test_zero_length_snippet_allowed(self):
+        """Test that zero-length snippets are allowed."""
         data = np.array([]).reshape(0, 1)
-        with pytest.raises(ValueError):
-            Snippet(0, data)
+        snip = Snippet(0, data)
+        assert snip.start == 0
+        assert snip.end == 0
+        assert snip.duration == 0
+        assert snip.channels == 1
+    
+    def test_zero_length_stereo_snippet(self):
+        """Test zero-length stereo snippet."""
+        data = np.zeros((0, 2))
+        snip = Snippet(100, data)
+        assert snip.start == 100
+        assert snip.end == 100
+        assert snip.duration == 0
+        assert snip.channels == 2
 
 
 class TestSnippetFromZeros:
@@ -78,6 +90,14 @@ class TestSnippetFromZeros:
         """Test that default channels is 1."""
         snip = Snippet.from_zeros(start=0, duration=100)
         assert snip.channels == 1
+    
+    def test_from_zeros_zero_duration(self):
+        """Test creating zero-length snippet from zeros."""
+        snip = Snippet.from_zeros(start=50, duration=0, channels=2)
+        assert snip.start == 50
+        assert snip.duration == 0
+        assert snip.channels == 2
+        assert snip.data.shape == (0, 2)
 
 
 class TestSnippetEquality:
