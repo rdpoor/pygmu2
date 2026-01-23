@@ -11,11 +11,14 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import platform
 import random
 import re
+import ssl
 from pathlib import Path, PurePosixPath
 from typing import Dict, List, Optional, Union
 from urllib import request
+from urllib.error import URLError
 from urllib.parse import urlparse
 
 import soundfile as sf
@@ -25,6 +28,63 @@ from pygmu2.logger import get_logger
 from pygmu2.wav_reader_pe import WavReaderPE
 
 logger = get_logger(__name__)
+
+
+def _create_ssl_context() -> ssl.SSLContext:
+    """
+    Create an SSL context for HTTPS requests.
+    
+    Tries to use certifi's certificate bundle if available,
+    otherwise falls back to system defaults.
+    """
+    try:
+        import certifi
+        context = ssl.create_default_context(cafile=certifi.where())
+        logger.debug("Using certifi certificate bundle")
+        return context
+    except ImportError:
+        pass
+    
+    # Fall back to default context (uses system certificates)
+    return ssl.create_default_context()
+
+
+def _format_ssl_error_message(url: str, exc: Exception) -> str:
+    """
+    Format a helpful error message for SSL certificate errors.
+    """
+    base_msg = f"SSL certificate verification failed for {url!r}: {exc}"
+    
+    if platform.system() == "Darwin":
+        # macOS-specific instructions
+        return (
+            f"{base_msg}\n\n"
+            "This is a common issue on macOS with Python from python.org.\n"
+            "To fix this, try one of these solutions:\n\n"
+            "1. Run the certificate installer (recommended):\n"
+            "   Open Finder, go to Applications > Python 3.x folder,\n"
+            "   and double-click 'Install Certificates.command'\n\n"
+            "2. Or install certifi: pip install certifi\n\n"
+            "3. Or if using Homebrew Python, ensure openssl is linked:\n"
+            "   brew install openssl && brew link openssl"
+        )
+    elif platform.system() == "Windows":
+        return (
+            f"{base_msg}\n\n"
+            "To fix SSL certificate issues on Windows:\n"
+            "1. Install certifi: pip install certifi\n"
+            "2. Or update your Python installation"
+        )
+    else:
+        # Linux and other systems
+        return (
+            f"{base_msg}\n\n"
+            "To fix SSL certificate issues:\n"
+            "1. Install certifi: pip install certifi\n"
+            "2. Or install/update system CA certificates:\n"
+            "   - Debian/Ubuntu: sudo apt install ca-certificates\n"
+            "   - Fedora/RHEL: sudo dnf install ca-certificates"
+        )
 
 SampleValue = Union[str, List[str]]
 
@@ -270,13 +330,22 @@ class SampleMap:
         tmp_path = dest.with_suffix(dest.suffix + ".part")
         logger.info(f"Downloading sample: {url}")
         try:
-            with request.urlopen(url) as response, tmp_path.open("wb") as out:
+            ssl_context = _create_ssl_context()
+            with request.urlopen(url, context=ssl_context) as response, tmp_path.open("wb") as out:
                 while True:
                     chunk = response.read(1024 * 1024)
                     if not chunk:
                         break
                     out.write(chunk)
             tmp_path.replace(dest)
+        except URLError as exc:
+            if isinstance(exc.reason, ssl.SSLCertVerificationError):
+                handle_error(
+                    _format_ssl_error_message(url, exc.reason), fatal=True
+                )
+            handle_error(
+                f"Failed to download sample {url!r}: {exc}", fatal=True
+            )
         except Exception as exc:
             handle_error(
                 f"Failed to download sample {url!r}: {exc}", fatal=True
@@ -327,13 +396,22 @@ class SampleMap:
         tmp_path = json_path.with_suffix(".part")
         logger.info(f"Downloading Strudel map: {url}")
         try:
-            with request.urlopen(url) as response, tmp_path.open("wb") as out:
+            ssl_context = _create_ssl_context()
+            with request.urlopen(url, context=ssl_context) as response, tmp_path.open("wb") as out:
                 while True:
                     chunk = response.read(1024 * 1024)
                     if not chunk:
                         break
                     out.write(chunk)
             tmp_path.replace(json_path)
+        except URLError as exc:
+            if isinstance(exc.reason, ssl.SSLCertVerificationError):
+                handle_error(
+                    _format_ssl_error_message(url, exc.reason), fatal=True
+                )
+            handle_error(
+                f"Failed to download Strudel map {url!r}: {exc}", fatal=True
+            )
         except Exception as exc:
             handle_error(
                 f"Failed to download Strudel map {url!r}: {exc}", fatal=True
