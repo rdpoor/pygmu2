@@ -21,6 +21,7 @@ from pygmu2.dirac_pe import DiracPE
 from pygmu2.envelope_pe import EnvelopePE, DetectionMode
 from pygmu2.gain_pe import GainPE
 from pygmu2.identity_pe import IdentityPE
+from pygmu2.loop_pe import LoopPE
 from pygmu2.ramp_pe import RampPE
 from pygmu2.sine_pe import SinePE
 from pygmu2.mix_pe import MixPE
@@ -66,6 +67,7 @@ __all__ = [
     "EnvelopePE",
     "GainPE",
     "IdentityPE",
+    "LoopPE",
     "MixPE",
     "RampPE",
     "SinePE",
