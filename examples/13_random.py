@@ -152,7 +152,7 @@ def demo_random_walk():
         min_value=-50,
         max_value=50,
         mode=RandomMode.WALK,
-        slew=0.0001,  # Very slow drift per sample
+        slew=0.0005,  # Moderate drift (0.05 Hz per sample max step)
         seed=123
     )
     
