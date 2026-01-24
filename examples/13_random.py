@@ -149,8 +149,8 @@ def demo_random_walk():
     # Random walk around a center frequency
     # We'll use small steps (slew) for a gentle drift
     drift = RandomPE(
-        min_value=-50,
-        max_value=50,
+        min_value=-100,
+        max_value=100,
         mode=RandomMode.WALK,
         slew=0.0005,  # Moderate drift (0.05 Hz per sample max step)
         seed=123
