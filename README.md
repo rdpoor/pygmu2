@@ -193,7 +193,7 @@ pipenv run python examples/01_hello_sine.py
 | `09_super_saw.py` | SuperSaw oscillator |
 | `10_compression.py` | Compression/limiting/gating |
 | `11_dynamics.py` | Advanced dynamics (sidechain) |
-| `12_strudel_sample_map.py` | Load samples from remote Strudel maps |
+| `12_audio_library.py` | Load audio files from remote Strudel maps |
 | `13_ladder_filter.py` | Moog-style ladder filter |
 | `14_comb_filter.py` | Comb filter resonance |
 | `15_reverse_pitch_echo.py` | Reverse pitch echo effect |
@@ -245,7 +245,7 @@ pipenv run pytest --cov=src --cov-report=html  # With coverage
 
 ### SSL Certificate Errors (macOS)
 
-If you see `ssl.SSLCertVerificationError` when using `SampleMap.from_url()`, this is a common issue with Python installed from python.org on macOS. Fix it by running:
+If you see `ssl.SSLCertVerificationError` when using `AudioLibrary.from_url()`, this is a common issue with Python installed from python.org on macOS. Fix it by running:
 
 ```bash
 # Option 1: Run the certificate installer (in Finder)

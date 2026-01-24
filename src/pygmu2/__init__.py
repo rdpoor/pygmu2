@@ -30,7 +30,7 @@ from pygmu2.sine_pe import SinePE
 from pygmu2.super_saw_pe import SuperSawPE
 from pygmu2.mix_pe import MixPE
 from pygmu2.comb_pe import CombPE
-from pygmu2.sample_map import SampleMap
+from pygmu2.audio_library import AudioLibrary
 from pygmu2.wav_reader_pe import WavReaderPE
 from pygmu2.wav_writer_pe import WavWriterPE
 from pygmu2.transform_pe import TransformPE
@@ -100,7 +100,7 @@ __all__ = [
     "LoopPE",
     "MixPE",
     "CombPE",
-    "SampleMap",
+    "AudioLibrary",
     "RampPE",
     "SinePE",
     "SuperSawPE",
