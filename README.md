@@ -194,10 +194,11 @@ pipenv run python examples/01_hello_sine.py
 | `10_compression.py` | Compression/limiting/gating |
 | `11_dynamics.py` | Advanced dynamics (sidechain) |
 | `12_audio_library.py` | Load audio files from remote Strudel maps |
-| `13_ladder_filter.py` | Moog-style ladder filter |
-| `14_comb_filter.py` | Comb filter resonance |
-| `15_reverse_pitch_echo.py` | Reverse pitch echo effect |
 | `13_random.py` | Musical randomness (RandomPE) |
+| `14_trigger.py` | TriggerPE (one-shot and gated modes) |
+| `15_reverse_pitch_echo.py` | Reverse pitch echo effect |
+| `16_comb_filter.py` | Comb filter resonance |
+| `17_ladder_filter.py` | Moog-style ladder filter |
 
 ## Modulation and Automation
 
