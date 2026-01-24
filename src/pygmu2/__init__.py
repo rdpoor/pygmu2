@@ -25,6 +25,7 @@ from pygmu2.gain_pe import GainPE
 from pygmu2.identity_pe import IdentityPE
 from pygmu2.loop_pe import LoopPE
 from pygmu2.ramp_pe import RampPE
+from pygmu2.random_pe import RandomPE, RandomMode
 from pygmu2.sine_pe import SinePE
 from pygmu2.super_saw_pe import SuperSawPE
 from pygmu2.mix_pe import MixPE
@@ -97,6 +98,7 @@ __all__ = [
     "MixPE",
     "SampleMap",
     "RampPE",
+    "RandomPE",
     "SinePE",
     "SuperSawPE",
     "TransformPE",
@@ -110,6 +112,7 @@ __all__ = [
     "DynamicsMode",
     "InterpolationMode",
     "OutOfBoundsMode",
+    "RandomMode",
     "WindowMode",
     # Conversion functions
     "pitch_to_freq",

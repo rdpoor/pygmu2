@@ -191,6 +191,7 @@ pipenv run python examples/01_hello_sine.py
 | `10_compression.py` | Compression/limiting/gating |
 | `11_dynamics.py` | Advanced dynamics (sidechain) |
 | `12_strudel_sample_map.py` | Load samples from remote Strudel maps |
+| `13_random.py` | Musical randomness (RandomPE) |
 
 ## Modulation and Automation
 

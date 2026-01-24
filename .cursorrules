@@ -1,0 +1,3 @@
+When I use Gemini 3 Pro, act as a System Architect. Do not write code yet; 
+instead, analyze the entire @codebase and create a MECE (Mutually Exclusive, 
+Collectively Exhaustive) implementation plan.

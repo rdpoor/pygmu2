@@ -74,6 +74,7 @@ pygmu2/
 │   ├── envelope_pe.py           # Envelope follower
 │   ├── dynamics_pe.py           # Flexible dynamics processor
 │   ├── compressor_pe.py         # Compressor/limiter/gate
+│   ├── random_pe.py             # Random value generator
 │   ├── window_pe.py             # Windowed statistics
 │   ├── wav_reader_pe.py         # WAV file input
 │   └── wav_writer_pe.py         # WAV file output
