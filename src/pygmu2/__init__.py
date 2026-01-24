@@ -33,6 +33,7 @@ from pygmu2.sample_map import SampleMap
 from pygmu2.wav_reader_pe import WavReaderPE
 from pygmu2.wav_writer_pe import WavWriterPE
 from pygmu2.transform_pe import TransformPE
+from pygmu2.trigger_pe import TriggerPE, TriggerMode
 from pygmu2.wavetable_pe import WavetablePE, InterpolationMode, OutOfBoundsMode
 from pygmu2.window_pe import WindowPE, WindowMode
 from pygmu2.conversions import (
@@ -102,6 +103,7 @@ __all__ = [
     "SinePE",
     "SuperSawPE",
     "TransformPE",
+    "TriggerPE",
     "WavReaderPE",
     "WavWriterPE",
     "WavetablePE",
@@ -113,6 +115,7 @@ __all__ = [
     "InterpolationMode",
     "OutOfBoundsMode",
     "RandomMode",
+    "TriggerMode",
     "WindowMode",
     # Conversion functions
     "pitch_to_freq",
