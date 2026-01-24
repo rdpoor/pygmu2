@@ -207,11 +207,8 @@ class MyNewPE(ProcessingElement):
         """Clean up when rendering ends."""
         self._state = None
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """Generate output samples."""
-        if duration <= 0:
-            return Snippet(start, np.zeros((0, self.channel_count() or 1), dtype=np.float32))
-        
         # Get input
         source_snippet = self._source.render(start, duration)
         audio = source_snippet.data.astype(np.float64)
