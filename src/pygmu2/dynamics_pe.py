@@ -328,21 +328,17 @@ class DynamicsPE(ProcessingElement):
         
         return gain_db
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Render dynamics-processed audio.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to render
+            duration: Number of samples to render (> 0)
         
         Returns:
             Snippet containing processed audio
         """
-        if duration <= 0:
-            channels = self._source.channel_count() or 1
-            return Snippet(start, np.zeros((0, channels), dtype=np.float32))
-        
         # Get source audio and envelope
         source_snippet = self._source.render(start, duration)
         env_snippet = self._envelope.render(start, duration)

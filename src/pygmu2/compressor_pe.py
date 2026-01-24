@@ -206,13 +206,13 @@ class CompressorPE(ProcessingElement):
         # Also configure source (will be done by internal PEs, but be explicit)
         self._source.configure(sample_rate)
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Render compressed audio.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to render
+            duration: Number of samples to render (> 0)
         
         Returns:
             Snippet containing compressed audio
@@ -399,7 +399,7 @@ class GatePE(ProcessingElement):
         self._dynamics_pe.configure(sample_rate)
         self._source.configure(sample_rate)
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """Render gated audio."""
         return self._dynamics_pe.render(start, duration)
     

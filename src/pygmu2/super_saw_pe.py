@@ -243,20 +243,17 @@ class SuperSawPE(ProcessingElement):
         for osc in self._oscillators:
             osc.on_stop()
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Render the supersaw by mixing all voices.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to generate
+            duration: Number of samples to generate (> 0)
         
         Returns:
             Snippet containing mixed sawtooth data
         """
-        if duration <= 0:
-            return Snippet(start, np.zeros((0, self._channels), dtype=np.float32))
-        
         # Get amplitude values
         if isinstance(self._amplitude, ProcessingElement):
             amp_snippet = self._amplitude.render(start, duration)

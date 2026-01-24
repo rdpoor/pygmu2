@@ -48,13 +48,13 @@ class ConstantPE(SourcePE):
         """The constant output value."""
         return self._value
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Generate constant samples for the given range.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to generate
+            duration: Number of samples to generate (> 0)
         
         Returns:
             Snippet containing constant data

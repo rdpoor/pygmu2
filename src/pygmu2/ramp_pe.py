@@ -75,7 +75,7 @@ class RampPE(SourcePE):
         """Length of the ramp in samples."""
         return self._duration
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Generate ramp samples for the given range.
         
@@ -83,7 +83,7 @@ class RampPE(SourcePE):
         
         Args:
             start: Starting sample index
-            duration: Number of samples to generate
+            duration: Number of samples to generate (> 0)
         
         Returns:
             Snippet containing ramp data (zeros outside extent)

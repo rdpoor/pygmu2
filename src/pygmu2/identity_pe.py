@@ -40,13 +40,13 @@ class IdentityPE(SourcePE):
     def __init__(self, channels: int = 1):
         self._channels = channels
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Generate sample indices as values.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to generate
+            duration: Number of samples to generate (> 0)
         
         Returns:
             Snippet where each sample value equals its index

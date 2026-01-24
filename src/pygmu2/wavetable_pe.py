@@ -114,13 +114,13 @@ class WavetablePE(ProcessingElement):
         """
         return self._indexer.extent()
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Render wavetable output via interpolated lookup.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to render
+            duration: Number of samples to render (> 0)
         
         Returns:
             Snippet with interpolated wavetable values

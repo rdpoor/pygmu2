@@ -70,7 +70,6 @@ class ProcessingElement(ABC):
         for input_pe in self.inputs():
             input_pe.configure(sample_rate)
     
-    @abstractmethod
     def render(self, start: int, duration: int) -> Snippet:
         """
         Generate audio samples for the given range.
@@ -84,6 +83,36 @@ class ProcessingElement(ABC):
         
         Returns:
             Snippet containing the requested audio data
+        """
+        if duration <= 0:
+            import numpy as np
+            # Determine channel count (concrete value needed for shape)
+            channels = self.channel_count()
+            if channels is None:
+                # If dynamic, try to get from first input or default to 1
+                inputs = self.inputs()
+                if inputs:
+                    channels = inputs[0].channel_count()
+                if channels is None:
+                    channels = 1
+            
+            return Snippet.from_zeros(start, 0, channels)
+            
+        return self._render(start, duration)
+
+    @abstractmethod
+    def _render(self, start: int, duration: int) -> Snippet:
+        """
+        Actual rendering logic, implemented by subclasses.
+        
+        Called by render() when duration > 0.
+        
+        Args:
+            start: Starting sample index
+            duration: Number of samples (> 0)
+            
+        Returns:
+            Snippet containing the audio data
         """
         pass
     

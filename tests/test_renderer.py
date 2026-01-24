@@ -21,7 +21,7 @@ class ConstantPE(SourcePE):
         self._duration = duration
         self._channels = channels
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         data = np.full((duration, self._channels), self._value)
         return Snippet(start, data)
     
@@ -39,7 +39,7 @@ class GainPE(ProcessingElement):
         self._source = source
         self._gain = gain
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         snippet = self._source.render(start, duration)
         return Snippet(start, snippet.data * self._gain)
     
@@ -59,7 +59,7 @@ class StatefulPE(ProcessingElement):
     def __init__(self, source: ProcessingElement):
         self._source = source
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         return self._source.render(start, duration)
     
     def extent(self) -> Extent:
@@ -78,7 +78,7 @@ class StereoRequiredPE(ProcessingElement):
     def __init__(self, source: ProcessingElement):
         self._source = source
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         return self._source.render(start, duration)
     
     def extent(self) -> Extent:
@@ -97,7 +97,7 @@ class MixPE(ProcessingElement):
     def __init__(self, sources: list[ProcessingElement]):
         self._sources = sources
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         if not self._sources:
             return Snippet.from_zeros(start, duration, 1)
         result = self._sources[0].render(start, duration).data.copy()
@@ -339,7 +339,7 @@ class LifecycleTrackingPE(SourcePE):
         self.start_count = 0
         self.stop_count = 0
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         return Snippet.from_zeros(start, duration, 1)
     
     def extent(self) -> Extent:
@@ -363,7 +363,7 @@ class LifecycleTrackingProcessorPE(ProcessingElement):
         self.start_count = 0
         self.stop_count = 0
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         return self._source.render(start, duration)
     
     def extent(self) -> Extent:
@@ -590,7 +590,7 @@ class TestNullRenderer:
         render_count = [0]
         
         class CountingPE(SourcePE):
-            def render(self, start: int, duration: int) -> Snippet:
+            def _render(self, start: int, duration: int) -> Snippet:
                 render_count[0] += 1
                 return Snippet.from_zeros(start, duration, 1)
             

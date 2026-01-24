@@ -45,13 +45,13 @@ class DiracPE(SourcePE):
     def __init__(self, channels: int = 1):
         self._channels = channels
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Generate unit impulse.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to generate
+            duration: Number of samples to generate (> 0)
         
         Returns:
             Snippet with 1.0 at index 0, 0.0 elsewhere

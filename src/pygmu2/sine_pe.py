@@ -116,7 +116,7 @@ class SinePE(ProcessingElement):
         self._accumulated_phase = 0.0
         self._last_render_end = None
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Generate sine wave samples for the given range.
         
@@ -125,7 +125,7 @@ class SinePE(ProcessingElement):
         
         Args:
             start: Starting sample index
-            duration: Number of samples to generate
+            duration: Number of samples to generate (> 0)
         
         Returns:
             Snippet containing sine wave data

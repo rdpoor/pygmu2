@@ -133,21 +133,17 @@ class BlitSawPE(ProcessingElement):
         self._integrator = 0.0
         self._last_render_end = None
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Generate band-limited sawtooth samples.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to generate
+            duration: Number of samples to generate (> 0)
         
         Returns:
             Snippet containing sawtooth wave data
         """
-        # Handle zero-duration request (return empty snippet)
-        if duration <= 0:
-            return Snippet(start, np.zeros((0, self._channels), dtype=np.float32))
-        
         # Get parameter values
         freq = self._get_values(self._frequency, start, duration)
         amp = self._get_values(self._amplitude, start, duration)

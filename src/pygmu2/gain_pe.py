@@ -90,13 +90,13 @@ class GainPE(ProcessingElement):
         """
         return True
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Render gain-adjusted audio.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to render
+            duration: Number of samples to render (> 0)
         
         Returns:
             Snippet with gain applied

@@ -21,7 +21,7 @@ class ConstantPE(SourcePE):
         self._duration = duration
         self._channels = channels
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         my_extent = self.extent()
         data = np.zeros((duration, self._channels))
         
@@ -47,7 +47,7 @@ class GainPE(ProcessingElement):
         self._source = source
         self._gain = gain
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         snippet = self._source.render(start, duration)
         return Snippet(start, snippet.data * self._gain)
     
@@ -65,7 +65,7 @@ class StatefulPE(ProcessingElement):
         self._source = source
         self._call_count = 0
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         self._call_count += 1
         return self._source.render(start, duration)
     
@@ -85,7 +85,7 @@ class MixPE(ProcessingElement):
     def __init__(self, sources: list[ProcessingElement]):
         self._sources = sources
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         if not self._sources:
             return Snippet.from_zeros(start, duration, 1)
         

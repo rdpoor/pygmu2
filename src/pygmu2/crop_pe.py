@@ -84,13 +84,13 @@ class CropPE(ProcessingElement):
         """CropPE is pure - it's a stateless window operation."""
         return True
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Render audio, zeroing samples outside the crop extent.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to render
+            duration: Number of samples to render (> 0)
         
         Returns:
             Snippet with zeros outside the crop extent

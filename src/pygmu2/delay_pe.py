@@ -132,13 +132,13 @@ class DelayPE(ProcessingElement):
             
             return Extent(new_start, new_end)
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Render delayed audio.
         
         Args:
             start: Starting sample index (in output time)
-            duration: Number of samples to render
+            duration: Number of samples to render (> 0)
         
         Returns:
             Snippet containing the delayed audio

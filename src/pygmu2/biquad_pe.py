@@ -335,13 +335,13 @@ class BiquadPE(ProcessingElement):
         
         return b0, b1, b2, a1, a2
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Render filtered audio.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to render
+            duration: Number of samples to render (> 0)
         
         Returns:
             Snippet containing filtered audio

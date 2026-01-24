@@ -93,7 +93,7 @@ class WavReaderPE(SourcePE):
             self._file = None
             logger.info(f"Closed {self._path}")
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Read audio samples from the WAV file.
         
@@ -101,7 +101,7 @@ class WavReaderPE(SourcePE):
         
         Args:
             start: Starting sample index
-            duration: Number of samples to read
+            duration: Number of samples to read (> 0)
         
         Returns:
             Snippet containing the audio data

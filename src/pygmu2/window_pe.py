@@ -104,13 +104,13 @@ class WindowPE(ProcessingElement):
         """Return the extent of this PE (matches source)."""
         return self._source.extent()
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Render windowed statistics.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to render
+            duration: Number of samples to render (> 0)
         
         Returns:
             Snippet containing windowed statistic values

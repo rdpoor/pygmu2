@@ -90,13 +90,13 @@ class TransformPE(ProcessingElement):
         """Return the extent of this PE (matches source)."""
         return self._source.extent()
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Render transformed audio.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to render
+            duration: Number of samples to render (> 0)
         
         Returns:
             Snippet containing transformed audio

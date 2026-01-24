@@ -139,13 +139,13 @@ class WavWriterPE(ProcessingElement):
             self._file = None
             logger.info(f"Closed {self._path}: {self._frames_written} frames written")
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Render from source, write to file, and pass through.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to render
+            duration: Number of samples to render (> 0)
         
         Returns:
             Snippet from source (unchanged)

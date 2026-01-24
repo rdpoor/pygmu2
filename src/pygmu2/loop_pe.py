@@ -142,13 +142,13 @@ class LoopPE(ProcessingElement):
             total_length = self._count * self._loop_length
             return Extent(0, total_length)
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Render looped audio.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to render
+            duration: Number of samples to render (> 0)
         
         Returns:
             Snippet containing looped audio

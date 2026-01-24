@@ -209,10 +209,8 @@ class RandomPE(SourcePE):
         self._current_value = new_value
         return new_value
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """Generate random values."""
-        if duration <= 0:
-            return Snippet(start, np.zeros((0, 1), dtype=np.float32))
         
         output = np.zeros((duration, 1), dtype=np.float64)
         

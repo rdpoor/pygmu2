@@ -63,13 +63,13 @@ class MixPE(ProcessingElement):
         """
         return True
     
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Mix all inputs by adding their samples together.
         
         Args:
             start: Starting sample index
-            duration: Number of samples to generate
+            duration: Number of samples to generate (> 0)
         
         Returns:
             Snippet containing the sum of all input samples
