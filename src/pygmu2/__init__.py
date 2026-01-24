@@ -24,19 +24,22 @@ from pygmu2.dynamics_pe import DynamicsPE, DynamicsMode
 from pygmu2.envelope_pe import EnvelopePE, DetectionMode
 from pygmu2.gain_pe import GainPE
 from pygmu2.identity_pe import IdentityPE
+from pygmu2.ladder_pe import LadderPE, LadderMode
 from pygmu2.loop_pe import LoopPE
 from pygmu2.ramp_pe import RampPE
 from pygmu2.random_pe import RandomPE, RandomMode
 from pygmu2.sine_pe import SinePE
 from pygmu2.super_saw_pe import SuperSawPE
 from pygmu2.mix_pe import MixPE
-from pygmu2.sample_map import SampleMap
+from pygmu2.comb_pe import CombPE
+from pygmu2.audio_library import AudioLibrary
 from pygmu2.wav_reader_pe import WavReaderPE
 from pygmu2.wav_writer_pe import WavWriterPE
 from pygmu2.transform_pe import TransformPE
 from pygmu2.trigger_pe import TriggerPE, TriggerMode
 from pygmu2.wavetable_pe import WavetablePE, InterpolationMode, OutOfBoundsMode
 from pygmu2.window_pe import WindowPE, WindowMode
+from pygmu2.reverse_pitch_echo_pe import ReversePitchEchoPE
 from pygmu2.conversions import (
     pitch_to_freq,
     freq_to_pitch,
@@ -96,10 +99,12 @@ __all__ = [
     "GainPE",
     "GatePE",
     "IdentityPE",
+    "LadderPE",
     "LimiterPE",
     "LoopPE",
     "MixPE",
-    "SampleMap",
+    "CombPE",
+    "AudioLibrary",
     "RampPE",
     "RandomPE",
     "SinePE",
@@ -110,10 +115,12 @@ __all__ = [
     "WavWriterPE",
     "WavetablePE",
     "WindowPE",
+    "ReversePitchEchoPE",
     # Enums
     "BiquadMode",
     "DetectionMode",
     "DynamicsMode",
+    "LadderMode",
     "InterpolationMode",
     "OutOfBoundsMode",
     "RandomMode",

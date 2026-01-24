@@ -119,13 +119,13 @@ class DynamicsPE(ProcessingElement):
         if self._mode in (DynamicsMode.EXPAND, DynamicsMode.GATE):
             return 0.0  # No makeup for expanders/gates
         
-        # Estimate gain reduction at threshold + 10dB (typical loud signal)
-        test_level = self._threshold + 10.0
+        # Estimate gain reduction at threshold + 12dB (typical loud signal)
+        test_level = self._threshold + 12.0
         gain_db = self._compute_gain_db(test_level)
         
         # Makeup is negative of gain reduction (to compensate)
-        # Scale by 0.5 to be conservative (don't over-compensate)
-        return -gain_db * 0.5
+        # Scale by 0.7 to be somewhat conservative (avoid over-compensation)
+        return -gain_db * 0.7
     
     @property
     def threshold(self) -> float:

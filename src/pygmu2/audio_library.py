@@ -1,16 +1,16 @@
 """
-SampleMap - resolve Strudel-style sample maps to local audio files.
+AudioLibrary - resolve Strudel-style sample maps to local audio files.
 
-SampleMap provides a mechanism to map sample names (e.g., "bd", "sd", "hh")
+AudioLibrary provides a mechanism to map sound names (e.g., "bd", "sd", "hh")
 to local or remote audio files, inspired by the Strudel live coding environment
 (https://strudel.cc/).
 
 Key features:
-- Load sample maps from local JSON files or remote URLs.
-- Resolve sample names to file paths, with support for wildcards and indexing.
+- Load audio maps from local JSON files or remote URLs.
+- Resolve sound names to file paths, with support for wildcards and indexing.
 - Lazily download remote audio files to a local cache.
 - Optionally convert downloaded audio (e.g., MP3, OGG) to WAV format.
-- Create WavReaderPE instances directly from sample names.
+- Create WavReaderPE instances directly from sound names.
 
 Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
 
@@ -97,17 +97,17 @@ def _format_ssl_error_message(url: str, exc: Exception) -> str:
             "   - Fedora/RHEL: sudo dnf install ca-certificates"
         )
 
-SampleValue = Union[str, List[str]]
+SoundValue = Union[str, List[str]]
 
 
-class SampleMap:
+class AudioLibrary:
     """
-    Resolve Strudel-style sample maps to local files with lazy download.
+    Resolve Strudel-style audio maps to local files with lazy download.
     """
 
     def __init__(
         self,
-        samples: Dict[str, List[str]],
+        audio_paths: Dict[str, List[str]],
         base: str,
         cache_dir: Optional[Path] = None,
         convert_to_wav: bool = True,
@@ -115,11 +115,11 @@ class SampleMap:
         source_dir: Optional[Path] = None,
     ) -> None:
         """
-        Initialize a SampleMap.
+        Initialize an AudioLibrary.
 
         Args:
-            samples: Dictionary mapping sample names to lists of file paths/URLs.
-            base: Base URL or path to prepend to relative sample paths.
+            audio_paths: Dictionary mapping sound names to lists of file paths/URLs.
+            base: Base URL or path to prepend to relative sound paths.
             cache_dir: Directory to store downloaded files. If None, uses default
                 system cache location.
             convert_to_wav: If True, convert downloaded audio to WAV format.
@@ -127,7 +127,7 @@ class SampleMap:
             source_dir: Directory containing the source map file (for resolving
                 relative local paths).
         """
-        self._samples = samples
+        self._audio_paths = audio_paths
         self._base = base
         self._cache_dir = (
             Path(cache_dir).expanduser()
@@ -145,9 +145,9 @@ class SampleMap:
         cache_dir: Optional[Path] = None,
         convert_to_wav: bool = True,
         allow_remote: bool = True,
-    ) -> "SampleMap":
+    ) -> "AudioLibrary":
         """
-        Load a SampleMap from a local Strudel JSON file.
+        Load an AudioLibrary from a local Strudel JSON file.
 
         Args:
             path: Path to the JSON file.
@@ -156,7 +156,7 @@ class SampleMap:
             allow_remote: Allow remote downloads.
 
         Returns:
-            Initialized SampleMap.
+            Initialized AudioLibrary.
         """
         json_path = Path(path).expanduser()
         with json_path.open("r", encoding="utf-8") as f:
@@ -177,9 +177,9 @@ class SampleMap:
         cache_dir: Optional[Path] = None,
         convert_to_wav: bool = True,
         allow_remote: bool = True,
-    ) -> "SampleMap":
+    ) -> "AudioLibrary":
         """
-        Load a SampleMap from a remote URL.
+        Load an AudioLibrary from a remote URL.
 
         Args:
             url: URL of the JSON map file.
@@ -188,7 +188,7 @@ class SampleMap:
             allow_remote: Must be True to function.
 
         Returns:
-            Initialized SampleMap.
+            Initialized AudioLibrary.
         """
         cache_root = (
             Path(cache_dir).expanduser()
@@ -211,23 +211,23 @@ class SampleMap:
 
     def resolve(self, name: str, index: int = 0) -> str:
         """
-        Resolve a sample name to a local file path.
+        Resolve a sound name to a local file path.
 
         This method:
-        1. Selects the sample entry matching `name`.
+        1. Selects the sound entry matching `name`.
         2. Picks the specific file at `index`.
         3. Downloads the file if it's remote and not cached.
         4. Converts to WAV if requested.
 
         Args:
-            name: Sample name (can contain '?' wildcards).
-            index: Index into the list of files for this sample.
+            name: Sound name (can contain '?' wildcards).
+            index: Index into the list of files for this sound.
 
         Returns:
             Absolute path to the local audio file.
         """
         name = self._maybe_select_pattern(name)
-        rel_path = self._select_sample_path(name, index)
+        rel_path = self._select_sound_path(name, index)
         rel_posix = self._normalize_relative_path(rel_path)
         base = self._normalize_base(self._base)
 
@@ -246,10 +246,10 @@ class SampleMap:
 
     def reader(self, name: str, index: int = 0) -> WavReaderPE:
         """
-        Create a WavReaderPE for a sample name.
+        Create a WavReaderPE for a sound name.
 
         Args:
-            name: Sample name.
+            name: Sound name.
             index: Variant index.
 
         Returns:
@@ -259,15 +259,15 @@ class SampleMap:
 
     def print_keys(self, columns: int = 3, width: int = 25) -> None:
         """
-        Print all available sample keys in a grid format.
+        Print all available sound keys in a grid format.
 
         Args:
             columns: Number of columns.
             width: Width of each column.
         """
-        keys = sorted(self._samples.keys())
+        keys = sorted(self._audio_paths.keys())
         if not keys:
-            print("(no samples)")
+            print("(no sounds)")
             return
 
         col_count = max(1, columns)
@@ -287,8 +287,8 @@ class SampleMap:
         allow_remote: bool,
         source_dir: Optional[Path],
         base_override: Optional[str] = None,
-    ) -> "SampleMap":
-        """Internal helper to create SampleMap from parsed JSON data."""
+    ) -> "AudioLibrary":
+        """Internal helper to create AudioLibrary from parsed JSON data."""
         if not isinstance(data, dict):
             handle_error("strudel.json must contain a top-level object.", fatal=True)
 
@@ -305,9 +305,9 @@ class SampleMap:
                 if key not in ("base", "_base") and not str(key).startswith("_")
             }
 
-        samples = cls._normalize_samples(mapping)
+        audio_paths = cls._normalize_audio_paths(mapping)
         return cls(
-            samples,
+            audio_paths,
             base=base,
             cache_dir=cache_dir,
             convert_to_wav=convert_to_wav,
@@ -316,31 +316,31 @@ class SampleMap:
         )
 
     @staticmethod
-    def _normalize_samples(mapping: Dict[str, SampleValue]) -> Dict[str, List[str]]:
-        """Ensure all sample entries are lists of strings."""
-        samples: Dict[str, List[str]] = {}
+    def _normalize_audio_paths(mapping: Dict[str, SoundValue]) -> Dict[str, List[str]]:
+        """Ensure all sound entries are lists of strings."""
+        audio_paths: Dict[str, List[str]] = {}
         for key, value in mapping.items():
             if isinstance(value, list):
-                samples[str(key)] = [str(item) for item in value]
+                audio_paths[str(key)] = [str(item) for item in value]
             elif isinstance(value, str):
-                samples[str(key)] = [value]
+                audio_paths[str(key)] = [value]
             else:
                 handle_error(
-                    f"Sample map value for {key!r} must be str or list.",
+                    f"Sound map value for {key!r} must be str or list.",
                     fatal=True,
                 )
-        return samples
+        return audio_paths
 
-    def _select_sample_path(self, name: str, index: int) -> str:
-        """Get the relative path for a sample by name and index."""
-        if name not in self._samples:
-            handle_error(f"Sample name not found: {name!r}", fatal=True)
-        values = self._samples[name]
+    def _select_sound_path(self, name: str, index: int) -> str:
+        """Get the relative path for a sound by name and index."""
+        if name not in self._audio_paths:
+            handle_error(f"Sound name not found: {name!r}", fatal=True)
+        values = self._audio_paths[name]
         if not values:
-            handle_error(f"No paths defined for sample: {name!r}", fatal=True)
+            handle_error(f"No paths defined for sound: {name!r}", fatal=True)
         if index < 0 or index >= len(values):
             handle_error(
-                f"Index {index} out of range for sample {name!r}.",
+                f"Index {index} out of range for sound {name!r}.",
                 fatal=True,
             )
         return values[index]
@@ -352,9 +352,9 @@ class SampleMap:
 
         escaped = re.escape(name)
         pattern = "^" + escaped.replace(r"\?", ".*") + "$"
-        matches = [key for key in self._samples.keys() if re.match(pattern, key)]
+        matches = [key for key in self._audio_paths.keys() if re.match(pattern, key)]
         if not matches:
-            handle_error(f"No samples match pattern: {name!r}", fatal=True)
+            handle_error(f"No sounds match pattern: {name!r}", fatal=True)
         return random.choice(matches)
 
     @staticmethod
@@ -364,7 +364,7 @@ class SampleMap:
         posix_path = PurePosixPath(normalized)
         if posix_path.is_absolute() or ".." in posix_path.parts:
             handle_error(
-                f"Invalid relative path in sample map: {rel_path!r}",
+                f"Invalid relative path in audio map: {rel_path!r}",
                 fatal=True,
             )
         return posix_path.as_posix()
@@ -408,7 +408,7 @@ class SampleMap:
 
         dest.parent.mkdir(parents=True, exist_ok=True)
         tmp_path = dest.with_suffix(dest.suffix + ".part")
-        logger.info(f"Downloading sample: {url}")
+        logger.info(f"Downloading sound: {url}")
         try:
             ssl_context = _create_ssl_context()
             with request.urlopen(url, context=ssl_context) as response, tmp_path.open("wb") as out:
@@ -424,11 +424,11 @@ class SampleMap:
                     _format_ssl_error_message(url, exc.reason), fatal=True
                 )
             handle_error(
-                f"Failed to download sample {url!r}: {exc}", fatal=True
+                f"Failed to download sound {url!r}: {exc}", fatal=True
             )
         except Exception as exc:
             handle_error(
-                f"Failed to download sample {url!r}: {exc}", fatal=True
+                f"Failed to download sound {url!r}: {exc}", fatal=True
             )
         return dest
 
@@ -509,4 +509,3 @@ class SampleMap:
             return ""
         base_path = parsed.path.rsplit("/", 1)[0] + "/"
         return f"{parsed.scheme}://{parsed.netloc}{base_path}"
-

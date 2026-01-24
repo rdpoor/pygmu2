@@ -23,11 +23,11 @@ from pygmu2 import (
     LoopPE,
     MixPE,
     WavReaderPE,
+    AudioLibrary,
 )
 
-# Path to audio file (relative to this script)
-AUDIO_DIR = Path(__file__).parent / "audio"
-WAV_FILE = AUDIO_DIR / "acoustic_drums.wav"
+library = AudioLibrary.from_url("https://software.tomandandy.com/strudel.json")
+sound_path = library.resolve("bigBeat")
 
 def demo_basic_compression():
     """
@@ -37,9 +37,9 @@ def demo_basic_compression():
     print("First: dry signal, Then: compressed signal")
     print()
     
-    source = WavReaderPE(str(WAV_FILE))
+    source = WavReaderPE(sound_path)
     sample_rate = source.file_sample_rate
-    looped_drums = LoopPE(source, count=2, crossfade=0.2)
+    looped_drums = LoopPE(source, count=2, crossfade=0.002)
     
     compressed = CompressorPE(
         looped_drums,
@@ -73,9 +73,9 @@ def demo_limiter():
     print("Preventing peaks from exceeding -6dB ceiling.")
     print()
     
-    source = WavReaderPE(str(WAV_FILE))
+    source = WavReaderPE(sound_path)
     sample_rate = source.file_sample_rate
-    looped_drums = LoopPE(source, count=2, crossfade=0.2)
+    looped_drums = LoopPE(source, count=2, crossfade=0.002)
 
     # Make it intentionally too loud
     loud = GainPE(looped_drums, gain=10.0)
@@ -107,20 +107,20 @@ def demo_noise_gate():
     print("Gating a signal to remove quiet passages.")
     print()
     
-    source = WavReaderPE(str(WAV_FILE))
+    source = WavReaderPE(sound_path)
     sample_rate = source.file_sample_rate
-    looped_drums = LoopPE(source, count=2, crossfade=0.2)
+    looped_drums = LoopPE(source, count=2, crossfade=0.002)
     
     # Apply gate - quiet parts will be silenced
     gated = GatePE(
         looped_drums,
-        threshold=-18,     # Gate threshold
+        threshold=-16,     # Gate threshold
         attack=0.001,      # 1ms attack (fast open)
         release=0.1 ,      # 1ms release
         range=-30,         # -30dB attenuation when gated
     )
     
-    print(f"Threshold: -18dB, Attack: 1ms, Release: 100ms")
+    print(f"Threshold: -16dB, Attack: 1ms, Release: 100ms")
     print(f"Range: -30dB (attenuation when gated)")
     print("You should hear the signal cut out during quiet portions.")
     print()
@@ -143,9 +143,9 @@ def demo_parallel_compression():
     sample_rate = 44100
     duration = 3.0
     
-    source = WavReaderPE(str(WAV_FILE))
+    source = WavReaderPE(sound_path)
     sample_rate = source.file_sample_rate
-    looped_drums = LoopPE(source, count=2, crossfade=0.2)
+    looped_drums = LoopPE(source, count=2, crossfade=0.002)
     
     # Apply limiter to squash it
     limited = LimiterPE(
@@ -157,7 +157,7 @@ def demo_parallel_compression():
     
     # Mix dry + wet (parallel compression)
     parallel = MixPE(
-        GainPE(source, gain=0.6),      # Dry (60%)
+        GainPE(looped_drums, gain=0.6),      # Dry (60%)
         GainPE(limited, gain=0.4),     # Limited (40%)
     )
     
