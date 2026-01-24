@@ -235,6 +235,8 @@ def setup_fallback_configs():
         BlitSawPE, SuperSawPE,
         GainPE, DelayPE, CropPE, MixPE, TransformPE,
         EnvelopePE, WindowPE, LoopPE,
+        DynamicsPE, DynamicsMode, CompressorPE, LimiterPE, GatePE,
+        RandomPE, RandomMode,
         Extent,
     )
     
@@ -303,6 +305,36 @@ def setup_fallback_configs():
         BenchmarkConfig("LoopPE", lambda: LoopPE(CropPE(SinePE(frequency=440.0), Extent(0, 4410))), "transform"),
     ])
     
+    # === Dynamics PEs ===
+    register_fallback("DynamicsPE", [
+        BenchmarkConfig("DynamicsPE (compress)", lambda: DynamicsPE(
+            source=SinePE(frequency=440.0), 
+            envelope=EnvelopePE(SinePE(frequency=440.0)),
+            mode=DynamicsMode.COMPRESS, 
+            threshold=-10.0, 
+            ratio=4.0
+        ), "dynamics"),
+    ])
+
+    register_fallback("CompressorPE", [
+        BenchmarkConfig("CompressorPE", lambda: CompressorPE(SinePE(frequency=440.0)), "dynamics"),
+    ])
+
+    register_fallback("LimiterPE", [
+        BenchmarkConfig("LimiterPE", lambda: LimiterPE(SinePE(frequency=440.0)), "dynamics"),
+    ])
+
+    register_fallback("GatePE", [
+        BenchmarkConfig("GatePE", lambda: GatePE(SinePE(frequency=440.0)), "dynamics"),
+    ])
+
+    # === Random PEs ===
+    register_fallback("RandomPE", [
+        BenchmarkConfig("RandomPE (Sample & Hold)", lambda: RandomPE(mode=RandomMode.SAMPLE_HOLD), "source"),
+        BenchmarkConfig("RandomPE (Linear)", lambda: RandomPE(mode=RandomMode.LINEAR), "source"),
+        BenchmarkConfig("RandomPE (Walk)", lambda: RandomPE(mode=RandomMode.WALK), "source"),
+    ])
+
     # === Analysis PEs ===
     register_fallback("EnvelopePE", [
         BenchmarkConfig("EnvelopePE (RMS)", lambda: EnvelopePE(SinePE(frequency=440.0)), "analysis"),
