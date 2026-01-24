@@ -560,7 +560,7 @@ class ReversePitchEchoPE(ProcessingElement):
             return 0.0
         return float(np.clip(value, -self._MAX_FEEDBACK, self._MAX_FEEDBACK))
 
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Render reverse pitch echo effect.
 

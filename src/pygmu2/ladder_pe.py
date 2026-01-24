@@ -501,7 +501,7 @@ class LadderPE(ProcessingElement):
         z0[channel, stage] = s
         return ft
 
-    def render(self, start: int, duration: int) -> Snippet:
+    def _render(self, start: int, duration: int) -> Snippet:
         """
         Render ladder-filtered audio.
 
