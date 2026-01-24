@@ -347,11 +347,19 @@ def setup_fallback_configs():
     # === Filter PEs ===
     if has_biquad:
         register_fallback("BiquadPE", [
-            BenchmarkConfig("BiquadPE (lowpass)", lambda: BiquadPE(
+            BenchmarkConfig("BiquadPE (lowpass, fixed)", lambda: BiquadPE(
                 SinePE(frequency=440.0), mode=BiquadMode.LOWPASS, frequency=1000.0, q=0.707,
             ), "filter"),
-            BenchmarkConfig("BiquadPE (bandpass)", lambda: BiquadPE(
+            BenchmarkConfig("BiquadPE (bandpass, fixed)", lambda: BiquadPE(
                 SinePE(frequency=440.0), mode=BiquadMode.BANDPASS, frequency=1000.0, q=2.0,
+            ), "filter"),
+            BenchmarkConfig("BiquadPE (lowpass, modulated freq)", lambda: BiquadPE(
+                SinePE(frequency=440.0), mode=BiquadMode.LOWPASS, 
+                frequency=SinePE(frequency=5.0, amplitude=500.0), q=0.707,
+            ), "filter"),
+            BenchmarkConfig("BiquadPE (bandpass, modulated Q)", lambda: BiquadPE(
+                SinePE(frequency=440.0), mode=BiquadMode.BANDPASS, 
+                frequency=1000.0, q=SinePE(frequency=2.0, amplitude=1.0),
             ), "filter"),
         ])
 
