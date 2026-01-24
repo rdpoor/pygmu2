@@ -140,11 +140,14 @@ renderer = NullRenderer(sample_rate=44100)
 | `CropPE(source, extent)` | Limit to temporal range |
 | `LoopPE(source)` | Loop a finite source |
 | `TransformPE(source, func)` | Apply custom function |
+| `ReversePitchEchoPE(source, block_seconds, pitch_ratio, ...)` | Pitch-shifted reverse echo effect |
 
 ### Filters
 | PE | Description |
 |----|-------------|
 | `BiquadPE(source, mode, frequency, q)` | Biquad filter (lowpass, highpass, bandpass, etc.) |
+| `LadderPE(source, frequency, resonance, mode)` | Moog-style ladder filter (lp/bp/hp 12/24 dB) |
+| `CombPE(source, frequency, feedback)` | Feedback comb filter tuned by frequency |
 
 ### Dynamics
 | PE | Description |
@@ -191,6 +194,9 @@ pipenv run python examples/01_hello_sine.py
 | `10_compression.py` | Compression/limiting/gating |
 | `11_dynamics.py` | Advanced dynamics (sidechain) |
 | `12_strudel_sample_map.py` | Load samples from remote Strudel maps |
+| `13_ladder_filter.py` | Moog-style ladder filter |
+| `14_comb_filter.py` | Comb filter resonance |
+| `15_reverse_pitch_echo.py` | Reverse pitch echo effect |
 
 ## Modulation and Automation
 

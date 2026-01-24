@@ -1,0 +1,72 @@
+"""
+Example 13: Ladder Filter - Moog-style ladder responses
+
+Demonstrates LadderPE with resonance, drive, and a cutoff sweep.
+
+Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+MIT License
+"""
+
+from pathlib import Path
+from pygmu2 import (
+    AudioRenderer,
+    CropPE,
+    Extent,
+    GainPE,
+    LadderPE,
+    LadderMode,
+    RampPE,
+    WavReaderPE,
+)
+
+AUDIO_DIR = Path(__file__).parent / "audio"
+WAV_FILE = AUDIO_DIR / "choir.wav"
+
+DURATION_SECONDS = 8
+
+print("=== pygmu2 Example 13: Ladder Filter ===", flush=True)
+print(f"Loading: {WAV_FILE}", flush=True)
+
+source = WavReaderPE(str(WAV_FILE))
+sample_rate = source.file_sample_rate or 44100
+duration_samples = int(DURATION_SECONDS * sample_rate)
+
+# --- Part 1: Dry ---
+print(f"\nPart 1: Dry signal - {DURATION_SECONDS}s", flush=True)
+dry = CropPE(source, Extent(0, duration_samples))
+
+renderer = AudioRenderer(sample_rate=sample_rate)
+renderer.set_source(dry)
+
+with renderer:
+    renderer.start()
+    renderer.play_extent()
+
+# --- Part 2: Resonant lowpass ---
+print("\nPart 2: Ladder lowpass (800 Hz, resonance 0.6)", flush=True)
+lowpass = LadderPE(source, frequency=800.0, resonance=0.6, mode=LadderMode.LP24, drive=1.5)
+lowpass = GainPE(lowpass, gain=0.8)
+lowpass_out = CropPE(lowpass, Extent(0, duration_samples))
+
+renderer = AudioRenderer(sample_rate=sample_rate)
+renderer.set_source(lowpass_out)
+
+with renderer:
+    renderer.start()
+    renderer.play_extent()
+
+# --- Part 3: Cutoff sweep ---
+print("\nPart 3: Ladder sweep (200 Hz -> 4 kHz)", flush=True)
+cutoff_sweep = RampPE(200.0, 4000.0, duration=duration_samples)
+sweep = LadderPE(source, frequency=cutoff_sweep, resonance=0.3, mode=LadderMode.LP12, drive=1.2)
+sweep = GainPE(sweep, gain=0.8)
+sweep_out = CropPE(sweep, Extent(0, duration_samples))
+
+renderer = AudioRenderer(sample_rate=sample_rate)
+renderer.set_source(sweep_out)
+
+with renderer:
+    renderer.start()
+    renderer.play_extent()
+
+print("\nDone!", flush=True)
