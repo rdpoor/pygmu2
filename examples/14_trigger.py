@@ -18,7 +18,8 @@ from pygmu2 import (
     WindowMode,
     seconds_to_samples,
     GainPE,
-    Extent
+    Extent,
+    ArrayPE
 )
 
 def demo_one_shot_trigger():
@@ -142,43 +143,6 @@ def demo_gated_rhythm():
     
     # Create a sequencer by driving a WavetablePE with a phasor (RampPE)
     # 1. Create the data source (the sequence pattern)
-    # We need a PE that outputs this pattern. We can use a custom PE or adapt WavReaderPE?
-    # Actually, let's just make a simple PE that holds the array.
-    
-    from pygmu2 import ProcessingElement, Snippet
-    class ArrayPE(ProcessingElement):
-        def __init__(self, data):
-            self.data = np.array(data, dtype=np.float32).reshape(-1, 1)
-        def _render(self, start, duration):
-            # Extend infinitely with zeros or wrap? WavetablePE handles the lookup logic.
-            # But WavetablePE needs a PE to read FROM.
-            # If we just return the whole buffer (if small) or slice?
-            # WavetablePE calls render() on the wavetable source.
-            # So this PE needs to support random access via render(start, dur).
-            
-            # Simple handling: return zeros if out of bounds, data if inside.
-            out = np.zeros((duration, 1), dtype=np.float32)
-            
-            # Map requested range to available data
-            d_len = len(self.data)
-            
-            # Intersection logic
-            s = max(0, start)
-            e = min(start + duration, d_len)
-            
-            if s < e:
-                # Calculate offsets
-                out_start = s - start
-                data_start = s
-                count = e - s
-                out[out_start : out_start + count] = self.data[data_start : data_start + count]
-                
-            return Snippet(start, out)
-            
-        def inputs(self): return []
-        def channel_count(self): return 1
-        def _compute_extent(self): return Extent(0, len(self.data))
-
     pattern_source = ArrayPE(pattern)
     
     # 2. Create the indexer (Phasor)

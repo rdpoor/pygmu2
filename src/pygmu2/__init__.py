@@ -13,6 +13,7 @@ from pygmu2.processing_element import ProcessingElement, SourcePE
 from pygmu2.renderer import Renderer, ProfileReport, PEProfile
 from pygmu2.audio_renderer import AudioRenderer
 from pygmu2.null_renderer import NullRenderer
+from pygmu2.array_pe import ArrayPE
 from pygmu2.blit_saw_pe import BlitSawPE
 from pygmu2.compressor_pe import CompressorPE, LimiterPE, GatePE
 from pygmu2.constant_pe import ConstantPE
@@ -82,6 +83,7 @@ __all__ = [
     "AudioRenderer",
     "NullRenderer",
     # Processing Elements
+    "ArrayPE",
     "BiquadPE",
     "BlitSawPE",
     "CompressorPE",

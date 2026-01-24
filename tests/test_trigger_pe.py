@@ -4,6 +4,7 @@ import numpy as np
 from pygmu2.trigger_pe import TriggerPE, TriggerMode
 from pygmu2.snippet import Snippet
 from pygmu2.processing_element import ProcessingElement
+from pygmu2.array_pe import ArrayPE
 
 class MockArrayPE(ProcessingElement):
     """Returns pre-defined data."""
@@ -185,6 +186,28 @@ class TestTriggerPE(unittest.TestCase):
         r2 = pe.render(5, 5)
         expected2 = np.array([[2], [3], [4], [5], [6]], dtype=np.float32)
         np.testing.assert_array_equal(r2.data, expected2)
+
+    def test_one_shot_sample_accurate(self):
+        """Test ONE_SHOT mode with ArrayPE for sample-accurate validation."""
+        trigger = ArrayPE([0, 0, 1, 1, 0, 1, 1, 1, 0])
+        signal = ArrayPE([10, 11, 12, 13, 14, 15, 16, 17, 18])
+        
+        triggered = TriggerPE(signal, trigger, mode=TriggerMode.ONE_SHOT)
+        # rendering starts at sample index = 2
+        snippet = triggered.render(0, 9)
+        expected = np.array([[0.0], [0.0], [10], [11], [12], [13], [14], [15], [16]], dtype=np.float32)
+        np.testing.assert_array_equal(snippet.data, expected)
+
+    def test_gated_sample_accurate(self):
+        """Test GATED mode with ArrayPE for sample-accurate validation."""
+        trigger = ArrayPE([0, 0, 1, 1, 0, 1, 1, 1, 0])
+        signal = ArrayPE([10, 11, 12, 13, 14, 15, 16, 17, 18])
+        
+        triggered = TriggerPE(signal, trigger, mode=TriggerMode.GATED)
+        # rendering starts at sample index = 2, restarts at index = 5
+        snippet = triggered.render(0, 9)
+        expected = np.array([[0.0], [0.0], [10], [11], [0], [10], [11], [12], [0]], dtype=np.float32)
+        np.testing.assert_array_equal(snippet.data, expected)
 
 if __name__ == "__main__":
     unittest.main()
