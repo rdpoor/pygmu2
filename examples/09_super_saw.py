@@ -38,12 +38,12 @@ A3 = 57  # 220 Hz
 C4 = 60  # 261.6 Hz
 E4 = 64  # 329.6 Hz
 
-print("=== pygmu2 Example 09: Super Saw ===")
-print()
+print("=== pygmu2 Example 09: Super Saw ===", flush=True)
+print(flush=True)
 
 # --- Demo 1: Basic supersaw ---
-print("Demo 1: Basic supersaw chord (A minor)")
-print(f"  Voices: 7, Detune: 20 cents")
+print("Demo 1: Basic supersaw chord (A minor)", flush=True)
+print(f"  Voices: 7, Detune: 20 cents", flush=True)
 
 # Create three supersaw oscillators for a chord
 saw_a = SuperSawPE(
@@ -79,14 +79,14 @@ output = GainPE(chord, gain=0.4)
 
 # Optionally add a lowpass filter for a smoother sound
 if HAS_BIQUAD:
-    print("  Adding lowpass filter at 3000 Hz")
+    print("  Adding lowpass filter at 3000 Hz", flush=True)
     output = BiquadPE(output, mode=BiquadMode.LOWPASS, frequency=3000.0, q=0.7)
 
 # Crop to desired duration
 output = CropPE(output, Extent(0, DURATION_SAMPLES))
 
 # Play
-print(f"Playing for {DURATION_SECONDS} seconds...")
+print(f"Playing for {DURATION_SECONDS} seconds...", flush=True)
 renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
 renderer.set_source(output)
 
@@ -94,18 +94,18 @@ with renderer:
     renderer.start()
     renderer.play_extent()
 
-print()
+print(flush=True)
 
 # --- Demo 2: Comparing detune amounts ---
-print("Demo 2: Comparing detune amounts")
-print("  Playing: no detune → light detune → heavy detune")
+print("Demo 2: Comparing detune amounts", flush=True)
+print("  Playing: no detune -> light detune -> heavy detune", flush=True)
 
 detune_amounts = [0.0, 15.0, 50.0]
 short_duration = int(2 * SAMPLE_RATE)  # 2 seconds each
 
 for detune in detune_amounts:
     label = "mono" if detune == 0 else f"{detune} cents"
-    print(f"  Detune: {label}")
+    print(f"  Detune: {label}", flush=True)
     
     saw = SuperSawPE(
         frequency=pitch_to_freq(A3),
@@ -127,16 +127,16 @@ for detune in detune_amounts:
         renderer.start()
         renderer.play_extent()
 
-print()
+print(flush=True)
 
 # --- Demo 3: Mix modes comparison ---
-print("Demo 3: Comparing mix modes")
-print("  Playing: equal → center_heavy → linear")
+print("Demo 3: Comparing mix modes", flush=True)
+print("  Playing: equal -> center_heavy -> linear", flush=True)
 
 mix_modes = ['equal', 'center_heavy', 'linear']
 
 for mode in mix_modes:
-    print(f"  Mix mode: {mode}")
+    print(f"  Mix mode: {mode}", flush=True)
     
     saw = SuperSawPE(
         frequency=pitch_to_freq(E4),
@@ -160,11 +160,11 @@ for mode in mix_modes:
         renderer.play_extent()
 
 print()
-print("Done!")
+print("Done!", flush=True)
 print()
 print("Tips for using SuperSawPE:")
 print("  - 7 voices with 15-25 cents detune is a good starting point")
 print("  - Use a lowpass filter to tame the high frequencies")
 print("  - Stack multiple notes for rich chord pads")
 print("  - 'center_heavy' mix mode gives a more focused sound")
-print("  - Higher voice counts (9-11) add richness but cost more CPU")
+print("  - Higher voice counts (9-11) add richness but cost more CPU", flush=True)

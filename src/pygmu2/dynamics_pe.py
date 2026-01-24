@@ -47,7 +47,7 @@ class DynamicsPE(ProcessingElement):
         threshold: Level in dB where processing begins (default: -20.0)
         ratio: Compression/expansion ratio (default: 4.0)
                 - 1.0 = no compression
-                - 4.0 = 4:1 compression (4dB input change → 1dB output)
+                - 4.0 = 4:1 compression (4dB input change -> 1dB output)
                 - float('inf') = limiting (hard ceiling)
                 - 0.5 = 2:1 expansion (below threshold)
         knee: Soft knee width in dB (default: 0.0 = hard knee)

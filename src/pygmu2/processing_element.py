@@ -112,7 +112,7 @@ class ProcessingElement(ABC):
         
         Override for:
         - Finite sources (e.g., WavFileReaderPE)
-        - PEs that compute extent from inputs (e.g., MixPE → union)
+        - PEs that compute extent from inputs (e.g., MixPE -> union)
         
         Returns:
             Extent defining start and end bounds
