@@ -120,10 +120,10 @@ class TestGainPEExtent:
         gain_pe = CropPE(ConstantPE(0.5), Extent(200, 300))  # Extent (200, 300)
         gain = GainPE(source, gain=gain_pe)
 
-        # No intersection - returns source extent
+        # No intersection -> empty extent at boundary
         extent = gain.extent()
-        assert extent.start == 0
-        assert extent.end == 100
+        assert extent == Extent(200, 200)
+        assert extent.is_empty() is True
 
     def test_extent_pe_gain_infinite(self):
         source = RampPE(0.0, 1.0, duration=1000)  # Extent (0, 1000)

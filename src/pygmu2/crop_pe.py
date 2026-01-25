@@ -138,9 +138,6 @@ class CropPE(ProcessingElement):
         source_extent = self._source.extent()
         
         result = self._extent.intersection(source_extent)
-        if result is None:
-            # No intersection - return crop extent (will render zeros)
-            return self._extent
         return result
     
     def channel_count(self) -> Optional[int]:

@@ -11,6 +11,7 @@ import numpy as np
 from pygmu2 import (
     SuperSawPE,
     ConstantPE,
+    CropPE,
     RampPE,
     SinePE,
     NullRenderer,
@@ -81,6 +82,18 @@ class TestSuperSawPEBasics:
         assert "440.0" in repr_str
         assert "5" in repr_str
         assert "15.0" in repr_str
+
+    def test_extent_with_disjoint_pe_inputs_does_not_crash(self):
+        """
+        Regression: if PE inputs have disjoint extents, extent() should be
+        a well-defined empty extent (start == end), not an exception.
+        """
+        freq = CropPE(ConstantPE(440.0), Extent(0, 10))
+        amp = CropPE(ConstantPE(1.0), Extent(20, 30))  # disjoint from freq
+        saw = SuperSawPE(frequency=freq, amplitude=amp)
+
+        extent = saw.extent()
+        assert extent.is_empty()
 
 
 class TestSuperSawPERender:

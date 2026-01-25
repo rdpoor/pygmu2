@@ -28,10 +28,11 @@ class Extent:
             end: Ending sample index (exclusive), or None for infinite future
         
         Raises:
-            ValueError: If start >= end (when both are defined)
+            ValueError: If start > end (when both are defined)
         """
-        if start is not None and end is not None and start >= end:
-            raise ValueError(f"start ({start}) must be less than end ({end})")
+        # Empty extents (start == end) are allowed and represent "no samples".
+        if start is not None and end is not None and start > end:
+            raise ValueError(f"start ({start}) must be less than or equal to end ({end})")
         self._start = start
         self._end = end
     
@@ -55,7 +56,7 @@ class Extent:
         return self._end - self._start
     
     def is_empty(self) -> bool:
-        """Returns True if extent has zero duration (only possible if both bounds defined and equal)."""
+        """Returns True if extent has zero duration (start == end with finite bounds)."""
         return self._start is not None and self._end is not None and self._start == self._end
     
     def contains(self, sample_index: int) -> bool:
@@ -95,6 +96,10 @@ class Extent:
         Args:
             other: The other Extent to check
         """
+        # Empty extents never overlap anything (including other empty extents).
+        if self.is_empty() or other.is_empty():
+            return False
+
         # Check if self ends before other starts
         if self._end is not None and other._start is not None:
             if self._end <= other._start:
@@ -105,15 +110,21 @@ class Extent:
                 return False
         return True
     
-    def intersection(self, other: Extent) -> Optional[Extent]:
+    def intersection(self, other: Extent) -> Extent:
         """
-        Returns the intersection of this extent with another, or None if they don't overlap.
+        Returns the intersection of this extent with another.
+        
+        If the extents do not overlap, returns an empty extent (start == end)
+        at the intersection boundary.
         
         Args:
             other: The other Extent to intersect with
         """
-        if not self.intersects(other):
-            return None
+        # If either is empty, intersection is empty.
+        if self.is_empty():
+            return Extent(self._start, self._start)
+        if other.is_empty():
+            return Extent(other._start, other._start)
         
         # Compute intersection start (max of starts, treating None as -infinity)
         if self._start is None:
@@ -130,7 +141,12 @@ class Extent:
             new_end = self._end
         else:
             new_end = min(self._end, other._end)
-        
+
+        # Disjoint extents: represent as an empty extent at the boundary.
+        # For half-open intervals, this boundary is max(start1, start2) when finite.
+        if new_start is not None and new_end is not None and new_start > new_end:
+            return Extent(new_start, new_start)
+
         return Extent(new_start, new_end)
     
     def union(self, other: Extent) -> Extent:
@@ -140,6 +156,12 @@ class Extent:
         Args:
             other: The other Extent to union with
         """
+        # Empty extents add nothing.
+        if self.is_empty():
+            return other
+        if other.is_empty():
+            return self
+
         # Compute union start (min of starts, treating None as -infinity)
         if self._start is None or other._start is None:
             new_start = None
@@ -163,3 +185,13 @@ class Extent:
         start_str = str(self._start) if self._start is not None else "-∞"
         end_str = str(self._end) if self._end is not None else "+∞"
         return f"Extent({start_str}, {end_str})"
+
+    def __bool__(self) -> bool:
+        """
+        Treat empty extents as falsy.
+
+        This preserves common idioms like:
+            extent = extent.intersection(param_extent) or extent
+        where a non-overlapping (empty) intersection should fall back.
+        """
+        return not self.is_empty()

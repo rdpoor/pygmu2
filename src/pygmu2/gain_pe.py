@@ -138,10 +138,6 @@ class GainPE(ProcessingElement):
         # Intersection of source and gain extents
         gain_extent = self._gain.extent()
         result = source_extent.intersection(gain_extent)
-        
-        if result is None:
-            # No intersection - return source extent (will be zeros anyway)
-            return source_extent
         return result
     
     def channel_count(self) -> Optional[int]:

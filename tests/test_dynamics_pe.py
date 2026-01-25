@@ -104,6 +104,18 @@ class TestDynamicsPEBasics:
         assert "threshold=-20" in repr_str
         assert "ratio=4" in repr_str
 
+    def test_extent_with_disjoint_inputs_does_not_crash(self):
+        """
+        Regression: if source/envelope extents do not overlap, extent() should be
+        a well-defined empty extent (start == end), not an exception.
+        """
+        source = CropPE(ConstantPE(1.0), Extent(0, 10))
+        envelope = CropPE(ConstantPE(0.5), Extent(20, 30))  # disjoint
+        dynamics = DynamicsPE(source, envelope)
+
+        extent = dynamics.extent()
+        assert extent.is_empty()
+
 
 class TestDynamicsPECompression:
     """Test compression behavior."""

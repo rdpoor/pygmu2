@@ -176,8 +176,7 @@ class DynamicsPE(ProcessingElement):
         """Return intersection of source and envelope extents."""
         source_extent = self._source.extent()
         env_extent = self._envelope.extent()
-        intersection = source_extent.intersection(env_extent)
-        return intersection if intersection is not None else Extent(0, 0)
+        return source_extent.intersection(env_extent)
     
     def _compute_gain_db(self, level_db: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
         """

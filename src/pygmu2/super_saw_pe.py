@@ -295,16 +295,10 @@ class SuperSawPE(ProcessingElement):
         If all inputs are constants: infinite extent.
         If any input is a PE: intersection of input extents.
         """
-        if not self.inputs():
-            return Extent(None, None)
-        
         result = Extent(None, None)
         for pe_input in self.inputs():
             input_extent = pe_input.extent()
-            intersection = result.intersection(input_extent)
-            if intersection is None:
-                return Extent(0, 0)
-            result = intersection
+            result = result.intersection(input_extent)
         return result
     
     def __repr__(self) -> str:

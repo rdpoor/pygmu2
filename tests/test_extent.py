@@ -42,11 +42,11 @@ class TestExtentBasics:
         assert ext.duration is None
     
     def test_invalid_extent_raises(self):
-        """Test that start >= end raises ValueError."""
+        """Test that start > end raises ValueError (empty extents are allowed)."""
         with pytest.raises(ValueError):
             Extent(200, 100)
-        with pytest.raises(ValueError):
-            Extent(100, 100)
+        # Empty extents (start == end) are allowed
+        assert Extent(100, 100).is_empty() is True
     
     def test_repr(self):
         """Test string representation."""
@@ -130,6 +130,13 @@ class TestExtentIntersects:
         ext2 = Extent(200, 300)
         assert ext1.intersects(ext2) is False
         assert ext2.intersects(ext1) is False
+
+    def test_intersects_with_empty(self):
+        """Empty extents never intersect anything."""
+        empty = Extent(10, 10)
+        ext = Extent(0, 20)
+        assert empty.intersects(ext) is False
+        assert ext.intersects(empty) is False
     
     def test_intersects_contained(self):
         """Test intersects when one contains the other."""
@@ -162,7 +169,9 @@ class TestExtentIntersection:
         """Test intersection of non-overlapping extents."""
         ext1 = Extent(100, 200)
         ext2 = Extent(200, 300)
-        assert ext1.intersection(ext2) is None
+        result = ext1.intersection(ext2)
+        assert result.is_empty() is True
+        assert result == Extent(200, 200)
     
     def test_intersection_with_infinite(self):
         """Test intersection with infinite extent."""
@@ -188,6 +197,13 @@ class TestExtentUnion:
         ext2 = Extent(300, 400)
         result = ext1.union(ext2)
         assert result == Extent(100, 400)
+
+    def test_union_with_empty(self):
+        """Empty extents add nothing to a union."""
+        empty = Extent(10, 10)
+        ext = Extent(100, 200)
+        assert ext.union(empty) == ext
+        assert empty.union(ext) == ext
     
     def test_union_with_infinite_start(self):
         """Test union where one has infinite start."""

@@ -258,17 +258,10 @@ class SinePE(ProcessingElement):
         If all inputs are constants: infinite extent (default).
         If any input is a PE: intersection of input extents.
         """
-        if not self._has_pe_inputs():
-            return Extent(None, None)  # Infinite (default)
-        
-        # Compute intersection of all PE input extents
         result = Extent(None, None)
         for pe_input in self.inputs():
             input_extent = pe_input.extent()
             result = result.intersection(input_extent)
-            if result is None:
-                # No intersection - return empty extent
-                return Extent(0, 0)
         return result
     
     def channel_count(self) -> int:

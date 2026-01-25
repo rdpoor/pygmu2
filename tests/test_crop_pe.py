@@ -129,10 +129,10 @@ class TestCropPEExtent:
         source = RampPE(0.0, 1.0, duration=100)  # Extent (0, 100)
         crop = CropPE(source, Extent(200, 300))
 
-        # No intersection - returns crop extent (will render zeros)
+        # No intersection -> empty extent at boundary
         extent = crop.extent()
-        assert extent.start == 200
-        assert extent.end == 300
+        assert extent == Extent(200, 200)
+        assert extent.is_empty() is True
 
     def test_extent_none_start_finite_source(self):
         source = RampPE(0.0, 1.0, duration=1000)  # Extent (0, 1000)

@@ -334,15 +334,15 @@ class LadderPE(ProcessingElement):
 
         if self._freq_is_pe:
             freq_extent = self._frequency.extent()
-            extent = extent.intersection(freq_extent) or extent
+            extent = extent.intersection(freq_extent)
 
         if self._res_is_pe:
             res_extent = self._resonance.extent()
-            extent = extent.intersection(res_extent) or extent
+            extent = extent.intersection(res_extent)
 
         if self._drive_is_pe:
             drive_extent = self._drive.extent()
-            extent = extent.intersection(drive_extent) or extent
+            extent = extent.intersection(drive_extent)
 
         return extent
 
