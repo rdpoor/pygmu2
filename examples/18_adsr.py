@@ -11,6 +11,7 @@ MIT License
 from pygmu2 import (
     AudioRenderer,
     AdsrPE,
+    BlitSawPE,
     ConstantPE,
     CropPE,
     DelayPE,
@@ -134,56 +135,86 @@ def demo_axel_f():
     theme = [
         (pF, dQ, 0.7),
         (pAf, dE * dDOT, 0.7),
-        (pF, dE, 0.7),
-        (pF, dS, 0.7),
-        (pBf * o5, dE, 0.7),
+        (pF, dE, 0.4),
+        (pF, dS, 0.4),
+        (pBf * o5, dE, 0.4),
         (pF, dE, 0.7),
         (pEf, dE, 0.7),
         (pF, dQ, 0.7),
         (pC * o5, dE * dDOT, 0.7),
-        (pF, dE, 0.7),
-        (pF, dS, 0.7),
-        (pDf * o5, dE, 0.7),
+        (pF, dE, 0.4),
+        (pF, dS, 0.4),
+        (pDf * o5, dE, 0.4),
         (pC * o5, dE, 0.7),
         (pAf, dE, 0.7),
         (pF, dE, 0.7),
         (pC * o5, dE, 0.7),
         (pF * o5, dE, 0.7),
         (pF, dS, 0.7),
-        (pEf, dE, 0.7),
-        (pEf, dS, 0.7),
+        (pEf, dE, 0.4),
+        (pEf, dS, 0.4),
         (pC, dE, 0.7),
         (pG, dE, 0.7),
-        (pF, dE + dH, 0.7),
+        (pF, dE + dW, 0.7),
     ]
 
     start = 0
     notes = []
     for freq, dur, legato in theme:
+        # For each note, allocate an ADSR and a SuperSawPE with a delay and 
+        # append on the notes[] list.  We will pass this list to MixPE() to
+        # render the whole piece.
+        #
+        # About "gate" signals: a gate is on when its value is greater than 0.
+        # The ADSR takes a gate input: rising gate initiates attack, falling
+        # edge initiates decay.  In this case, the length of the gate is the 
+        # duration of the note, scaled by the legato.  (A short legato will make 
+        # a more staccato note.)
         gate_len = max(1, _samp(dur * legato))
+
+        # Create a gate signal is 1.0 for the duration gate_len
         gate = CropPE(ConstantPE(1.0), Extent(0, gate_len))
+
+        # Apply the gate to the ADSR to generate the envelope signal
         envelope = AdsrPE(
             gate,
-            attack=stos(0.08),
+            attack=stos(0.04),
             decay=stos(0.2),
             sustain_level=0.5,
             release=stos(0.1),
         )
+
+        # Generate the Roland-esque detuned note
         pad = SuperSawPE(frequency=freq, detune_cents=8.0, mix_mode="center_heavy")
+        
+        # === Subtle but important: ===
+        # ResetPE sends pad.reset_start() at the onset of each new gate signal.
+        # SuperSaw needs this so all of its detuned oscillators get restarted 
+        # on each note - without this, the attack is mushy sounding. To hear the
+        # difference, comment out this next line...
         pad = ResetPE(pad, gate)
+
+        # Take the synth note we've just created, apply the ADSR envelope, 
+        # delay it to its designated start time and add it to the list of notes.
         notes.append(DelayPE(GainPE(pad, envelope), int(start)))
+
+        # bump start to the next start time.
         start += int(dur)
 
     # mix all notes and attenuate some
     mix = GainPE(MixPE(*notes), 0.5)
+
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    # Crop to finite extent so we can stream it chunk-by-chunk.
+    # Optional: Crop mix to a finite extent so we can stream it chunk-by-chunk. 
+    # It works without this, but that would compute the entire piece before it 
+    # starts to play, leading to a long lag before you hear anything.
     renderer.set_source(CropPE(mix, Extent(0, int(start))))
 
     with renderer:
         renderer.start()
-        # play_range() renders the whole buffer before playback (can be slow here);
-        # play_extent() streams and starts playback quickly.
+        # play_range() would render the whole buffer before playback, leading to
+        # a long delay, so we use play_extent() instead to start rendering right
+        # away.
         renderer.play_extent(chunk_size=renderer.blocksize)
 
 
