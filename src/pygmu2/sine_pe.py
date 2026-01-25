@@ -131,9 +131,9 @@ class SinePE(ProcessingElement):
             Snippet containing sine wave data
         """
         # Get parameter values (either constant or from PEs)
-        freq_values = self._get_parameter_values(self._frequency, start, duration)
-        amp_values = self._get_parameter_values(self._amplitude, start, duration)
-        phase_mod = self._get_parameter_values(self._phase, start, duration)
+        freq_values = self._param_values(self._frequency, start, duration, dtype=np.float64)
+        amp_values = self._param_values(self._amplitude, start, duration, dtype=np.float64).reshape(-1, 1)
+        phase_mod = self._param_values(self._phase, start, duration, dtype=np.float64)
         
         # Calculate phase
         if self._has_pe_inputs():
@@ -155,24 +155,6 @@ class SinePE(ProcessingElement):
             samples = np.tile(samples, (1, self._channels))
         
         return Snippet(start, samples.astype(np.float32))
-    
-    def _get_parameter_values(
-        self,
-        param: Union[float, ProcessingElement],
-        start: int,
-        duration: int,
-    ) -> np.ndarray:
-        """
-        Get parameter values as numpy array.
-        
-        For constants: returns a scalar (broadcasts in numpy operations).
-        For PEs: renders and returns the data array.
-        """
-        if isinstance(param, ProcessingElement):
-            snippet = param.render(start, duration)
-            return snippet.data
-        else:
-            return np.float64(param)
     
     def _compute_phase_pure(
         self,

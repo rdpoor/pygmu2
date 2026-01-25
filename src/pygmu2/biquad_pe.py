@@ -361,17 +361,8 @@ class BiquadPE(ProcessingElement):
             self._lfilter_state = np.zeros((2, channels), dtype=np.float64)
         
         # Get parameter values
-        if self._freq_is_pe:
-            freq_snippet = self._frequency.render(start, duration)
-            freq_values = freq_snippet.data[:, 0].astype(np.float64)
-        else:
-            freq_values = np.full(duration, self._frequency, dtype=np.float64)
-        
-        if self._q_is_pe:
-            q_snippet = self._q.render(start, duration)
-            q_values = q_snippet.data[:, 0].astype(np.float64)
-        else:
-            q_values = np.full(duration, self._q, dtype=np.float64)
+        freq_values = self._param_values(self._frequency, start, duration, dtype=np.float64)
+        q_values = self._param_values(self._q, start, duration, dtype=np.float64)
         
         # Check if we can use optimized constant-coefficient path
         if not self._freq_is_pe and not self._q_is_pe:

@@ -146,9 +146,9 @@ class BlitSawPE(ProcessingElement):
         Returns:
             Snippet containing sawtooth wave data
         """
-        # Get parameter values
-        freq = self._get_values(self._frequency, start, duration)
-        amp = self._get_values(self._amplitude, start, duration)
+        # Get parameter values (1D control vectors)
+        freq = self._param_values(self._frequency, start, duration, dtype=np.float64)
+        amp = self._param_values(self._amplitude, start, duration, dtype=np.float64)
         
         # Handle M: auto-compute or use provided value
         if self._m is None:
@@ -160,21 +160,11 @@ class BlitSawPE(ProcessingElement):
             m = m - (1 - m % 2)
             m = np.maximum(m, 1)  # At least 1 harmonic
         else:
-            m = self._get_values(self._m, start, duration)
-            if isinstance(m, np.ndarray):
-                m = np.maximum(m.astype(np.int32), 1)
-            else:
-                m = max(int(m), 1)
+            m_vals = self._param_values(self._m, start, duration, dtype=np.float64)
+            m = np.maximum(m_vals.astype(np.int32), 1).astype(np.float64)
         
-        # Ensure arrays for vectorized computation
-        freq = np.atleast_1d(freq).astype(np.float64)
-        m = np.atleast_1d(m).astype(np.float64)
-        
-        # Broadcast to duration length if scalar
-        if freq.size == 1:
-            freq = np.full(duration, freq[0])
-        if m.size == 1:
-            m = np.full(duration, m[0])
+        # Ensure arrays for vectorized computation (already 1D)
+        m = np.atleast_1d(m).astype(np.float64, copy=False)
         
         # Handle discontinuous rendering
         if self._last_render_end is None or start != self._last_render_end:
@@ -251,10 +241,7 @@ class BlitSawPE(ProcessingElement):
         saw = saw * 2.0
         
         # Apply amplitude
-        if isinstance(amp, np.ndarray):
-            samples = saw * amp.flatten()
-        else:
-            samples = saw * amp
+        samples = saw * amp
         
         # Reshape to (duration, channels)
         samples = samples.reshape(-1, 1).astype(np.float32)
@@ -262,20 +249,6 @@ class BlitSawPE(ProcessingElement):
             samples = np.tile(samples, (1, self._channels))
         
         return Snippet(start, samples)
-    
-    def _get_values(
-        self,
-        param: Union[float, int, ProcessingElement],
-        start: int,
-        duration: int,
-    ) -> Union[float, np.ndarray]:
-        """Get parameter values as scalar or array."""
-        if isinstance(param, ProcessingElement):
-            snippet = param.render(start, duration)
-            # Use first channel, flatten
-            return snippet.data[:, 0].flatten()
-        else:
-            return float(param)
     
     def _compute_extent(self) -> Extent:
         """

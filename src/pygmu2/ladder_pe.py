@@ -520,22 +520,13 @@ class LadderPE(ProcessingElement):
         self._ensure_state(channels)
 
         # Get frequency values (either constant or from PE)
-        if self._freq_is_pe:
-            freq_values = self._frequency.render(start, duration).data[:, 0].astype(np.float64)
-        else:
-            freq_values = np.full(samples, float(self._frequency), dtype=np.float64)
+        freq_values = self._param_values(self._frequency, start, duration, dtype=np.float64)
 
         # Get resonance values (either constant or from PE)
-        if self._res_is_pe:
-            res_values = self._resonance.render(start, duration).data[:, 0].astype(np.float64)
-        else:
-            res_values = np.full(samples, float(self._resonance), dtype=np.float64)
+        res_values = self._param_values(self._resonance, start, duration, dtype=np.float64)
 
         # Get drive values (either constant or from PE)
-        if self._drive_is_pe:
-            drive_values = self._drive.render(start, duration).data[:, 0].astype(np.float64)
-        else:
-            drive_values = np.full(samples, float(self._drive), dtype=np.float64)
+        drive_values = self._param_values(self._drive, start, duration, dtype=np.float64)
 
         # Use Numba-accelerated path when available
         if NUMBA_AVAILABLE:

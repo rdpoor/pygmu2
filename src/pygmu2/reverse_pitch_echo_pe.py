@@ -597,28 +597,16 @@ class ReversePitchEchoPE(ProcessingElement):
             return Snippet(start, np.zeros_like(data, dtype=np.float32))
 
         # Get block size values (either constant or from PE)
-        if self._block_is_pe:
-            block_values = self._block_seconds.render(start, duration).data[:, 0].astype(np.float64)
-        else:
-            block_values = np.full(samples, float(self._block_seconds), dtype=np.float64)
+        block_values = self._param_values(self._block_seconds, start, duration, dtype=np.float64)
 
         # Get pitch ratio values (either constant or from PE)
-        if self._pitch_is_pe:
-            pitch_values = self._pitch_ratio.render(start, duration).data[:, 0].astype(np.float64)
-        else:
-            pitch_values = np.full(samples, float(self._pitch_ratio), dtype=np.float64)
+        pitch_values = self._param_values(self._pitch_ratio, start, duration, dtype=np.float64)
 
         # Get feedback values (either constant or from PE)
-        if self._fb_is_pe:
-            fb_values = self._feedback.render(start, duration).data[:, 0].astype(np.float64)
-        else:
-            fb_values = np.full(samples, float(self._feedback), dtype=np.float64)
+        fb_values = self._param_values(self._feedback, start, duration, dtype=np.float64)
 
         # Get alternate direction values (either constant or from PE)
-        if self._alt_is_pe:
-            alt_values = self._alternate_direction.render(start, duration).data[:, 0].astype(np.float64)
-        else:
-            alt_values = np.full(samples, float(self._alternate_direction), dtype=np.float64)
+        alt_values = self._param_values(self._alternate_direction, start, duration, dtype=np.float64)
 
         # Use Numba-accelerated path when available
         if NUMBA_AVAILABLE:

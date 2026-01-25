@@ -259,12 +259,8 @@ class SuperSawPE(ProcessingElement):
         Returns:
             Snippet containing mixed sawtooth data
         """
-        # Get amplitude values
-        if isinstance(self._amplitude, ProcessingElement):
-            amp_snippet = self._amplitude.render(start, duration)
-            amp = amp_snippet.data[:, 0].flatten()
-        else:
-            amp = self._amplitude
+        # Get amplitude values (1D control vector)
+        amp = self._param_values(self._amplitude, start, duration, dtype=np.float64)
         
         # Render all oscillators and mix
         # Each oscillator already has the correct detuned frequency
@@ -276,10 +272,7 @@ class SuperSawPE(ProcessingElement):
             result += snippet.data[:, 0]
         
         # Apply overall amplitude
-        if isinstance(amp, np.ndarray):
-            result = result * amp
-        else:
-            result = result * amp
+        result = result * amp
         
         # Reshape to (duration, channels)
         samples = result.reshape(-1, 1).astype(np.float32)

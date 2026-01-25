@@ -193,6 +193,39 @@ class TestProcessingElement:
         snippet = gain2.render(0, 50)
         assert np.allclose(snippet.data, 0.25)
 
+    def test_param_values_scalar_and_pe(self):
+        """_param_values() returns 1D by default and supports multi-channel opt-in."""
+
+        class HarnessPE(ProcessingElement):
+            def _render(self, start: int, duration: int) -> Snippet:
+                return Snippet.from_zeros(start, duration, 1)
+            def inputs(self) -> list[ProcessingElement]:
+                return []
+
+        h = HarnessPE()
+
+        # Scalar -> 1D
+        v = h._param_values(2.5, 0, 4)
+        assert v.shape == (4,)
+        assert np.allclose(v, 2.5)
+
+        # PE mono -> 1D (channel 0)
+        pe_mono = ConstantPE(7.0, 10, channels=1)
+        v2 = h._param_values(pe_mono, 0, 4)
+        assert v2.shape == (4,)
+        assert np.allclose(v2, 7.0)
+
+        # Scalar -> 2D if allow_multichannel
+        v3 = h._param_values(1.0, 0, 3, allow_multichannel=True, channels=2)
+        assert v3.shape == (3, 2)
+        assert np.allclose(v3, 1.0)
+
+        # PE stereo -> 2D if allow_multichannel
+        pe_stereo = ConstantPE(0.25, 10, channels=2)
+        v4 = h._param_values(pe_stereo, 0, 3, allow_multichannel=True)
+        assert v4.shape == (3, 2)
+        assert np.allclose(v4, 0.25)
+
 
 class TestMixPE:
     """Test MixPE multi-input processor."""

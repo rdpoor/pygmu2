@@ -8,7 +8,7 @@ MIT License
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Union
 
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
@@ -257,6 +257,70 @@ class ProcessingElement(ABC):
         """
         if hasattr(self, '_reset_state'):
             self._reset_state()
+
+    def _param_values(
+        self,
+        param: Union[float, int, "ProcessingElement"],
+        start: int,
+        duration: int,
+        *,
+        dtype: "object" = None,
+        channel: int = 0,
+        allow_multichannel: bool = False,
+        channels: Optional[int] = None,
+    ):
+        """
+        Protected helper for "scalar-or-PE" parameters.
+
+        Conventions:
+        - **Default is 1D control**: returns a 1D array of shape (duration,).
+          If `param` is a PE with multiple channels, channel 0 is used by default.
+        - **Optional multi-channel**: set allow_multichannel=True to return a 2D
+          array of shape (duration, channels). For scalar params, you must pass
+          `channels` (or it defaults to 1).
+
+        Args:
+            param: scalar (float/int) or a ProcessingElement
+            start: start sample index to render (if param is a PE)
+            duration: number of samples
+            dtype: numpy dtype (default: np.float64)
+            channel: which channel to select when returning 1D from a multi-channel PE
+            allow_multichannel: if True, return the full (duration, channels) array
+            channels: required when allow_multichannel=True and param is scalar
+
+        Returns:
+            np.ndarray: shape (duration,) by default, or (duration, channels) if
+            allow_multichannel=True.
+        """
+        import numpy as np
+
+        if dtype is None:
+            dtype = np.float64
+
+        if duration <= 0:
+            if allow_multichannel:
+                ch = channels if channels is not None else 1
+                return np.zeros((0, ch), dtype=dtype)
+            return np.zeros((0,), dtype=dtype)
+
+        if isinstance(param, ProcessingElement):
+            data = param.render(start, duration).data
+            if allow_multichannel:
+                return data.astype(dtype, copy=False)
+
+            # 1D control: use one channel (default 0)
+            if data.ndim != 2 or data.shape[1] < 1:
+                raise ValueError(f"param PE returned invalid shape {getattr(data, 'shape', None)}")
+            if channel < 0 or channel >= data.shape[1]:
+                raise ValueError(f"channel {channel} out of range for param with {data.shape[1]} channels")
+            return data[:, channel].astype(dtype, copy=False)
+
+        # Scalar value
+        value = float(param)
+        if allow_multichannel:
+            ch = channels if channels is not None else 1
+            return np.full((duration, ch), value, dtype=dtype)
+        return np.full((duration,), value, dtype=dtype)
 
 
 class SourcePE(ProcessingElement):

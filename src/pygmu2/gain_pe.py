@@ -105,15 +105,19 @@ class GainPE(ProcessingElement):
         source_snippet = self._source.render(start, duration)
         
         if self._gain_is_pe:
-            # Get gain values from PE
-            gain_snippet = self._gain.render(start, duration)
+            # Get gain values from PE (allow multi-channel for per-channel gain)
+            gain_data = self._param_values(
+                self._gain,
+                start,
+                duration,
+                dtype=np.float32,
+                allow_multichannel=True,
+            )
             
             # Broadcast gain across channels if needed
             # gain_snippet is typically mono, source may be stereo
-            if gain_snippet.channels == 1 and source_snippet.channels > 1:
-                gain_data = np.tile(gain_snippet.data, (1, source_snippet.channels))
-            else:
-                gain_data = gain_snippet.data
+            if gain_data.shape[1] == 1 and source_snippet.channels > 1:
+                gain_data = np.tile(gain_data, (1, source_snippet.channels))
             
             # Apply gain
             result = source_snippet.data * gain_data
