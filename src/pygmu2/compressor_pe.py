@@ -197,6 +197,10 @@ class CompressorPE(ProcessingElement):
         """Stop internal PEs."""
         self._envelope_pe.on_stop()
     
+    def _reset_state(self) -> None:
+        """Reset internal envelope state."""
+        self._envelope_pe.reset_state()
+    
     def configure(self, sample_rate: int) -> None:
         """Configure this PE and internal PEs with sample rate."""
         self._sample_rate = sample_rate
@@ -391,6 +395,10 @@ class GatePE(ProcessingElement):
     def on_stop(self) -> None:
         """Stop internal PEs."""
         self._envelope_pe.on_stop()
+    
+    def _reset_state(self) -> None:
+        """Reset internal envelope state."""
+        self._envelope_pe.reset_state()
     
     def configure(self, sample_rate: int) -> None:
         """Configure this PE and internal PEs with sample rate."""
