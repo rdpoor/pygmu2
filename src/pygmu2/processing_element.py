@@ -238,6 +238,25 @@ class ProcessingElement(ABC):
         Default implementation does nothing.
         """
         pass
+    
+    def reset_state(self) -> None:
+        """
+        Reset this PE's internal state.
+        
+        Calls _reset_state() if the subclass implements it. Pure PEs typically
+        don't implement _reset_state() (no-op). Non-pure PEs can override
+        _reset_state() to reset their state (e.g., oscillator phase, filter
+        memory, envelope state).
+        
+        Useful for:
+        - Resetting oscillators on gate/trigger events (analog-like behavior)
+        - Resetting state when scrubbing/jogging to different positions
+        - Re-initializing stateful PEs during rendering
+        
+        Default implementation does nothing (calls _reset_state() if it exists).
+        """
+        if hasattr(self, '_reset_state'):
+            self._reset_state()
 
 
 class SourcePE(ProcessingElement):

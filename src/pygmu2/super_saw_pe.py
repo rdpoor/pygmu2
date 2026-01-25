@@ -243,6 +243,11 @@ class SuperSawPE(ProcessingElement):
         for osc in self._oscillators:
             osc.on_stop()
     
+    def _reset_state(self) -> None:
+        """Reset state of all internal oscillators."""
+        for osc in self._oscillators:
+            osc.reset_state()
+    
     def _render(self, start: int, duration: int) -> Snippet:
         """
         Render the supersaw by mixing all voices.

@@ -121,17 +121,19 @@ class BlitSawPE(ProcessingElement):
         """Return the number of output channels."""
         return self._channels
     
-    def on_start(self) -> None:
-        """Reset state on start."""
+    def _reset_state(self) -> None:
+        """Reset oscillator state (phase and integrator)."""
         self._phase = 0.0
         self._integrator = 0.0
         self._last_render_end = None
     
+    def on_start(self) -> None:
+        """Reset state on start."""
+        self._reset_state()
+    
     def on_stop(self) -> None:
         """Reset state on stop."""
-        self._phase = 0.0
-        self._integrator = 0.0
-        self._last_render_end = None
+        self._reset_state()
     
     def _render(self, start: int, duration: int) -> Snippet:
         """

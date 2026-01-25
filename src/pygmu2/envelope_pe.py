@@ -113,13 +113,17 @@ class EnvelopePE(ProcessingElement):
         """Return the extent of this PE (matches source)."""
         return self._source.extent()
     
+    def _reset_state(self) -> None:
+        """Reset envelope state."""
+        self._envelope = None
+    
     def on_start(self) -> None:
         """Reset envelope state at start of rendering."""
-        self._envelope = None
+        self._reset_state()
     
     def on_stop(self) -> None:
         """Clear envelope state at end of rendering."""
-        self._envelope = None
+        self._reset_state()
     
     def _render(self, start: int, duration: int) -> Snippet:
         """

@@ -89,12 +89,18 @@ class TriggerPE(ProcessingElement):
         # For simplicity, we report indefinite extent as it depends on runtime triggers.
         return Extent(0, None)
 
-    def on_start(self) -> None:
+    def _reset_state(self) -> None:
+        """Reset trigger state."""
         self._is_active = False
         self._start_time = 0
+    
+    def on_start(self) -> None:
+        """Reset state at start of rendering."""
+        self._reset_state()
 
     def on_stop(self) -> None:
-        self._is_active = False
+        """Reset state at end of rendering."""
+        self._reset_state()
 
     def _render(self, start: int, duration: int) -> Snippet:
         trigger_snippet = self._trigger.render(start, duration)

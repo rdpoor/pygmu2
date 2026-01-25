@@ -13,6 +13,7 @@ from pygmu2.processing_element import ProcessingElement, SourcePE
 from pygmu2.renderer import Renderer, ProfileReport, PEProfile
 from pygmu2.audio_renderer import AudioRenderer
 from pygmu2.null_renderer import NullRenderer
+from pygmu2.adsr_pe import AdsrPE
 from pygmu2.array_pe import ArrayPE
 from pygmu2.blit_saw_pe import BlitSawPE
 from pygmu2.compressor_pe import CompressorPE, LimiterPE, GatePE
@@ -27,6 +28,7 @@ from pygmu2.identity_pe import IdentityPE
 from pygmu2.loop_pe import LoopPE
 from pygmu2.ramp_pe import RampPE
 from pygmu2.random_pe import RandomPE, RandomMode
+from pygmu2.reset_pe import ResetPE
 from pygmu2.sine_pe import SinePE
 from pygmu2.super_saw_pe import SuperSawPE
 from pygmu2.mix_pe import MixPE
@@ -84,6 +86,7 @@ __all__ = [
     "AudioRenderer",
     "NullRenderer",
     # Processing Elements
+    "AdsrPE",
     "ArrayPE",
     "BiquadPE",
     "BlitSawPE",
@@ -103,6 +106,7 @@ __all__ = [
     "SampleMap",
     "RampPE",
     "RandomPE",
+    "ResetPE",
     "SequencePE",
     "SinePE",
     "SuperSawPE",

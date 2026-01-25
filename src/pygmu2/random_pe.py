@@ -147,24 +147,30 @@ class RandomPE(SourcePE):
         """Random generator runs forever."""
         return Extent(None, None)
     
-    def on_start(self) -> None:
-        """Initialize RNG and state."""
-        self._rng = np.random.default_rng(self._seed)
-        self._sample_rate = self.sample_rate
-        
-        # Calculate samples per period for rate-based mode
-        if self._rate > 0:
-            self._samples_per_period = max(1, int(self._sample_rate / self._rate))
+    def _reset_state(self) -> None:
+        """Reset random generator state and current values."""
+        if self._rng is None:
+            # Not initialized yet - initialize now
+            self._rng = np.random.default_rng(self._seed)
+            self._sample_rate = self.sample_rate
+            if self._rate > 0:
+                self._samples_per_period = max(1, int(self._sample_rate / self._rate))
+            else:
+                self._samples_per_period = self._sample_rate  # Default to 1 Hz
         else:
-            self._samples_per_period = self._sample_rate  # Default to 1 Hz
+            # Re-seed the RNG to reset its state
+            self._rng = np.random.default_rng(self._seed)
         
-        self._sample_counter = 0
-        self._phase = 0.0
-        self._last_trigger = 0.0
-        
-        # Initialize values
+        # Reset current values
         self._current_value = self._random_value()
         self._next_value = self._random_value()
+        self._phase = 0.0
+        self._sample_counter = 0
+        self._last_trigger = 0.0
+    
+    def on_start(self) -> None:
+        """Initialize RNG and state."""
+        self._reset_state()
     
     def on_stop(self) -> None:
         """Clean up state."""
