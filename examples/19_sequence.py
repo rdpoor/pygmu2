@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Example 15: SequencePE - Sequencing audio in time
+Example 19: SequencePE - Sequencing audio in time
 
 Demonstrates SequencePE for arranging multiple audio sources in time,
 both with and without overlap.
@@ -263,7 +263,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         choice = sys.argv[1]
     else:
-        print("=== pygmu2 Example 15: SequencePE ===")
+        print("=== pygmu2 Example 19: SequencePE ===")
         print()
         print("Choose a demo:")
         for key, (name, _) in demos.items():
