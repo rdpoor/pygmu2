@@ -11,9 +11,9 @@ MIT License
 from pygmu2 import (
     AudioRenderer,
     AdsrPE,
-    BlitSawPE,
     ConstantPE,
     CropPE,
+    DelayPE,
     Extent,
     GainPE,
     MixPE,
@@ -22,7 +22,6 @@ from pygmu2 import (
     SequencePE,
     SinePE,
     SuperSawPE,
-    TransformPE,
     pitch_to_freq,
     seconds_to_samples,
 )
@@ -91,17 +90,73 @@ def demo_basic_envelope():
         renderer.start()
         renderer.play_range(stos(0.0), stos(8.0))
 
-def demo_gated_sequence():
+def demo_axel_f():
     """
-    Multiple notes triggered by a gate sequence.
+    Sing along if you know it.
     """
-    print("=== Gated Sequence ===")
-    print("Description of this demo.")
-    print()
-    
-    # TODO: Implement demo
-    pass
+    from itertools import accumulate
 
+    print("=== Gated Sequence ===")
+    print("The song that made Roland Juno famous")
+    print()
+    BPM = 116
+    SECONDS_PER_BEAT = 60.0 / BPM
+    SAMPLES_PER_BEAT = SECONDS_PER_BEAT * SAMPLE_RATE
+
+    def _samp(x: float) -> int:
+        """Convert a (possibly fractional) sample count to int."""
+        return int(round(x))
+
+    # durations (in samples): Whole, Half, Quater, Eigth, Sixteenth, dotted
+    dW = (SAMPLES_PER_BEAT * 4.0)
+    dH = (SAMPLES_PER_BEAT * 2.0)
+    dQ = (SAMPLES_PER_BEAT * 1.0)
+    dE = (SAMPLES_PER_BEAT / 2.0)
+    dS = (SAMPLES_PER_BEAT / 4.0)
+    dDOT = 1.5
+
+    # pitches (in frequency)
+    pA, pBf, pB, pC, pDf, pD, pEf, pE, pF, pGf, pG, pAf = pitch_to_freq(range(69-12, 69))
+    pAs, pCs, pDs, pFs, pGs = [pBf, pDf, pEf, pGf, pAf]
+    # octaves
+    o2, o3, o4, o5, o6 = [0.25, 0.5, 1.0, 2.0, 4.0]
+
+    # theme is an array of (frequency (Hz), duration (samples), legato) triples
+    # A legato of 1 means elide with next note.  Shorter than 1 means start a 
+    # new attack on the next note
+    theme = [
+     (pF, dQ, 0.7), (pAf, dE*dDOT, 0.7), (pF, dE, .7), (pF, dS, .7), (pBf*o5, dE, 0.7), (pF, dE, 0.7), (pEf, dE, 0.7),
+     (pF, dQ, 0.7), (pC*o5, dE*dDOT, 0.7), (pF, dE, 0.7), (pF, dS, 0.7), (pDf*o5, dE, 0.7), (pC*o5, dE, 0.7), (pAf, dE, 0.7),
+     (pF, dE, 0.7), (pC*o5, dE, 0.7), (pF*o5, dE, 0.7), (pF, dS, 0.7), (pEf, dE, 0.7), (pEf, dS, 0.7), (pC, dE, 0.7), (pG, dE, 0.7),
+     (pF, dE+dH, 0.7) 
+    ]
+
+    start = 0
+    notes = []
+    for freq, dur, legato in theme:
+        gate_len = max(1, _samp(dur * legato))
+        gate = CropPE(ConstantPE(1.0), Extent(0, gate_len))
+        envelope = AdsrPE(gate,
+                          attack=stos(0.08), 
+                          decay=stos(0.2), 
+                          sustain_level=0.5, 
+                          release=stos(0.1))
+        pad = SuperSawPE(frequency=freq, detune_cents=8.0, mix_mode='center_heavy')
+        pad = ResetPE(pad, gate)
+        notes.append(DelayPE(GainPE(pad, envelope), int(start)))
+        start += int(dur)
+
+    # mix all notes and attenuate some
+    mix = GainPE(MixPE(*notes), 0.5)
+    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
+    # Crop to finite extent so we can stream it chunk-by-chunk.
+    renderer.set_source(CropPE(mix, Extent(0, int(start))))
+    
+    with renderer:
+        renderer.start()
+        # play_range() renders the whole buffer before playback (can be slow here);
+        # play_extent() streams and starts playback quickly.
+        renderer.play_extent(chunk_size=renderer.blocksize)
 
 def demo_retrigger_behavior():
     """
@@ -121,7 +176,7 @@ if __name__ == "__main__":
     
     demos = [
         ("1", "Basic ADSR Envelope", demo_basic_envelope),
-        ("2", "Gated Sequence", demo_gated_sequence),
+        ("2", "Gated Sequence", demo_axel_f),
         ("3", "Re-trigger Behavior", demo_retrigger_behavior),
         ("a", "All demos", None),
     ]
