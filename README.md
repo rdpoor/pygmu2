@@ -141,6 +141,7 @@ renderer = NullRenderer(sample_rate=44100)
 | `DelayPE(source, delay)` | Delay by N samples |
 | `CropPE(source, extent)` | Limit to temporal range |
 | `LoopPE(source)` | Loop a finite source |
+| `ConvolvePE(src, filter, fft_size=None)` | FFT-based streaming convolution with a finite FIR filter |
 | `TransformPE(source, func)` | Apply custom function |
 | `ReversePitchEchoPE(source, block_seconds, pitch_ratio, ...)` | Pitch-shifted reverse echo effect |
 
@@ -206,6 +207,7 @@ pipenv run python examples/01_hello_sine.py
 | `20_timewarp.py` | TimeWarpPE variable-speed playback |
 | `21_analog_osc.py` | AnalogOscPE (PWM, saw/triangle morph, subtractive patch) |
 | `22_function_gen.py` | FunctionGenPE (naive) + A/B vs AnalogOscPE at high pitch |
+| `23_convolution.py` | ConvolvePE convolution demo using room impulse responses (requires `short_ir*.wav` / `long_ir*.wav`) |
 
 ## Modulation and Automation
 
