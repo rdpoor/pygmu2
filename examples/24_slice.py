@@ -106,6 +106,8 @@ def demo_slice_polka():
         renderer.play_extent()
 
 if __name__ == "__main__":
+    import sys
+
     print("pygmu2 Slice Examples")
     print("=" * 50)
     print()
@@ -116,21 +118,26 @@ if __name__ == "__main__":
         ("a", "All demos", None),
     ]
     
-    print("Available demos:")
-    for key, name, _ in demos:
-        print(f"  {key}: {name}")
-    print()
-    
-    choice = input(f"Choose a demo (1-{len(demos)-1} or 'a' for all): ").strip().lower()
-    print()
-    
-    if choice == "a":
-        for key, name, func in demos[:-1]:
-            func()
+    if len(sys.argv) > 1:
+        choice = sys.argv[1].strip().lower()
     else:
-        for key, name, func in demos:
-            if key == choice and func:
-                func()
+        print("pygmu2 SlicePE Examples")
+        print("----------------------------")
+        for key, name, _ in demos:
+            print(f"{key}: {name}")
+        print()
+        choice = input(f"Choose a demo (1-{len(demos)-1} or 'a' for all): ").strip().lower()
+        print()
+
+    if choice == "a":
+        for _, _, fn in demos:
+            if fn is not None:
+                fn()
+    else:
+        for key, _name, fn in demos:
+            if key == choice and fn is not None:
+                fn()
                 break
         else:
-            print(f"Unknown choice: {choice}")
+            print("Invalid choice.")
+

@@ -270,7 +270,7 @@ if __name__ == "__main__":
             print(f"  {key}: {name}")
         print("  a: All demos")
         print()
-        choice = input("Choice (1-4 or 'a' for all): ").strip().lower()
+        choice = input(f"Choice (1-{len(demos)-1} or 'a' for all): ").strip().lower()
     
     if choice == "a":
         for name, func in demos.values():
