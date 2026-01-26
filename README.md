@@ -119,7 +119,9 @@ renderer = NullRenderer(sample_rate=44100)
 |----|-------------|
 | `SinePE(frequency, amplitude, phase)` | Sine wave (supports modulation) |
 | `BlitSawPE(frequency, amplitude, m)` | Band-limited sawtooth (alias-free) |
+| `AnalogOscPE(frequency, duty_cycle, waveform)` | Bandlimited PWM rectangle + duty-controlled saw/triangle morph |
 | `SuperSawPE(frequency, voices, detune_cents)` | Detuned unison sawtooth |
+| `FunctionGenPE(frequency, duty_cycle, waveform)` | Naive DSP-like rectangle + duty-controlled saw/triangle morph (aliased) |
 | `WavetablePE(wavetable, indexer)` | Wavetable oscillator |
 
 ### Sources
@@ -199,6 +201,11 @@ pipenv run python examples/01_hello_sine.py
 | `15_reverse_pitch_echo.py` | Reverse pitch echo effect |
 | `16_comb_filter.py` | Comb filter resonance |
 | `17_ladder_filter.py` | Moog-style ladder filter |
+| `18_adsr.py` | ADSR + ResetPE |
+| `19_sequence.py` | SequencePE |
+| `20_timewarp.py` | TimeWarpPE variable-speed playback |
+| `21_analog_osc.py` | AnalogOscPE (PWM, saw/triangle morph, subtractive patch) |
+| `22_function_gen.py` | FunctionGenPE (naive) + A/B vs AnalogOscPE at high pitch |
 
 ## Modulation and Automation
 
