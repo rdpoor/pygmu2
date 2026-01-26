@@ -140,7 +140,8 @@ renderer = NullRenderer(sample_rate=44100)
 | `MixPE(*sources)` | Sum multiple sources |
 | `DelayPE(source, delay)` | Delay by N samples |
 | `CropPE(source, extent)` | Limit to temporal range |
-| `LoopPE(source)` | Loop a finite source |
+| `LoopPE(source, loop_start=None, loop_end=None, count=None, crossfade_seconds=None, crossfade_samples=None)` | Loop a finite source (optional crossfade in seconds or samples) |
+| `SlicePE(source, start, duration, fade_in_samples=None, fade_in_seconds=None, fade_out_samples=None, fade_out_seconds=None)` | Extract a region and shift to time 0 (optional fades) |
 | `ConvolvePE(src, filter, fft_size=None)` | FFT-based streaming convolution with a finite FIR filter |
 | `TransformPE(source, func)` | Apply custom function |
 | `ReversePitchEchoPE(source, block_seconds, pitch_ratio, ...)` | Pitch-shifted reverse echo effect |
@@ -160,6 +161,11 @@ renderer = NullRenderer(sample_rate=44100)
 | `GatePE(source, threshold, ...)` | Noise gate |
 | `DynamicsPE(source, envelope, ...)` | Flexible dynamics (sidechain support) |
 | `EnvelopePE(source, attack, release)` | Envelope follower |
+
+### Control
+| PE | Description |
+|----|-------------|
+| `AdsrPE(gate, attack_samples=None, attack_seconds=None, decay_samples=None, decay_seconds=None, sustain_level=0.7, release_samples=None, release_seconds=None)` | ADSR envelope generator (defaults specified in seconds; resolved at configure time) |
 
 ### Analysis
 | PE | Description |
@@ -208,6 +214,7 @@ pipenv run python examples/01_hello_sine.py
 | `21_analog_osc.py` | AnalogOscPE (PWM, saw/triangle morph, subtractive patch) |
 | `22_function_gen.py` | FunctionGenPE (naive) + A/B vs AnalogOscPE at high pitch |
 | `23_convolution.py` | ConvolvePE convolution demo using room impulse responses (requires `short_ir*.wav` / `long_ir*.wav`) |
+| `24_slice.py` | SlicePE snippet audition framework (edit start/duration points) |
 
 ## Modulation and Automation
 

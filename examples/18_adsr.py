@@ -83,10 +83,10 @@ def demo_basic_envelope():
 
     adsr = AdsrPE(
         gates,
-        attack=stos(0.005),
-        decay=stos(0.25),
+        attack_samples=stos(0.005),
+        decay_samples=stos(0.25),
         sustain_level=0.2,
-        release=stos(0.05),
+        release_samples=stos(0.05),
     )
 
     enveloped = GainPE(GainPE(reset_pad, adsr), gain=0.5)
@@ -178,10 +178,10 @@ def demo_axel_f():
         # Apply the gate to the ADSR to generate the envelope signal
         envelope = AdsrPE(
             gate,
-            attack=stos(0.04),
-            decay=stos(0.2),
+            attack_samples=stos(0.04),
+            decay_samples=stos(0.2),
             sustain_level=0.5,
-            release=stos(0.1),
+            release_samples=stos(0.1),
         )
 
         # Generate the Roland-esque detuned note

@@ -48,7 +48,7 @@ print(f"  Elapsed: {t1 - t0:.2f}s (expected ~{DURATION_SECONDS}s)", flush=True)
 # --- Part 2: Smooth loop (with crossfade) ---
 print(f"\nPart 2: Smooth loop (20ms crossfade) - {DURATION_SECONDS}s", flush=True)
 
-looped_smooth = LoopPE(source, crossfade=0.02)  # 20ms crossfade
+looped_smooth = LoopPE(source, crossfade_seconds=0.02)  # 20ms crossfade
 output_smooth = CropPE(looped_smooth, Extent(0, duration_samples))
 
 renderer = AudioRenderer(sample_rate=sample_rate)

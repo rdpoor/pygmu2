@@ -40,7 +40,7 @@ sample_rate = source.file_sample_rate
 duration_samples = int(DURATION_SECONDS * sample_rate)
 
 # Loop the djembe sample
-looped = LoopPE(source, crossfade=0.01)
+looped = LoopPE(source, crossfade_seconds=0.01)
 
 # --- Part 1: Original signal ---
 print(f"\nPart 1: Original signal (looped djembe) - {DURATION_SECONDS}s", flush=True)

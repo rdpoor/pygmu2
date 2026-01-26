@@ -26,23 +26,26 @@ class TestAdsrPEBasics:
         """Test creation with default parameters."""
         gate = ConstantPE(1.0)
         adsr = AdsrPE(gate)
+        self.renderer.set_source(adsr)  # configure at known sample rate
         
         assert adsr.gate is gate
-        assert adsr.attack == 441  # Default: 10ms at 44.1kHz
-        assert adsr.decay == 4410  # Default: 100ms at 44.1kHz
+        # Defaults are specified in seconds and resolved at configure time.
+        assert adsr.attack == 10    # 10ms at 1kHz
+        assert adsr.decay == 100    # 100ms at 1kHz
         assert adsr.sustain_level == 0.7
-        assert adsr.release == 8820  # Default: 200ms at 44.1kHz
+        assert adsr.release == 200  # 200ms at 1kHz
     
     def test_create_with_params(self):
         """Test creation with custom parameters."""
         gate = ConstantPE(1.0)
         adsr = AdsrPE(
             gate,
-            attack=50,
-            decay=200,
+            attack_samples=50,
+            decay_samples=200,
             sustain_level=0.5,
-            release=300,
+            release_samples=300,
         )
+        self.renderer.set_source(adsr)  # configure at known sample rate
         
         assert adsr.attack == 50
         assert adsr.decay == 200
@@ -64,7 +67,7 @@ class TestAdsrPEBasics:
     def test_state_reset_on_start(self):
         """Test that state resets on on_start()."""
         gate = ArrayPE([0.0, 1.0, 1.0, 0.0])
-        adsr = AdsrPE(gate, attack=10, decay=10, sustain_level=0.5, release=10)
+        adsr = AdsrPE(gate, attack_samples=10, decay_samples=10, sustain_level=0.5, release_samples=10)
         
         self.renderer.set_source(adsr)
         self.renderer.start()
@@ -76,10 +79,10 @@ class TestAdsrPEBasics:
     def test_repr(self):
         """Test string representation."""
         gate = ConstantPE(1.0)
-        adsr = AdsrPE(gate, attack=10, decay=100, sustain_level=0.7, release=200)
+        adsr = AdsrPE(gate, attack_samples=10, decay_samples=100, sustain_level=0.7, release_samples=200)
         repr_str = repr(adsr)
         assert "AdsrPE" in repr_str
-        assert "attack=10" in repr_str
+        assert "attack_samples=10" in repr_str
 
 
 class TestAdsrPERender:
@@ -100,10 +103,10 @@ class TestAdsrPERender:
         # ADSR with 10 samples attack, 20 samples decay, 0.5 sustain, 30 samples release
         adsr = AdsrPE(
             gate,
-            attack=10,
-            decay=20,
+            attack_samples=10,
+            decay_samples=20,
             sustain_level=0.5,
-            release=30,
+            release_samples=30,
         )
         
         self.renderer.set_source(adsr)
@@ -153,10 +156,10 @@ class TestAdsrPERender:
         # ADSR with 10 samples attack, 20 samples release
         adsr = AdsrPE(
             gate,
-            attack=10,
-            decay=20,
+            attack_samples=10,
+            decay_samples=20,
             sustain_level=0.5,
-            release=20,
+            release_samples=20,
         )
         
         self.renderer.set_source(adsr)
@@ -187,10 +190,10 @@ class TestAdsrPERender:
         # ADSR with 10 samples attack, 20 samples decay, 20 samples release
         adsr = AdsrPE(
             gate,
-            attack=10,
-            decay=20,
+            attack_samples=10,
+            decay_samples=20,
             sustain_level=0.5,
-            release=20,
+            release_samples=20,
         )
         
         self.renderer.set_source(adsr)
@@ -227,10 +230,10 @@ class TestAdsrPERender:
         # ADSR with 10 samples attack, 20 samples decay, 30 samples release
         adsr = AdsrPE(
             gate,
-            attack=10,
-            decay=20,
+            attack_samples=10,
+            decay_samples=20,
             sustain_level=0.5,
-            release=30,
+            release_samples=30,
         )
         
         self.renderer.set_source(adsr)
@@ -260,7 +263,7 @@ class TestAdsrPERender:
     def test_idle_state(self):
         """Test that output is zero when gate is low and ADSR is idle."""
         gate = ArrayPE([0.0] * 100)
-        adsr = AdsrPE(gate, attack=10, decay=20, sustain_level=0.5, release=30)
+        adsr = AdsrPE(gate, attack_samples=10, decay_samples=20, sustain_level=0.5, release_samples=30)
         
         self.renderer.set_source(adsr)
         self.renderer.start()
@@ -277,10 +280,10 @@ class TestAdsrPERender:
         gate = ArrayPE([1.0] * 200)
         adsr = AdsrPE(
             gate,
-            attack=10,
-            decay=20,
+            attack_samples=10,
+            decay_samples=20,
             sustain_level=0.6,
-            release=30,
+            release_samples=30,
         )
         
         self.renderer.set_source(adsr)
@@ -310,10 +313,10 @@ class TestAdsrPESampleAccurate:
         gate = ArrayPE([1.0] * 20)
         adsr = AdsrPE(
             gate,
-            attack=10,
-            decay=20,
+            attack_samples=10,
+            decay_samples=20,
             sustain_level=0.5,
-            release=30,
+            release_samples=30,
         )
         
         self.renderer.set_source(adsr)
@@ -336,10 +339,10 @@ class TestAdsrPESampleAccurate:
         gate = ArrayPE([1.0] * 40)
         adsr = AdsrPE(
             gate,
-            attack=10,
-            decay=20,
+            attack_samples=10,
+            decay_samples=20,
             sustain_level=0.5,
-            release=30,
+            release_samples=30,
         )
         
         self.renderer.set_source(adsr)
@@ -366,10 +369,10 @@ class TestAdsrPESampleAccurate:
         gate = ArrayPE(gate_data)
         adsr = AdsrPE(
             gate,
-            attack=10,
-            decay=20,
+            attack_samples=10,
+            decay_samples=20,
             sustain_level=0.5,
-            release=30,
+            release_samples=30,
         )
         
         self.renderer.set_source(adsr)
@@ -398,10 +401,10 @@ class TestAdsrPEEdgeCases:
         gate = ArrayPE([1.0] * 50)
         adsr = AdsrPE(
             gate,
-            attack=10,
-            decay=20,
+            attack_samples=10,
+            decay_samples=20,
             sustain_level=0.0,  # Zero sustain
-            release=30,
+            release_samples=30,
         )
         
         self.renderer.set_source(adsr)
@@ -419,10 +422,10 @@ class TestAdsrPEEdgeCases:
         gate = ArrayPE([1.0] * 50)
         adsr = AdsrPE(
             gate,
-            attack=10,
-            decay=20,
+            attack_samples=10,
+            decay_samples=20,
             sustain_level=1.0,  # Unit sustain
-            release=30,
+            release_samples=30,
         )
         
         self.renderer.set_source(adsr)
@@ -441,10 +444,10 @@ class TestAdsrPEEdgeCases:
         gate = ArrayPE([1.0] * 10)
         adsr = AdsrPE(
             gate,
-            attack=1,
-            decay=1,
+            attack_samples=1,
+            decay_samples=1,
             sustain_level=0.5,
-            release=1,
+            release_samples=1,
         )
         
         self.renderer.set_source(adsr)
@@ -468,10 +471,10 @@ class TestAdsrPEEdgeCases:
         gate = ArrayPE(gate_data)
         adsr = AdsrPE(
             gate,
-            attack=10,
-            decay=20,
+            attack_samples=10,
+            decay_samples=20,
             sustain_level=0.5,
-            release=10,
+            release_samples=10,
         )
         
         self.renderer.set_source(adsr)

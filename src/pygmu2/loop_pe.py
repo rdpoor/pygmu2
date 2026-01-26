@@ -27,7 +27,8 @@ class LoopPE(ProcessingElement):
         loop_start: Start frame of loop region (default: source extent start)
         loop_end: End frame of loop region (default: source extent end)
         count: Number of repetitions, or None for infinite looping
-        crossfade: Duration in seconds for crossfade at loop points (0 = no crossfade)
+        crossfade_seconds: Duration in seconds for crossfade at loop points (optional)
+        crossfade_samples: Duration in samples for crossfade at loop points (optional)
     
     Example:
         # Loop entire file forever
@@ -37,7 +38,7 @@ class LoopPE(ProcessingElement):
         looped = LoopPE(source, loop_start=1000, loop_end=5000, count=4)
         
         # Seamless looping with crossfade
-        looped = LoopPE(source, crossfade=0.01)  # 10ms crossfade
+        looped = LoopPE(source, crossfade_seconds=0.01)  # 10ms crossfade
     """
     
     def __init__(
@@ -46,19 +47,21 @@ class LoopPE(ProcessingElement):
         loop_start: Optional[int] = None,
         loop_end: Optional[int] = None,
         count: Optional[int] = None,
-        crossfade: float = 0.0,
+        crossfade_seconds: Optional[float] = None,
+        crossfade_samples: Optional[int] = None,
     ):
         self._source = source
         self._loop_start = loop_start
         self._loop_end = loop_end
         self._count = count
-        self._crossfade = max(0.0, crossfade)
+        self._crossfade_seconds = crossfade_seconds
+        self._crossfade_samples = crossfade_samples
         
         # These will be resolved when configured
         self._resolved_start: Optional[int] = None
         self._resolved_end: Optional[int] = None
         self._loop_length: Optional[int] = None
-        self._crossfade_samples: int = 0
+        self._crossfade: int = 0
     
     @property
     def source(self) -> ProcessingElement:
@@ -81,9 +84,14 @@ class LoopPE(ProcessingElement):
         return self._count
     
     @property
-    def crossfade(self) -> float:
-        """Crossfade duration in seconds."""
-        return self._crossfade
+    def crossfade_seconds(self) -> float:
+        """Crossfade duration in seconds (requested)."""
+        return float(self._crossfade_seconds or 0.0)
+
+    @property
+    def crossfade_samples(self) -> int:
+        """Crossfade duration in samples (resolved after configure)."""
+        return int(self._crossfade)
     
     def inputs(self) -> list[ProcessingElement]:
         """Return input PEs."""
@@ -123,10 +131,14 @@ class LoopPE(ProcessingElement):
         if self._loop_length <= 0:
             raise ValueError(f"Loop length must be positive, got {self._loop_length}")
         
-        # Calculate crossfade samples
-        self._crossfade_samples = int(self._crossfade * sample_rate)
+        # Resolve crossfade samples (seconds -> samples if provided)
+        self._crossfade = self._time_to_samples(
+            samples=self._crossfade_samples,
+            seconds=self._crossfade_seconds,
+            name="crossfade",
+        )
         # Crossfade can't be more than half the loop length
-        self._crossfade_samples = min(self._crossfade_samples, self._loop_length // 2)
+        self._crossfade = min(self._crossfade, self._loop_length // 2)
     
     def _compute_extent(self) -> Extent:
         """Return the extent of this PE."""
@@ -187,9 +199,9 @@ class LoopPE(ProcessingElement):
         output[:valid_duration, :] = loop_data[loop_positions, :]
         
         # Apply crossfade if enabled
-        if self._crossfade_samples > 0:
+        if self._crossfade > 0:
             # Find samples in the crossfade region (near end of loop)
-            xfade_threshold = self._loop_length - self._crossfade_samples
+            xfade_threshold = self._loop_length - self._crossfade
             in_xfade = loop_positions >= xfade_threshold
             
             if np.any(in_xfade):
@@ -201,8 +213,8 @@ class LoopPE(ProcessingElement):
                 fade_pos = xfade_loop_pos - xfade_threshold
                 
                 # Calculate fade coefficients (vectorized)
-                fade_out = 1.0 - (fade_pos / self._crossfade_samples)
-                fade_in = fade_pos / self._crossfade_samples
+                fade_out = 1.0 - (fade_pos / self._crossfade)
+                fade_in = fade_pos / self._crossfade
                 
                 # Reshape for broadcasting with channels
                 fade_out = fade_out[:, np.newaxis]
@@ -222,7 +234,7 @@ class LoopPE(ProcessingElement):
     
     def __repr__(self) -> str:
         count_str = f", count={self._count}" if self._count is not None else ""
-        xfade_str = f", crossfade={self._crossfade}" if self._crossfade > 0 else ""
+        xfade_str = f", crossfade_samples={self.crossfade_samples}" if self.crossfade_samples > 0 else ""
         return (
             f"LoopPE(source={self._source.__class__.__name__}, "
             f"loop_start={self._loop_start}, loop_end={self._loop_end}"

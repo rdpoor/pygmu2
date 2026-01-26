@@ -26,8 +26,10 @@ from pygmu2 import (
     AudioLibrary,
 )
 
-library = AudioLibrary.from_url("https://software.tomandandy.com/strudel.json")
-sound_path = library.resolve("bigBeat")
+# library = AudioLibrary.from_url("https://software.tomandandy.com/strudel.json")
+# sound_path = library.resolve("bigBeat")
+AUDIO_DIR = Path(__file__).parent / "audio"
+sound_path = AUDIO_DIR / "acoustic_drums.wav"
 
 def demo_basic_compression():
     """
@@ -39,7 +41,7 @@ def demo_basic_compression():
     
     source = WavReaderPE(sound_path)
     sample_rate = source.file_sample_rate
-    looped_drums = LoopPE(source, count=2, crossfade=0.002)
+    looped_drums = LoopPE(source, count=2, crossfade_seconds=0.002)
     
     compressed = CompressorPE(
         looped_drums,
@@ -75,7 +77,7 @@ def demo_limiter():
     
     source = WavReaderPE(sound_path)
     sample_rate = source.file_sample_rate
-    looped_drums = LoopPE(source, count=2, crossfade=0.002)
+    looped_drums = LoopPE(source, count=2, crossfade_seconds=0.002)
 
     # Make it intentionally too loud
     loud = GainPE(looped_drums, gain=10.0)
@@ -109,7 +111,7 @@ def demo_noise_gate():
     
     source = WavReaderPE(sound_path)
     sample_rate = source.file_sample_rate
-    looped_drums = LoopPE(source, count=2, crossfade=0.002)
+    looped_drums = LoopPE(source, count=2, crossfade_seconds=0.002)
     
     # Apply gate - quiet parts will be silenced
     gated = GatePE(
@@ -145,7 +147,7 @@ def demo_parallel_compression():
     
     source = WavReaderPE(sound_path)
     sample_rate = source.file_sample_rate
-    looped_drums = LoopPE(source, count=2, crossfade=0.002)
+    looped_drums = LoopPE(source, count=2, crossfade_seconds=0.002)
     
     # Apply limiter to squash it
     limited = LimiterPE(

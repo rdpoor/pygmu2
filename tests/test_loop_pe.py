@@ -28,7 +28,7 @@ class TestLoopPEBasics:
         assert loop.loop_start is None
         assert loop.loop_end is None
         assert loop.count is None
-        assert loop.crossfade == 0.0
+        assert loop.crossfade_seconds == 0.0
     
     def test_create_with_params(self):
         source = RampPE(0.0, 1.0, duration=100)
@@ -37,19 +37,23 @@ class TestLoopPEBasics:
             loop_start=10,
             loop_end=50,
             count=4,
-            crossfade=0.01,
+            crossfade_seconds=0.01,
         )
         
         assert loop.loop_start == 10
         assert loop.loop_end == 50
         assert loop.count == 4
-        assert loop.crossfade == 0.01
+        assert loop.crossfade_seconds == 0.01
     
     def test_negative_crossfade_clamped(self):
         source = RampPE(0.0, 1.0, duration=100)
-        loop = LoopPE(source, crossfade=-0.1)
+        loop = LoopPE(source, crossfade_seconds=-0.1)
         
-        assert loop.crossfade == 0.0
+        # Negative times are invalid; error is raised when the graph is configured.
+        assert loop.crossfade_seconds == -0.1
+        renderer = NullRenderer(sample_rate=44100)
+        with pytest.raises(ValueError):
+            renderer.set_source(loop)
     
     def test_inputs(self):
         source = RampPE(0.0, 1.0, duration=100)
@@ -286,7 +290,7 @@ class TestLoopPECrossfade:
         source = RampPE(0.0, 1.0, duration=100)
         
         # With crossfade
-        loop_xfade = LoopPE(source, crossfade=0.02)  # 20 samples at 1kHz
+        loop_xfade = LoopPE(source, crossfade_seconds=0.02)  # 20 samples at 1kHz
         
         self.renderer.set_source(loop_xfade)
         
@@ -311,7 +315,7 @@ class TestLoopPECrossfade:
     def test_no_crossfade_has_discontinuity(self):
         """Without crossfade, there should be a discontinuity."""
         source = RampPE(0.0, 1.0, duration=100)
-        loop_no_xfade = LoopPE(source, crossfade=0.0)
+        loop_no_xfade = LoopPE(source, crossfade_seconds=0.0)
         
         self.renderer.set_source(loop_no_xfade)
         

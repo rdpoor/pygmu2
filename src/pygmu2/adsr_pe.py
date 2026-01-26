@@ -16,6 +16,11 @@ from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 
 
+DEFAULT_ATTACK_SECONDS = 0.01
+DEFAULT_DECAY_SECONDS = 0.10
+DEFAULT_RELEASE_SECONDS = 0.20
+
+
 class AdsrState(Enum):
     """Internal ADSR state."""
     IDLE = "idle"          # Output is 0, waiting for gate
@@ -52,25 +57,40 @@ class AdsrPE(ProcessingElement):
     
     Args:
         gate: gate input PE
-        attack: number of samples to ramp from 0.0 to 1.0
-        decay: number of samples to ramp from 1.0 to sustain_level.
-        sustain_level: output value to hold until gate signal goes non-positive.
-        release: number of samples to ramp from current value to 0.0
+        attack_samples: attack time in samples (optional)
+        attack_seconds: attack time in seconds (optional)
+        decay_samples: decay time in samples (optional)
+        decay_seconds: decay time in seconds (optional)
+        sustain_level: output value to hold until gate signal goes non-positive
+        release_samples: release time in samples (optional)
+        release_seconds: release time in seconds (optional)
     """
     
     def __init__(
         self,
         gate: ProcessingElement,
-        attack: int = 441,
-        decay: int = 4410,
+        attack_samples: Optional[int] = None,
+        attack_seconds: Optional[float] = None,
+        decay_samples: Optional[int] = None,
+        decay_seconds: Optional[float] = None,
         sustain_level: float = 0.7,
-        release: int = 8820,
+        release_samples: Optional[int] = None,
+        release_seconds: Optional[float] = None,
     ):
         self._gate = gate
-        self._attack = max(1, int(attack))
-        self._decay = max(1, int(decay))
+        self._attack_samples = attack_samples
+        self._attack_seconds = attack_seconds
+        self._decay_samples = decay_samples
+        self._decay_seconds = decay_seconds
         self._sustain_level = max(0.0, min(1.0, sustain_level))
-        self._release = max(1, int(release))
+        self._release_samples = release_samples
+        self._release_seconds = release_seconds
+
+        # Resolved times (in samples). These are set in configure() once the
+        # sample rate is known (needed for *_seconds defaults/conversion).
+        self._attack = 1
+        self._decay = 1
+        self._release = 1
         
         # State (will be initialized in on_start)
         self._state: Optional[AdsrState] = None
@@ -140,6 +160,44 @@ class AdsrPE(ProcessingElement):
     def on_stop(self) -> None:
         """Reset state at end of rendering."""
         self._reset_state()
+
+    def configure(self, sample_rate: int) -> None:
+        """
+        Configure with sample rate and resolve optional *_seconds parameters.
+        """
+        super().configure(sample_rate)
+
+        def _resolve_time(
+            *,
+            samples: Optional[int],
+            seconds: Optional[float],
+            default_seconds: float,
+            name: str,
+        ) -> int:
+            # Defaults are specified in seconds so they are independent of the
+            # configured sample rate.
+            if samples is None and seconds is None:
+                seconds = default_seconds
+            return max(1, int(self._time_to_samples(samples=samples, seconds=seconds, name=name)))
+
+        self._attack = _resolve_time(
+            samples=self._attack_samples,
+            seconds=self._attack_seconds,
+            default_seconds=DEFAULT_ATTACK_SECONDS,
+            name="attack",
+        )
+        self._decay = _resolve_time(
+            samples=self._decay_samples,
+            seconds=self._decay_seconds,
+            default_seconds=DEFAULT_DECAY_SECONDS,
+            name="decay",
+        )
+        self._release = _resolve_time(
+            samples=self._release_samples,
+            seconds=self._release_seconds,
+            default_seconds=DEFAULT_RELEASE_SECONDS,
+            name="release",
+        )
     
     def _render(self, start: int, duration: int) -> Snippet:
         """
@@ -246,6 +304,8 @@ class AdsrPE(ProcessingElement):
     def __repr__(self) -> str:
         return (
             f"AdsrPE(gate={self._gate.__class__.__name__}, "
-            f"attack={self._attack}, decay={self._decay}, "
-            f"sustain={self._sustain_level}, release={self._release})"
+            f"attack_samples={self._attack_samples}, attack_seconds={self._attack_seconds}, "
+            f"decay_samples={self._decay_samples}, decay_seconds={self._decay_seconds}, "
+            f"sustain={self._sustain_level}, "
+            f"release_samples={self._release_samples}, release_seconds={self._release_seconds})"
         )

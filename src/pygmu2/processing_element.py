@@ -257,6 +257,45 @@ class ProcessingElement(ABC):
         if hasattr(self, '_reset_state'):
             self._reset_state()
 
+    def _time_to_samples(
+        self,
+        *,
+        samples: Optional[int] = None,
+        seconds: Optional[float] = None,
+        name: str = "time",
+    ) -> int:
+        """
+        Resolve a time parameter specified in either samples or seconds.
+
+        Conventions:
+        - At most one of `samples` or `seconds` may be provided.
+        - If neither is provided, resolve to 0 samples (useful for optional times).
+        - Values must be non-negative.
+        - Seconds are converted using the configured sample rate and rounded to
+          the nearest sample.
+        """
+        if samples is None and seconds is None:
+            return 0
+
+        if samples is not None and seconds is not None:
+            raise ValueError(
+                f"{name}: specify either {name}_samples or {name}_seconds, not both "
+                f"(got {name}_samples={samples}, {name}_seconds={seconds})"
+            )
+
+        if samples is not None:
+            s = int(samples)
+            if s < 0:
+                raise ValueError(f"{name}_samples must be non-negative (got {samples})")
+            return s
+
+        from pygmu2.conversions import seconds_to_samples
+
+        sec = float(seconds)
+        if sec < 0.0:
+            raise ValueError(f"{name}_seconds must be non-negative (got {seconds})")
+        return int(round(float(seconds_to_samples(sec, self.sample_rate))))
+
     def _scalar_or_pe_values(
         self,
         param: Union[float, int, "ProcessingElement"],

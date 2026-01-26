@@ -87,7 +87,7 @@ def demo_accelerating_loop():
     sample_rate = spoken.file_sample_rate
 
     # Loop the entire sample forever (with a small crossfade to reduce clicks)
-    looped = LoopPE(spoken, crossfade=0.01)
+    looped = LoopPE(spoken, crossfade_seconds=0.01)
 
     dur_samples = int(seconds_to_samples(10.0, sample_rate))
 

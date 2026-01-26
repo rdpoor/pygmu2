@@ -63,6 +63,7 @@ pygmu2/
 │   ├── sine_pe.py               # Sine oscillator
 │   ├── blit_saw_pe.py           # Band-limited sawtooth
 │   ├── super_saw_pe.py          # Detuned unison saw
+│   ├── adsr_pe.py               # ADSR envelope generator
 │   ├── constant_pe.py           # Constant value
 │   ├── ramp_pe.py               # Linear ramp
 │   ├── gain_pe.py               # Gain control
@@ -70,6 +71,7 @@ pygmu2/
 │   ├── delay_pe.py              # Sample delay
 │   ├── crop_pe.py               # Temporal cropping
 │   ├── loop_pe.py               # Looping
+│   ├── slice_pe.py              # Slice/cut region + optional fades
 │   ├── biquad_pe.py             # Biquad filter
 │   ├── envelope_pe.py           # Envelope follower
 │   ├── dynamics_pe.py           # Flexible dynamics processor
@@ -239,6 +241,7 @@ class MyNewPE(ProcessingElement):
 4. **Add benchmark config** (optional) in `benchmarks/benchmark_pes.py`
 5. **Run tests**: `pipenv run pytest tests/test_myname_pe.py -v`
 6. **Run full suite**: `pipenv run pytest`
+7. **Add an example** (optional) in `examples/`
 
 ### Conventions
 
@@ -247,6 +250,10 @@ class MyNewPE(ProcessingElement):
 - **PE inputs**: Accept `Union[float, ProcessingElement]` for modulatable params
 - **Docstrings**: Include Args, Example, and behavioral notes
 - **Errors**: Use `config.handle_error()` instead of raising directly
+- **Time parameters**:
+  - Prefer defaults expressed in **seconds** (no implicit sample-rate assumptions).
+  - Convert seconds→samples in `configure()` (after `super().configure(sample_rate)`) using `ProcessingElement._time_to_samples(...)`.
+  - If you support both `*_samples` and `*_seconds`, accept them as `Optional[...]` and let `_time_to_samples` enforce mutual exclusion.
 
 ## Testing
 
