@@ -15,6 +15,8 @@ from pygmu2.audio_renderer import AudioRenderer
 from pygmu2.null_renderer import NullRenderer
 from pygmu2.adsr_pe import AdsrPE
 from pygmu2.array_pe import ArrayPE
+from pygmu2.analog_osc_pe import AnalogOscPE
+from pygmu2.function_gen_pe import FunctionGenPE
 from pygmu2.blit_saw_pe import BlitSawPE
 from pygmu2.compressor_pe import CompressorPE, LimiterPE, GatePE
 from pygmu2.constant_pe import ConstantPE
@@ -91,7 +93,9 @@ __all__ = [
     "NullRenderer",
     # Processing Elements
     "AdsrPE",
+    "AnalogOscPE",
     "ArrayPE",
+    "FunctionGenPE",
     "BiquadPE",
     "BlitSawPE",
     "CompressorPE",
