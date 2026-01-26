@@ -14,6 +14,7 @@ import numpy as np
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
+from pygmu2.interpolated_lookup import interpolated_lookup
 
 
 class InterpolationMode(Enum):
@@ -159,136 +160,14 @@ class WavetablePE(ProcessingElement):
                 oob_mask = None
         
         # Determine samples needed from wavetable
-        if self._interpolation == InterpolationMode.CUBIC:
-            margin = 2  # Need idx-1, idx, idx+1, idx+2
-        else:  # LINEAR
-            margin = 1  # Need idx, idx+1
-        
-        idx_min = np.min(indices)
-        idx_max = np.max(indices)
-        needed_min = int(np.floor(idx_min)) - (margin - 1)
-        needed_max = int(np.ceil(idx_max)) + margin
-        needed_duration = needed_max - needed_min
-        
-        # Render wavetable for the needed range
-        # (The wavetable's render() handles zero-padding outside its extent)
-        wt_snippet = self._wavetable.render(needed_min, needed_duration)
-        wt_data = wt_snippet.data
-        
-        # Perform interpolation
-        if self._interpolation == InterpolationMode.CUBIC:
-            result = self._cubic_interp(indices, wt_data, needed_min, channels)
-        else:
-            result = self._linear_interp(indices, wt_data, needed_min, channels)
-        
-        # Apply out-of-bounds mask for ZERO mode
-        if oob_mask is not None and np.any(oob_mask):
-            result[oob_mask] = 0.0
-        
-        return Snippet(start, result.astype(np.float32))
-    
-    def _linear_interp(
-        self,
-        indices: np.ndarray,
-        wt_data: np.ndarray,
-        wt_data_start: int,
-        channels: int,
-    ) -> np.ndarray:
-        """
-        Perform linear interpolation.
-        
-        Args:
-            indices: Fractional indices into wavetable (shape: (duration,))
-            wt_data: Rendered wavetable data (shape: (wt_duration, channels))
-            wt_data_start: Starting sample index of wt_data
-            channels: Number of output channels
-        
-        Returns:
-            Interpolated values (shape: (duration, channels))
-        """
-        duration = len(indices)
-        
-        # Floor indices and fractional parts
-        idx_floor = np.floor(indices).astype(np.int64)
-        frac = (indices - idx_floor).reshape(-1, 1)  # Shape: (duration, 1)
-        
-        # Convert to local indices within wt_data
-        local_floor = idx_floor - wt_data_start
-        local_ceil = local_floor + 1
-        
-        # Clip to valid array indices (wt_data already zero-padded by wavetable)
-        local_floor_clipped = np.clip(local_floor, 0, len(wt_data) - 1)
-        local_ceil_clipped = np.clip(local_ceil, 0, len(wt_data) - 1)
-        
-        # Look up values
-        val_floor = wt_data[local_floor_clipped]
-        val_ceil = wt_data[local_ceil_clipped]
-        
-        # Linear interpolation: (1-t)*v0 + t*v1
-        result = (1.0 - frac) * val_floor + frac * val_ceil
-        
-        return result
-    
-    def _cubic_interp(
-        self,
-        indices: np.ndarray,
-        wt_data: np.ndarray,
-        wt_data_start: int,
-        channels: int,
-    ) -> np.ndarray:
-        """
-        Perform cubic (Catmull-Rom) interpolation.
-        
-        Uses 4 points: p0=floor-1, p1=floor, p2=floor+1, p3=floor+2
-        Interpolates between p1 and p2.
-        
-        Args:
-            indices: Fractional indices into wavetable (shape: (duration,))
-            wt_data: Rendered wavetable data (shape: (wt_duration, channels))
-            wt_data_start: Starting sample index of wt_data
-            channels: Number of output channels
-        
-        Returns:
-            Interpolated values (shape: (duration, channels))
-        """
-        duration = len(indices)
-        
-        # Floor indices and fractional parts
-        idx_floor = np.floor(indices).astype(np.int64)
-        t = (indices - idx_floor).reshape(-1, 1)  # Shape: (duration, 1)
-        
-        # Convert to local indices within wt_data
-        local_p1 = idx_floor - wt_data_start
-        local_p0 = local_p1 - 1
-        local_p2 = local_p1 + 1
-        local_p3 = local_p1 + 2
-        
-        # Clip to valid array indices
-        max_idx = len(wt_data) - 1
-        local_p0_clipped = np.clip(local_p0, 0, max_idx)
-        local_p1_clipped = np.clip(local_p1, 0, max_idx)
-        local_p2_clipped = np.clip(local_p2, 0, max_idx)
-        local_p3_clipped = np.clip(local_p3, 0, max_idx)
-        
-        # Look up values
-        p0 = wt_data[local_p0_clipped]
-        p1 = wt_data[local_p1_clipped]
-        p2 = wt_data[local_p2_clipped]
-        p3 = wt_data[local_p3_clipped]
-        
-        # Catmull-Rom spline interpolation
-        # result = 0.5 * ((2*p1) + (-p0+p2)*t + (2*p0-5*p1+4*p2-p3)*t^2 + (-p0+3*p1-3*p2+p3)*t^3)
-        t2 = t * t
-        t3 = t2 * t
-        
-        result = 0.5 * (
-            (2.0 * p1) +
-            (-p0 + p2) * t +
-            (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2 +
-            (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3
+        return interpolated_lookup(
+            self._wavetable,
+            start,
+            indices,
+            self._interpolation,
+            out_of_bounds_mask=oob_mask,
+            out_dtype=np.float32,
         )
-        
-        return result
     
     def __repr__(self) -> str:
         return (

@@ -43,6 +43,7 @@ from pygmu2.trigger_pe import TriggerPE, TriggerMode
 from pygmu2.wavetable_pe import WavetablePE, InterpolationMode, OutOfBoundsMode
 from pygmu2.window_pe import WindowPE, WindowMode
 from pygmu2.reverse_pitch_echo_pe import ReversePitchEchoPE
+from pygmu2.timewarp_pe import TimeWarpPE
 from pygmu2.conversions import (
     pitch_to_freq,
     freq_to_pitch,
@@ -120,6 +121,7 @@ __all__ = [
     "WavReaderPE",
     "WavWriterPE",
     "WavetablePE",
+    "TimeWarpPE",
     "WindowPE",
     "ReversePitchEchoPE",
     # Enums

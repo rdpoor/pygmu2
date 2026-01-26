@@ -14,6 +14,7 @@ from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 from pygmu2.wavetable_pe import InterpolationMode
+from pygmu2.interpolated_lookup import interpolated_lookup
 
 
 class DelayPE(ProcessingElement):
@@ -202,94 +203,13 @@ class DelayPE(ProcessingElement):
         else:
             oob_mask = None
         
-        # Determine output channel count
-        channels = self._source.channel_count()
-        if channels is None:
-            channels = 1
-        
-        # Determine samples needed from source
-        if self._interpolation == InterpolationMode.CUBIC:
-            margin = 2
-        else:
-            margin = 1
-        
-        idx_min = np.min(indices)
-        idx_max = np.max(indices)
-        needed_min = int(np.floor(idx_min)) - (margin - 1)
-        needed_max = int(np.ceil(idx_max)) + margin
-        needed_duration = needed_max - needed_min
-        
-        # Render source for the needed range
-        source_snippet = self._source.render(needed_min, needed_duration)
-        source_data = source_snippet.data
-        
-        # Perform interpolation
-        if self._interpolation == InterpolationMode.CUBIC:
-            result = self._cubic_interp(indices, source_data, needed_min)
-        else:
-            result = self._linear_interp(indices, source_data, needed_min)
-        
-        # Apply out-of-bounds mask (zero for out-of-bounds)
-        if oob_mask is not None and np.any(oob_mask):
-            result[oob_mask] = 0.0
-        
-        return Snippet(start, result.astype(np.float32))
-    
-    def _linear_interp(
-        self,
-        indices: np.ndarray,
-        source_data: np.ndarray,
-        source_data_start: int,
-    ) -> np.ndarray:
-        """Perform linear interpolation."""
-        idx_floor = np.floor(indices).astype(np.int64)
-        frac = (indices - idx_floor).reshape(-1, 1)
-        
-        local_floor = idx_floor - source_data_start
-        local_ceil = local_floor + 1
-        
-        local_floor_clipped = np.clip(local_floor, 0, len(source_data) - 1)
-        local_ceil_clipped = np.clip(local_ceil, 0, len(source_data) - 1)
-        
-        val_floor = source_data[local_floor_clipped]
-        val_ceil = source_data[local_ceil_clipped]
-        
-        return (1.0 - frac) * val_floor + frac * val_ceil
-    
-    def _cubic_interp(
-        self,
-        indices: np.ndarray,
-        source_data: np.ndarray,
-        source_data_start: int,
-    ) -> np.ndarray:
-        """Perform cubic (Catmull-Rom) interpolation."""
-        idx_floor = np.floor(indices).astype(np.int64)
-        t = (indices - idx_floor).reshape(-1, 1)
-        
-        local_p1 = idx_floor - source_data_start
-        local_p0 = local_p1 - 1
-        local_p2 = local_p1 + 1
-        local_p3 = local_p1 + 2
-        
-        max_idx = len(source_data) - 1
-        local_p0_clipped = np.clip(local_p0, 0, max_idx)
-        local_p1_clipped = np.clip(local_p1, 0, max_idx)
-        local_p2_clipped = np.clip(local_p2, 0, max_idx)
-        local_p3_clipped = np.clip(local_p3, 0, max_idx)
-        
-        p0 = source_data[local_p0_clipped]
-        p1 = source_data[local_p1_clipped]
-        p2 = source_data[local_p2_clipped]
-        p3 = source_data[local_p3_clipped]
-        
-        t2 = t * t
-        t3 = t2 * t
-        
-        return 0.5 * (
-            (2.0 * p1) +
-            (-p0 + p2) * t +
-            (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t2 +
-            (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3
+        return interpolated_lookup(
+            self._source,
+            start,
+            indices,
+            self._interpolation,
+            out_of_bounds_mask=oob_mask,
+            out_dtype=np.float32,
         )
     
     def __repr__(self) -> str:
