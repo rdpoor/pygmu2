@@ -131,9 +131,9 @@ class SinePE(ProcessingElement):
             Snippet containing sine wave data
         """
         # Get parameter values (either constant or from PEs)
-        freq_values = self._param_values(self._frequency, start, duration, dtype=np.float64)
-        amp_values = self._param_values(self._amplitude, start, duration, dtype=np.float64).reshape(-1, 1)
-        phase_mod = self._param_values(self._phase, start, duration, dtype=np.float64)
+        freq_values = self._scalar_or_pe_values(self._frequency, start, duration, dtype=np.float64)
+        amp_values = self._scalar_or_pe_values(self._amplitude, start, duration, dtype=np.float64).reshape(-1, 1)
+        phase_mod = self._scalar_or_pe_values(self._phase, start, duration, dtype=np.float64)
         
         # Calculate phase
         if self._has_pe_inputs():

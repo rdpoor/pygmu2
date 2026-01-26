@@ -144,7 +144,7 @@ class TimeWarpPE(ProcessingElement):
     def _render(self, start: int, duration: int) -> Snippet:
         # Rate is mono control (channel 0). We intentionally do not attempt
         # to handle per-channel rate in this PE.
-        rate_values = self._param_values(self._rate, start, duration, dtype=np.float64)
+        rate_values = self._scalar_or_pe_values(self._rate, start, duration, dtype=np.float64)
 
         # Compute read indices for each output sample:
         # indices[0] = pos

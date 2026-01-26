@@ -260,7 +260,7 @@ class SuperSawPE(ProcessingElement):
             Snippet containing mixed sawtooth data
         """
         # Get amplitude values (1D control vector)
-        amp = self._param_values(self._amplitude, start, duration, dtype=np.float64)
+        amp = self._scalar_or_pe_values(self._amplitude, start, duration, dtype=np.float64)
         
         # Render all oscillators and mix
         # Each oscillator already has the correct detuned frequency

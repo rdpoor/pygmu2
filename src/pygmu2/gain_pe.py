@@ -106,7 +106,7 @@ class GainPE(ProcessingElement):
         
         if self._gain_is_pe:
             # Get gain values from PE (allow multi-channel for per-channel gain)
-            gain_data = self._param_values(
+            gain_data = self._scalar_or_pe_values(
                 self._gain,
                 start,
                 duration,

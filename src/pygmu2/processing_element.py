@@ -79,24 +79,23 @@ class ProcessingElement(ABC):
         
         Args:
             start: Starting sample index
-            duration: Number of samples to generate
+            duration: Number of samples to generate (must be >= 0)
         
         Returns:
             Snippet containing the requested audio data
         """
-        if duration <= 0:
-            import numpy as np
-            # Determine channel count (concrete value needed for shape)
+        if duration < 0:
+            raise ValueError(f"duration must be >= 0, got {duration}")
+
+        if duration == 0:
+            # Determine channel count (concrete value needed for shape).
             channels = self.channel_count()
             if channels is None:
-                # If dynamic, try to get from first input or default to 1
-                inputs = self.inputs()
-                if inputs:
-                    channels = inputs[0].channel_count()
-                if channels is None:
-                    channels = 1
-            
-            return Snippet.from_zeros(start, 0, channels)
+                # A 0-length snippet is semantically empty; don't overthink it.
+                # Default to mono when channel count is dynamic/unknown.
+                channels = 1
+
+            return Snippet.from_zeros(start, 0, int(channels))
             
         return self._render(start, duration)
 
@@ -253,12 +252,12 @@ class ProcessingElement(ABC):
         - Resetting state when scrubbing/jogging to different positions
         - Re-initializing stateful PEs during rendering
         
-        Default implementation does nothing (calls _reset_state() if it exists).
+        Default implementation calls _reset_state() if it exists.
         """
         if hasattr(self, '_reset_state'):
             self._reset_state()
 
-    def _param_values(
+    def _scalar_or_pe_values(
         self,
         param: Union[float, int, "ProcessingElement"],
         start: int,
@@ -271,6 +270,11 @@ class ProcessingElement(ABC):
     ):
         """
         Protected helper for "scalar-or-PE" parameters.
+
+        Many processing elements accept either a scalar value or a ProcessingElement.
+        This method handles this common case, returning a 1D array of constant values
+        (for a scalar parameter) or rendered data from the ProcessingElement (for a 
+        ProcessingElement parameter).
 
         Conventions:
         - **Default is 1D control**: returns a 1D array of shape (duration,).
@@ -321,7 +325,6 @@ class ProcessingElement(ABC):
             ch = channels if channels is not None else 1
             return np.full((duration, ch), value, dtype=dtype)
         return np.full((duration,), value, dtype=dtype)
-
 
 class SourcePE(ProcessingElement):
     """

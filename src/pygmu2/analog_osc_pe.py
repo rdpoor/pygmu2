@@ -180,8 +180,8 @@ class AnalogOscPE(ProcessingElement):
 
     def _render(self, start: int, duration: int) -> Snippet:
         # Parameter streams
-        freq = self._param_values(self._frequency, start, duration, dtype=np.float64)
-        duty = self._param_values(self._duty_cycle, start, duration, dtype=np.float64)
+        freq = self._scalar_or_pe_values(self._frequency, start, duration, dtype=np.float64)
+        duty = self._scalar_or_pe_values(self._duty_cycle, start, duration, dtype=np.float64)
 
         # Phase increment per sample (can be negative for negative freq)
         dt = freq / float(self.sample_rate)

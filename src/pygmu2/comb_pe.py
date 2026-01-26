@@ -278,10 +278,10 @@ class CombPE(ProcessingElement):
         smooth_alpha = 1.0 / self._smoothing_samples
 
         # Get frequency values (either constant or from PE)
-        freq_values = self._param_values(self._frequency, start, duration, dtype=np.float64)
+        freq_values = self._scalar_or_pe_values(self._frequency, start, duration, dtype=np.float64)
 
         # Get feedback values (either constant or from PE)
-        fb_values = self._param_values(self._feedback, start, duration, dtype=np.float64)
+        fb_values = self._scalar_or_pe_values(self._feedback, start, duration, dtype=np.float64)
 
         # Use Numba-accelerated path when available
         if NUMBA_AVAILABLE:

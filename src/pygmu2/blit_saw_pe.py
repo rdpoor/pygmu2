@@ -147,8 +147,8 @@ class BlitSawPE(ProcessingElement):
             Snippet containing sawtooth wave data
         """
         # Get parameter values (1D control vectors)
-        freq = self._param_values(self._frequency, start, duration, dtype=np.float64)
-        amp = self._param_values(self._amplitude, start, duration, dtype=np.float64)
+        freq = self._scalar_or_pe_values(self._frequency, start, duration, dtype=np.float64)
+        amp = self._scalar_or_pe_values(self._amplitude, start, duration, dtype=np.float64)
         
         # Handle M: auto-compute or use provided value
         if self._m is None:
@@ -160,7 +160,7 @@ class BlitSawPE(ProcessingElement):
             m = m - (1 - m % 2)
             m = np.maximum(m, 1)  # At least 1 harmonic
         else:
-            m_vals = self._param_values(self._m, start, duration, dtype=np.float64)
+            m_vals = self._scalar_or_pe_values(self._m, start, duration, dtype=np.float64)
             m = np.maximum(m_vals.astype(np.int32), 1).astype(np.float64)
         
         # Ensure arrays for vectorized computation (already 1D)

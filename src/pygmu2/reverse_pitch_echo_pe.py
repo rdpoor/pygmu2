@@ -597,16 +597,16 @@ class ReversePitchEchoPE(ProcessingElement):
             return Snippet(start, np.zeros_like(data, dtype=np.float32))
 
         # Get block size values (either constant or from PE)
-        block_values = self._param_values(self._block_seconds, start, duration, dtype=np.float64)
+        block_values = self._scalar_or_pe_values(self._block_seconds, start, duration, dtype=np.float64)
 
         # Get pitch ratio values (either constant or from PE)
-        pitch_values = self._param_values(self._pitch_ratio, start, duration, dtype=np.float64)
+        pitch_values = self._scalar_or_pe_values(self._pitch_ratio, start, duration, dtype=np.float64)
 
         # Get feedback values (either constant or from PE)
-        fb_values = self._param_values(self._feedback, start, duration, dtype=np.float64)
+        fb_values = self._scalar_or_pe_values(self._feedback, start, duration, dtype=np.float64)
 
         # Get alternate direction values (either constant or from PE)
-        alt_values = self._param_values(self._alternate_direction, start, duration, dtype=np.float64)
+        alt_values = self._scalar_or_pe_values(self._alternate_direction, start, duration, dtype=np.float64)
 
         # Use Numba-accelerated path when available
         if NUMBA_AVAILABLE:
