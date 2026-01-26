@@ -53,6 +53,15 @@ from pygmu2.conversions import (
     samples_to_seconds,
     seconds_to_samples,
 )
+from pygmu2.temperament import (
+    Temperament,
+    EqualTemperament,
+    JustIntonation,
+    PythagoreanTuning,
+    CustomTemperament,
+    set_temperament,
+    get_temperament,
+)
 from pygmu2.logger import setup_logging, get_logger
 
 __version__ = "0.1.0"
@@ -141,6 +150,14 @@ __all__ = [
     "ratio_to_semitones",
     "samples_to_seconds",
     "seconds_to_samples",
+    # Temperament system
+    "Temperament",
+    "EqualTemperament",
+    "JustIntonation",
+    "PythagoreanTuning",
+    "CustomTemperament",
+    "set_temperament",
+    "get_temperament",
     # Logging utilities
     "setup_logging",
     "get_logger",
