@@ -17,6 +17,11 @@ from pygmu2.temperament import (
     CustomTemperament,
     set_temperament,
     get_temperament,
+    set_reference_frequency,
+    get_reference_frequency,
+    set_concert_pitch,
+    set_verdi_tuning,
+    set_baroque_pitch,
 )
 
 
@@ -416,3 +421,119 @@ class TestArraySupport:
         freq = et12.pitch_to_freq(69)
         assert isinstance(freq, (np.ndarray, np.floating))
         assert float(freq) == pytest.approx(440.0)
+
+
+class TestReferenceFrequency:
+    """Tests for reference frequency configuration."""
+    
+    def test_default_is_440(self):
+        """Default reference should be A4 = 440 Hz."""
+        # Save and restore original
+        original = get_reference_frequency()
+        
+        try:
+            set_concert_pitch()  # Ensure default
+            freq, pitch = get_reference_frequency()
+            assert freq == pytest.approx(440.0)
+            assert pitch == pytest.approx(69.0)
+        finally:
+            set_reference_frequency(*original)
+    
+    def test_set_reference_frequency(self):
+        """set_reference_frequency should change global default."""
+        from pygmu2 import pitch_to_freq
+        
+        original = get_reference_frequency()
+        
+        try:
+            # Set to A4 = 432 Hz
+            set_reference_frequency(432.0)
+            
+            freq, pitch = get_reference_frequency()
+            assert freq == pytest.approx(432.0)
+            assert pitch == pytest.approx(69.0)
+            
+            # pitch_to_freq should now use 432 Hz
+            a4_freq = pitch_to_freq(69)
+            assert a4_freq == pytest.approx(432.0)
+        finally:
+            set_reference_frequency(*original)
+    
+    def test_set_verdi_tuning(self):
+        """set_verdi_tuning should set A4 = 432 Hz."""
+        from pygmu2 import pitch_to_freq
+        
+        original = get_reference_frequency()
+        
+        try:
+            set_verdi_tuning()
+            
+            freq, pitch = get_reference_frequency()
+            assert freq == pytest.approx(432.0)
+            
+            # Verify conversion uses 432 Hz
+            a4_freq = pitch_to_freq(69)
+            assert a4_freq == pytest.approx(432.0)
+        finally:
+            set_reference_frequency(*original)
+    
+    def test_set_baroque_pitch(self):
+        """set_baroque_pitch should set A4 = 415 Hz."""
+        from pygmu2 import pitch_to_freq
+        
+        original = get_reference_frequency()
+        
+        try:
+            set_baroque_pitch()
+            
+            freq, pitch = get_reference_frequency()
+            assert freq == pytest.approx(415.0)
+            
+            # Verify conversion uses 415 Hz
+            a4_freq = pitch_to_freq(69)
+            assert a4_freq == pytest.approx(415.0)
+        finally:
+            set_reference_frequency(*original)
+    
+    def test_custom_reference(self):
+        """Custom reference frequency should work."""
+        from pygmu2 import pitch_to_freq
+        
+        original = get_reference_frequency()
+        
+        try:
+            # Use A4 = 450 Hz
+            set_reference_frequency(450.0)
+            
+            a4_freq = pitch_to_freq(69)
+            assert a4_freq == pytest.approx(450.0)
+            
+            # Octave should still double
+            a5_freq = pitch_to_freq(81)
+            assert a5_freq == pytest.approx(900.0)
+        finally:
+            set_reference_frequency(*original)
+    
+    def test_explicit_overrides_global(self):
+        """Explicit reference_freq should override global."""
+        from pygmu2 import pitch_to_freq
+        
+        original = get_reference_frequency()
+        
+        try:
+            # Set global to 432
+            set_reference_frequency(432.0)
+            
+            # But explicitly use 440
+            freq = pitch_to_freq(69, reference_freq=440.0)
+            assert freq == pytest.approx(440.0)
+        finally:
+            set_reference_frequency(*original)
+    
+    def test_invalid_reference_frequency(self):
+        """Reference frequency must be positive."""
+        with pytest.raises(ValueError):
+            set_reference_frequency(0.0)
+        
+        with pytest.raises(ValueError):
+            set_reference_frequency(-440.0)

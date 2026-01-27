@@ -540,6 +540,12 @@ class CustomTemperament(Temperament):
 # Default global temperament (12-ET)
 _DEFAULT_TEMPERAMENT: Temperament = EqualTemperament(12)
 
+# Default reference frequency (A4 = 440 Hz, concert pitch)
+_DEFAULT_REFERENCE_FREQ: float = 440.0
+
+# Default reference pitch (MIDI note 69 = A4)
+_DEFAULT_REFERENCE_PITCH: float = 69.0
+
 
 def set_temperament(temperament: Temperament) -> None:
     """
@@ -573,3 +579,90 @@ def get_temperament() -> Temperament:
         12-tone Equal Temperament (12-ET)
     """
     return _DEFAULT_TEMPERAMENT
+
+
+def set_reference_frequency(freq: float, pitch: float = 69.0) -> None:
+    """
+    Set the global default reference frequency.
+    
+    This affects all pitch-to-frequency conversions that don't explicitly
+    specify a reference frequency.
+    
+    Common reference frequencies:
+    - 440.0 Hz: Modern concert pitch (ISO 16, default)
+    - 432.0 Hz: Alternative "Verdi" tuning
+    - 415.0 Hz: Baroque pitch
+    - 392.0 Hz: Classical pitch (18th century)
+    
+    Args:
+        freq: Reference frequency in Hz (typically for A4)
+        pitch: MIDI pitch number for the reference (default: 69.0 = A4)
+    
+    Example:
+        >>> from pygmu2 import set_reference_frequency
+        >>> set_reference_frequency(432.0)  # A4 = 432 Hz
+        >>> set_reference_frequency(415.0)  # Baroque pitch
+    """
+    global _DEFAULT_REFERENCE_FREQ, _DEFAULT_REFERENCE_PITCH
+    
+    if freq <= 0:
+        raise ValueError(f"Reference frequency must be positive, got {freq}")
+    
+    _DEFAULT_REFERENCE_FREQ = float(freq)
+    _DEFAULT_REFERENCE_PITCH = float(pitch)
+
+
+def get_reference_frequency() -> tuple[float, float]:
+    """
+    Get the current global reference frequency and pitch.
+    
+    Returns:
+        Tuple of (reference_freq, reference_pitch)
+    
+    Example:
+        >>> from pygmu2 import get_reference_frequency
+        >>> freq, pitch = get_reference_frequency()
+        >>> print(f"A4 = {freq} Hz")
+        A4 = 440.0 Hz
+    """
+    return (_DEFAULT_REFERENCE_FREQ, _DEFAULT_REFERENCE_PITCH)
+
+
+def set_concert_pitch() -> None:
+    """
+    Set reference to modern concert pitch (A4 = 440 Hz).
+    
+    This is the ISO 16 standard and the default.
+    
+    Example:
+        >>> from pygmu2 import set_concert_pitch
+        >>> set_concert_pitch()
+    """
+    set_reference_frequency(440.0, 69.0)
+
+
+def set_verdi_tuning() -> None:
+    """
+    Set reference to A4 = 432 Hz (Verdi tuning).
+    
+    Also known as "philosophical pitch" or "scientific pitch".
+    Some believe this tuning is more harmonious.
+    
+    Example:
+        >>> from pygmu2 import set_verdi_tuning
+        >>> set_verdi_tuning()
+    """
+    set_reference_frequency(432.0, 69.0)
+
+
+def set_baroque_pitch() -> None:
+    """
+    Set reference to A4 = 415 Hz (Baroque pitch).
+    
+    Common for historically informed performances of Baroque music.
+    
+    Example:
+        >>> from pygmu2 import set_baroque_pitch
+        >>> set_baroque_pitch()
+    """
+    set_reference_frequency(415.0, 69.0)

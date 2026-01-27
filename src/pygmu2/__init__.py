@@ -61,6 +61,11 @@ from pygmu2.temperament import (
     CustomTemperament,
     set_temperament,
     get_temperament,
+    set_reference_frequency,
+    get_reference_frequency,
+    set_concert_pitch,
+    set_verdi_tuning,
+    set_baroque_pitch,
 )
 from pygmu2.logger import setup_logging, get_logger
 
@@ -158,6 +163,11 @@ __all__ = [
     "CustomTemperament",
     "set_temperament",
     "get_temperament",
+    "set_reference_frequency",
+    "get_reference_frequency",
+    "set_concert_pitch",
+    "set_verdi_tuning",
+    "set_baroque_pitch",
     # Logging utilities
     "setup_logging",
     "get_logger",

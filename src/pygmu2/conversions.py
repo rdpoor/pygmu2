@@ -16,14 +16,14 @@ import numpy as np
 from numpy.typing import ArrayLike
 from typing import Optional
 
-from pygmu2.temperament import Temperament, get_temperament
+from pygmu2.temperament import Temperament, get_temperament, get_reference_frequency
 
 
 def pitch_to_freq(
     pitch: ArrayLike,
     temperament: Optional[Temperament] = None,
-    reference_pitch: float = 69.0,
-    reference_freq: float = 440.0
+    reference_pitch: Optional[float] = None,
+    reference_freq: Optional[float] = None
 ) -> np.ndarray:
     """
     Convert pitch number to frequency in Hz.
@@ -31,13 +31,14 @@ def pitch_to_freq(
     By default uses 12-tone equal temperament with A4 = 440 Hz.
     Alternative temperaments can be specified via the temperament parameter
     or by setting a global default with set_temperament().
+    Reference frequency can be changed globally with set_reference_frequency().
     
     Args:
         pitch: Pitch number(s). Can be fractional.
                In 12-ET: A4 = 69, Middle C (C4) = 60
         temperament: Temperament to use (default: uses global temperament)
-        reference_pitch: Reference pitch number (default: 69.0 for A4)
-        reference_freq: Reference frequency in Hz (default: 440.0)
+        reference_pitch: Reference pitch number (default: global, typically 69.0 for A4)
+        reference_freq: Reference frequency in Hz (default: global, typically 440.0)
     
     Returns:
         Frequency in Hz
@@ -50,21 +51,28 @@ def pitch_to_freq(
         >>> pitch_to_freq([60, 64, 67])  # C major chord in 12-ET
         array([261.626, 329.628, 391.995])
         
-        >>> # Using 19-tone equal temperament
-        >>> from pygmu2 import EqualTemperament
-        >>> et19 = EqualTemperament(19)
-        >>> pitch_to_freq(69, temperament=et19)
-        440.0
+        >>> # Using alternative tuning (A4 = 432 Hz)
+        >>> from pygmu2 import set_reference_frequency
+        >>> set_reference_frequency(432.0)
+        >>> pitch_to_freq(69)  # A4 now = 432 Hz
+        432.0
     """
     temp = temperament if temperament is not None else get_temperament()
+    
+    # Get global reference if not specified
+    if reference_freq is None or reference_pitch is None:
+        global_freq, global_pitch = get_reference_frequency()
+        reference_freq = reference_freq if reference_freq is not None else global_freq
+        reference_pitch = reference_pitch if reference_pitch is not None else global_pitch
+    
     return temp.pitch_to_freq(pitch, reference_pitch, reference_freq)
 
 
 def freq_to_pitch(
     freq: ArrayLike,
     temperament: Optional[Temperament] = None,
-    reference_pitch: float = 69.0,
-    reference_freq: float = 440.0
+    reference_pitch: Optional[float] = None,
+    reference_freq: Optional[float] = None
 ) -> np.ndarray:
     """
     Convert frequency in Hz to pitch number.
@@ -72,12 +80,13 @@ def freq_to_pitch(
     By default uses 12-tone equal temperament with A4 = 440 Hz.
     Alternative temperaments can be specified via the temperament parameter
     or by setting a global default with set_temperament().
+    Reference frequency can be changed globally with set_reference_frequency().
     
     Args:
         freq: Frequency in Hz. Must be positive.
         temperament: Temperament to use (default: uses global temperament)
-        reference_pitch: Reference pitch number (default: 69.0 for A4)
-        reference_freq: Reference frequency in Hz (default: 440.0)
+        reference_pitch: Reference pitch number (default: global, typically 69.0 for A4)
+        reference_freq: Reference frequency in Hz (default: global, typically 440.0)
     
     Returns:
         Pitch number (can be fractional for microtones)
@@ -91,6 +100,13 @@ def freq_to_pitch(
         array([60., 64., 67.])
     """
     temp = temperament if temperament is not None else get_temperament()
+    
+    # Get global reference if not specified
+    if reference_freq is None or reference_pitch is None:
+        global_freq, global_pitch = get_reference_frequency()
+        reference_freq = reference_freq if reference_freq is not None else global_freq
+        reference_pitch = reference_pitch if reference_pitch is not None else global_pitch
+    
     return temp.freq_to_pitch(freq, reference_pitch, reference_freq)
 
 

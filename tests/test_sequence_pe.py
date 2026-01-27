@@ -257,6 +257,155 @@ class TestSequencePERender:
             seq.render(0, 10)
 
 
+class TestSequencePEExplicitDuration:
+    """Test SequencePE with explicit durations (3-tuple format)."""
+    
+    def setup_method(self):
+        self.renderer = NullRenderer(sample_rate=44100)
+    
+    def test_explicit_duration_non_overlapping(self):
+        """Test 3-tuple format with explicit durations, overlap=False."""
+        pe1 = IdentityPE()
+        pe2 = IdentityPE()
+        
+        # Specify explicit durations
+        sequence = [
+            (pe1, 0, 5),    # Starts at 0, plays for 5 samples
+            (pe2, 10, 3),   # Starts at 10, plays for 3 samples
+        ]
+        seq = SequencePE(sequence, overlap=False)
+        
+        self.renderer.set_source(seq)
+        
+        # Render first segment (pe1 active)
+        snippet1 = seq.render(0, 5)
+        # pe1 cropped to 5 samples: [0, 1, 2, 3, 4]
+        # pe2 delayed by 10, requests render(-10, 5), cropped to 3 → [0, 0, 0, 0, 0]
+        expected1 = np.array([[0.0], [1.0], [2.0], [3.0], [4.0]], dtype=np.float32)
+        np.testing.assert_array_almost_equal(snippet1.data, expected1)
+        
+        # Render second segment (pe2 active)
+        snippet2 = seq.render(10, 3)
+        # pe1 cropped to 5, delayed by 0: requests render(10, 3) → [0, 0, 0] (out of crop range)
+        # pe2 cropped to 3, delayed by 10: requests render(0, 3) → [0, 1, 2]
+        expected2 = np.array([[0.0], [1.0], [2.0]], dtype=np.float32)
+        np.testing.assert_array_almost_equal(snippet2.data, expected2)
+    
+    def test_explicit_duration_overlapping(self):
+        """Test 3-tuple format with explicit durations, overlap=True."""
+        pe1 = IdentityPE()
+        pe2 = IdentityPE()
+        
+        # Overlapping sequence with explicit durations
+        sequence = [
+            (pe1, 0, 10),   # Starts at 0, plays for 10 samples
+            (pe2, 5, 10),   # Starts at 5, plays for 10 samples (overlaps pe1)
+        ]
+        seq = SequencePE(sequence, overlap=True)
+        
+        self.renderer.set_source(seq)
+        
+        # Render overlap region
+        snippet = seq.render(5, 5)
+        # pe1 (delayed 0, cropped to 10): outputs [5, 6, 7, 8, 9]
+        # pe2 (delayed 5, cropped to 10): outputs [0, 1, 2, 3, 4]
+        # Mix: [5+0, 6+1, 7+2, 8+3, 9+4] = [5, 7, 9, 11, 13]
+        expected = np.array([[5.0], [7.0], [9.0], [11.0], [13.0]], dtype=np.float32)
+        np.testing.assert_array_almost_equal(snippet.data, expected)
+    
+    def test_mixed_2_and_3_tuples(self):
+        """Test mixing 2-tuple and 3-tuple formats in same sequence."""
+        pe1 = IdentityPE()
+        pe2 = IdentityPE()
+        pe3 = IdentityPE()
+        
+        # Mixed format
+        sequence = [
+            (pe1, 0, 5),    # 3-tuple: explicit duration
+            (pe2, 5),       # 2-tuple: inferred duration from next item
+            (pe3, 10),      # 2-tuple: no cropping (last item)
+        ]
+        seq = SequencePE(sequence, overlap=False)
+        
+        self.renderer.set_source(seq)
+        
+        # Check that inputs are correctly extracted
+        inputs = seq.inputs()
+        assert len(inputs) == 3
+        assert pe1 in inputs
+        assert pe2 in inputs
+        assert pe3 in inputs
+        
+        # Render to verify correct processing
+        snippet = seq.render(0, 15)
+        # All three PEs are mixed together (DelayPE + optional CropPE + MixPE)
+        # pe1: delayed 0, cropped to 5. At global time t, outputs t if t<5, else 0
+        # pe2: delayed 5, cropped to 5. At global time t, outputs (t-5) if 5<=t<10, else 0
+        # pe3: delayed 10, not cropped. At global time t, outputs (t-10)
+        # Mix all three:
+        expected = np.array([
+            [-10.0], [-8.0], [-6.0], [-4.0], [-2.0],  # t=0-4: pe1=[0,1,2,3,4] + pe2=[0] + pe3=[-10,-9,-8,-7,-6]
+            [-5.0], [-3.0], [-1.0], [1.0], [3.0],     # t=5-9: pe1=[0] + pe2=[0,1,2,3,4] + pe3=[-5,-4,-3,-2,-1]
+            [0.0], [1.0], [2.0], [3.0], [4.0],        # t=10-14: pe1=[0] + pe2=[0] + pe3=[0,1,2,3,4]
+        ], dtype=np.float32)
+        np.testing.assert_array_almost_equal(snippet.data, expected)
+    
+    def test_explicit_duration_zero(self):
+        """Test 3-tuple with zero duration (should not crop)."""
+        pe1 = IdentityPE()
+        pe2 = IdentityPE()
+        
+        sequence = [
+            (pe1, 0, 0),    # Zero duration (should skip crop)
+            (pe2, 5, 5),    # Non-zero duration
+        ]
+        seq = SequencePE(sequence, overlap=False)
+        
+        self.renderer.set_source(seq)
+        
+        # Render snippet
+        snippet = seq.render(0, 10)
+        # pe1: delayed by 0, not cropped (duration=0 skips crop check)
+        #      At global time t, outputs t
+        # pe2: delayed by 5, cropped to 5 samples
+        #      At global time t, outputs (t-5) if 5<=t<10, else 0
+        # Mix:
+        #   t=0: pe1=0, pe2=-5 (cropped to 0) → 0
+        #   t=1: pe1=1, pe2=-4 (cropped to 0) → 1
+        #   ...
+        #   t=5: pe1=5, pe2=0 → 5
+        #   t=9: pe1=9, pe2=4 → 13
+        expected = np.array([
+            [0.0], [1.0], [2.0], [3.0], [4.0],
+            [5.0], [7.0], [9.0], [11.0], [13.0]
+        ], dtype=np.float32)
+        np.testing.assert_array_almost_equal(snippet.data, expected)
+    
+    def test_sorting_with_3_tuples(self):
+        """Test that 3-tuples are correctly sorted by start_time."""
+        pe1 = ConstantPE(1.0)
+        pe2 = ConstantPE(2.0)
+        pe3 = ConstantPE(3.0)
+        
+        # Provide in reverse order with 3-tuples
+        sequence = [
+            (pe3, 200, 50),
+            (pe1, 0, 50),
+            (pe2, 100, 50)
+        ]
+        seq = SequencePE(sequence)
+        
+        # Should be sorted by start_time
+        sorted_seq = seq.sequence
+        assert sorted_seq[0][1] == 0
+        assert sorted_seq[1][1] == 100
+        assert sorted_seq[2][1] == 200
+        # Verify durations are preserved
+        assert sorted_seq[0][2] == 50
+        assert sorted_seq[1][2] == 50
+        assert sorted_seq[2][2] == 50
+
+
 class TestSequencePESampleAccurate:
     """Test sample-accurate behavior of SequencePE."""
     

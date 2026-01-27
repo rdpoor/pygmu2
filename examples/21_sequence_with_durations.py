@@ -1,0 +1,217 @@
+#!/usr/bin/env python3
+"""
+Example 21: SequencePE with Explicit Durations
+
+Demonstrates the 3-tuple format for SequencePE where you can specify
+(PE, start_time, duration) to have precise control over timing.
+
+Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+MIT License
+"""
+
+from pygmu2 import (
+    AudioRenderer,
+    SequencePE,
+    SinePE,
+    GainPE,
+    CropPE,
+    Extent,
+    pitch_to_freq,
+)
+
+SAMPLE_RATE = 44100
+
+
+def demo_explicit_durations():
+    """
+    Demonstrate 3-tuple format with explicit durations.
+    
+    This allows precise control over when each note starts and how long it plays,
+    making it easy to create complex rhythmic patterns with overlaps.
+    """
+    print("=== Demo: Explicit Durations (3-tuple format) ===")
+    print("Creating a melody with precisely timed, overlapping notes...")
+    print()
+    
+    # Note durations in samples (at 44.1kHz)
+    quarter_note = SAMPLE_RATE // 4  # ~0.25 seconds
+    eighth_note = SAMPLE_RATE // 8   # ~0.125 seconds
+    
+    # MIDI note numbers
+    C4 = 60
+    D4 = 62
+    E4 = 64
+    F4 = 65
+    G4 = 67
+    
+    # Create notes
+    c_note = SinePE(frequency=pitch_to_freq(C4), amplitude=0.3)
+    d_note = SinePE(frequency=pitch_to_freq(D4), amplitude=0.3)
+    e_note = SinePE(frequency=pitch_to_freq(E4), amplitude=0.3)
+    f_note = SinePE(frequency=pitch_to_freq(F4), amplitude=0.3)
+    g_note = SinePE(frequency=pitch_to_freq(G4), amplitude=0.3)
+    
+    # Create a sequence with explicit start times and durations
+    # The 3-tuple format is (PE, start_time, duration)
+    # This makes it easy to create overlapping notes
+    sequence = [
+        (c_note, 0, quarter_note),                      # C plays for a quarter note
+        (e_note, eighth_note, quarter_note),            # E starts early, overlaps with C
+        (g_note, quarter_note, quarter_note),           # G starts as C ends
+        (f_note, quarter_note + eighth_note, eighth_note),  # F plays briefly
+        (d_note, quarter_note * 2, quarter_note),       # D plays at the end
+    ]
+    
+    # With explicit durations, overlap=True makes the most sense
+    # since we're controlling the timing ourselves
+    seq = SequencePE(sequence, overlap=True)
+    
+    # Apply gain to avoid clipping
+    output = GainPE(seq, gain=0.5)
+    
+    # Calculate total duration
+    total_duration = quarter_note * 3
+    output = CropPE(output, Extent(0, total_duration))
+    
+    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
+    renderer.set_source(output)
+    
+    with renderer:
+        renderer.start()
+        renderer.play_extent()
+    
+    print("Notice how notes overlap smoothly!")
+
+
+def demo_mixed_format():
+    """
+    Demonstrate mixing 2-tuple and 3-tuple formats in the same sequence.
+    
+    You can mix (PE, start_time) and (PE, start_time, duration) in the same
+    sequence. This is useful when you want explicit control over some notes
+    but want others to be automatically cropped.
+    """
+    print("\n=== Demo: Mixed 2-tuple and 3-tuple Format ===")
+    print("Mixing explicit and inferred durations...")
+    print()
+    
+    half_second = SAMPLE_RATE // 2
+    
+    # MIDI notes
+    C4 = 60
+    E4 = 64
+    G4 = 67
+    
+    # Create notes
+    c_note = SinePE(frequency=pitch_to_freq(C4), amplitude=0.3)
+    e_note = SinePE(frequency=pitch_to_freq(E4), amplitude=0.3)
+    g_note = SinePE(frequency=pitch_to_freq(G4), amplitude=0.3)
+    
+    # Mix formats: some with explicit duration, some without
+    sequence = [
+        (c_note, 0, half_second),           # Explicit: plays for exactly 0.5s
+        (e_note, half_second),              # Inferred: will be cropped to next item
+        (g_note, half_second * 2, half_second),  # Explicit: plays for 0.5s
+    ]
+    
+    # With overlap=False, e_note will be cropped to prevent overlap with g_note
+    seq = SequencePE(sequence, overlap=False)
+    
+    # Apply gain
+    output = GainPE(seq, gain=0.5)
+    
+    # Play for 1.5 seconds
+    total_duration = half_second * 3
+    output = CropPE(output, Extent(0, total_duration))
+    
+    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
+    renderer.set_source(output)
+    
+    with renderer:
+        renderer.start()
+        renderer.play_extent()
+    
+    print("E note duration was automatically inferred!")
+
+
+def demo_staccato_pattern():
+    """
+    Demonstrate creating staccato (short, detached) notes.
+    
+    With explicit durations, it's easy to create notes that are shorter
+    than the time between their start times, creating rhythmic gaps.
+    """
+    print("\n=== Demo: Staccato Pattern ===")
+    print("Creating short, detached notes with gaps...")
+    print()
+    
+    beat = SAMPLE_RATE // 4  # Quarter note duration
+    note_length = SAMPLE_RATE // 16  # Very short notes (16th note)
+    
+    # Arpeggio pattern: C - E - G - C
+    notes = [60, 64, 67, 72]  # MIDI note numbers
+    
+    # Create sequence where each note starts on the beat but plays very short
+    sequence = []
+    for i, midi_note in enumerate(notes):
+        note_pe = SinePE(frequency=pitch_to_freq(midi_note), amplitude=0.4)
+        start_time = i * beat
+        # Note: duration is much shorter than beat spacing
+        sequence.append((note_pe, start_time, note_length))
+    
+    # Use overlap=True since we're explicitly controlling timing
+    seq = SequencePE(sequence, overlap=True)
+    
+    # Apply gain
+    output = GainPE(seq, gain=0.6)
+    
+    # Play full sequence
+    total_duration = beat * len(notes)
+    output = CropPE(output, Extent(0, total_duration))
+    
+    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
+    renderer.set_source(output)
+    
+    with renderer:
+        renderer.start()
+        renderer.play_extent()
+    
+    print("Staccato notes create a bouncy, rhythmic feel!")
+
+
+if __name__ == "__main__":
+    import sys
+    
+    demos = {
+        "1": ("Explicit Durations", demo_explicit_durations),
+        "2": ("Mixed Format", demo_mixed_format),
+        "3": ("Staccato Pattern", demo_staccato_pattern),
+    }
+    
+    if len(sys.argv) > 1:
+        choice = sys.argv[1]
+    else:
+        print("=== pygmu2 Example 21: SequencePE with Explicit Durations ===")
+        print()
+        print("Choose a demo:")
+        for key, (name, _) in demos.items():
+            print(f"  {key}: {name}")
+        print("  a: All demos")
+        print()
+        choice = input("Choice (1-3 or 'a' for all): ").strip().lower()
+    
+    if choice == "a":
+        for name, func in demos.values():
+            try:
+                func()
+            except KeyboardInterrupt:
+                print("\nInterrupted.")
+                break
+    elif choice in demos:
+        name, func = demos[choice]
+        try:
+            func()
+        except KeyboardInterrupt:
+            print("\nInterrupted.")
+    else:
+        print(f"Invalid choice: {choice}")

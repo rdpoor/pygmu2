@@ -25,6 +25,10 @@ from pygmu2 import (
     JustIntonation,
     PythagoreanTuning,
     set_temperament,
+    set_reference_frequency,
+    set_concert_pitch,
+    set_verdi_tuning,
+    get_reference_frequency,
 )
 
 # Sample rate for conversions
@@ -267,8 +271,79 @@ def demo_fifth():
     play_chord_comparison("5th Stack", notes_to_midi(["C4", "G4"]))
 
 def demo_fifth_stack():
-    """Compare stacked fifths (C-G-D) across temperaments."""
+    """Compare stacked fifths (C-G-D-A) across temperaments."""
     play_chord_comparison("5th Stack", notes_to_midi(["C3", "G3", "D4", "A4"]))
+
+
+def demo_reference_frequency():
+    """
+    Compare A=440 Hz (concert pitch) vs A=432 Hz (Verdi tuning).
+    
+    Demonstrates changing the global reference frequency.
+    """
+    print(f"\n{'='*60}")
+    print("Reference Frequency Comparison: A=440 vs A=432")
+    print(f"{'='*60}")
+    print("\nSame C major chord, different reference frequencies.\n")
+    
+    # Save original
+    original_ref = get_reference_frequency()
+    
+    try:
+        notes = notes_to_midi(["C4", "E4", "G4"])
+        et12 = EqualTemperament(12)
+        
+        # A=440 Hz (concert pitch)
+        set_concert_pitch()
+        freq_440, _ = get_reference_frequency()
+        
+        print(f"1. Concert Pitch (A4 = {freq_440:.0f} Hz) at t=0.0s")
+        print("   - Modern standard (ISO 16)")
+        print("   Frequencies:")
+        for note in notes:
+            note_name = midi_to_note(note)
+            freq = pitch_to_freq(note, temperament=et12).item()
+            print(f"     {note_name}: {freq:.2f} Hz")
+        
+        chord_440 = play_chord(notes, "A=440", et12, 0.0)
+        
+        # A=432 Hz (Verdi tuning)
+        set_verdi_tuning()
+        freq_432, _ = get_reference_frequency()
+        
+        start_time_432 = CHORD_DURATION + PAUSE_BETWEEN
+        print(f"\n2. Verdi Tuning (A4 = {freq_432:.0f} Hz) at t={start_time_432:.1f}s")
+        print("   - Alternative 'philosophical pitch'")
+        print("   Frequencies:")
+        for note in notes:
+            note_name = midi_to_note(note)
+            freq = pitch_to_freq(note, temperament=et12).item()
+            print(f"     {note_name}: {freq:.2f} Hz")
+        
+        chord_432 = play_chord(notes, "A=432", et12, start_time_432)
+        
+        # Calculate difference
+        c4_diff = 261.63 - pitch_to_freq(60, temperament=et12).item()
+        print(f"\n   All notes are ~{c4_diff:.2f} Hz lower at A=432")
+        
+        # Mix and play
+        mixed = MixPE(chord_440, chord_432)
+        
+        total_duration = start_time_432 + CHORD_DURATION
+        print(f"\nPlaying {total_duration:.1f} seconds...")
+        print("Listen for the subtle pitch difference.\n")
+        
+        renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
+        renderer.set_source(mixed)
+        renderer.start()
+        renderer.play_extent()
+        renderer.stop()
+        
+        print("\n✅ Playback complete!\n")
+    
+    finally:
+        # Restore original reference
+        set_reference_frequency(*original_ref)
 
 
 def main():
@@ -283,11 +358,12 @@ def main():
     print()
     
     demos = [
-        ("1", "C Major Triad", demo_c_major),
-        ("2", "A Minor Triad", demo_a_minor),
-        ("3", "5th (C-G)", demo_fifth),
-        ("4", "5th Stack (C-G-D)", demo_fifth_stack),
-        ("a", "All chords", None),
+        ("1", "C Major Triad (temperaments)", demo_c_major),
+        ("2", "A Minor Triad (temperaments)", demo_a_minor),
+        ("3", "5th (C-G) (temperaments)", demo_fifth),
+        ("4", "5th Stack (C-G-D-A) (temperaments)", demo_fifth_stack),
+        ("5", "A=440 vs A=432 (reference freq)", demo_reference_frequency),
+        ("a", "All demos", None),
     ]
     
     print("Available demos:")
@@ -295,7 +371,7 @@ def main():
         print(f"  {key}: {name}")
     print()
     
-    choice = input("Choose a demo (1-4 or 'a' for all): ").strip().lower()
+    choice = input("Choose a demo (1-5 or 'a' for all): ").strip().lower()
     print()
     
     if choice == "a":
@@ -309,14 +385,13 @@ def main():
         else:
             print(f"Unknown choice: {choice}")
     
-    print("\nTip: You can set a global temperament for all conversions:")
-    print(">>> from pygmu2 import set_temperament, JustIntonation")
-    print(">>> set_temperament(JustIntonation())")
-    print(">>> freq = pitch_to_freq(64)  # Now uses just intonation")
-
-
-if __name__ == "__main__":
-    main()
+    print("\nTips:")
+    print("  Change temperament:")
+    print("    >>> from pygmu2 import set_temperament, JustIntonation")
+    print("    >>> set_temperament(JustIntonation())")
+    print("  Change reference frequency:")
+    print("    >>> from pygmu2 import set_verdi_tuning")
+    print("    >>> set_verdi_tuning()  # A4 = 432 Hz")
 
 
 if __name__ == "__main__":

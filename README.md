@@ -236,7 +236,9 @@ set_error_mode(ErrorMode.LENIENT)
 
 ## Alternative Temperaments
 
-pygmu2 supports multiple tuning systems (temperaments) beyond standard 12-tone equal temperament:
+pygmu2 supports multiple tuning systems (temperaments) and reference frequencies:
+
+### Temperaments
 
 ```python
 from pygmu2 import (
@@ -269,6 +271,34 @@ freq = pitch_to_freq(60)  # Now uses 19-ET globally
 - `JustIntonation(ratios)` - Just intonation with pure harmonic ratios
 - `PythagoreanTuning()` - 3-limit tuning based on perfect fifths
 - `CustomTemperament(...)` - Define your own tuning system
+
+### Reference Frequency
+
+Change the reference pitch (A4 defaults to 440 Hz):
+
+```python
+from pygmu2 import (
+    set_reference_frequency,
+    set_concert_pitch,
+    set_verdi_tuning,
+    set_baroque_pitch,
+    pitch_to_freq
+)
+
+# A4 = 432 Hz (Verdi/philosophical pitch)
+set_verdi_tuning()
+freq = pitch_to_freq(69)  # 432.0 Hz
+
+# A4 = 415 Hz (Baroque pitch)
+set_baroque_pitch()
+freq = pitch_to_freq(69)  # 415.0 Hz
+
+# A4 = 440 Hz (concert pitch, default)
+set_concert_pitch()
+
+# Custom reference frequency
+set_reference_frequency(442.0)  # Some orchestras tune to A=442
+```
 
 See `examples/20_alternative_temperaments.py` for a detailed demonstration.
 
