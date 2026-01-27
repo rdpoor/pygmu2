@@ -6,7 +6,7 @@ Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
 MIT License
 """
 
-from typing import Optional
+from typing import Optional, Union
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
@@ -22,14 +22,19 @@ class SequencePE(ProcessingElement):
     """
     A ProcessingElement that sequences multiple PEs in time.
     
-    Takes a list of (PE, start_time) pairs and plays them sequentially.
+    Takes a list of (item, start_time) pairs and plays them sequentially.
+    Each item may be either a ProcessingElement or a scalar (float/int).
     Each PE is delayed by its start_time. When overlap=False, each PE
     is cropped to prevent overlap with the next PE.
     
     The sequence is automatically sorted by start_time.
     
     Args:
-        sequence: List of (PE, start_time) tuples where start_time is in samples
+        sequence: List of (item, start_time) tuples where start_time is in samples
+                  and item is either a ProcessingElement or a scalar.
+        channels: Output channel count for scalar items. If one or more items are
+                  ProcessingElements, this must match their channel count.
+                  If all items are scalars, defaults to 1.
         overlap: If False, crop each PE to prevent overlap (default: False)
     
     Example:
@@ -44,11 +49,20 @@ class SequencePE(ProcessingElement):
         
         # Overlapping sequence (all play simultaneously after delays)
         seq_overlap = SequencePE(sequence, overlap=True)
+
+        # A scalar "step sequence" (common for control signals)
+        values = [
+            (0.0, 0),     # 0.0 starting at t=0
+            (0.5, 100),   # 0.5 starting at t=100 samples
+            (1.0, 200),   # 1.0 starting at t=200 samples
+        ]
+        steps = SequencePE(values, overlap=False)
     """
     
     def __init__(
         self,
-        sequence: list[tuple[ProcessingElement, int]],
+        sequence: list[tuple[Union[ProcessingElement, float, int], int]],
+        channels: Optional[int] = None,
         overlap: bool = False,
     ):
         if not sequence:
@@ -64,20 +78,86 @@ class SequencePE(ProcessingElement):
             return
         
         self._overlap = overlap
+
+        # Determine channel count.
+        #
+        # Rule:
+        # - If one or more items are PEs, the first PE with a known channel_count()
+        #   sets the base channel count. Any subsequent PEs with known channel counts
+        #   must match.
+        # - If all items are scalars, default to 1 channel, unless channels= is given.
+        #
+        # Note: We use the input list order (not time-sorted order) to choose the
+        # "first PE" so behavior is stable even when start_time ties change sorting.
+        base_channels: Optional[int] = None
+        saw_pe = False
+        saw_unknown_pe_channels = False
+
+        for item, _start_time in sequence:
+            if isinstance(item, ProcessingElement):
+                saw_pe = True
+                ch = item.channel_count()
+                if ch is None:
+                    saw_unknown_pe_channels = True
+                    continue
+                base_channels = int(ch)
+                break
+
+        if base_channels is None:
+            # No PE with known channel count in the sequence.
+            if channels is not None:
+                base_channels = int(channels)
+            else:
+                base_channels = 1
+            # If we saw PEs but none could report a channel count, require explicit channels.
+            if saw_pe and saw_unknown_pe_channels and channels is None:
+                raise ValueError(
+                    "SequencePE: channels must be provided when the sequence contains "
+                    "ProcessingElements with unknown channel count"
+                )
+
+        if base_channels <= 0:
+            raise ValueError(f"SequencePE: channels must be >= 1 (got {base_channels})")
+
+        if channels is not None and int(channels) != base_channels:
+            raise ValueError(
+                f"SequencePE: channels must match PE channel count (got channels={channels}, "
+                f"expected {base_channels})"
+            )
+        self._channels = base_channels
         
         # Sort by start_time
         sorted_sequence = sorted(sequence, key=lambda x: x[1])
-        self._sequence = sorted_sequence
+        # Normalize scalars to PEs (scalars are gated to be 0 for local time < 0).
+        normalized: list[tuple[ProcessingElement, int]] = []
+        for item, start_time in sorted_sequence:
+            if isinstance(item, ProcessingElement):
+                pe = item
+            else:
+                pe = CropPE(ConstantPE(float(item), channels=self._channels), Extent(0, None))
+            normalized.append((pe, int(start_time)))
+
+        self._sequence = normalized
+
+        # Validate PE channel counts against base_channels when known.
+        for pe, _start_time in self._sequence:
+            ch = pe.channel_count()
+            if ch is None:
+                continue
+            if int(ch) != self._channels:
+                raise ValueError(
+                    f"SequencePE input channel mismatch: expected {self._channels} channels, got {ch}"
+                )
         
         # Build the processing chain
         processed_pes = []
         
-        for i, (pe, start_time) in enumerate(sorted_sequence):
+        for i, (pe, start_time) in enumerate(self._sequence):
             # Apply cropping if overlap=False
-            if not overlap and i < len(sorted_sequence) - 1:
+            if not overlap and i < len(self._sequence) - 1:
                 # Not the last item: crop PE to [0, next_start_time - start_time)
                 # in its own timeline, so it plays for (next_start_time - start_time) samples
-                next_start_time = sorted_sequence[i + 1][1]
+                next_start_time = self._sequence[i + 1][1]
                 duration = next_start_time - start_time
                 if duration > 0:
                     cropped_pe = CropPE(pe, Extent(0, duration))

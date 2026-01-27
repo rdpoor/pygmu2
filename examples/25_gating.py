@@ -1,0 +1,558 @@
+"""
+Example 25: Demonstrating of Gating and re-triggering an ADSR
+
+Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+MIT License
+"""
+
+from pygmu2 import (
+    AudioRenderer,
+    AdsrPE,
+    BiquadPE,
+    BiquadMode,
+    ConstantPE,
+    CropPE,
+    DelayPE,
+    Extent,
+    FunctionGenPE,
+    GainPE,
+    MixPE,
+    ResetPE,
+    SequencePE,
+    SlicePE,
+    SuperSawPE,
+    TransformPE,
+    pitch_to_freq,
+    seconds_to_samples,
+    get_logger,
+    setup_logging,
+)
+
+import logging
+setup_logging(level="INFO")
+logger = get_logger(__name__)  # or get_logger("my_module")
+
+# Configuration
+SAMPLE_RATE = 44100
+BPM = 130
+SECONDS_PER_BEAT = 60.0 / BPM
+SAMPLES_PER_BEAT = SECONDS_PER_BEAT * SAMPLE_RATE
+
+# durations (in beats): 
+# Whole, Half, Quarter, Eigth, Sixteenth, Thirty-second, dotted, triplet
+bW = 4.0
+bH = 2.0
+bQ = 1.0
+bE = 0.5
+bS = 0.25
+bT = 0.125
+bDOT = 1.5
+bTRP = (2.0/3.0)
+
+# pitches (in MIDI pitch values)
+pC, pDf, pD, pEf, pE, pF, pGf, pG, pAf, pA, pBf, pB = range(0, 12) # oct -1
+pAs, pCs, pDs, pFs, pGs = [pBf, pDf, pEf, pGf, pAf]
+pRest = -1
+
+# octaves (add to MIDI pitch)
+o0, o1, o2, o3, o4, o5, o6, o7, o8 = [12, 24, 36, 48, 60, 72, 84, 96, 108]
+
+# articulation.  These values modify the duration of a note (but not the 
+# timing)
+# Legato, Connected, Detached, Staccato
+aL, aC, aD, aS = [1.1, 1.0, 0.7, 0.4]
+
+# theme is an array of (frequency (Hz), duration (samples), legato) triples
+# A legato of 1 means elide with next note.  Shorter than 1 means start a
+# new attack on the next note
+moz_k333 = [
+    # 1
+    (pF+o5, bQ*bDOT, aC),
+    (pD+o5, bE, aC),
+    (pBf+o4, bQ, aD),
+    (pBf+o4, bQ, aD),
+    # 2
+    (pEf+o5, bQ, aC),
+    (pG+o5, bQ, aD),
+    (pA+o4, bQ, aD),
+    (pRest, bE, aD),
+    (pA+o4, bE, aD),
+    # 3
+    (pC+o5, bE, aC),
+    (pBf+o4, bE, aD),
+    (pD+o5, bE, aC),
+    (pC+o5, bE, aD),
+    (pEf+o5, bE, aC),
+    (pD+o5, bE, aD),
+    (pF+o5, bE, aC),
+    (pEf+o5, bE, aD),
+    # 4
+    (pD+o5, bQ*bDOT, aC),
+    (pEf+o5, bS, aC),
+    (pD+o5, bS, aC),
+    (pC+o5, bE, aC),
+    (pD+o5, bE, aC),
+    (pEf+o5, bE, aC),
+    (pE+o5, bE, aD),
+    # 5
+    (pF+o5, bQ*bDOT, aC),
+    (pEf+o5, bS*bTRP, aC),
+    (pD+o5, bS*bTRP, aC),
+    (pC+o5, bS*bTRP, aD),
+    (pBf+o4, bQ, aD),
+    (pBf+o4, bQ, aD),
+    # 6
+    (pEf+o5, bQ, aC),
+    (pG+o5, bQ, aD),
+    (pA+o4, bQ, aD),
+    (pRest, bE, aD),
+    (pA+o4, bE, aD),
+    # 7
+    (pBf+o4, bE, aC),
+    (pD+o5, bE, aD),
+    (pG+o4, bE, aC),
+    (pC+o5, bE, aD),
+    (pBf+o4, bQ, aC),
+    (pA+o4, bQ, aD),
+    # 8
+    (pBf+o4, bE, aD),
+    (pF+o4, bE, aS),
+    (pG+o4, bE, aS),
+    (pA+o4, bE, aS),
+    (pBf+o4, bE, aS),
+    (pC+o5, bE, aS),
+    (pD+o5, bE, aS),
+    (pEf+o5, bE, aS),
+    # 9
+    (pF+o5, bQ*bDOT, aC),
+    (pD+o5, bE, aC),
+    (pBf+o4, bQ, aD),
+    (pBf+o4, bQ, aD),
+    # 10
+    (pEf+o5, bE, aC),
+    (pF+o5, bT, aC),
+    (pEf+o5, bT, aC),
+    (pD+o5, bT, aC),
+    (pEf+o5, bT, aC),
+    (pG+o5, bQ, aD),
+    (pA+o4, bQ, aD),
+    (pRest, bE, aD),
+    (pA+o4, bE, aD),
+    # 11
+    (pC+o5, bE, aC),
+    (pBf+o4, bE, aD),
+    (pD+o5, bE, aC),
+    (pC+o5, bE, aC),
+    (pEf+o5, bE, aC),
+    (pD+o5, bE, aD),
+    (pF+o5, bE, aC),
+    (pEf+o5, bE, aD),
+    # 12
+    (pD+o5, bQ*bDOT, aC),
+    (pEf+o5, bS, aC),
+    (pD+o5, bS, aC),
+    (pC+o5, bE, aC),
+    (pD+o5, bE, aC),
+    (pEf+o5, bE, aC),
+    (pE+o5, bE, aD),
+    # 13
+    (pF+o5, bQ*bDOT, aC),
+    (pEf+o5, bS*bTRP, aC),
+    (pD+o5, bS*bTRP, aC),
+    (pC+o5, bS*bTRP, aD),
+    (pBf+o4, bE, aS),
+    (pBf+o4, bE, aS),
+    (pBf+o4, bE, aS),
+    (pBf+o4, bE, aS),
+    # 14        
+    (pEf+o5, bE, aC),
+    (pF+o5, bT, aC),
+    (pEf+o5, bT, aC),
+    (pD+o5, bT, aC),
+    (pEf+o5, bT, aC),
+    (pG+o5, bQ, aD),
+    (pA+o4, bQ, aD),
+    (pRest, bE, aD),
+    (pA+o5, bE, aD),
+    # 15
+    (pBf+o5, bE*bTRP, aC),
+    (pF+o5, bE*bTRP, aC),
+    (pD+o5, bE*bTRP, aC),
+    (pG+o5, bE*bTRP, aC),
+    (pEf+o5, bE*bTRP, aC),
+    (pC+o5, bE*bTRP, aC),
+    (pF+o5, bE*bTRP, aC),
+    (pD+o5, bE*bTRP, aC),
+    (pBf+o4, bE*bTRP, aC),
+    (pEf+o5, bE*bTRP, aC),
+    (pC+o5, bE*bTRP, aC),
+    (pA+o4, bE*bTRP, aD),
+    # 16
+    (pBf+o4, bW, aD),
+]
+
+# ==============================================================================
+
+def bs(beat:float) -> int:
+    """
+    Beat to Sample: convert a beat value into a sample value
+    """
+    return int(round(SAMPLES_PER_BEAT * beat))
+
+def demo_gating_01():
+    print("=== OG Synth ===")
+
+    next_start = 0
+    notes = []
+    for pitch, duration, articulation in moz_k333:
+        # pitch = MIDI pitch
+        # duration = duration in beats (until the next note)  
+        # articulation = lengthens or shortens how long the note sounds
+        if pitch != pRest:
+            notes.append((pitch, bs(next_start)))
+        # bump note_start to the next start time
+        next_start += duration
+
+    pitch_stream = SequencePE(notes)
+    # convert to frequencies
+    freq_stream = TransformPE(pitch_stream, func=pitch_to_freq)
+    synth = FunctionGenPE(freq_stream, waveform='sawtooth')
+
+    # mix all notes and attenuate some
+    mix_stream = GainPE(synth, 0.5)
+
+    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
+    # Optional: Crop mix to a finite extent so we can stream it chunk-by-chunk. 
+    renderer.set_source(CropPE(mix_stream, Extent(0, bs(next_start))))
+
+    with renderer:
+        renderer.start()
+        # play_range() would render the whole buffer before playback, leading to
+        # a long delay, so we use play_extent() instead to start rendering right
+        # away.
+        renderer.play_extent(chunk_size=renderer.blocksize)
+
+def demo_gating_02():
+    print("=== Add Portamento ===")
+
+    next_start = 0
+    notes = []
+    for pitch, duration, articulation in moz_k333:
+        # pitch = MIDI pitch
+        # duration = duration in beats (until the next note)  
+        # articulation = lengthens or shortens how long the note sounds
+        if pitch != pRest:
+            notes.append((pitch, bs(next_start)))
+        # bump note_start to the next start time
+        next_start += duration
+
+    pitch_stream = SequencePE(notes)
+    # put pitches through low pass for portamento effect    
+    porta_stream = BiquadPE(pitch_stream, frequency=20, q=0.7, mode=BiquadMode.LOWPASS)
+    # convert to frequencies
+    freq_stream = TransformPE(porta_stream, func=pitch_to_freq)
+    synth = FunctionGenPE(freq_stream, waveform='sawtooth')
+
+    # mix all notes and attenuate some
+    mix_stream = GainPE(synth, 0.5)
+
+    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
+    renderer.set_source(CropPE(mix_stream, Extent(0, bs(next_start))))
+
+    with renderer:
+        renderer.start()
+        # play_range() would render the whole buffer before playback, leading to
+        # a long delay, so we use play_extent() instead to start rendering right
+        # away.
+        renderer.play_extent(chunk_size=renderer.blocksize)
+
+def demo_gating_03():
+    print("=== Add ADSR, retrigger on every note ===")
+
+    next_start = 0
+    notes = []
+    for pitch, duration, articulation in moz_k333:
+        # pitch = MIDI pitch
+        # duration = duration in beats (until the next note)  
+        # articulation = lengthens or shortens how long the note sounds
+        if pitch != pRest:
+            notes.append((pitch, bs(next_start)))
+        # bump note_start to the next start time
+        next_start += duration
+
+    pitch_stream = SequencePE(notes)
+    # put pitches through low pass for portamento effect    
+    porta_stream = BiquadPE(pitch_stream, frequency=20, q=0.7, mode=BiquadMode.LOWPASS)
+    # convert pitches to frequencies
+    freq_stream = TransformPE(porta_stream, func=pitch_to_freq)
+    # generate tones (monophonic)
+    synth_stream = FunctionGenPE(freq_stream, waveform='sawtooth')
+
+    next_start = 0
+    gates = []
+    for pitch, duration, _ in moz_k333:
+        # pitch = MIDI pitch
+        # duration = duration in beats (until the next note)  
+        if pitch != pRest:
+            gate_duration = bs(duration * 0.9)
+            gate_pe = CropPE(ConstantPE(1.0), Extent(0, gate_duration))
+            gates.append((gate_pe, bs(next_start)))
+        # bump note_start to the next start time
+        next_start += duration
+
+    gate_stream = SequencePE(gates, overlap=False)
+    envelope_stream = AdsrPE(
+        gate_stream,
+        attack_seconds=0.02,
+        decay_seconds=0.1,
+        sustain_level=0.7,
+        release_seconds=0.3,
+    )
+
+    # Apply ADSR envelope to synth stream
+    mix_stream = GainPE(synth_stream, envelope_stream)
+    mix_stream = GainPE(mix_stream, 0.5)
+    
+    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
+    renderer.set_source(CropPE(mix_stream, Extent(0, bs(next_start))))
+
+    with renderer:
+        renderer.start()
+        # play_range() would render the whole buffer before playback, leading to
+        # a long delay, so we use play_extent() instead to start rendering right
+        # away.
+        renderer.play_extent(chunk_size=renderer.blocksize)
+
+def demo_gating_04():
+    print("=== Add ADSR with articulation ===")
+
+    next_start = 0
+    notes = []
+    for pitch, duration, articulation in moz_k333:
+        # pitch = MIDI pitch
+        # duration = duration in beats (until the next note)  
+        # articulation = lengthens or shortens how long the note sounds
+        if pitch != pRest:
+            notes.append((pitch, bs(next_start)))
+        # bump note_start to the next start time
+        next_start += duration
+
+    pitch_stream = SequencePE(notes)
+    # put pitches through low pass for portamento effect    
+    porta_stream = BiquadPE(pitch_stream, frequency=20, q=0.7, mode=BiquadMode.LOWPASS)
+    # convert pitches to frequencies
+    freq_stream = TransformPE(porta_stream, func=pitch_to_freq)
+    # generate tones (monophonic)
+    synth_stream = FunctionGenPE(freq_stream, waveform='sawtooth')
+
+    next_start = 0
+    gates = []
+    for pitch, duration, articulation in moz_k333:
+        # pitch = MIDI pitch
+        # duration = duration in beats (until the next note)  
+        # articulation = ratio of overlap:
+        #   > 1.0 = legato
+        #   = 1.0 = connected
+        #   < 1.0 = detached
+        #   << 1.0 = staccato
+        if pitch != pRest:
+            gate_duration = bs(duration * articulation)
+            gate_pe = CropPE(ConstantPE(1.0), Extent(0, gate_duration))
+            gates.append((gate_pe, bs(next_start)))
+        # bump note_start to the next start time
+        next_start += duration
+
+    gate_stream = SequencePE(gates, overlap=False)
+    envelope_stream = AdsrPE(
+        gate_stream,
+        attack_seconds=0.02,
+        decay_seconds=0.1,
+        sustain_level=0.7,
+        release_seconds=0.3,
+    )
+
+    # Apply ADSR envelope to synth stream
+    mix_stream = GainPE(synth_stream, envelope_stream)
+    mix_stream = GainPE(mix_stream, 0.5)
+    
+    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
+    renderer.set_source(CropPE(mix_stream, Extent(0, bs(next_start))))
+
+    with renderer:
+        renderer.start()
+        # play_range() would render the whole buffer before playback, leading to
+        # a long delay, so we use play_extent() instead to start rendering right
+        # away.
+        renderer.play_extent(chunk_size=renderer.blocksize)
+
+def demo_gating_05():
+    print("=== Add ADSR with newer synth ===")
+
+    next_start = 0
+    notes = []
+    for pitch, duration, articulation in moz_k333:
+        # pitch = MIDI pitch
+        # duration = duration in beats (until the next note)  
+        # articulation = lengthens or shortens how long the note sounds
+        if pitch != pRest:
+            notes.append((pitch, bs(next_start)))
+        # bump note_start to the next start time
+        next_start += duration
+
+    pitch_stream = SequencePE(notes)
+    # put pitches through low pass for portamento effect    
+    porta_stream = BiquadPE(pitch_stream, frequency=20, q=0.7, mode=BiquadMode.LOWPASS)
+    # convert pitches to frequencies
+    freq_stream = TransformPE(porta_stream, func=pitch_to_freq)
+    # generate tones (monophonic)
+    synth_stream = SuperSawPE(
+        frequency=freq_stream, 
+        detune_cents=8.0, 
+        mix_mode="center_heavy")
+
+    next_start = 0
+    gates = []
+    for pitch, duration, articulation in moz_k333:
+        # pitch = MIDI pitch
+        # duration = duration in beats (until the next note)  
+        # articulation = ratio of overlap:
+        #   > 1.0 = legato
+        #   = 1.0 = connected
+        #   < 1.0 = detached
+        #   << 1.0 = staccato
+        if pitch != pRest:
+            gate_duration = bs(duration * articulation)
+            gate_pe = CropPE(ConstantPE(1.0), Extent(0, gate_duration))
+            gates.append((gate_pe, bs(next_start)))
+        # bump note_start to the next start time
+        next_start += duration
+
+    gate_stream = SequencePE(gates, overlap=False)
+    envelope_stream = AdsrPE(
+        gate_stream,
+        attack_seconds=0.02,
+        decay_seconds=0.1,
+        sustain_level=0.7,
+        release_seconds=0.3,
+    )
+
+    # Apply ADSR envelope to synth stream
+    mix_stream = GainPE(synth_stream, envelope_stream)
+    mix_stream = GainPE(mix_stream, 0.5)
+    
+    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
+    renderer.set_source(CropPE(mix_stream, Extent(0, bs(next_start))))
+
+    with renderer:
+        renderer.start()
+        # play_range() would render the whole buffer before playback, leading to
+        # a long delay, so we use play_extent() instead to start rendering right
+        # away.
+        renderer.play_extent(chunk_size=renderer.blocksize)
+
+def demo_gating_06():
+    print("=== Add ADSR with resync on articulated notes ===")
+
+    next_start = 0
+    notes = []
+    for pitch, duration, articulation in moz_k333:
+        # pitch = MIDI pitch
+        # duration = duration in beats (until the next note)  
+        # articulation = lengthens or shortens how long the note sounds
+        if pitch != pRest:
+            notes.append((pitch, bs(next_start)))
+        # bump note_start to the next start time
+        next_start += duration
+
+    pitch_stream = SequencePE(notes)
+    # put pitches through low pass for portamento effect    
+    porta_stream = BiquadPE(pitch_stream, frequency=20, q=0.7, mode=BiquadMode.LOWPASS)
+    # convert pitches to frequencies
+    freq_stream = TransformPE(porta_stream, func=pitch_to_freq)
+    # generate tones (monophonic)
+    synth_stream = SuperSawPE(
+        frequency=freq_stream, 
+        detune_cents=8.0, 
+        mix_mode="center_heavy")
+
+    next_start = 0
+    gates = []
+    for pitch, duration, articulation in moz_k333:
+        # pitch = MIDI pitch
+        # duration = duration in beats (until the next note)  
+        # articulation = ratio of overlap:
+        #   > 1.0 = legato
+        #   = 1.0 = connected
+        #   < 1.0 = detached
+        #   << 1.0 = staccato
+        if pitch != pRest:
+            gate_duration = bs(duration * articulation)
+            gate_pe = CropPE(ConstantPE(1.0), Extent(0, gate_duration))
+            gates.append((gate_pe, bs(next_start)))
+        # bump note_start to the next start time
+        next_start += duration
+
+    gate_stream = SequencePE(gates, overlap=False)
+    envelope_stream = AdsrPE(
+        gate_stream,
+        attack_seconds=0.1,
+        decay_seconds=0.1,
+        sustain_level=0.7,
+        release_seconds=0.3,
+    )
+
+    # === Subtle but important: ===
+    # ResetPE sends synth_stream.reset_start() at the onset of each new gate 
+    # signal. SuperSaw needs this so all of its detuned oscillators get 
+    # restarted on each articulated note - without this, the attack is mushy. 
+    synth_stream = ResetPE(synth_stream, gate_stream)
+
+    # Apply ADSR envelope to synth stream
+    mix_stream = GainPE(synth_stream, envelope_stream)
+    mix_stream = GainPE(mix_stream, 0.5)
+    
+    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
+    renderer.set_source(CropPE(mix_stream, Extent(0, bs(next_start))))
+
+    with renderer:
+        renderer.start()
+        # play_range() would render the whole buffer before playback, leading to
+        # a long delay, so we use play_extent() instead to start rendering right
+        # away.
+        renderer.play_extent(chunk_size=renderer.blocksize)
+
+if __name__ == "__main__":
+    import sys
+
+    demos = [
+        ("1", "OG Synth", demo_gating_01),
+        ("2", "With poramento", demo_gating_02),
+        ("3", "With ADSR, always retrigger", demo_gating_03),
+        ("4", "With ADSR, honor articulation", demo_gating_04),
+        ("5", "With ADSR, fat synth", demo_gating_05),
+        ("6", "With ADSR, fat synth with resync", demo_gating_06),
+        ("a", "All demos", None),
+    ]
+
+    if len(sys.argv) > 1:
+        choice = sys.argv[1].strip().lower()
+    else:
+        print("pygmu2 Gating Examples")
+        print("-------------------------")
+        for key, name, _ in demos:
+            print(f"{key}: {name}")
+        print()
+        choice = input(f"Choose a demo (1-{len(demos)-1} or 'a' for all): ").strip().lower()
+        print()
+
+    if choice == "a":
+        for _, _, fn in demos:
+            if fn is not None:
+                fn()
+    else:
+        for key, _name, fn in demos:
+            if key == choice and fn is not None:
+                fn()
+                break
+        else:
+            print("Invalid choice.")

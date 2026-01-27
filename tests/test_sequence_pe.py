@@ -116,6 +116,43 @@ class TestSequencePEBasics:
         assert pe1 in inputs
         assert pe2 in inputs
         assert len(inputs) == 2
+
+    def test_scalar_step_sequence(self):
+        """
+        SequencePE accepts scalars and produces a step-like control sequence
+        (use overlap=False).
+        """
+        seq = SequencePE([(0.0, 0), (1.0, 5), (2.0, 10)], overlap=False)
+        self.renderer.set_source(seq)
+
+        y = seq.render(0, 15).data[:, 0]
+        expected = np.array([0] * 5 + [1] * 5 + [2] * 5, dtype=np.float32)
+        np.testing.assert_array_equal(y, expected)
+
+    def test_scalar_step_sequence_multichannel(self):
+        """Scalar-only sequences can specify channels=."""
+        seq = SequencePE([(0.0, 0), (1.0, 5)], channels=2, overlap=False)
+        self.renderer.set_source(seq)
+
+        y = seq.render(0, 10).data
+        assert y.shape == (10, 2)
+        np.testing.assert_array_equal(y[:5, :], np.zeros((5, 2), dtype=np.float32))
+        np.testing.assert_array_equal(y[5:, :], np.ones((5, 2), dtype=np.float32))
+
+    def test_scalar_sequence_matches_pe_channels(self):
+        """If a PE is present, scalar items adopt that PE's channel count."""
+        pe2 = ConstantPE(0.25, channels=2)
+        seq = SequencePE([(pe2, 0), (1.0, 5)], overlap=False)
+        self.renderer.set_source(seq)
+
+        y = seq.render(0, 6).data
+        assert y.shape == (6, 2)
+
+    def test_channels_must_match_pe(self):
+        """Explicit channels= must match any PE channel count."""
+        pe2 = ConstantPE(0.25, channels=2)
+        with pytest.raises(ValueError):
+            SequencePE([(pe2, 0), (1.0, 5)], channels=1, overlap=False)
     
     def test_repr(self):
         """Test string representation."""

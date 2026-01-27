@@ -30,6 +30,7 @@ from pygmu2 import (
 
 AUDIO_DIR = Path(__file__).parent / "audio"
 SPOKEN_PATH = AUDIO_DIR / "spoken_voice.wav"
+DRUMS_PATH = AUDIO_DIR / "djembe.wav"
 
 
 def demo_original():
@@ -106,6 +107,32 @@ def demo_accelerating_loop():
         renderer.play_extent()
 
 
+def demo_jog_shuttle():
+    """
+    Play at decreasing speeds, eventually going negative.
+    """
+    print("=== Demo: Decelerating Playback ===")
+    print(f"Source: {DRUMS_PATH.name}")
+    print()
+
+    drums = WavReaderPE(str(DRUMS_PATH))
+    sample_rate = drums.file_sample_rate
+
+    # Rate ramp is a PE, so TimeWarpPE's extent becomes finite (matches the rate extent).
+    demo_length = int(seconds_to_samples(10, sample_rate))
+    rate = RampPE(2.0, -2.0, duration=demo_length)
+
+    warped = TimeWarpPE(LoopPE(drums), rate=rate)
+    output = GainPE(warped, gain=0.8)
+    output = CropPE(output, Extent(0, demo_length))
+
+    renderer = AudioRenderer(sample_rate=sample_rate)
+    renderer.set_source(output)
+
+    with renderer:
+        renderer.start()
+        renderer.play_extent()
+
 if __name__ == "__main__":
     import sys
 
@@ -113,6 +140,7 @@ if __name__ == "__main__":
         ("1", "Original", demo_original),
         ("2", "Fixed Rate (1.5x)", demo_fixed_rate),
         ("3", "Accelerating Loop (0.25x -> 5.0x over 10s)", demo_accelerating_loop),
+        ("4", "Decelerating Playback", demo_jog_shuttle),
         ("a", "All demos", None),
     ]
 
@@ -124,7 +152,7 @@ if __name__ == "__main__":
         for key, name, _ in demos:
             print(f"{key}: {name}")
         print()
-        choice = input("Choose a demo (1-3 or 'a' for all): ").strip().lower()
+        choice = input(f"Choose a demo (1-{len(demos)-1} or 'a' for all): ").strip().lower()
         print()
 
     if choice == "a":

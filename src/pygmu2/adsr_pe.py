@@ -14,6 +14,9 @@ import numpy as np
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
+from pygmu2.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 DEFAULT_ATTACK_SECONDS = 0.01
@@ -221,6 +224,11 @@ class AdsrPE(ProcessingElement):
         for i in range(duration):
             current_time = start + i
             gate_value = gate_signal[i]
+            
+            # Log gate value changes
+            if gate_value != self._prev_gate:
+                logger.debug(f"sample={current_time}: gate={gate_value:.3f} (was {self._prev_gate:.3f})")
+            
             gate_rising = gate_value > 0.0 and self._prev_gate <= 0.0
             gate_falling = gate_value <= 0.0 and self._prev_gate > 0.0
             
@@ -232,11 +240,13 @@ class AdsrPE(ProcessingElement):
                 # Gate just went high - start attack (or restart if already active)
                 if self._state == AdsrState.RELEASE:
                     # Re-triggered during release: start attack from current value
+                    logger.debug(f"sample={current_time}: RELEASE -> ATTACK (re-trigger, value={self._value:.3f})")
                     self._state = AdsrState.ATTACK
                     self._phase_start_time = current_time
                     self._phase_start_value = self._value
                 elif self._state == AdsrState.IDLE:
                     # Starting from idle - ensure we start from 0.0
+                    logger.debug(f"sample={current_time}: IDLE -> ATTACK (gate rising, value=0.000)")
                     self._state = AdsrState.ATTACK
                     self._phase_start_time = current_time
                     self._phase_start_value = 0.0
@@ -246,6 +256,7 @@ class AdsrPE(ProcessingElement):
             elif gate_falling:
                 # Gate just went low - enter release
                 if self._state in (AdsrState.ATTACK, AdsrState.DECAY, AdsrState.SUSTAIN):
+                    logger.debug(f"sample={current_time}: {old_state.value} -> RELEASE (gate falling, value={self._value:.3f})")
                     self._state = AdsrState.RELEASE
                     self._phase_start_time = current_time
                     self._phase_start_value = self._value
@@ -265,6 +276,7 @@ class AdsrPE(ProcessingElement):
                     self._state = AdsrState.DECAY
                     self._phase_start_time = current_time
                     self._phase_start_value = 1.0
+                    logger.debug(f"sample={current_time}: ATTACK -> DECAY (value={self._value:.3f})")
                 else:
                     # Linear ramp: start + (end - start) * progress
                     progress = phase_elapsed / self._attack
@@ -276,6 +288,7 @@ class AdsrPE(ProcessingElement):
                     # Decay complete - enter sustain
                     self._value = self._sustain_level
                     self._state = AdsrState.SUSTAIN
+                    logger.debug(f"sample={current_time}: DECAY -> SUSTAIN (value={self._value:.3f})")
                 else:
                     # Linear ramp: 1.0 -> sustain_level
                     progress = phase_elapsed / self._decay
@@ -291,6 +304,7 @@ class AdsrPE(ProcessingElement):
                     # Release complete - enter idle
                     self._value = 0.0
                     self._state = AdsrState.IDLE
+                    logger.debug(f"sample={current_time}: RELEASE -> IDLE (value={self._value:.3f})")
                 else:
                     # Linear ramp: phase_start_value -> 0.0
                     progress = phase_elapsed / self._release
