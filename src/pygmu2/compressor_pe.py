@@ -243,6 +243,7 @@ class LimiterPE(CompressorPE):
     Args:
         source: Audio input to limit
         ceiling: Maximum output level in dB (default: -1.0)
+        attack: Attack time in seconds (default: 0.0005)
         release: Release time in seconds (default: 0.05)
         lookahead: Lookahead time in seconds (default: 0.005)
         stereo_link: If True, use max envelope across channels (default: True)
@@ -253,12 +254,16 @@ class LimiterPE(CompressorPE):
         
         # Transparent limiting with lookahead
         limited_stream = LimiterPE(audio_stream, ceiling=-0.5, lookahead=0.005)
+        
+        # Slower attack for less aggressive limiting
+        limited_stream = LimiterPE(audio_stream, ceiling=-1.0, attack=0.01)
     """
     
     def __init__(
         self,
         source: ProcessingElement,
         ceiling: float = -1.0,
+        attack: float = 0.0005,
         release: float = 0.05,
         lookahead: float = 0.005,
         stereo_link: bool = True,
@@ -267,7 +272,7 @@ class LimiterPE(CompressorPE):
             source,
             threshold=ceiling,
             ratio=100.0,  # Very high ratio ≈ limiting
-            attack=0.0005,  # Very fast attack
+            attack=attack,
             release=release,
             knee=0.0,  # Hard knee for limiting
             makeup_gain=0.0,  # No makeup for limiter
@@ -276,7 +281,6 @@ class LimiterPE(CompressorPE):
             stereo_link=stereo_link,
         )
         self._ceiling = ceiling
-    
     @property
     def ceiling(self) -> float:
         """Ceiling level in dB."""
