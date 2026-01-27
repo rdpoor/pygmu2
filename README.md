@@ -10,6 +10,7 @@ pygmu2 provides a flexible, composable architecture for building audio processin
 - Lazy evaluation: audio generated on-demand
 - Composable design: PEs connect to form complex audio graphs
 - Rich library of oscillators, filters, effects, and dynamics processors
+- Alternative temperament support (12-ET, 19-ET, just intonation, Pythagorean, custom)
 - Cross-platform audio playback via `sounddevice`
 - WAV file I/O via `soundfile`
 
@@ -210,6 +211,8 @@ pipenv run python examples/01_hello_sine.py
 | `17_ladder_filter.py` | Moog-style ladder filter |
 | `18_adsr.py` | ADSR + ResetPE |
 | `19_sequence.py` | SequencePE |
+| `20_alternative_temperaments.py` | Alternative tuning systems (12-ET, just intonation, Pythagorean chords) |
+| `21_sequence_with_durations.py` | SequencePE with explicit durations |
 | `20_timewarp.py` | TimeWarpPE variable-speed playback |
 | `21_analog_osc.py` | AnalogOscPE (PWM, saw/triangle morph, subtractive patch) |
 | `22_function_gen.py` | FunctionGenPE (naive) + A/B vs AnalogOscPE at high pitch |
@@ -246,6 +249,74 @@ set_error_mode(ErrorMode.STRICT)
 # Lenient mode: non-fatal errors become warnings
 set_error_mode(ErrorMode.LENIENT)
 ```
+
+## Alternative Temperaments
+
+pygmu2 supports multiple tuning systems (temperaments) and reference frequencies:
+
+### Temperaments
+
+```python
+from pygmu2 import (
+    pitch_to_freq,
+    EqualTemperament,
+    JustIntonation,
+    PythagoreanTuning,
+    set_temperament
+)
+
+# Use 19-tone equal temperament
+et19 = EqualTemperament(19)
+freq = pitch_to_freq(69, temperament=et19)  # A4 in 19-ET
+
+# Use 5-limit just intonation (pure harmonic ratios)
+ji = JustIntonation()
+freq = pitch_to_freq(64, temperament=ji)  # E4 with pure major third
+
+# Use Pythagorean tuning (based on perfect 3:2 fifths)
+pyth = PythagoreanTuning()
+freq = pitch_to_freq(67, temperament=pyth)  # G4 with pure fifth
+
+# Set a global default temperament
+set_temperament(EqualTemperament(19))
+freq = pitch_to_freq(60)  # Now uses 19-ET globally
+```
+
+**Available Temperaments:**
+- `EqualTemperament(divisions)` - N-tone equal temperament (12-ET, 19-ET, 24-ET, etc.)
+- `JustIntonation(ratios)` - Just intonation with pure harmonic ratios
+- `PythagoreanTuning()` - 3-limit tuning based on perfect fifths
+- `CustomTemperament(...)` - Define your own tuning system
+
+### Reference Frequency
+
+Change the reference pitch (A4 defaults to 440 Hz):
+
+```python
+from pygmu2 import (
+    set_reference_frequency,
+    set_concert_pitch,
+    set_verdi_tuning,
+    set_baroque_pitch,
+    pitch_to_freq
+)
+
+# A4 = 432 Hz (Verdi/philosophical pitch)
+set_verdi_tuning()
+freq = pitch_to_freq(69)  # 432.0 Hz
+
+# A4 = 415 Hz (Baroque pitch)
+set_baroque_pitch()
+freq = pitch_to_freq(69)  # 415.0 Hz
+
+# A4 = 440 Hz (concert pitch, default)
+set_concert_pitch()
+
+# Custom reference frequency
+set_reference_frequency(442.0)  # Some orchestras tune to A=442
+```
+
+See `examples/20_alternative_temperaments.py` for a detailed demonstration.
 
 ## Running Tests
 

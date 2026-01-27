@@ -22,34 +22,41 @@ class SequencePE(ProcessingElement):
     """
     A ProcessingElement that sequences multiple PEs in time.
     
-    Takes a list of (item, start_time) pairs and plays them sequentially.
+    Takes a list of (item, start_time) pairs or (item, start_time, duration) triples.
     Each item may be either a ProcessingElement or a scalar (float/int).
-    Each PE is delayed by its start_time. When overlap=False, each PE
-    is cropped to prevent overlap with the next PE.
+    Each PE is delayed by its start_time. When overlap=False, each PE is cropped
+    to prevent overlap with the next PE (or to the specified duration).
     
     The sequence is automatically sorted by start_time.
     
     Args:
-        sequence: List of (item, start_time) tuples where start_time is in samples
-                  and item is either a ProcessingElement or a scalar.
+        sequence: List of tuples, either:
+            - (item, start_time) - duration inferred from next item's start_time
+            - (item, start_time, duration) - explicit duration in samples
+            where item is either a ProcessingElement or a scalar (float/int).
+            Both formats can be mixed in the same sequence.
         channels: Output channel count for scalar items. If one or more items are
                   ProcessingElements, this must match their channel count.
                   If all items are scalars, defaults to 1.
         overlap: If False, crop each PE to prevent overlap (default: False)
     
     Example:
-        # Non-overlapping sequence
-        pe1_stream = SinePE(frequency=440.0)
-        pe2_stream = SinePE(frequency=550.0)
+        # Non-overlapping sequence with inferred durations
+        pe1 = SinePE(frequency=440.0)
+        pe2 = SinePE(frequency=550.0)
         sequence = [
-            (pe1_stream, 0),      # Starts at sample 0
-            (pe2_stream, 44100),  # Starts at sample 44100 (1 second at 44.1kHz)
+            (pe1, 0),      # Starts at sample 0, plays until pe2 starts
+            (pe2, 44100),  # Starts at sample 44100 (1 second at 44.1kHz)
         ]
         seq_stream = SequencePE(sequence, overlap=False)
         
-        # Overlapping sequence (all play simultaneously after delays)
-        seq_overlap_stream = SequencePE(sequence, overlap=True)
-
+        # Overlapping sequence with explicit durations
+        sequence_timed = [
+            (pe1, 0, 88200),       # Starts at 0, plays for 2 seconds
+            (pe2, 44100, 44100),   # Starts at 1s, plays for 1 second (overlaps pe1)
+        ]
+        seq_overlap = SequencePE(sequence_timed, overlap=True)
+        
         # A scalar "step sequence" (common for control signals)
         values = [
             (0.0, 0),     # 0.0 starting at t=0
@@ -57,11 +64,18 @@ class SequencePE(ProcessingElement):
             (1.0, 200),   # 1.0 starting at t=200 samples
         ]
         steps_stream = SequencePE(values, overlap=False)
+        
+        # Mixed format (both 2-tuples and 3-tuples)
+        sequence_mixed = [
+            (pe1, 0, 44100),  # Explicit duration
+            (pe2, 44100),     # Inferred duration
+        ]
+        seq_mixed = SequencePE(sequence_mixed, overlap=False)
     """
     
     def __init__(
         self,
-        sequence: list[tuple[Union[ProcessingElement, float, int], int]],
+        sequence: list[tuple[Union[ProcessingElement, float, int], int] | tuple[Union[ProcessingElement, float, int], int, int]],
         channels: Optional[int] = None,
         overlap: bool = False,
     ):
@@ -93,7 +107,9 @@ class SequencePE(ProcessingElement):
         saw_pe = False
         saw_unknown_pe_channels = False
 
-        for item, _start_time in sequence:
+        # Extract item (first element) from tuples, handling both 2-tuple and 3-tuple formats
+        for seq_item in sequence:
+            item = seq_item[0]  # First element is always the PE or scalar
             if isinstance(item, ProcessingElement):
                 saw_pe = True
                 ch = item.channel_count()
@@ -126,21 +142,33 @@ class SequencePE(ProcessingElement):
             )
         self._channels = base_channels
         
-        # Sort by start_time
+        # Sort by start_time (always the second element)
         sorted_sequence = sorted(sequence, key=lambda x: x[1])
-        # Normalize scalars to PEs (scalars are gated to be 0 for local time < 0).
-        normalized: list[tuple[ProcessingElement, int]] = []
-        for item, start_time in sorted_sequence:
+        
+        # Normalize items: convert scalars to PEs, handle both 2-tuple and 3-tuple formats
+        normalized: list[tuple[ProcessingElement, int] | tuple[ProcessingElement, int, int]] = []
+        for seq_item in sorted_sequence:
+            item = seq_item[0]  # PE or scalar
+            start_time = seq_item[1]  # start time
+            explicit_duration = seq_item[2] if len(seq_item) == 3 else None
+            
             if isinstance(item, ProcessingElement):
                 pe = item
             else:
+                # Convert scalar to ConstantPE (gated to be 0 for local time < 0)
                 pe = CropPE(ConstantPE(float(item), channels=self._channels), Extent(0, None))
-            normalized.append((pe, int(start_time)))
+            
+            # Preserve format (2-tuple or 3-tuple)
+            if explicit_duration is not None:
+                normalized.append((pe, int(start_time), int(explicit_duration)))
+            else:
+                normalized.append((pe, int(start_time)))
 
         self._sequence = normalized
 
         # Validate PE channel counts against base_channels when known.
-        for pe, _start_time in self._sequence:
+        for seq_item in self._sequence:
+            pe = seq_item[0]
             ch = pe.channel_count()
             if ch is None:
                 continue
@@ -152,24 +180,36 @@ class SequencePE(ProcessingElement):
         # Build the processing chain
         processed_pes = []
         
-        for i, (pe, start_time) in enumerate(self._sequence):
-            # Apply cropping if overlap=False
-            if not overlap and i < len(self._sequence) - 1:
-                # Not the last item: crop PE to [0, next_start_time - start_time)
-                # in its own timeline, so it plays for (next_start_time - start_time) samples
-                next_start_time = self._sequence[i + 1][1]
-                duration = next_start_time - start_time
-                if duration > 0:
-                    cropped_pe = CropPE(pe, Extent(0, duration))
-                else:
-                    # Zero or negative duration: don't crop (PEs with same start_time will mix)
-                    cropped_pe = pe
-            elif not overlap:
-                # Last item: no cropping (let it play to its natural end)
-                cropped_pe = pe
+        for i, seq_item in enumerate(self._sequence):
+            # Parse item - can be (PE, start_time) or (PE, start_time, duration)
+            if len(seq_item) == 3:
+                pe, start_time, explicit_duration = seq_item
             else:
-                # overlap=True: no cropping
-                cropped_pe = pe
+                pe, start_time = seq_item
+                explicit_duration = None
+            
+            # Determine if we should crop and what duration to use
+            cropped_pe = pe
+            
+            if not overlap:
+                # Need to determine crop duration
+                if explicit_duration is not None:
+                    # Use explicit duration from 3-tuple
+                    duration = explicit_duration
+                    if duration > 0:
+                        cropped_pe = CropPE(pe, Extent(0, duration))
+                elif i < len(self._sequence) - 1:
+                    # Infer duration from next item's start_time
+                    next_start_time = self._sequence[i + 1][1]
+                    duration = next_start_time - start_time
+                    if duration > 0:
+                        cropped_pe = CropPE(pe, Extent(0, duration))
+                    # else: zero or negative duration - don't crop (PEs with same start_time will mix)
+                # else: last item with no explicit duration - no cropping (let it play to its natural end)
+            elif explicit_duration is not None:
+                # overlap=True but explicit duration provided - still crop to duration
+                if explicit_duration > 0:
+                    cropped_pe = CropPE(pe, Extent(0, explicit_duration))
             
             # Apply delay
             delayed_pe = DelayPE(cropped_pe, delay=start_time)
@@ -184,8 +224,12 @@ class SequencePE(ProcessingElement):
             self._mix_pe = MixPE(*processed_pes)
     
     @property
-    def sequence(self) -> list[tuple[ProcessingElement, int]]:
-        """The sequence of (PE, start_time) pairs (sorted by start_time)."""
+    def sequence(self) -> list[tuple[Union[ProcessingElement, float, int], int] | tuple[Union[ProcessingElement, float, int], int, int]]:
+        """The sequence of items (sorted by start_time).
+        
+        Each item is either (PE or scalar, start_time) or (PE or scalar, start_time, duration).
+        Note: Scalars are internally converted to ConstantPE instances.
+        """
         return self._sequence
     
     @property
@@ -198,7 +242,8 @@ class SequencePE(ProcessingElement):
         if not self._sequence:
             # Empty sequence: ConstantPE has no inputs
             return []
-        return [pe for pe, _ in self._sequence]
+        # First element is always the PE (scalars are already converted to ConstantPE)
+        return [seq_item[0] for seq_item in self._sequence]
     
     def is_pure(self) -> bool:
         """SequencePE is pure - it's a stateless composition."""
