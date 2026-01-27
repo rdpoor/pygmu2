@@ -499,3 +499,184 @@ class TestSequencePESampleAccurate:
             [-1.0], [1.0], [3.0], [5.0], [7.0]
         ], dtype=np.float32)
         np.testing.assert_array_almost_equal(snippet.data, expected)
+
+
+class TestSequencePEScalarsWith3Tuples:
+    """Test SequencePE with scalars using 3-tuple format (merged feature)."""
+    
+    def setup_method(self):
+        self.renderer = NullRenderer(sample_rate=44100)
+    
+    def test_scalar_with_explicit_duration(self):
+        """Test scalars with explicit durations (3-tuple format)."""
+        # This tests the merged feature: scalars + 3-tuple format
+        sequence = [
+            (0.0, 0, 5),    # Scalar 0.0 for 5 samples
+            (1.0, 5, 5),    # Scalar 1.0 for 5 samples
+            (0.5, 10, 5),   # Scalar 0.5 for 5 samples
+        ]
+        seq = SequencePE(sequence, overlap=False)
+        
+        self.renderer.set_source(seq)
+        
+        # Render and verify
+        snippet = seq.render(0, 15)
+        expected = np.array(
+            [0.0] * 5 + [1.0] * 5 + [0.5] * 5,
+            dtype=np.float32
+        ).reshape(-1, 1)
+        np.testing.assert_array_equal(snippet.data, expected)
+    
+    def test_scalar_with_explicit_duration_overlapping(self):
+        """Test overlapping scalars with explicit durations."""
+        sequence = [
+            (1.0, 0, 10),   # Scalar 1.0 for 10 samples
+            (2.0, 5, 10),   # Scalar 2.0 for 10 samples (overlaps)
+        ]
+        seq = SequencePE(sequence, overlap=True)
+        
+        self.renderer.set_source(seq)
+        
+        # Render overlap region
+        snippet = seq.render(0, 15)
+        # t=0-4: only first scalar (1.0)
+        # t=5-9: both scalars (1.0 + 2.0 = 3.0)
+        # t=10-14: only second scalar (2.0)
+        expected = np.array(
+            [1.0] * 5 + [3.0] * 5 + [2.0] * 5,
+            dtype=np.float32
+        ).reshape(-1, 1)
+        np.testing.assert_array_equal(snippet.data, expected)
+    
+    def test_mixed_scalars_and_pes_with_3_tuples(self):
+        """Test mixing scalars and PEs with 3-tuple format."""
+        pe1 = ConstantPE(10.0)
+        
+        sequence = [
+            (1.0, 0, 5),        # Scalar with explicit duration
+            (pe1, 5, 5),        # PE with explicit duration
+            (2.0, 10, 5),       # Scalar with explicit duration
+        ]
+        seq = SequencePE(sequence, overlap=False)
+        
+        self.renderer.set_source(seq)
+        
+        snippet = seq.render(0, 15)
+        expected = np.array(
+            [1.0] * 5 + [10.0] * 5 + [2.0] * 5,
+            dtype=np.float32
+        ).reshape(-1, 1)
+        np.testing.assert_array_equal(snippet.data, expected)
+    
+    def test_mixed_2_and_3_tuples_with_scalars(self):
+        """Test mixing 2-tuple and 3-tuple formats with scalars."""
+        sequence = [
+            (1.0, 0, 5),    # 3-tuple: scalar with explicit duration
+            (2.0, 5),       # 2-tuple: scalar with inferred duration
+            (3.0, 10),      # 2-tuple: scalar (last item, no crop)
+        ]
+        seq = SequencePE(sequence, overlap=False)
+        
+        self.renderer.set_source(seq)
+        
+        snippet = seq.render(0, 15)
+        expected = np.array(
+            [1.0] * 5 + [2.0] * 5 + [3.0] * 5,
+            dtype=np.float32
+        ).reshape(-1, 1)
+        np.testing.assert_array_equal(snippet.data, expected)
+    
+    def test_scalar_3_tuple_with_channels(self):
+        """Test scalar 3-tuples with multiple channels."""
+        sequence = [
+            (0.5, 0, 5),
+            (1.0, 5, 5),
+        ]
+        seq = SequencePE(sequence, channels=2, overlap=False)
+        
+        self.renderer.set_source(seq)
+        
+        snippet = seq.render(0, 10)
+        assert snippet.data.shape == (10, 2)
+        
+        # First 5 samples should be 0.5 on both channels
+        np.testing.assert_array_equal(
+            snippet.data[:5, :],
+            np.full((5, 2), 0.5, dtype=np.float32)
+        )
+        
+        # Next 5 samples should be 1.0 on both channels
+        np.testing.assert_array_equal(
+            snippet.data[5:, :],
+            np.full((5, 2), 1.0, dtype=np.float32)
+        )
+    
+    def test_mixed_scalars_pes_2_and_3_tuples(self):
+        """Test the full merged feature: scalars, PEs, 2-tuples, and 3-tuples."""
+        pe1 = ConstantPE(10.0)
+        pe2 = ConstantPE(20.0)
+        
+        sequence = [
+            (1.0, 0, 3),        # Scalar with 3-tuple
+            (pe1, 3),           # PE with 2-tuple (inferred duration)
+            (2.0, 6),           # Scalar with 2-tuple (inferred duration)
+            (pe2, 9, 3),        # PE with 3-tuple
+        ]
+        seq = SequencePE(sequence, overlap=False)
+        
+        self.renderer.set_source(seq)
+        
+        snippet = seq.render(0, 12)
+        expected = np.array(
+            [1.0, 1.0, 1.0] +       # t=0-2: scalar 1.0
+            [10.0, 10.0, 10.0] +    # t=3-5: PE 10.0
+            [2.0, 2.0, 2.0] +       # t=6-8: scalar 2.0
+            [20.0, 20.0, 20.0],     # t=9-11: PE 20.0
+            dtype=np.float32
+        ).reshape(-1, 1)
+        np.testing.assert_array_equal(snippet.data, expected)
+    
+    def test_scalar_3_tuple_zero_duration(self):
+        """Test scalar with zero duration (should not crop)."""
+        sequence = [
+            (1.0, 0, 0),    # Zero duration
+            (2.0, 5, 5),
+        ]
+        seq = SequencePE(sequence, overlap=False)
+        
+        self.renderer.set_source(seq)
+        
+        # With zero duration, the scalar should play indefinitely (not cropped)
+        snippet = seq.render(0, 10)
+        # Scalar 1.0 (not cropped) is active throughout
+        # Scalar 2.0 (cropped to 5 samples) is active at t=5-9
+        # Mix: [1.0]*5 + [1.0+2.0]*5 = [1.0]*5 + [3.0]*5
+        expected = np.array(
+            [1.0] * 5 + [3.0] * 5,
+            dtype=np.float32
+        ).reshape(-1, 1)
+        np.testing.assert_array_equal(snippet.data, expected)
+    
+    def test_sequence_property_preserves_3_tuple_scalars(self):
+        """Test that the sequence property preserves 3-tuple format with scalars."""
+        sequence = [
+            (1.0, 0, 5),
+            (2.0, 5, 10),
+        ]
+        seq = SequencePE(sequence, overlap=False)
+        
+        # Get the sequence property
+        result_seq = seq.sequence
+        
+        # Should have 2 items
+        assert len(result_seq) == 2
+        
+        # Each item should be a 3-tuple (after normalization, scalars become ConstantPE)
+        assert len(result_seq[0]) == 3
+        assert len(result_seq[1]) == 3
+        
+        # Check start times and durations are preserved
+        assert result_seq[0][1] == 0
+        assert result_seq[0][2] == 5
+        assert result_seq[1][1] == 5
+        assert result_seq[1][2] == 10
