@@ -41,17 +41,17 @@ def extract_slices() -> dict:
     """
     Generate a dict of named slices.
     """
-    words = WavReaderPE(str(VOICE_WAV))
-    sample_rate = words.file_sample_rate
-    drums = WavReaderPE(str(DRUMS_WAV))
+    words_stream = WavReaderPE(str(VOICE_WAV))
+    sample_rate = words_stream.file_sample_rate
+    drums_stream = WavReaderPE(str(DRUMS_WAV))
 
     slices = {
-        'more': SlicePE(words, start=ss(0.0), duration=ss(0.266)), 
-        'man': SlicePE(words, start=ss(1.407), duration=ss(0.483)), 
-        'so': SlicePE(words, start=ss(2.888), duration=ss(0.440)),
-        'out': SlicePE(words, start=ss(3.353), duration=ss(0.607)),
-        'cowbell': GainPE(SlicePE(drums, start=ss(1.813), duration=ss(0.131)), 2.0),
-        'kick': SlicePE(drums, start=ss(2.590), duration=ss(0.302)),
+        'more': SlicePE(words_stream, start=ss(0.0), duration=ss(0.266)), 
+        'man': SlicePE(words_stream, start=ss(1.407), duration=ss(0.483)), 
+        'so': SlicePE(words_stream, start=ss(2.888), duration=ss(0.440)),
+        'out': SlicePE(words_stream, start=ss(3.353), duration=ss(0.607)),
+        'cowbell': GainPE(SlicePE(drums_stream, start=ss(1.813), duration=ss(0.131)), 2.0),
+        'kick': SlicePE(drums_stream, start=ss(2.590), duration=ss(0.302)),
     }
     return slices
 
@@ -59,7 +59,7 @@ def demo_slice_repertoire():
     print("Play extracted slices")
 
     slices = extract_slices()
-    mix = SequencePE([
+    mix_stream = SequencePE([
         (slices['more'], ss(0)),
         (slices['man'], ss(0.5)),
         (slices['so'], ss(1.0)),
@@ -68,7 +68,7 @@ def demo_slice_repertoire():
         (slices['kick'], ss(2.5)),
         ])
     with AudioRenderer(sample_rate=SAMPLE_RATE) as renderer:
-        renderer.set_source(mix)
+        renderer.set_source(mix_stream)
         renderer.start()
         renderer.play_extent()
 
@@ -78,7 +78,7 @@ def demo_slice_polka():
     BPM = 120
     SECONDS_PER_BEAT = 60.0 / BPM
     slices = extract_slices()
-    measure = SequencePE([
+    measure_stream = SequencePE([
         (slices['kick'], ss(0.0 * SECONDS_PER_BEAT)),
         (slices['cowbell'], ss(0.5 * SECONDS_PER_BEAT)),
         (slices['out'], ss(0.5 * SECONDS_PER_BEAT)),
@@ -94,14 +94,14 @@ def demo_slice_polka():
         ], overlap=True)
 
     # Play the measure 4 times
-    mix = LoopPE(
-        measure,
+    mix_stream = LoopPE(
+        measure_stream,
         loop_start=ss(0), 
         loop_end=ss(4.0 * SECONDS_PER_BEAT), 
         count=4)
 
     with AudioRenderer(sample_rate=SAMPLE_RATE) as renderer:
-        renderer.set_source(mix)
+        renderer.set_source(mix_stream)
         renderer.start()
         renderer.play_extent()
 

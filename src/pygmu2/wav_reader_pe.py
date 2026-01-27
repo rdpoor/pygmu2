@@ -35,12 +35,12 @@ class WavReaderPE(SourcePE):
     
     Example:
         # Read a WAV file
-        reader = WavReaderPE("drums.wav")
+        reader_stream = WavReaderPE("drums.wav")
         
         # Use in a graph
-        reader = WavReaderPE("input.wav")
-        processed = SomeEffectPE(reader)
-        renderer.set_source(processed)
+        reader_stream = WavReaderPE("input.wav")
+        processed_stream = SomeEffectPE(reader_stream)
+        renderer.set_source(processed_stream)
         
         # Delay audio by 1 second (use DelayPE)
         reader = WavReaderPE("vocals.wav")

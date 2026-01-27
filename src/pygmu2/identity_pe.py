@@ -26,14 +26,14 @@ class IdentityPE(SourcePE):
     
     Example:
         # Create identity signal
-        identity = IdentityPE()
-        snippet = identity.render(0, 5)
+        identity_stream = IdentityPE()
+        snippet = identity_stream.render(0, 5)
         # snippet.data = [[0.0], [1.0], [2.0], [3.0], [4.0]]
         
         # Test delay
-        identity = IdentityPE()
-        delayed = DelayPE(identity, delay=100)
-        snippet = delayed.render(100, 3)
+        identity_stream = IdentityPE()
+        delayed_stream = DelayPE(identity_stream, delay=100)
+        snippet = delayed_stream.render(100, 3)
         # snippet.data = [[0.0], [1.0], [2.0]]  # Values from source at 0, 1, 2
     """
     

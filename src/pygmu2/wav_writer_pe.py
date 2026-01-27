@@ -40,11 +40,11 @@ class WavWriterPE(ProcessingElement):
     
     Example:
         # Write processing output to a file
-        sine = SinePE(frequency=440.0)
-        writer = WavWriterPE(sine, "output.wav")
+        sine_stream = SinePE(frequency=440.0)
+        writer_stream = WavWriterPE(sine_stream, "output.wav")
         
         with NullRenderer(sample_rate=44100) as renderer:
-            renderer.set_source(writer)
+            renderer.set_source(writer_stream)
             renderer.start()
             renderer.render(0, 44100)  # Write 1 second
         # File is closed automatically

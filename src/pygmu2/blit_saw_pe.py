@@ -42,14 +42,14 @@ class BlitSawPE(ProcessingElement):
     
     Example:
         # Simple 440 Hz sawtooth (auto M, alias-free)
-        saw = BlitSawPE(frequency=440.0)
+        saw_stream = BlitSawPE(frequency=440.0)
         
         # Fixed harmonics for consistent timbre during pitch sweep
-        saw = BlitSawPE(frequency=lfo, m=20)
+        saw_stream = BlitSawPE(frequency=lfo_stream, m=20)
         
         # Frequency modulation (FM bass)
-        mod = SinePE(frequency=100.0, amplitude=50.0)
-        bass = BlitSawPE(frequency=GainPE(ConstantPE(100.0) + mod, gain=1.0))
+        mod_stream = SinePE(frequency=100.0, amplitude=50.0)
+        bass_stream = BlitSawPE(frequency=GainPE(ConstantPE(100.0) + mod_stream, gain=1.0))
     
     Notes:
         - When m=None, M is computed per-sample as the largest odd integer

@@ -44,14 +44,14 @@ class SuperSawPE(ProcessingElement):
     
     Example:
         # Classic supersaw lead
-        lead = SuperSawPE(frequency=440.0, detune_cents=15.0)
+        lead_stream = SuperSawPE(frequency=440.0, detune_cents=15.0)
         
         # Thick pad with more voices and detune
-        pad = SuperSawPE(frequency=220.0, voices=9, detune_cents=30.0)
+        pad_stream = SuperSawPE(frequency=220.0, voices=9, detune_cents=30.0)
         
         # With pitch modulation (vibrato)
-        vibrato = SinePE(frequency=5.0, amplitude=10.0)  # ±10 Hz
-        lead = SuperSawPE(frequency=vibrato + ConstantPE(440.0))
+        vibrato_stream = SinePE(frequency=5.0, amplitude=10.0)  # ±10 Hz
+        lead_stream = SuperSawPE(frequency=vibrato_stream + ConstantPE(440.0))
         
         # With filter for classic trance sound
         saw = SuperSawPE(frequency=440.0, detune_cents=20.0)

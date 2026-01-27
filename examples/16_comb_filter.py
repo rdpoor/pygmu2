@@ -25,16 +25,16 @@ DURATION_SECONDS = 6
 print("=== pygmu2 Example 14: Comb Filter ===", flush=True)
 print(f"Loading: {WAV_FILE}", flush=True)
 
-source = WavReaderPE(str(WAV_FILE))
-sample_rate = source.file_sample_rate or 44100
+source_stream = WavReaderPE(str(WAV_FILE))
+sample_rate = source_stream.file_sample_rate or 44100
 duration_samples = int(DURATION_SECONDS * sample_rate)
 
 # --- Part 1: Dry ---
 print(f"\nPart 1: Dry signal - {DURATION_SECONDS}s", flush=True)
-dry = CropPE(source, Extent(0, duration_samples))
+dry_stream = CropPE(source_stream, Extent(0, duration_samples))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(dry)
+renderer.set_source(dry_stream)
 
 with renderer:
     renderer.start()
@@ -42,12 +42,12 @@ with renderer:
 
 # --- Part 2: Comb tuned to 220 Hz ---
 print("\nPart 2: Comb filter (220 Hz, feedback 0.7)", flush=True)
-comb_220 = CombPE(source, frequency=220.0, feedback=0.7)
-comb_220 = GainPE(comb_220, gain=0.7)
-comb_220_out = CropPE(comb_220, Extent(0, duration_samples))
+comb_220_stream = CombPE(source_stream, frequency=220.0, feedback=0.7)
+comb_220_stream = GainPE(comb_220_stream, gain=0.7)
+comb_220_out_stream = CropPE(comb_220_stream, Extent(0, duration_samples))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(comb_220_out)
+renderer.set_source(comb_220_out_stream)
 
 with renderer:
     renderer.start()
@@ -55,12 +55,12 @@ with renderer:
 
 # --- Part 3: Comb tuned to 440 Hz ---
 print("\nPart 3: Comb filter (440 Hz, feedback 0.9)", flush=True)
-comb_440 = CombPE(source, frequency=440.0, feedback=0.9)
-comb_440 = GainPE(comb_440, gain=0.7)
-comb_440_out = CropPE(comb_440, Extent(0, duration_samples))
+comb_440_stream = CombPE(source_stream, frequency=440.0, feedback=0.9)
+comb_440_stream = GainPE(comb_440_stream, gain=0.7)
+comb_440_out_stream = CropPE(comb_440_stream, Extent(0, duration_samples))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(comb_440_out)
+renderer.set_source(comb_440_out_stream)
 
 with renderer:
     renderer.start()

@@ -26,14 +26,14 @@ class DiracPE(SourcePE):
     
     Example:
         # Create unit impulse
-        impulse = DiracPE()
-        snippet = impulse.render(-2, 5)
+        impulse_stream = DiracPE()
+        snippet = impulse_stream.render(-2, 5)
         # snippet.data = [[0.0], [0.0], [1.0], [0.0], [0.0]]
         #                  ^-2    ^-1    ^0     ^1     ^2
         
         # Test filter impulse response
-        impulse = DiracPE()
-        filtered = SomeFilterPE(impulse)
+        impulse_stream = DiracPE()
+        filtered_stream = SomeFilterPE(impulse_stream)
         response = filtered.render(0, 1000)  # Get impulse response
         
         # Delayed impulse

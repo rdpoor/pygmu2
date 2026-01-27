@@ -97,12 +97,12 @@ class BiquadPE(ProcessingElement):
     
     Example:
         # Simple lowpass filter at 1kHz
-        filtered = BiquadPE(source, frequency=1000.0, q=0.707, mode=BiquadMode.LOWPASS)
+        filtered_stream = BiquadPE(source_stream, frequency=1000.0, q=0.707, mode=BiquadMode.LOWPASS)
         
         # Auto-wah effect (envelope-controlled frequency)
-        envelope = EnvelopeFollowerPE(source)  # Hypothetical
-        freq_mod = MixPE(ConstantPE(500.0), GainPE(envelope, 2000.0))  # 500-2500 Hz
-        autowah = BiquadPE(source, frequency=freq_mod, q=5.0, mode=BiquadMode.BANDPASS)
+        envelope_stream = EnvelopeFollowerPE(source_stream)  # Hypothetical
+        freq_mod_stream = MixPE(ConstantPE(500.0), GainPE(envelope_stream, 2000.0))  # 500-2500 Hz
+        autowah_stream = BiquadPE(source_stream, frequency=freq_mod_stream, q=5.0, mode=BiquadMode.BANDPASS)
         
         # Filter sweep
         freq_sweep = RampPE(100.0, 5000.0, duration=44100*2)  # 2 second sweep

@@ -33,27 +33,27 @@ print("=== pygmu2 Example 04: Filtering ===", flush=True)
 print(f"Loading: {WAV_FILE}", flush=True)
 
 # Load orchestral source
-source = WavReaderPE(str(WAV_FILE))
-sample_rate = source.file_sample_rate
+source_stream = WavReaderPE(str(WAV_FILE))
+sample_rate = source_stream.file_sample_rate
 duration_samples = int(DURATION_SECONDS * sample_rate)
 
 # --- Part 1: Lowpass filter sweep (low to high) ---
 print(f"\nPart 1: Lowpass sweep {LO_FREQUENCY}Hz -> {HI_FREQUENCY}Hz - {DURATION_SECONDS}s, Q={Q}", flush=True)
 
 # Create frequency sweep from 200Hz to 8000Hz
-freq_sweep_up = RampPE(LO_FREQUENCY, HI_FREQUENCY, duration=duration_samples)
+freq_sweep_up_stream = RampPE(LO_FREQUENCY, HI_FREQUENCY, duration=duration_samples)
 
 # Apply lowpass filter with sweeping frequency
-filtered_up = BiquadPE(
-    source,
-    frequency=freq_sweep_up,
+filtered_up_stream = BiquadPE(
+    source_stream,
+    frequency=freq_sweep_up_stream,
     q=Q,
     mode=BiquadMode.LOWPASS
 )
-output_up = CropPE(filtered_up, Extent(0, duration_samples))
+output_up_stream = CropPE(filtered_up_stream, Extent(0, duration_samples))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output_up)
+renderer.set_source(output_up_stream)
 
 with renderer:
     renderer.start()
@@ -63,19 +63,19 @@ with renderer:
 print(f"\nPart 2: Lowpass sweep {HI_FREQUENCY}Hz -> {LO_FREQUENCY}Hz - {DURATION_SECONDS}s, Q={Q}", flush=True)
 
 # Create frequency sweep from 8000Hz to 200Hz
-freq_sweep_down = RampPE(HI_FREQUENCY, LO_FREQUENCY, duration=duration_samples)
+freq_sweep_down_stream = RampPE(HI_FREQUENCY, LO_FREQUENCY, duration=duration_samples)
 
 # Apply lowpass filter with sweeping frequency
-filtered_down = BiquadPE(
-    source,
-    frequency=freq_sweep_down,
+filtered_down_stream = BiquadPE(
+    source_stream,
+    frequency=freq_sweep_down_stream,
     q=Q,
     mode=BiquadMode.LOWPASS
 )
-output_down = CropPE(filtered_down, Extent(0, duration_samples))
+output_down_stream = CropPE(filtered_down_stream, Extent(0, duration_samples))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output_down)
+renderer.set_source(output_down_stream)
 
 with renderer:
     renderer.start()
@@ -84,18 +84,18 @@ with renderer:
 # --- Part 3: Resonant bandpass sweep ---
 print(f"\nPart 3: Resonant bandpass sweep 300Hz -> 3000Hz (Q=5) - {DURATION_SECONDS}s", flush=True)
 
-freq_sweep_bp = RampPE(300.0, 3000.0, duration=duration_samples)
+freq_sweep_bp_stream = RampPE(300.0, 3000.0, duration=duration_samples)
 
-filtered_bp = BiquadPE(
-    source,
-    frequency=freq_sweep_bp,
+filtered_bp_stream = BiquadPE(
+    source_stream,
+    frequency=freq_sweep_bp_stream,
     q=5.0,  # Resonant
     mode=BiquadMode.BANDPASS
 )
-output_bp = CropPE(filtered_bp, Extent(0, duration_samples))
+output_bp_stream = CropPE(filtered_bp_stream, Extent(0, duration_samples))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output_bp)
+renderer.set_source(output_bp_stream)
 
 with renderer:
     renderer.start()

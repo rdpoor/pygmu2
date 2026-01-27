@@ -46,7 +46,7 @@ print("Demo 1: Basic supersaw chord (A minor)", flush=True)
 print(f"  Voices: 7, Detune: 20 cents", flush=True)
 
 # Create three supersaw oscillators for a chord
-saw_a = SuperSawPE(
+saw_a_stream = SuperSawPE(
     frequency=pitch_to_freq(A3),
     amplitude=0.3,
     voices=7,
@@ -54,7 +54,7 @@ saw_a = SuperSawPE(
     mix_mode='center_heavy',
 )
 
-saw_c = SuperSawPE(
+saw_c_stream = SuperSawPE(
     frequency=pitch_to_freq(C4),
     amplitude=0.3,
     voices=7,
@@ -62,7 +62,7 @@ saw_c = SuperSawPE(
     mix_mode='center_heavy',
 )
 
-saw_e = SuperSawPE(
+saw_e_stream = SuperSawPE(
     frequency=pitch_to_freq(E4),
     amplitude=0.3,
     voices=7,
@@ -72,23 +72,23 @@ saw_e = SuperSawPE(
 
 # Mix the chord together
 from pygmu2 import MixPE
-chord = MixPE(saw_a, saw_c, saw_e)
+chord_stream = MixPE(saw_a_stream, saw_c_stream, saw_e_stream)
 
 # Apply overall gain to avoid clipping
-output = GainPE(chord, gain=0.4)
+output_stream = GainPE(chord_stream, gain=0.4)
 
 # Optionally add a lowpass filter for a smoother sound
 if HAS_BIQUAD:
     print("  Adding lowpass filter at 3000 Hz", flush=True)
-    output = BiquadPE(output, mode=BiquadMode.LOWPASS, frequency=3000.0, q=0.7)
+    output_stream = BiquadPE(output_stream, mode=BiquadMode.LOWPASS, frequency=3000.0, q=0.7)
 
 # Crop to desired duration
-output = CropPE(output, Extent(0, DURATION_SAMPLES))
+output_stream = CropPE(output_stream, Extent(0, DURATION_SAMPLES))
 
 # Play
 print(f"Playing for {DURATION_SECONDS} seconds...", flush=True)
 renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-renderer.set_source(output)
+renderer.set_source(output_stream)
 
 with renderer:
     renderer.start()
@@ -121,7 +121,7 @@ for detune in detune_amounts:
     output = CropPE(output, Extent(0, short_duration))
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(output)
+    renderer.set_source(output_stream)
     
     with renderer:
         renderer.start()
@@ -153,7 +153,7 @@ for mode in mix_modes:
     output = CropPE(output, Extent(0, short_duration))
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(output)
+    renderer.set_source(output_stream)
     
     with renderer:
         renderer.start()

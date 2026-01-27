@@ -216,10 +216,10 @@ def demo_gating_01():
     pitch_stream = SequencePE(notes)
     # convert to frequencies
     freq_stream = TransformPE(pitch_stream, func=pitch_to_freq)
-    synth = FunctionGenPE(freq_stream, waveform='sawtooth')
+    synth_stream = FunctionGenPE(freq_stream, waveform='sawtooth')
 
     # mix all notes and attenuate some
-    mix_stream = GainPE(synth, 0.5)
+    mix_stream = GainPE(synth_stream, 0.5)
 
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     # Optional: Crop mix to a finite extent so we can stream it chunk-by-chunk. 
@@ -251,10 +251,10 @@ def demo_gating_02():
     porta_stream = BiquadPE(pitch_stream, frequency=20, q=0.7, mode=BiquadMode.LOWPASS)
     # convert to frequencies
     freq_stream = TransformPE(porta_stream, func=pitch_to_freq)
-    synth = FunctionGenPE(freq_stream, waveform='sawtooth')
+    synth_stream = FunctionGenPE(freq_stream, waveform='sawtooth')
 
     # mix all notes and attenuate some
-    mix_stream = GainPE(synth, 0.5)
+    mix_stream = GainPE(synth_stream, 0.5)
 
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(CropPE(mix_stream, Extent(0, bs(next_start))))

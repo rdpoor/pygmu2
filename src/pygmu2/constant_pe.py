@@ -29,14 +29,14 @@ class ConstantPE(SourcePE):
     
     Example:
         # DC offset of 0.5
-        dc = ConstantPE(0.5)
+        dc_stream = ConstantPE(0.5)
         
         # Stereo constant
-        stereo_dc = ConstantPE(0.5, channels=2)
+        stereo_dc_stream = ConstantPE(0.5, channels=2)
         
         # Use as modulation input
-        base_freq = ConstantPE(440.0)
-        sine = SinePE(frequency=base_freq)
+        base_freq_stream = ConstantPE(440.0)
+        sine_stream = SinePE(frequency=base_freq_stream)
     """
     
     def __init__(self, value: float, channels: int = 1):

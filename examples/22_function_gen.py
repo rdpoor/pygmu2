@@ -44,15 +44,15 @@ def demo_pwm_rectangle_naive():
 
     dur = int(seconds_to_samples(6.0, SAMPLE_RATE))
 
-    duty_lfo = SinePE(frequency=0.25, amplitude=1.0)
-    duty = TransformPE(duty_lfo, func=lambda x: 0.5 + 0.45 * x, name="duty_map")
+    duty_lfo_stream = SinePE(frequency=0.25, amplitude=1.0)
+    duty_stream = TransformPE(duty_lfo_stream, func=lambda x: 0.5 + 0.45 * x, name="duty_map")
 
-    osc = FunctionGenPE(frequency=110.0, duty_cycle=duty, waveform="rectangle")
-    out = GainPE(osc, gain=0.25)
-    out = CropPE(out, Extent(0, dur))
+    osc_stream = FunctionGenPE(frequency=110.0, duty_cycle=duty_stream, waveform="rectangle")
+    out_stream = GainPE(osc_stream, gain=0.25)
+    out_stream = CropPE(out_stream, Extent(0, dur))
 
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(out)
+    renderer.set_source(out_stream)
     with renderer:
         renderer.start()
         renderer.play_extent()
@@ -67,14 +67,14 @@ def demo_morph_naive():
     print()
 
     dur = int(seconds_to_samples(8.0, SAMPLE_RATE))
-    duty = RampPE(0.0, 1.0, duration=dur)
+    duty_stream = RampPE(0.0, 1.0, duration=dur)
 
-    osc = FunctionGenPE(frequency=220.0, duty_cycle=duty, waveform="sawtooth")
-    out = GainPE(osc, gain=0.35)
-    out = CropPE(out, Extent(0, dur))
+    osc_stream = FunctionGenPE(frequency=220.0, duty_cycle=duty_stream, waveform="sawtooth")
+    out_stream = GainPE(osc_stream, gain=0.35)
+    out_stream = CropPE(out_stream, Extent(0, dur))
 
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(out)
+    renderer.set_source(out_stream)
     with renderer:
         renderer.start()
         renderer.play_extent()
@@ -93,23 +93,23 @@ def demo_ab_high_pitch():
     dur = int(seconds_to_samples(6.0, SAMPLE_RATE))
 
     # Sweep from 500 Hz up near Nyquist
-    freq = RampPE(500.0, 12_000.0, duration=dur)
+    freq_stream = RampPE(500.0, 12_000.0, duration=dur)
 
     duty = 0.2
 
     # Make both sources explicitly 2-channel so AudioRenderer configures a 2-channel stream.
-    naive = FunctionGenPE(frequency=freq, duty_cycle=duty, waveform="rectangle", channels=2)
-    aa = AnalogOscPE(frequency=freq, duty_cycle=duty, waveform="rectangle", channels=2)
+    naive_stream = FunctionGenPE(frequency=freq_stream, duty_cycle=duty, waveform="rectangle", channels=2)
+    aa_stream = AnalogOscPE(frequency=freq_stream, duty_cycle=duty, waveform="rectangle", channels=2)
 
     # Pan by zeroing the opposite channel (keep shape (N,2)).
-    left = TransformPE(naive, func=lambda x: np.column_stack([x[:, 0], np.zeros_like(x[:, 0])]), name="pan_left")
-    right = TransformPE(aa, func=lambda x: np.column_stack([np.zeros_like(x[:, 0]), x[:, 0]]), name="pan_right")
+    left_stream = TransformPE(naive_stream, func=lambda x: np.column_stack([x[:, 0], np.zeros_like(x[:, 0])]), name="pan_left")
+    right_stream = TransformPE(aa_stream, func=lambda x: np.column_stack([np.zeros_like(x[:, 0]), x[:, 0]]), name="pan_right")
 
-    stereo = GainPE(MixPE(left, right), gain=0.2)
-    stereo = CropPE(stereo, Extent(0, dur))
+    stereo_stream = GainPE(MixPE(left_stream, right_stream), gain=0.2)
+    stereo_stream = CropPE(stereo_stream, Extent(0, dur))
 
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(stereo)
+    renderer.set_source(stereo_stream)
     with renderer:
         renderer.start()
         renderer.play_extent()

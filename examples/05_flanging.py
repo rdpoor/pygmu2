@@ -31,17 +31,17 @@ print("=== pygmu2 Example 05: Flanging ===", flush=True)
 print(f"Loading: {WAV_FILE}", flush=True)
 
 # Load orchestral source
-source = WavReaderPE(str(WAV_FILE))
-sample_rate = source.file_sample_rate
+source_stream = WavReaderPE(str(WAV_FILE))
+sample_rate = source_stream.file_sample_rate
 duration_samples = int(DURATION_SECONDS * sample_rate)
 
 # --- Part 1: Original sound (dry) ---
 print(f"\nPart 1: Original sound (dry) - {DURATION_SECONDS}s", flush=True)
 
-output1 = CropPE(source, Extent(0, duration_samples))
+output1_stream = CropPE(source_stream, Extent(0, duration_samples))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output1)
+renderer.set_source(output1_stream)
 
 with renderer:
     renderer.start()
@@ -58,20 +58,20 @@ chorus_center_ms = 22.0  # Center delay for "doubling" effect
 chorus_depth_samples = chorus_depth_ms * sample_rate / 1000
 chorus_center_samples = chorus_center_ms * sample_rate / 1000
 
-lfo_chorus = SinePE(frequency=chorus_rate, amplitude=chorus_depth_samples)
-center_chorus = ConstantPE(chorus_center_samples)
-delay_signal_chorus = MixPE(center_chorus, lfo_chorus)
+lfo_chorus_stream = SinePE(frequency=chorus_rate, amplitude=chorus_depth_samples)
+center_chorus_stream = ConstantPE(chorus_center_samples)
+delay_signal_chorus_stream = MixPE(center_chorus_stream, lfo_chorus_stream)
 
-delayed_chorus = DelayPE(source, delay=delay_signal_chorus)
+delayed_chorus_stream = DelayPE(source_stream, delay=delay_signal_chorus_stream)
 
-dry_chorus = GainPE(source, gain=0.6)
-wet_chorus = GainPE(delayed_chorus, gain=0.4)
-chorused = MixPE(dry_chorus, wet_chorus)
+dry_chorus_stream = GainPE(source_stream, gain=0.6)
+wet_chorus_stream = GainPE(delayed_chorus_stream, gain=0.4)
+chorused_stream = MixPE(dry_chorus_stream, wet_chorus_stream)
 
-output2 = CropPE(chorused, Extent(0, duration_samples))
+output2_stream = CropPE(chorused_stream, Extent(0, duration_samples))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output2)
+renderer.set_source(output2_stream)
 
 with renderer:
     renderer.start()
@@ -92,24 +92,24 @@ flange_depth_samples = flange_depth_ms * sample_rate / 1000
 flange_center_samples = flange_center_ms * sample_rate / 1000
 
 # Create LFO for delay modulation
-lfo_flange = SinePE(frequency=flange_rate, amplitude=flange_depth_samples)
+lfo_flange_stream = SinePE(frequency=flange_rate, amplitude=flange_depth_samples)
 
 # Add center offset: center + lfo
-center_flange = ConstantPE(flange_center_samples)
-delay_signal_flange = MixPE(center_flange, lfo_flange)
+center_flange_stream = ConstantPE(flange_center_samples)
+delay_signal_flange_stream = MixPE(center_flange_stream, lfo_flange_stream)
 
 # Apply variable delay
-delayed_flange = DelayPE(source, delay=delay_signal_flange)
+delayed_flange_stream = DelayPE(source_stream, delay=delay_signal_flange_stream)
 
 # Mix dry and wet signals (50/50)
-dry_flange = GainPE(source, gain=0.5)
-wet_flange = GainPE(delayed_flange, gain=0.5)
-flanged = MixPE(dry_flange, wet_flange)
+dry_flange_stream = GainPE(source_stream, gain=0.5)
+wet_flange_stream = GainPE(delayed_flange_stream, gain=0.5)
+flanged_stream = MixPE(dry_flange_stream, wet_flange_stream)
 
-output3 = CropPE(flanged, Extent(0, duration_samples))
+output3_stream = CropPE(flanged_stream, Extent(0, duration_samples))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output3)
+renderer.set_source(output3_stream)
 
 with renderer:
     renderer.start()

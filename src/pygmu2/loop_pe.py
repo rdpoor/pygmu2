@@ -32,13 +32,13 @@ class LoopPE(ProcessingElement):
     
     Example:
         # Loop entire file forever
-        looped = LoopPE(WavReaderPE("drum.wav"))
+        looped_stream = LoopPE(WavReaderPE("drum.wav"))
         
         # Loop a specific region 4 times
-        looped = LoopPE(source, loop_start=1000, loop_end=5000, count=4)
+        looped_stream = LoopPE(source_stream, loop_start=1000, loop_end=5000, count=4)
         
         # Seamless looping with crossfade
-        looped = LoopPE(source, crossfade_seconds=0.01)  # 10ms crossfade
+        looped_stream = LoopPE(source_stream, crossfade_seconds=0.01)  # 10ms crossfade
     """
     
     def __init__(

@@ -32,13 +32,13 @@ class GainPE(ProcessingElement):
     
     Example:
         # Fixed gain (attenuate by half)
-        quiet = GainPE(source, gain=0.5)
+        quiet_stream = GainPE(source_stream, gain=0.5)
         
         # Fixed gain (amplify by 2x)
-        loud = GainPE(source, gain=2.0)
+        loud_stream = GainPE(source_stream, gain=2.0)
         
         # Invert phase
-        inverted = GainPE(source, gain=-1.0)
+        inverted_stream = GainPE(source_stream, gain=-1.0)
         
         # Tremolo effect (amplitude modulation)
         lfo = SinePE(frequency=5.0, amplitude=0.3)  # ±0.3 at 5Hz

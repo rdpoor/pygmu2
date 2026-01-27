@@ -41,35 +41,35 @@ def demo_drum_pattern():
     print()
     
     # Load drum samples
-    kick = WavReaderPE(str(AUDIO_DIR / "kick.wav"))
-    djembe = WavReaderPE(str(AUDIO_DIR / "djembe.wav"))
-    drums = WavReaderPE(str(AUDIO_DIR / "acoustic_drums.wav"))
+    kick_stream = WavReaderPE(str(AUDIO_DIR / "kick.wav"))
+    djembe_stream = WavReaderPE(str(AUDIO_DIR / "djembe.wav"))
+    drums_stream = WavReaderPE(str(AUDIO_DIR / "acoustic_drums.wav"))
     
-    sample_rate = kick.file_sample_rate
+    sample_rate = kick_stream.file_sample_rate
     
     # Get durations of each sample
-    kick_duration = kick.extent().duration or 0
-    djembe_duration = djembe.extent().duration or 0
-    drums_duration = drums.extent().duration or 0
+    kick_duration = kick_stream.extent().duration or 0
+    djembe_duration = djembe_stream.extent().duration or 0
+    drums_duration = drums_stream.extent().duration or 0
     
     # Create a pattern: kick, djembe, drums, kick, djembe, drums
     # Each sound plays for its full duration, then the next starts
     beat_duration = int(sample_rate * 0.5)  # 0.5 seconds per beat
     
     sequence = [
-        (kick, 0),                              # Kick at 0s
-        (djembe, kick_duration),               # Djembe after kick
-        (drums, kick_duration + djembe_duration),  # Drums after djembe
-        (kick, kick_duration + djembe_duration + drums_duration),  # Kick again
-        (djembe, kick_duration + djembe_duration + drums_duration + kick_duration),
-        (drums, kick_duration + djembe_duration + drums_duration + kick_duration + djembe_duration),
+        (kick_stream, 0),                              # Kick at 0s
+        (djembe_stream, kick_duration),               # Djembe after kick
+        (drums_stream, kick_duration + djembe_duration),  # Drums after djembe
+        (kick_stream, kick_duration + djembe_duration + drums_duration),  # Kick again
+        (djembe_stream, kick_duration + djembe_duration + drums_duration + kick_duration),
+        (drums_stream, kick_duration + djembe_duration + drums_duration + kick_duration + djembe_duration),
     ]
     
     # Create sequence with overlap=False (each sound plays fully, then next starts)
-    seq = SequencePE(sequence, overlap=False)
+    seq_stream = SequencePE(sequence, overlap=False)
     
     # Apply gain to avoid clipping
-    output = GainPE(seq, gain=0.7)
+    output_stream = GainPE(seq_stream, gain=0.7)
     
     # Calculate total duration (all samples + a bit of space)
     total_duration = (
@@ -77,10 +77,10 @@ def demo_drum_pattern():
         kick_duration + djembe_duration + drums_duration +
         int(sample_rate * 0.5)  # Extra space at end
     )
-    output = CropPE(output, Extent(0, total_duration))
+    output_stream = CropPE(output_stream, Extent(0, total_duration))
     
     renderer = AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(output)
+    renderer.set_source(output_stream)
     
     with renderer:
         renderer.start()
@@ -99,32 +99,32 @@ def demo_layered_entry():
     print()
     
     # Load audio sources
-    bass = WavReaderPE(str(AUDIO_DIR / "bass.wav"))
-    choir = WavReaderPE(str(AUDIO_DIR / "choir.wav"))
-    drums = WavReaderPE(str(AUDIO_DIR / "acoustic_drums.wav"))
+    bass_stream = WavReaderPE(str(AUDIO_DIR / "bass.wav"))
+    choir_stream = WavReaderPE(str(AUDIO_DIR / "choir.wav"))
+    drums_stream = WavReaderPE(str(AUDIO_DIR / "acoustic_drums.wav"))
     
-    sample_rate = bass.file_sample_rate
+    sample_rate = bass_stream.file_sample_rate
     
     # Create sequence where instruments enter at different times
     # All will overlap and play together after they've all started
     entry_times = [
-        (bass, 0),                           # Bass starts immediately
-        (choir, int(sample_rate * 2.0)),     # Choir enters at 2 seconds
-        (drums, int(sample_rate * 4.0)),     # Drums enter at 4 seconds
+        (bass_stream, 0),                           # Bass starts immediately
+        (choir_stream, int(sample_rate * 2.0)),     # Choir enters at 2 seconds
+        (drums_stream, int(sample_rate * 4.0)),     # Drums enter at 4 seconds
     ]
     
     # Create sequence with overlap=True (all sounds mix together)
-    seq = SequencePE(entry_times, overlap=True)
+    seq_stream = SequencePE(entry_times, overlap=True)
     
     # Apply gain to avoid clipping (multiple sources mixing)
-    output = GainPE(seq, gain=0.5)
+    output_stream = GainPE(seq_stream, gain=0.5)
     
     # Play for about 8 seconds total
     total_duration = int(sample_rate * 8.0)
-    output = CropPE(output, Extent(0, total_duration))
+    output_stream = CropPE(output_stream, Extent(0, total_duration))
     
     renderer = AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(output)
+    renderer.set_source(output_stream)
     
     with renderer:
         renderer.start()
@@ -152,30 +152,30 @@ def demo_arpeggio():
     
     # Create sequence of notes, cropping each to finite duration
     # This ensures each note plays for exactly note_duration samples
-    c_note = CropPE(BlitSawPE(frequency=pitch_to_freq(C4), amplitude=0.3), Extent(0, None))
-    e_note = CropPE(BlitSawPE(frequency=pitch_to_freq(E4), amplitude=0.3), Extent(0, None))
-    g_note = CropPE(BlitSawPE(frequency=pitch_to_freq(G4), amplitude=0.3), Extent(0, None))
-    c5_note = CropPE(BlitSawPE(frequency=pitch_to_freq(C5), amplitude=0.3), Extent(0, None))
+    c_note_stream = CropPE(BlitSawPE(frequency=pitch_to_freq(C4), amplitude=0.3), Extent(0, None))
+    e_note_stream = CropPE(BlitSawPE(frequency=pitch_to_freq(E4), amplitude=0.3), Extent(0, None))
+    g_note_stream = CropPE(BlitSawPE(frequency=pitch_to_freq(G4), amplitude=0.3), Extent(0, None))
+    c5_note_stream = CropPE(BlitSawPE(frequency=pitch_to_freq(C5), amplitude=0.3), Extent(0, None))
     
     sequence = [
-        (c_note, 0),
-        (e_note, note_duration),
-        (g_note, note_duration * 2),
-        (c5_note, note_duration * 3),
+        (c_note_stream, 0),
+        (e_note_stream, note_duration),
+        (g_note_stream, note_duration * 2),
+        (c5_note_stream, note_duration * 3),
     ]
     
     # Overlapping: each note continues when next note starts
-    seq = SequencePE(sequence, overlap=True)
+    seq_stream = SequencePE(sequence, overlap=True)
     
     # Apply gain
-    output = GainPE(seq, gain=0.4)
+    output_stream = GainPE(seq_stream, gain=0.4)
     
     # Play for duration of all notes
     total_duration = note_duration * 4
-    output = CropPE(output, Extent(0, total_duration))
+    output_stream = CropPE(output_stream, Extent(0, total_duration))
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(output)
+    renderer.set_source(output_stream)
     
     with renderer:
         renderer.start()
@@ -193,21 +193,21 @@ def demo_chord_progression():
     
     # Create chords (each chord is a mix of 3 notes)
     # C major: C4, E4, G4
-    c_chord = MixPE(
+    c_chord_stream = MixPE(
         BlitSawPE(frequency=pitch_to_freq(60), amplitude=0.2),  # C4
         BlitSawPE(frequency=pitch_to_freq(64), amplitude=0.2),  # E4
         BlitSawPE(frequency=pitch_to_freq(67), amplitude=0.2),  # G4
     )
     
     # F major: F4, A4, C5
-    f_chord = MixPE(
+    f_chord_stream = MixPE(
         BlitSawPE(frequency=pitch_to_freq(65), amplitude=0.2),  # F4
         BlitSawPE(frequency=pitch_to_freq(69), amplitude=0.2),  # A4
         BlitSawPE(frequency=pitch_to_freq(72), amplitude=0.2),  # C5
     )
     
     # G major: G4, B4, D5
-    g_chord = MixPE(
+    g_chord_stream = MixPE(
         BlitSawPE(frequency=pitch_to_freq(67), amplitude=0.2),  # G4
         BlitSawPE(frequency=pitch_to_freq(71), amplitude=0.2),  # B4
         BlitSawPE(frequency=pitch_to_freq(74), amplitude=0.2),  # D5
@@ -217,33 +217,33 @@ def demo_chord_progression():
     
     # Crop each chord to finite duration (starting at time 0)
     # This ensures each chord plays for exactly chord_duration samples
-    c_chord_cropped = CropPE(c_chord, Extent(0, None))
-    f_chord_cropped = CropPE(f_chord, Extent(0, None))
-    g_chord_cropped = CropPE(g_chord, Extent(0, None))
+    c_chord_cropped_stream = CropPE(c_chord_stream, Extent(0, None))
+    f_chord_cropped_stream = CropPE(f_chord_stream, Extent(0, None))
+    g_chord_cropped_stream = CropPE(g_chord_stream, Extent(0, None))
     
     # Verify extents are finite (for debugging)
-    print(f"  C chord extent: {c_chord_cropped.extent()}")
-    print(f"  F chord extent: {f_chord_cropped.extent()}")
-    print(f"  G chord extent: {g_chord_cropped.extent()}")
+    print(f"  C chord extent: {c_chord_cropped_stream.extent()}")
+    print(f"  F chord extent: {f_chord_cropped_stream.extent()}")
+    print(f"  G chord extent: {g_chord_cropped_stream.extent()}")
     
     sequence = [
-        (c_chord_cropped, 0),
-        (f_chord_cropped, chord_duration),
-        (g_chord_cropped, chord_duration * 2),
+        (c_chord_cropped_stream, 0),
+        (f_chord_cropped_stream, chord_duration),
+        (g_chord_cropped_stream, chord_duration * 2),
     ]
     
     # Overlapping: chords blend together smoothly
-    seq = SequencePE(sequence, overlap=False)
+    seq_stream = SequencePE(sequence, overlap=False)
     
     # Apply gain
-    output = GainPE(seq, gain=0.4)
+    output_stream = GainPE(seq_stream, gain=0.4)
     
     # Play for duration of all chords
     total_duration = chord_duration * 3
-    output = CropPE(output, Extent(0, total_duration))
+    output_stream = CropPE(output_stream, Extent(0, total_duration))
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(output)
+    renderer.set_source(output_stream)
     
     with renderer:
         renderer.start()

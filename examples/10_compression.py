@@ -75,16 +75,16 @@ def demo_limiter():
     print("Preventing peaks from exceeding -6dB ceiling.")
     print()
     
-    source = WavReaderPE(sound_path)
-    sample_rate = source.file_sample_rate
-    looped_drums = LoopPE(source, count=2, crossfade_seconds=0.002)
+    source_stream = WavReaderPE(sound_path)
+    sample_rate = source_stream.file_sample_rate
+    looped_drums_stream = LoopPE(source_stream, count=2, crossfade_seconds=0.002)
 
     # Make it intentionally too loud
-    loud = GainPE(looped_drums, gain=10.0)
+    loud_stream = GainPE(looped_drums_stream, gain=10.0)
     
     # Apply limiter
-    limited = LimiterPE(
-        loud,
+    limited_stream = LimiterPE(
+        loud_stream,
         ceiling=-12.0,     # -12dB ceiling
         release=0.05,      # 50ms release
         lookahead=0.005,   # 5ms lookahead for transparent limiting
@@ -95,7 +95,7 @@ def demo_limiter():
     print()
     
     with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(limited)
+        renderer.set_source(limited_stream)
         renderer.start()
         renderer.play_extent()
     print()
@@ -109,13 +109,13 @@ def demo_noise_gate():
     print("Gating a signal to remove quiet passages.")
     print()
     
-    source = WavReaderPE(sound_path)
-    sample_rate = source.file_sample_rate
-    looped_drums = LoopPE(source, count=2, crossfade_seconds=0.002)
+    source_stream = WavReaderPE(sound_path)
+    sample_rate = source_stream.file_sample_rate
+    looped_drums_stream = LoopPE(source_stream, count=2, crossfade_seconds=0.002)
     
     # Apply gate - quiet parts will be silenced
-    gated = GatePE(
-        looped_drums,
+    gated_stream = GatePE(
+        looped_drums_stream,
         threshold=-16,     # Gate threshold
         attack=0.001,      # 1ms attack (fast open)
         release=0.1 ,      # 1ms release
@@ -128,7 +128,7 @@ def demo_noise_gate():
     print()
     
     with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(gated)
+        renderer.set_source(gated_stream)
         renderer.start()
         renderer.play_extent()
     print()
@@ -145,22 +145,22 @@ def demo_parallel_compression():
     sample_rate = 44100
     duration = 3.0
     
-    source = WavReaderPE(sound_path)
-    sample_rate = source.file_sample_rate
-    looped_drums = LoopPE(source, count=2, crossfade_seconds=0.002)
+    source_stream = WavReaderPE(sound_path)
+    sample_rate = source_stream.file_sample_rate
+    looped_drums_stream = LoopPE(source_stream, count=2, crossfade_seconds=0.002)
     
     # Apply limiter to squash it
-    limited = LimiterPE(
-        GainPE(looped_drums, gain=10.0),
+    limited_stream = LimiterPE(
+        GainPE(looped_drums_stream, gain=10.0),
         ceiling=-6.0,      # -3dB ceiling
         release=0.05,      # 50ms release
         lookahead=0.005,   # 5ms lookahead for transparent limiting
     )
     
     # Mix dry + wet (parallel compression)
-    parallel = MixPE(
-        GainPE(looped_drums, gain=0.6),      # Dry (60%)
-        GainPE(limited, gain=0.4),     # Limited (40%)
+    parallel_stream = MixPE(
+        GainPE(looped_drums_stream, gain=0.6),      # Dry (60%)
+        GainPE(limited_stream, gain=0.4),     # Limited (40%)
     )
     
     print("Mixing 60% dry + 40% heavily compressed")
@@ -169,7 +169,7 @@ def demo_parallel_compression():
     print()
     
     with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(parallel)
+        renderer.set_source(parallel_stream)
         renderer.start()
         renderer.play_extent()
     print()

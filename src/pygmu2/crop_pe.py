@@ -34,14 +34,14 @@ class CropPE(ProcessingElement):
     
     Example:
         # Crop to samples 44100-88200 (second 1-2 at 44.1kHz)
-        reader = WavReaderPE("audio.wav")
-        cropped = CropPE(reader, Extent(44100, 88200))
+        reader_stream = WavReaderPE("audio.wav")
+        cropped_stream = CropPE(reader_stream, Extent(44100, 88200))
         
         # Trim the beginning (start at sample 1000)
-        trimmed = CropPE(source, Extent(1000, None))
+        trimmed_stream = CropPE(source_stream, Extent(1000, None))
         
         # Trim the end (stop at sample 50000)
-        trimmed = CropPE(source, Extent(None, 50000))
+        trimmed_stream = CropPE(source_stream, Extent(None, 50000))
         
         # Crop to match another PE's extent
         reference = WavReaderPE("reference.wav")

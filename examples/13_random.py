@@ -34,7 +34,7 @@ def demo_sample_hold_notes():
     print()
     
     # 4 Hz trigger (16th notes at 120 BPM)
-    clock = SinePE(frequency=4.0)
+    clock_stream = SinePE(frequency=4.0)
     
     # C Major scale (C4 to C5)
     c_major_pitches = [60, 62, 64, 65, 67, 69, 71, 72]
@@ -42,11 +42,11 @@ def demo_sample_hold_notes():
     
     # Generate random indices (0 to 7)
     # We generate slightly outside [0, 7] to ensure coverage after floor()
-    random_index = RandomPE(
+    random_index_stream = RandomPE(
         min_value=0,
         max_value=len(c_major_freqs) - 0.01,
         mode=RandomMode.SAMPLE_HOLD,
-        trigger=clock,
+        trigger=clock_stream,
         seed=42
     )
     
@@ -68,16 +68,16 @@ def demo_sample_hold_notes():
         # Note: idx is (N, 1), scale[idx] results in (N, 1)
         return scale[idx].reshape(indices.shape)
 
-    scale_freq = TransformPE(random_index, map_to_scale)
+    scale_freq_stream = TransformPE(random_index_stream, map_to_scale)
     
     # Oscillator with quantized frequency
-    synth = BlitSawPE(frequency=scale_freq, amplitude=0.4)
+    synth_stream = BlitSawPE(frequency=scale_freq_stream, amplitude=0.4)
     
     # Adjust the gain
-    output = GainPE(synth, gain=0.5)
+    output_stream = GainPE(synth_stream, gain=0.5)
     
     with AudioRenderer(sample_rate=SAMPLE_RATE) as renderer:
-        renderer.set_source(output)
+        renderer.set_source(output_stream)
         renderer.start()
         print("Playing for 4 seconds...")
         renderer.play_range(0, int(4.0 * SAMPLE_RATE))
@@ -97,7 +97,7 @@ def demo_smooth_modulation():
     
     # Random vibrato (frequency modulation)
     # Slow wandering between 2 and 10 Hz of depth
-    vibrato_depth = RandomPE(
+    vibrato_depth_stream = RandomPE(
         rate=0.5,
         min_value=2,
         max_value=15,
@@ -105,11 +105,11 @@ def demo_smooth_modulation():
     )
     
     # Vibrato LFO
-    vibrato_lfo = GainPE(SinePE(frequency=6.0), gain=vibrato_depth)
+    vibrato_lfo_stream = GainPE(SinePE(frequency=6.0), gain=vibrato_depth_stream)
     
     # Random tremolo rate (amplitude modulation)
     # Rate wanders between 1 Hz and 8 Hz
-    trem_rate = RandomPE(
+    trem_rate_stream = RandomPE(
         rate=0.2,
         min_value=1,
         max_value=8,
@@ -117,21 +117,21 @@ def demo_smooth_modulation():
     )
     
     # Tremolo LFO (normalized 0.5 to 1.0)
-    trem_lfo = MixPE(
-        GainPE(SinePE(frequency=trem_rate), gain=0.25),
+    trem_lfo_stream = MixPE(
+        GainPE(SinePE(frequency=trem_rate_stream), gain=0.25),
         ConstantPE(0.75)
     )
     
     # Main oscillator
-    synth = BlitSawPE(
-        frequency=MixPE(ConstantPE(base_freq), vibrato_lfo),
+    synth_stream = BlitSawPE(
+        frequency=MixPE(ConstantPE(base_freq), vibrato_lfo_stream),
         amplitude=0.5
     )
     
-    output = GainPE(synth, gain=trem_lfo)
+    output_stream = GainPE(synth_stream, gain=trem_lfo_stream)
     
     with AudioRenderer(sample_rate=SAMPLE_RATE) as renderer:
-        renderer.set_source(output)
+        renderer.set_source(output_stream)
         renderer.start()
         print("Playing for 5 seconds...")
         renderer.play_range(0, int(5.0 * SAMPLE_RATE))
@@ -148,7 +148,7 @@ def demo_random_walk():
     
     # Random walk around a center frequency
     # We'll use small steps (slew) for a gentle drift
-    drift = RandomPE(
+    drift_stream = RandomPE(
         min_value=-100,
         max_value=100,
         mode=RandomMode.WALK,
@@ -156,12 +156,12 @@ def demo_random_walk():
         seed=123
     )
     
-    frequency = MixPE(ConstantPE(330.0), drift)
+    frequency_stream = MixPE(ConstantPE(330.0), drift_stream)
     
-    synth = SinePE(frequency=frequency, amplitude=0.4)
+    synth_stream = SinePE(frequency=frequency_stream, amplitude=0.4)
     
     with AudioRenderer(sample_rate=SAMPLE_RATE) as renderer:
-        renderer.set_source(synth)
+        renderer.set_source(synth_stream)
         renderer.start()
         print("Playing for 5 seconds...")
         renderer.play_range(0, int(5.0 * SAMPLE_RATE))

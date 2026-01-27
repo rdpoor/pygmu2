@@ -36,23 +36,23 @@ print(f"  C4: {pitch_to_freq(C4):.1f} Hz", flush=True)
 print(f"  E4: {pitch_to_freq(E4):.1f} Hz", flush=True)
 print(f"  G4: {pitch_to_freq(G4):.1f} Hz", flush=True)
 
-sine_c = SinePE(frequency=pitch_to_freq(C4), amplitude=0.3)
-sine_e = SinePE(frequency=pitch_to_freq(E4), amplitude=0.3)
-sine_g = SinePE(frequency=pitch_to_freq(G4), amplitude=0.3)
+sine_c_stream = SinePE(frequency=pitch_to_freq(C4), amplitude=0.3)
+sine_e_stream = SinePE(frequency=pitch_to_freq(E4), amplitude=0.3)
+sine_g_stream = SinePE(frequency=pitch_to_freq(G4), amplitude=0.3)
 
 # Mix the three sines together
-mixed = MixPE(sine_c, sine_e, sine_g)
+mixed_stream = MixPE(sine_c_stream, sine_e_stream, sine_g_stream)
 
 # Apply overall gain (reduce to avoid clipping)
-gained = GainPE(mixed, gain=0.5)
+gained_stream = GainPE(mixed_stream, gain=0.5)
 
 # Crop to desired duration
-output = CropPE(gained, Extent(0, DURATION_SAMPLES))
+output_stream = CropPE(gained_stream, Extent(0, DURATION_SAMPLES))
 
 # Create audio renderer and play
 print(f"Playing for {DURATION_SECONDS} seconds...", flush=True)
 renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-renderer.set_source(output)
+renderer.set_source(output_stream)
 
 with renderer:
     renderer.start()

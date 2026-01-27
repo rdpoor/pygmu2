@@ -51,26 +51,26 @@ def demo_sidechain_ducking():
     print("Bass ducks when 'kick' hits - classic EDM pumping effect.")
     print()
     
-    bass = WavReaderPE(str(BASS_FILE))
-    sample_rate = bass.file_sample_rate
-    kick = WavReaderPE(str(KICK_FILE))
+    bass_stream = WavReaderPE(str(BASS_FILE))
+    sample_rate = bass_stream.file_sample_rate
+    kick_stream = WavReaderPE(str(KICK_FILE))
 
     # loop the kick to keep time with the bass
     samples_per_beat = (60/BASS_BPM) * sample_rate
-    kick_pulse = LoopPE(kick, loop_end=int(samples_per_beat))
+    kick_pulse_stream = LoopPE(kick_stream, loop_end=int(samples_per_beat))
         
     # Create envelope follower from kick
     # Fast attack to catch transients, moderate release for pumping
-    kick_env = EnvelopePE(
-        kick_pulse,
+    kick_env_stream = EnvelopePE(
+        kick_pulse_stream,
         attack=0.001,   # 1ms - instant attack
         release=0.15,   # 150ms - creates the "pump"
     )
     
     # Sidechain compress: bass is ducked by kick envelope
-    ducked_bass = DynamicsPE(
-        bass,           # Audio to process
-        kick_env,       # Control signal (from kick)
+    ducked_bass_stream = DynamicsPE(
+        bass_stream,           # Audio to process
+        kick_env_stream,       # Control signal (from kick)
         threshold=-20,  # Start ducking at -20dB
         ratio=8,        # Strong ducking
         makeup_gain=0,
@@ -78,9 +78,9 @@ def demo_sidechain_ducking():
     )
     
     # Mix kick and ducked bass
-    mix = MixPE(
-        GainPE(kick_pulse, gain=0.2),  # Kick (quieter)
-        GainPE(ducked_bass, gain=0.8),   # Ducked bass
+    mix_stream = MixPE(
+        GainPE(kick_pulse_stream, gain=0.2),  # Kick (quieter)
+        GainPE(ducked_bass_stream, gain=0.8),   # Ducked bass
     )
     
     print("Kick triggers compression on bass")
@@ -89,9 +89,9 @@ def demo_sidechain_ducking():
     print()
     
     with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(mix)
+        renderer.set_source(mix_stream)
         renderer.start()
-        renderer.play_range(0, bass.extent().end)
+        renderer.play_range(0, bass_stream.extent().end)
     print()
 
 
@@ -105,30 +105,30 @@ def demo_sidechain_ducking_voice():
     print("Music ducks when 'voice' is present.")
     print()
     
-    music = WavReaderPE(str(MUSIC_FILE))
-    voice = WavReaderPE(str(VOICE_FILE))
-    sample_rate = voice.file_sample_rate
+    music_stream = WavReaderPE(str(MUSIC_FILE))
+    voice_stream = WavReaderPE(str(VOICE_FILE))
+    sample_rate = voice_stream.file_sample_rate
     
     # Create envelope from voice
-    voice_detector = EnvelopePE(
-        voice,
+    voice_detector_stream = EnvelopePE(
+        voice_stream,
         attack=0.05,    # 50ms attack (not too fast)
         release=0.15,    # 150ms release (smooth return)
     )
     
     # Duck music when voice is present
-    ducked_music = DynamicsPE(
-        music,
-        voice_detector,
+    ducked_music_stream = DynamicsPE(
+        music_stream,
+        voice_detector_stream,
         threshold=-40,
         ratio=4,        # Moderate ducking
         makeup_gain=0,
     )
     
     # Mix voice and ducked music
-    mix = MixPE(
-        GainPE(voice, gain=0.4),
-        GainPE(ducked_music, gain=0.6),
+    mix_stream = MixPE(
+        GainPE(voice_stream, gain=0.4),
+        GainPE(ducked_music_stream, gain=0.6),
     )
     
     print("Voice detector controls music level")
@@ -137,7 +137,7 @@ def demo_sidechain_ducking_voice():
     print()
     
     with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(mix)
+        renderer.set_source(mix_stream)
         renderer.start()
         renderer.play_extent()
     print()
@@ -153,16 +153,16 @@ def demo_expander():
     print("Expansion: quiet parts become even quieter.")
     print()
 
-    source = WavReaderPE(str(BASS_FILE))
-    sample_rate = source.file_sample_rate
+    source_stream = WavReaderPE(str(BASS_FILE))
+    sample_rate = source_stream.file_sample_rate
     
     # Create envelope follower
-    env = EnvelopePE(source, attack=0.01, release=0.1)
+    env_stream = EnvelopePE(source_stream, attack=0.01, release=0.1)
     
     # Expand: reduce gain below threshold
-    expanded = DynamicsPE(
-        source,
-        env,
+    expanded_stream = DynamicsPE(
+        source_stream,
+        env_stream,
         threshold=-6,      # Expand below -6dB
         ratio=4.0,         # 4:1 expansion (1dB below threshold -> 4dB reduction)
         mode=DynamicsMode.EXPAND,
@@ -174,7 +174,7 @@ def demo_expander():
     print()
     
     with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(expanded)
+        renderer.set_source(expanded_stream)
         renderer.start()
         renderer.play_extent()
     print()
@@ -191,23 +191,23 @@ def demo_custom_envelope():
     print("Using an LFO as the control signal for rhythmic compression.")
     print()
     
-    pad = WavReaderPE(str(MUSIC_FILE))
-    sample_rate = pad.file_sample_rate
+    pad_stream = WavReaderPE(str(MUSIC_FILE))
+    sample_rate = pad_stream.file_sample_rate
     
     # Custom control signal: slow triangle-ish LFO
     # This creates rhythmic "breathing" independent of input level
     lfo_freq = 3
 
     # Use sine as control (rectified to stay positive)
-    control = MixPE(
+    control_stream = MixPE(
         GainPE(SinePE(frequency=lfo_freq), gain=0.4),
         ConstantPE(0.5),  # Keep it positive
     )
     
     # Apply compression driven by LFO, not by input
-    rhythmic = DynamicsPE(
-        pad,
-        control,
+    rhythmic_stream = DynamicsPE(
+        pad_stream,
+        control_stream,
         threshold=-6,
         ratio=4,
         makeup_gain=0,
@@ -218,7 +218,7 @@ def demo_custom_envelope():
     print()
     
     with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(rhythmic)
+        renderer.set_source(rhythmic_stream)
         renderer.start()
         renderer.play_extent()
     print()

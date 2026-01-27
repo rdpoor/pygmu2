@@ -44,14 +44,14 @@ class DelayPE(ProcessingElement):
     
     Example:
         # Integer delay (fast path, no interpolation)
-        delayed = DelayPE(source, delay=44100)  # 1 second at 44.1kHz
+        delayed_stream = DelayPE(source_stream, delay=44100)  # 1 second at 44.1kHz
         
         # Fractional delay (sub-sample precision)
-        aligned = DelayPE(source, delay=10.5)
+        aligned_stream = DelayPE(source_stream, delay=10.5)
         
         # Variable delay (vibrato effect)
-        lfo = SinePE(frequency=5.0, amplitude=50.0)
-        delay_mod = MixPE(ConstantPE(100.0), lfo)  # 100 ± 50 samples
+        lfo_stream = SinePE(frequency=5.0, amplitude=50.0)
+        delay_mod_stream = MixPE(ConstantPE(100.0), lfo_stream)  # 100 ± 50 samples
         vibrato = DelayPE(source, delay=delay_mod)
         
         # Simple echo effect

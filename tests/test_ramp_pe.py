@@ -31,6 +31,20 @@ class TestRampPEBasics:
         assert extent.start == 0
         assert extent.end == 100
     
+    def test_infinite_extent_with_hold(self):
+        """RampPE with hold_extents=True has infinite extent."""
+        ramp = RampPE(0.0, 1.0, duration=100, hold_extents=True)
+        extent = ramp.extent()
+        assert extent.start is None
+        assert extent.end is None
+    
+    def test_hold_extents_property(self):
+        ramp = RampPE(0.0, 1.0, duration=100, hold_extents=True)
+        assert ramp.hold_extents is True
+        
+        ramp2 = RampPE(0.0, 1.0, duration=100)
+        assert ramp2.hold_extents is False
+    
     def test_is_pure(self):
         ramp = RampPE(0.0, 1.0, duration=100)
         assert ramp.is_pure() is True
@@ -208,4 +222,80 @@ class TestRampPERender:
         np.testing.assert_array_almost_equal(
             snippet.data,
             np.full((100, 1), 0.5, dtype=np.float32)
+        )
+    
+    def test_hold_extents_before_ramp(self):
+        """With hold_extents=True, values before ramp hold start_value."""
+        ramp = RampPE(0.0, 1.0, duration=100, hold_extents=True)
+        self.renderer.set_source(ramp)
+        
+        snippet = ramp.render(-50, 50)
+        
+        # All values should be start_value (0.0) before ramp
+        np.testing.assert_array_almost_equal(
+            snippet.data,
+            np.zeros((50, 1), dtype=np.float32)
+        )
+    
+    def test_hold_extents_after_ramp(self):
+        """With hold_extents=True, values after ramp hold end_value."""
+        ramp = RampPE(0.0, 1.0, duration=100, hold_extents=True)
+        self.renderer.set_source(ramp)
+        
+        snippet = ramp.render(100, 50)
+        
+        # All values should be end_value (1.0) after ramp
+        np.testing.assert_array_almost_equal(
+            snippet.data,
+            np.ones((50, 1), dtype=np.float32)
+        )
+    
+    def test_hold_extents_spanning_start(self):
+        """Render spanning start with hold_extents=True."""
+        ramp = RampPE(0.5, 1.0, duration=100, hold_extents=True)
+        self.renderer.set_source(ramp)
+        
+        snippet = ramp.render(-25, 50)
+        
+        # First 25 samples should hold start_value (0.5)
+        np.testing.assert_array_almost_equal(
+            snippet.data[:25, 0],
+            np.full(25, 0.5, dtype=np.float32)
+        )
+        # Sample 25 should be 0.5 (start of ramp)
+        assert abs(snippet.data[25, 0] - 0.5) < 1e-6
+    
+    def test_hold_extents_spanning_end(self):
+        """Render spanning end with hold_extents=True."""
+        ramp = RampPE(0.0, 1.0, duration=100, hold_extents=True)
+        self.renderer.set_source(ramp)
+        
+        snippet = ramp.render(75, 50)
+        
+        # First 25 samples should be ramp values (75-99)
+        # Sample 24 should be ~1.0 (end of ramp at index 99)
+        assert abs(snippet.data[24, 0] - 1.0) < 1e-6
+        # Remaining samples should hold end_value (1.0)
+        np.testing.assert_array_almost_equal(
+            snippet.data[25:, 0],
+            np.ones(25, dtype=np.float32)
+        )
+    
+    def test_hold_extents_stereo(self):
+        """hold_extents works with multi-channel ramps."""
+        ramp = RampPE(0.0, 1.0, duration=100, channels=2, hold_extents=True)
+        self.renderer.set_source(ramp)
+        
+        # Before ramp: hold start_value
+        snippet_before = ramp.render(-10, 10)
+        np.testing.assert_array_almost_equal(
+            snippet_before.data,
+            np.zeros((10, 2), dtype=np.float32)
+        )
+        
+        # After ramp: hold end_value
+        snippet_after = ramp.render(100, 10)
+        np.testing.assert_array_almost_equal(
+            snippet_after.data,
+            np.ones((10, 2), dtype=np.float32)
         )

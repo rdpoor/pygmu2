@@ -40,17 +40,17 @@ print(f"  C4: {pitch_to_freq(C4):.1f} Hz", flush=True)
 print(f"  E4: {pitch_to_freq(E4):.1f} Hz", flush=True)
 print(f"  G4: {pitch_to_freq(G4):.1f} Hz", flush=True)
 
-sine_c = SinePE(frequency=pitch_to_freq(C4), amplitude=0.3)
-sine_e = SinePE(frequency=pitch_to_freq(E4), amplitude=0.3)
-sine_g = SinePE(frequency=pitch_to_freq(G4), amplitude=0.3)
+sine_c_stream = SinePE(frequency=pitch_to_freq(C4), amplitude=0.3)
+sine_e_stream = SinePE(frequency=pitch_to_freq(E4), amplitude=0.3)
+sine_g_stream = SinePE(frequency=pitch_to_freq(G4), amplitude=0.3)
 
-mixed = MixPE(sine_c, sine_e, sine_g)
-gained = GainPE(mixed, gain=0.5)
-cropped = CropPE(gained, Extent(0, DURATION_SAMPLES))
+mixed_stream = MixPE(sine_c_stream, sine_e_stream, sine_g_stream)
+gained_stream = GainPE(mixed_stream, gain=0.5)
+cropped_stream = CropPE(gained_stream, Extent(0, DURATION_SAMPLES))
 
 # Wrap in WavWriterPE to write to file
 # WavWriterPE passes audio through while also writing to disk
-output = WavWriterPE(cropped, str(OUTPUT_FILE))
+output_stream = WavWriterPE(cropped_stream, str(OUTPUT_FILE))
 
 print(f"\nRendering to: {OUTPUT_FILE}", flush=True)
 print(f"  Duration: {DURATION_SECONDS} seconds", flush=True)
@@ -58,12 +58,12 @@ print(f"  Sample rate: {SAMPLE_RATE} Hz", flush=True)
 
 # Use NullRenderer for offline rendering (no audio output)
 renderer = NullRenderer(sample_rate=SAMPLE_RATE)
-renderer.set_source(output)
+renderer.set_source(output_stream)
 
 with renderer:
     renderer.start()
     # Render the entire extent
-    extent = output.extent()
+    extent = output_stream.extent()
     renderer.render(extent.start, extent.end - extent.start)
 
 print(f"\nFile written successfully!", flush=True)
@@ -72,9 +72,9 @@ print(f"  Size: {OUTPUT_FILE.stat().st_size:,} bytes", flush=True)
 # --- Play back the written file ---
 print(f"\nPlaying back: {OUTPUT_FILE}", flush=True)
 
-playback = WavReaderPE(str(OUTPUT_FILE))
-playback_renderer = AudioRenderer(sample_rate=playback.file_sample_rate)
-playback_renderer.set_source(playback)
+playback_stream = WavReaderPE(str(OUTPUT_FILE))
+playback_renderer = AudioRenderer(sample_rate=playback_stream.file_sample_rate)
+playback_renderer.set_source(playback_stream)
 
 with playback_renderer:
     playback_renderer.start()

@@ -43,13 +43,13 @@ class EnvelopePE(ProcessingElement):
     
     Example:
         # Basic envelope follower
-        env = EnvelopePE(source, attack=0.01, release=0.1)
+        env_stream = EnvelopePE(source_stream, attack=0.01, release=0.1)
         
         # With lookahead for zero-latency attack
-        env = EnvelopePE(source, attack=0.01, release=0.1, lookahead=0.01)
+        env_stream = EnvelopePE(source_stream, attack=0.01, release=0.1, lookahead=0.01)
         
         # RMS-based detection (smoother)
-        env = EnvelopePE(source, attack=0.01, release=0.1, mode=DetectionMode.RMS)
+        env_stream = EnvelopePE(source_stream, attack=0.01, release=0.1, mode=DetectionMode.RMS)
     """
     
     def __init__(

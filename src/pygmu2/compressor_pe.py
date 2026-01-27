@@ -45,11 +45,11 @@ class CompressorPE(ProcessingElement):
     
     Example:
         # Simple compression
-        compressed = CompressorPE(audio, threshold=-20, ratio=4)
+        compressed_stream = CompressorPE(audio_stream, threshold=-20, ratio=4)
         
         # Aggressive compression with fast attack
-        compressed = CompressorPE(
-            audio,
+        compressed_stream = CompressorPE(
+            audio_stream,
             threshold=-15,
             ratio=8,
             attack=0.001,
@@ -57,8 +57,8 @@ class CompressorPE(ProcessingElement):
         )
         
         # Brick-wall limiter
-        limited = CompressorPE(
-            audio,
+        limited_stream = CompressorPE(
+            audio_stream,
             threshold=-1,
             ratio=100,
             attack=0.0005,
@@ -67,8 +67,8 @@ class CompressorPE(ProcessingElement):
         )
         
         # Gentle bus compression
-        glue = CompressorPE(
-            mix_bus,
+        glue_stream = CompressorPE(
+            mix_bus_stream,
             threshold=-25,
             ratio=2,
             attack=0.03,
@@ -249,10 +249,10 @@ class LimiterPE(CompressorPE):
     
     Example:
         # Simple limiting at -1dB
-        limited = LimiterPE(audio)
+        limited_stream = LimiterPE(audio_stream)
         
         # Transparent limiting with lookahead
-        limited = LimiterPE(audio, ceiling=-0.5, lookahead=0.005)
+        limited_stream = LimiterPE(audio_stream, ceiling=-0.5, lookahead=0.005)
     """
     
     def __init__(
@@ -307,10 +307,10 @@ class GatePE(ProcessingElement):
     
     Example:
         # Simple noise gate
-        gated = GatePE(audio, threshold=-40)
+        gated_stream = GatePE(audio_stream, threshold=-40)
         
         # Drum gate with fast attack
-        gated = GatePE(drums, threshold=-30, attack=0.0005, release=0.1)
+        gated_stream = GatePE(drums_stream, threshold=-30, attack=0.0005, release=0.1)
     """
     
     def __init__(

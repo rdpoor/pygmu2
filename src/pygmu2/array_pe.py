@@ -31,10 +31,10 @@ class ArrayPE(SourcePE):
     
     Example:
         # Mono ramp
-        pe = ArrayPE([0.0, 0.5, 1.0, 0.5, 0.0])
+        pe_stream = ArrayPE([0.0, 0.5, 1.0, 0.5, 0.0])
         
         # Stereo impulse
-        pe = ArrayPE([[1.0, -1.0], [0.0, 0.0]])
+        pe_stream = ArrayPE([[1.0, -1.0], [0.0, 0.0]])
     """
     
     def __init__(self, data: ArrayLike):

@@ -49,11 +49,11 @@ pipenv shell
 from pygmu2 import SinePE, GainPE, AudioRenderer
 
 # Create a 440 Hz sine wave
-sine = SinePE(frequency=440.0, amplitude=0.5)
+sine_stream = SinePE(frequency=440.0, amplitude=0.5)
 
 # Play through speakers
 with AudioRenderer(sample_rate=44100) as renderer:
-    renderer.set_source(sine)
+    renderer.set_source(sine_stream)
     renderer.start()
     renderer.play_range(0, 44100 * 3)  # Play 3 seconds
 ```
@@ -66,13 +66,13 @@ A **Processing Element** is the fundamental building block. Each PE generates or
 
 ```python
 # Source PE: generates audio
-sine = SinePE(frequency=440.0)
+sine_stream = SinePE(frequency=440.0)
 
 # Transform PE: processes audio from another PE
-quieter = GainPE(sine, gain=0.5)
+quieter_stream = GainPE(sine_stream, gain=0.5)
 
 # Combine PEs: mix multiple sources
-mix = MixPE(sine1, sine2, sine3)
+mix_stream = MixPE(sine1_stream, sine2_stream, sine3_stream)
 ```
 
 ### Snippets
@@ -91,10 +91,10 @@ An **Extent** defines the temporal bounds of a PE's output:
 
 ```python
 # Finite extent (e.g., a WAV file)
-crop = CropPE(source, Extent(0, 44100))  # First second only
+crop_stream = CropPE(source_stream, Extent(0, 44100))  # First second only
 
 # Infinite extent (e.g., oscillators)
-sine = SinePE(frequency=440.0)  # Extent(None, None) - plays forever
+sine_stream = SinePE(frequency=440.0)  # Extent(None, None) - plays forever
 ```
 
 ### Renderers
@@ -222,15 +222,15 @@ Many PE parameters accept either constant values or other PEs for modulation:
 
 ```python
 # Constant frequency
-sine = SinePE(frequency=440.0)
+sine_stream = SinePE(frequency=440.0)
 
 # Vibrato (frequency modulated by LFO)
-lfo = SinePE(frequency=5.0, amplitude=10.0)
-vibrato = SinePE(frequency=MixPE(ConstantPE(440.0), lfo))
+lfo_stream = SinePE(frequency=5.0, amplitude=10.0)
+vibrato_stream = SinePE(frequency=MixPE(ConstantPE(440.0), lfo_stream))
 
 # Tremolo (amplitude modulated)
-tremolo_lfo = GainPE(SinePE(frequency=4.0), gain=0.3)
-tremolo = GainPE(sine, gain=MixPE(ConstantPE(0.7), tremolo_lfo))
+tremolo_lfo_stream = GainPE(SinePE(frequency=4.0), gain=0.3)
+tremolo_stream = GainPE(sine_stream, gain=MixPE(ConstantPE(0.7), tremolo_lfo_stream))
 ```
 
 ## Error Handling

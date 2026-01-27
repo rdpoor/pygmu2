@@ -57,19 +57,19 @@ def demo_basic_envelope():
     print("=== Basic ADSR Envelope ===")
     print("Apply classic ADSR to classic pad sound")
 
-    pad = SuperSawPE(
+    pad_stream = SuperSawPE(
         frequency=pitch_to_freq(A3),
         amplitude=0.5,
         voices=3,
         detune_cents=15,
     )
 
-    # pad = BlitSawPE(frequency=pitch_to_freq(A3))
+    # pad_stream = BlitSawPE(frequency=pitch_to_freq(A3))
 
     # make a sequence of gates.  The first ones are long enough for
     # attack, decay and release to complete.  The last one forces a
     # truncated release.
-    gates = SequencePE(
+    gates_stream = SequencePE(
         [
             (make_gate(1.00), stos(0.0)),  # Long enough
             (make_gate(0.50), stos(1.5)),  # Long enough
@@ -79,19 +79,19 @@ def demo_basic_envelope():
     )
 
     # Reset oscillator on each gate to prevent desynchronization
-    reset_pad = ResetPE(pad, trigger=gates)
+    reset_pad_stream = ResetPE(pad_stream, trigger=gates_stream)
 
-    adsr = AdsrPE(
-        gates,
+    adsr_stream = AdsrPE(
+        gates_stream,
         attack_samples=stos(0.005),
         decay_samples=stos(0.25),
         sustain_level=0.2,
         release_samples=stos(0.05),
     )
 
-    enveloped = GainPE(GainPE(reset_pad, adsr), gain=0.5)
+    enveloped_stream = GainPE(GainPE(reset_pad_stream, adsr_stream), gain=0.5)
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(enveloped)
+    renderer.set_source(enveloped_stream)
 
     with renderer:
         renderer.start()
@@ -173,11 +173,11 @@ def demo_axel_f():
         gate_len = max(1, _samp(dur * legato))
 
         # Create a gate signal is 1.0 for the duration gate_len
-        gate = CropPE(ConstantPE(1.0), Extent(0, gate_len))
+        gate_stream = CropPE(ConstantPE(1.0), Extent(0, gate_len))
 
         # Apply the gate to the ADSR to generate the envelope signal
-        envelope = AdsrPE(
-            gate,
+        envelope_stream = AdsrPE(
+            gate_stream,
             attack_samples=stos(0.04),
             decay_samples=stos(0.2),
             sustain_level=0.5,
@@ -185,30 +185,30 @@ def demo_axel_f():
         )
 
         # Generate the Roland-esque detuned note
-        pad = SuperSawPE(frequency=freq, detune_cents=8.0, mix_mode="center_heavy")
+        pad_stream = SuperSawPE(frequency=freq, detune_cents=8.0, mix_mode="center_heavy")
         
         # === Subtle but important: ===
         # ResetPE sends pad.reset_start() at the onset of each new gate signal.
         # SuperSaw needs this so all of its detuned oscillators get restarted 
         # on each note - without this, the attack is mushy sounding. To hear the
         # difference, comment out this next line...
-        pad = ResetPE(pad, gate)
+        pad_stream = ResetPE(pad_stream, gate_stream)
 
         # Take the synth note we've just created, apply the ADSR envelope, 
         # delay it to its designated start time and add it to the list of notes.
-        notes.append(DelayPE(GainPE(pad, envelope), int(start)))
+        notes.append(DelayPE(GainPE(pad_stream, envelope_stream), int(start)))
 
         # bump start to the next start time.
         start += int(dur)
 
     # mix all notes and attenuate some
-    mix = GainPE(MixPE(*notes), 0.5)
+    mix_stream = GainPE(MixPE(*notes), 0.5)
 
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     # Optional: Crop mix to a finite extent so we can stream it chunk-by-chunk. 
     # It works without this, but that would compute the entire piece before it 
     # starts to play, leading to a long lag before you hear anything.
-    renderer.set_source(CropPE(mix, Extent(0, int(start))))
+    renderer.set_source(CropPE(mix_stream, Extent(0, int(start))))
 
     with renderer:
         renderer.start()

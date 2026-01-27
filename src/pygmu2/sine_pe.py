@@ -33,19 +33,19 @@ class SinePE(ProcessingElement):
     
     Example:
         # Simple 440 Hz sine wave (pure) - uses default frequency
-        sine = SinePE()
+        sine_stream = SinePE()
         
         # FM synthesis: carrier modulated by another sine (non-pure)
-        modulator = SinePE(frequency=5.0, amplitude=100.0)  # 5 Hz LFO, ±100 Hz
-        carrier = SinePE(frequency=440.0 + modulator)  # Oops, need different approach
+        modulator_stream = SinePE(frequency=5.0, amplitude=100.0)  # 5 Hz LFO, ±100 Hz
+        carrier_stream = SinePE(frequency=440.0 + modulator_stream)  # Oops, need different approach
         
         # Better: use a dedicated modulation PE or constant offset
-        lfo = SinePE(frequency=5.0, amplitude=50.0)  # ±50 Hz deviation
+        lfo_stream = SinePE(frequency=5.0, amplitude=50.0)  # ±50 Hz deviation
         # Then combine in a wrapper or use phase modulation
         
         # AM synthesis: amplitude modulated
-        envelope = SinePE(frequency=2.0, amplitude=0.5)  # Tremolo
-        tone = SinePE(frequency=440.0, amplitude=envelope)
+        envelope_stream = SinePE(frequency=2.0, amplitude=0.5)  # Tremolo
+        tone_stream = SinePE(frequency=440.0, amplitude=envelope_stream)
     """
     
     def __init__(

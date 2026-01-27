@@ -35,11 +35,11 @@ class ResetPE(ProcessingElement):
     
     Example:
         # Reset oscillator on each gate
-        gate = SequencePE([(make_gate(1.0), 0), (make_gate(1.0), 44100)])
-        osc = SuperSawPE(frequency=440.0)
-        reset_osc = ResetPE(osc, gate)
-        adsr = AdsrPE(gate)
-        output = GainPE(reset_osc, adsr)
+        gate_stream = SequencePE([(make_gate(1.0), 0), (make_gate(1.0), 44100)])
+        osc_stream = SuperSawPE(frequency=440.0)
+        reset_osc_stream = ResetPE(osc_stream, gate_stream)
+        adsr_stream = AdsrPE(gate_stream)
+        output_stream = GainPE(reset_osc_stream, adsr_stream)
     """
     
     def __init__(

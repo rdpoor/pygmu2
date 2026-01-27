@@ -23,20 +23,20 @@ loop_path = library.resolve(LOOP_PATTERN)
 print(f"Resolved '{SOUND_NAME}': {sound_path}", flush=True)
 print(f"Resolved '{LOOP_PATTERN}': {loop_path}", flush=True)
 
-source = WavReaderPE(sound_path)
-loop_source = WavReaderPE(loop_path)
-looped = LoopPE(loop_source, count=LOOP_COUNT)
-mixed = MixPE(
-    source, 
-    DelayPE(source, delay=loop_source.extent().end), 
-    DelayPE(source, delay=2 * loop_source.extent().end), 
-    DelayPE(source, delay=3 * loop_source.extent().end), 
-    looped)
-file_sr = source.file_sample_rate
+source_stream = WavReaderPE(sound_path)
+loop_source_stream = WavReaderPE(loop_path)
+looped_stream = LoopPE(loop_source_stream, count=LOOP_COUNT)
+mixed_stream = MixPE(
+    source_stream, 
+    DelayPE(source_stream, delay=loop_source_stream.extent().end), 
+    DelayPE(source_stream, delay=2 * loop_source_stream.extent().end), 
+    DelayPE(source_stream, delay=3 * loop_source_stream.extent().end), 
+    looped_stream)
+file_sr = source_stream.file_sample_rate
 renderer = AudioRenderer(sample_rate=file_sr)
-renderer.set_source(mixed)
+renderer.set_source(mixed_stream)
 
-extent = mixed.extent()
+extent = mixed_stream.extent()
 duration_samples = extent.end - extent.start
 duration_seconds = duration_samples / file_sr
 print(f"Playing {duration_seconds:.2f} seconds...", flush=True)

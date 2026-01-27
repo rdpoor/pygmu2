@@ -55,14 +55,14 @@ class RandomPE(SourcePE):
     
     Example:
         # Smooth random LFO for vibrato depth
-        depth = RandomPE(rate=0.5, min_value=5, max_value=20, mode=RandomMode.SMOOTH)
+        depth_stream = RandomPE(rate=0.5, min_value=5, max_value=20, mode=RandomMode.SMOOTH)
         
         # Triggered sample-and-hold for random notes
-        trigger = SomeTriggerPE(...)
-        random_note = RandomPE(min_value=48, max_value=72, trigger=trigger)
+        trigger_stream = SomeTriggerPE(...)
+        random_note_stream = RandomPE(min_value=48, max_value=72, trigger=trigger_stream)
         
         # Random walk for gentle drift
-        drift = RandomPE(rate=10, min_value=-0.1, max_value=0.1, 
+        drift_stream = RandomPE(rate=10, min_value=-0.1, max_value=0.1, 
                         mode=RandomMode.WALK, slew=0.001)
     """
     

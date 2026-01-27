@@ -36,12 +36,12 @@ class MixPE(ProcessingElement):
     
     Example:
         # Mix two sine waves
-        sine1 = SinePE(frequency=440.0, amplitude=0.5)
-        sine2 = SinePE(frequency=550.0, amplitude=0.5)
-        mixed = MixPE(sine1, sine2)
+        sine1_stream = SinePE(frequency=440.0, amplitude=0.5)
+        sine2_stream = SinePE(frequency=550.0, amplitude=0.5)
+        mixed_stream = MixPE(sine1_stream, sine2_stream)
         
         # Mix three sources
-        mixed = MixPE(source1, source2, source3)
+        mixed_stream = MixPE(source1_stream, source2_stream, source3_stream)
     """
     
     def __init__(self, *inputs: ProcessingElement):

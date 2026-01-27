@@ -30,21 +30,21 @@ class TransformPE(ProcessingElement):
     
     Example:
         # Absolute value (full-wave rectification)
-        rectified = TransformPE(source, func=np.abs)
+        rectified_stream = TransformPE(source_stream, func=np.abs)
         
         # Convert amplitude to dB
         from pygmu2.conversions import ratio_to_db
-        db_signal = TransformPE(envelope, func=ratio_to_db)
+        db_stream = TransformPE(envelope_stream, func=ratio_to_db)
         
         # Convert MIDI pitch to frequency
         from pygmu2.conversions import pitch_to_freq
-        freq_signal = TransformPE(pitch_pe, func=pitch_to_freq)
+        freq_stream = TransformPE(pitch_stream, func=pitch_to_freq)
         
         # Custom transform
-        squared = TransformPE(source, func=lambda x: x ** 2)
+        squared_stream = TransformPE(source_stream, func=lambda x: x ** 2)
         
         # Soft clipping
-        soft_clip = TransformPE(source, func=np.tanh, name="tanh")
+        soft_clip_stream = TransformPE(source_stream, func=np.tanh, name="tanh")
     """
     
     def __init__(

@@ -166,7 +166,7 @@ class MyNewPE(ProcessingElement):
         param2: Description, can be float or PE for modulation
     
     Example:
-        result = MyNewPE(source, param1=0.5)
+        result_stream = MyNewPE(source_stream, param1=0.5)
     """
     
     def __init__(
@@ -305,13 +305,13 @@ class TestMyNewPEBasics:
     """Test creation and properties."""
     
     def test_create_default(self):
-        pe = MyNewPE(SinePE(frequency=440.0))
-        assert pe.param1 == 1.0
+        pe_stream = MyNewPE(SinePE(frequency=440.0))
+        assert pe_stream.param1 == 1.0
     
     def test_inputs(self):
-        source = SinePE(frequency=440.0)
-        pe = MyNewPE(source)
-        assert source in pe.inputs()
+        source_stream = SinePE(frequency=440.0)
+        pe_stream = MyNewPE(source_stream)
+        assert source_stream in pe_stream.inputs()
 
 
 class TestMyNewPERender:
@@ -322,11 +322,11 @@ class TestMyNewPERender:
         return NullRenderer(sample_rate=44100)
     
     def test_render_returns_snippet(self, renderer):
-        pe = MyNewPE(SinePE(frequency=440.0))
-        renderer.set_source(pe)
+        pe_stream = MyNewPE(SinePE(frequency=440.0))
+        renderer.set_source(pe_stream)
         renderer.start()
         
-        snippet = pe.render(0, 1000)
+        snippet = pe_stream.render(0, 1000)
         
         assert snippet.data.shape == (1000, 1)
 ```

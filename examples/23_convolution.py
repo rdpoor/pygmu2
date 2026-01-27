@@ -65,33 +65,33 @@ def _play(source_pe, sample_rate: int) -> None:
 
 
 def _demo_dry(source_path: Path, *, gain: float = 0.8) -> None:
-    source = _load_wav(source_path)
-    sample_rate = int(source.file_sample_rate)
-    out = GainPE(source, gain=gain)
+    source_stream = _load_wav(source_path)
+    sample_rate = int(source_stream.file_sample_rate)
+    out_stream = GainPE(source_stream, gain=gain)
 
     print(f"Source: {source_path.name}")
     print("IR:     (dry)")
     print()
 
-    _play(out, sample_rate)
+    _play(out_stream, sample_rate)
 
 
 def _demo_wet(source_path: Path, ir_path: Path, *, wet_gain: float = 0.25) -> None:
-    source = _load_wav(source_path)
-    ir = _load_wav(ir_path)
-    _assert_sample_rate_match(source, ir)
+    source_stream = _load_wav(source_path)
+    ir_stream = _load_wav(ir_path)
+    _assert_sample_rate_match(source_stream, ir_stream)
 
-    sample_rate = int(source.file_sample_rate)
+    sample_rate = int(source_stream.file_sample_rate)
 
-    wet = ConvolvePE(source, ir)
-    out = GainPE(wet, gain=wet_gain)
+    wet_stream = ConvolvePE(source_stream, ir_stream)
+    out_stream = GainPE(wet_stream, gain=wet_gain)
 
     print(f"Source: {source_path.name}")
     print(f"IR:     {ir_path.name}")
     print(f"Wet gain: {wet_gain:.2f}")
     print()
 
-    _play(out, sample_rate)
+    _play(out_stream, sample_rate)
 
 def demo_spoken_dry():
     print("=== Demo: spoken voice (dry) ===")

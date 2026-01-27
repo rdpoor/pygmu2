@@ -47,14 +47,14 @@ class WavetablePE(ProcessingElement):
     
     Example:
         # Classic wavetable synthesis with phase accumulator
-        wavetable = WavReaderPE("sine_cycle.wav")  # One cycle of a waveform
+        wavetable_stream = WavReaderPE("sine_cycle.wav")  # One cycle of a waveform
         
         # Phase accumulator that wraps at wavetable length
         # (This would need a custom PE or combination of PEs)
-        phase = PhaseAccumulatorPE(frequency=440.0, table_length=1024)
+        phase_stream = PhaseAccumulatorPE(frequency=440.0, table_length=1024)
         
         # Output: interpolated wavetable lookup
-        output = WavetablePE(wavetable, phase, out_of_bounds=OutOfBoundsMode.WRAP)
+        output_stream = WavetablePE(wavetable_stream, phase_stream, out_of_bounds=OutOfBoundsMode.WRAP)
         
         # Granular-style random access
         random_indices = RandomPE(0, 1024)  # Hypothetical

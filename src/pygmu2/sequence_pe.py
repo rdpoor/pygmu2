@@ -39,16 +39,16 @@ class SequencePE(ProcessingElement):
     
     Example:
         # Non-overlapping sequence
-        pe1 = SinePE(frequency=440.0)
-        pe2 = SinePE(frequency=550.0)
+        pe1_stream = SinePE(frequency=440.0)
+        pe2_stream = SinePE(frequency=550.0)
         sequence = [
-            (pe1, 0),      # Starts at sample 0
-            (pe2, 44100),  # Starts at sample 44100 (1 second at 44.1kHz)
+            (pe1_stream, 0),      # Starts at sample 0
+            (pe2_stream, 44100),  # Starts at sample 44100 (1 second at 44.1kHz)
         ]
-        seq = SequencePE(sequence, overlap=False)
+        seq_stream = SequencePE(sequence, overlap=False)
         
         # Overlapping sequence (all play simultaneously after delays)
-        seq_overlap = SequencePE(sequence, overlap=True)
+        seq_overlap_stream = SequencePE(sequence, overlap=True)
 
         # A scalar "step sequence" (common for control signals)
         values = [
@@ -56,7 +56,7 @@ class SequencePE(ProcessingElement):
             (0.5, 100),   # 0.5 starting at t=100 samples
             (1.0, 200),   # 1.0 starting at t=200 samples
         ]
-        steps = SequencePE(values, overlap=False)
+        steps_stream = SequencePE(values, overlap=False)
     """
     
     def __init__(

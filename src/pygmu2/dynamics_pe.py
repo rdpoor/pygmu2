@@ -60,19 +60,19 @@ class DynamicsPE(ProcessingElement):
     
     Example:
         # Basic compression with EnvelopePE
-        env = EnvelopePE(audio, attack=0.01, release=0.1)
-        compressed = DynamicsPE(audio, env, threshold=-20, ratio=4)
+        env_stream = EnvelopePE(audio_stream, attack=0.01, release=0.1)
+        compressed_stream = DynamicsPE(audio_stream, env_stream, threshold=-20, ratio=4)
         
         # Sidechain ducking (bass ducks when kick hits)
-        kick_env = EnvelopePE(kick, attack=0.001, release=0.05)
-        ducked_bass = DynamicsPE(bass, kick_env, threshold=-30, ratio=8)
+        kick_env_stream = EnvelopePE(kick_stream, attack=0.001, release=0.05)
+        ducked_bass_stream = DynamicsPE(bass_stream, kick_env_stream, threshold=-30, ratio=8)
         
         # Lookahead limiting
-        env = EnvelopePE(audio, attack=0.005, release=0.05, lookahead=0.005)
-        limited = DynamicsPE(audio, env, threshold=-1, mode=DynamicsMode.LIMIT)
+        env_stream = EnvelopePE(audio_stream, attack=0.005, release=0.05, lookahead=0.005)
+        limited_stream = DynamicsPE(audio_stream, env_stream, threshold=-1, mode=DynamicsMode.LIMIT)
         
         # Noise gate
-        env = EnvelopePE(audio, attack=0.001, release=0.05)
+        env_stream = EnvelopePE(audio_stream, attack=0.001, release=0.05)
         gated = DynamicsPE(audio, env, threshold=-40, mode=DynamicsMode.GATE)
     """
     

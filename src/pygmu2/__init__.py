@@ -40,6 +40,7 @@ from pygmu2.convolve_pe import ConvolvePE
 from pygmu2.audio_library import AudioLibrary
 from pygmu2.sequence_pe import SequencePE
 from pygmu2.slice_pe import SlicePE
+from pygmu2.portamento_pe import PortamentoPE
 from pygmu2.wav_reader_pe import WavReaderPE
 from pygmu2.wav_writer_pe import WavWriterPE
 from pygmu2.transform_pe import TransformPE
@@ -117,6 +118,7 @@ __all__ = [
     "CombPE",
     "ConvolvePE",
     "AudioLibrary",
+    "PortamentoPE",
     "RampPE",
     "RandomPE",
     "ResetPE",

@@ -21,22 +21,22 @@ print("=== pygmu2 Example 03: Looping ===", flush=True)
 print(f"Loading: {WAV_FILE}", flush=True)
 
 # Load the percussion sample
-source = WavReaderPE(str(WAV_FILE))
-sample_rate = source.file_sample_rate
+source_stream = WavReaderPE(str(WAV_FILE))
+sample_rate = source_stream.file_sample_rate
 duration_samples = int(DURATION_SECONDS * sample_rate)
 
-extent = source.extent()
+extent = source_stream.extent()
 loop_length = extent.end - extent.start
 print(f"  Original duration: {loop_length / sample_rate:.2f}s ({loop_length} samples)", flush=True)
 
 # --- Part 1: Basic loop (no crossfade) ---
 print(f"\nPart 1: Basic loop (no crossfade) - {DURATION_SECONDS}s", flush=True)
 
-looped_basic = LoopPE(source)
-output_basic = CropPE(looped_basic, Extent(0, duration_samples))
+looped_basic_stream = LoopPE(source_stream)
+output_basic_stream = CropPE(looped_basic_stream, Extent(0, duration_samples))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output_basic)
+renderer.set_source(output_basic_stream)
 
 t0 = time.perf_counter()
 with renderer:
@@ -48,11 +48,11 @@ print(f"  Elapsed: {t1 - t0:.2f}s (expected ~{DURATION_SECONDS}s)", flush=True)
 # --- Part 2: Smooth loop (with crossfade) ---
 print(f"\nPart 2: Smooth loop (20ms crossfade) - {DURATION_SECONDS}s", flush=True)
 
-looped_smooth = LoopPE(source, crossfade_seconds=0.02)  # 20ms crossfade
-output_smooth = CropPE(looped_smooth, Extent(0, duration_samples))
+looped_smooth_stream = LoopPE(source_stream, crossfade_seconds=0.02)  # 20ms crossfade
+output_smooth_stream = CropPE(looped_smooth_stream, Extent(0, duration_samples))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output_smooth)
+renderer.set_source(output_smooth_stream)
 
 t0 = time.perf_counter()
 with renderer:

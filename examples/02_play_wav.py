@@ -18,19 +18,19 @@ print("=== pygmu2 Example 02: Play WAV ===", flush=True)
 print(f"Loading: {WAV_FILE}", flush=True)
 
 # Load the WAV file
-source = WavReaderPE(str(WAV_FILE))
+source_stream = WavReaderPE(str(WAV_FILE))
 
 # Get file info (file_sample_rate is available before configuration)
-file_sr = source.file_sample_rate
-print(f"  Channels: {source.channel_count()}", flush=True)
+file_sr = source_stream.file_sample_rate
+print(f"  Channels: {source_stream.channel_count()}", flush=True)
 print(f"  Sample rate: {file_sr} Hz", flush=True)
 
 # Create renderer matching the file's sample rate
 renderer = AudioRenderer(sample_rate=file_sr)
-renderer.set_source(source)
+renderer.set_source(source_stream)
 
 # Now we can get extent (after set_source configures the graph)
-extent = source.extent()
+extent = source_stream.extent()
 duration_samples = extent.end - extent.start
 duration_seconds = duration_samples / file_sr
 print(f"  Duration: {duration_seconds:.2f} seconds ({duration_samples} samples)", flush=True)

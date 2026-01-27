@@ -41,13 +41,13 @@ def demo_original():
     print(f"Source: {SPOKEN_PATH.name}")
     print()
 
-    spoken = WavReaderPE(str(SPOKEN_PATH))
-    sample_rate = spoken.file_sample_rate
+    spoken_stream = WavReaderPE(str(SPOKEN_PATH))
+    sample_rate = spoken_stream.file_sample_rate
 
-    output = GainPE(spoken, gain=0.8)
+    output_stream = GainPE(spoken_stream, gain=0.8)
 
     renderer = AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(output)
+    renderer.set_source(output_stream)
 
     with renderer:
         renderer.start()
@@ -62,14 +62,14 @@ def demo_fixed_rate():
     print(f"Source: {SPOKEN_PATH.name}")
     print()
 
-    spoken = WavReaderPE(str(SPOKEN_PATH))
-    sample_rate = spoken.file_sample_rate
+    spoken_stream = WavReaderPE(str(SPOKEN_PATH))
+    sample_rate = spoken_stream.file_sample_rate
 
-    warped = TimeWarpPE(spoken, rate=1.5)
-    output = GainPE(warped, gain=0.8)
+    warped_stream = TimeWarpPE(spoken_stream, rate=1.5)
+    output_stream = GainPE(warped_stream, gain=0.8)
 
     renderer = AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(output)
+    renderer.set_source(output_stream)
 
     with renderer:
         renderer.start()
@@ -84,23 +84,23 @@ def demo_accelerating_loop():
     print(f"Source: {SPOKEN_PATH.name}")
     print()
 
-    spoken = WavReaderPE(str(SPOKEN_PATH))
-    sample_rate = spoken.file_sample_rate
+    spoken_stream = WavReaderPE(str(SPOKEN_PATH))
+    sample_rate = spoken_stream.file_sample_rate
 
     # Loop the entire sample forever (with a small crossfade to reduce clicks)
-    looped = LoopPE(spoken, crossfade_seconds=0.01)
+    looped_stream = LoopPE(spoken_stream, crossfade_seconds=0.01)
 
     dur_samples = int(seconds_to_samples(10.0, sample_rate))
 
     # Rate ramp is a PE, so TimeWarpPE's extent becomes finite (matches the rate extent).
-    rate = RampPE(0.25, 5.0, duration=dur_samples)
+    rate_stream = RampPE(0.25, 5.0, duration=dur_samples)
 
-    warped = TimeWarpPE(looped, rate=rate)
-    output = GainPE(warped, gain=0.8)
-    output = CropPE(output, Extent(0, dur_samples))
+    warped_stream = TimeWarpPE(looped_stream, rate=rate_stream)
+    output_stream = GainPE(warped_stream, gain=0.8)
+    output_stream = CropPE(output_stream, Extent(0, dur_samples))
 
     renderer = AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(output)
+    renderer.set_source(output_stream)
 
     with renderer:
         renderer.start()
@@ -115,19 +115,19 @@ def demo_jog_shuttle():
     print(f"Source: {DRUMS_PATH.name}")
     print()
 
-    drums = WavReaderPE(str(DRUMS_PATH))
-    sample_rate = drums.file_sample_rate
+    drums_stream = WavReaderPE(str(DRUMS_PATH))
+    sample_rate = drums_stream.file_sample_rate
 
     # Rate ramp is a PE, so TimeWarpPE's extent becomes finite (matches the rate extent).
     demo_length = int(seconds_to_samples(10, sample_rate))
-    rate = RampPE(2.0, -2.0, duration=demo_length)
+    rate_stream = RampPE(2.0, -2.0, duration=demo_length)
 
-    warped = TimeWarpPE(LoopPE(drums), rate=rate)
-    output = GainPE(warped, gain=0.8)
-    output = CropPE(output, Extent(0, demo_length))
+    warped_stream = TimeWarpPE(LoopPE(drums_stream), rate=rate_stream)
+    output_stream = GainPE(warped_stream, gain=0.8)
+    output_stream = CropPE(output_stream, Extent(0, demo_length))
 
     renderer = AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(output)
+    renderer.set_source(output_stream)
 
     with renderer:
         renderer.start()

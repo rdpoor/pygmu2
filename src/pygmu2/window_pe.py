@@ -44,13 +44,13 @@ class WindowPE(ProcessingElement):
     
     Example:
         # Symmetric envelope (no attack/release lag)
-        env = WindowPE(source, window=0.05, mode=WindowMode.MAX)
+        env_stream = WindowPE(source_stream, window=0.05, mode=WindowMode.MAX)
         
         # RMS envelope
-        env = WindowPE(source, window=0.02, mode=WindowMode.RMS)
+        env_stream = WindowPE(source_stream, window=0.02, mode=WindowMode.RMS)
         
         # Smoothing a control signal (without rectification)
-        smooth = WindowPE(control, window=0.01, mode=WindowMode.MEAN, rectify=False)
+        smooth_stream = WindowPE(control_stream, window=0.01, mode=WindowMode.MEAN, rectify=False)
     """
     
     def __init__(

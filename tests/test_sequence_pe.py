@@ -278,20 +278,16 @@ class TestSequencePERender:
         assert extent.end == 300
     
     def test_channel_count_validation(self):
-        """Test that channel count mismatch causes error during rendering."""
+        """Test that channel count mismatch causes error during construction."""
         pe1 = ConstantPE(0.5, channels=1)
         pe2 = ConstantPE(0.3, channels=2)  # Mismatch
         
         sequence = [(pe1, 0), (pe2, 100)]
-        seq = SequencePE(sequence)
         
-        self.renderer.set_source(seq)
-        
-        # When rendering, MixPE tries to add arrays of different shapes
-        # This should raise a ValueError about channel mismatch or shape mismatch
-        # The error might come from MixPE.resolve_channel_count() or from numpy array addition
-        with pytest.raises((ValueError,)):
-            seq.render(0, 10)
+        # Channel validation happens during SequencePE construction
+        # The first PE (pe1) sets base_channels=1, then pe2 is validated against it
+        with pytest.raises(ValueError, match="SequencePE input channel mismatch"):
+            SequencePE(sequence)
 
 
 class TestSequencePESampleAccurate:
