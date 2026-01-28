@@ -9,7 +9,7 @@ MIT License
 import numpy as np
 from numpy.typing import ArrayLike
 
-from pygmu2.extent import Extent
+from pygmu2.extent import Extent, ExtendMode
 from pygmu2.processing_element import SourcePE
 from pygmu2.snippet import Snippet
 
@@ -23,11 +23,16 @@ class ArrayPE(SourcePE):
     - Creating control signals from pre-computed tables
     - One-shot playback of raw sample data
     
-    Output is zero for time indices outside the array bounds.
+    Output behavior outside array bounds is controlled by extend_mode.
     The array is assumed to be at the system sample rate.
     
     Args:
         data: Array of audio data. Can be 1D (mono) or 2D (samples, channels).
+        extend_mode: Behavior outside array extent (default: ZERO)
+                     - ZERO: Output zeros outside array
+                     - HOLD_FIRST: Hold first array value before extent
+                     - HOLD_LAST: Hold last array value after extent
+                     - HOLD_BOTH: Hold first before, last after
     
     Example:
         # Mono ramp
@@ -37,7 +42,7 @@ class ArrayPE(SourcePE):
         pe_stream = ArrayPE([[1.0, -1.0], [0.0, 0.0]])
     """
     
-    def __init__(self, data: ArrayLike):
+    def __init__(self, data: ArrayLike, extend_mode: ExtendMode = ExtendMode.ZERO):
         self._data = np.asarray(data, dtype=np.float32)
         
         # Ensure 2D shape (samples, channels)
@@ -48,6 +53,7 @@ class ArrayPE(SourcePE):
             
         self._channels = self._data.shape[1]
         self._length = self._data.shape[0]
+        self._extend_mode = extend_mode
         
         if self._length == 0:
             raise ValueError("ArrayPE data cannot be empty")
@@ -104,7 +110,24 @@ class ArrayPE(SourcePE):
             
             out[dst_start:dst_end] = self._data[src_start:src_end]
         
+        # Handle held values outside array extent
+        if self._extend_mode in (ExtendMode.HOLD_FIRST, ExtendMode.HOLD_BOTH):
+            # Before array: hold first value
+            if req_start < data_start:
+                before_count = min(duration, data_start - req_start)
+                first_val = self._data[0:1, :]
+                out[:before_count, :] = first_val
+        
+        if self._extend_mode in (ExtendMode.HOLD_LAST, ExtendMode.HOLD_BOTH):
+            # After array: hold last value
+            if req_end > data_end:
+                after_start = max(0, data_end - req_start)
+                if after_start < duration:
+                    last_val = self._data[-1:, :]
+                    out[after_start:, :] = last_val
+        
         return Snippet(start, out)
     
     def __repr__(self) -> str:
-        return f"ArrayPE(shape={self._data.shape})"
+        extend_str = f", extend_mode={self._extend_mode.value}" if self._extend_mode != ExtendMode.ZERO else ""
+        return f"ArrayPE(shape={self._data.shape}{extend_str})"

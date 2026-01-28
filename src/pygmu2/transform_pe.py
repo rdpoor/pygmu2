@@ -13,6 +13,9 @@ import numpy as np
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
+from pygmu2.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class TransformPE(ProcessingElement):
@@ -103,9 +106,46 @@ class TransformPE(ProcessingElement):
         """
         # Get source data
         source_snippet = self._source.render(start, duration)
+        source_data = source_snippet.data.astype(np.float64)
+        
+        # Debug logging for pitch_to_freq transforms
+        if self._name == "pitch_to_freq" and duration > 0:
+            first_input = source_data[0, 0] if source_data.shape[0] > 0 else 0
+            mid_idx = duration // 2
+            mid_input = source_data[mid_idx, 0] if mid_idx < source_data.shape[0] else 0
+            last_input = source_data[-1, 0] if source_data.shape[0] > 0 else 0
+            logger.debug(
+                f"TransformPE ({self._name}): start={start}, duration={duration}, "
+                f"input_shape={source_data.shape}, "
+                f"first_input={first_input:.2f}, mid_input={mid_input:.2f}, last_input={last_input:.2f}"
+            )
         
         # Apply transformation
-        transformed = self._func(source_snippet.data.astype(np.float64))
+        transformed = self._func(source_data)
+        
+        # Debug logging for output
+        if self._name == "pitch_to_freq" and duration > 0:
+            first_output = transformed[0] if transformed.ndim == 1 else transformed[0, 0]
+            mid_idx = duration // 2
+            mid_output = transformed[mid_idx] if transformed.ndim == 1 else transformed[mid_idx, 0]
+            last_output = transformed[-1] if transformed.ndim == 1 else transformed[-1, 0]
+            logger.debug(
+                f"TransformPE ({self._name}): output_shape={transformed.shape}, "
+                f"first_output={first_output:.2f}, mid_output={mid_output:.2f}, last_output={last_output:.2f}"
+            )
+        
+        # Ensure output shape matches input shape
+        # Some functions (like pitch_to_freq) may return 1D arrays even for 2D input
+        if source_data.ndim == 2 and transformed.ndim == 1:
+            transformed = transformed.reshape(-1, source_data.shape[1])
+        elif source_data.ndim == 2 and transformed.ndim == 2:
+            # Ensure same number of channels
+            if transformed.shape[1] != source_data.shape[1]:
+                # If channels don't match, take first channel or broadcast
+                if transformed.shape[1] == 1:
+                    transformed = np.broadcast_to(transformed, source_data.shape)
+                else:
+                    transformed = transformed[:, :source_data.shape[1]]
         
         return Snippet(start, transformed.astype(np.float32))
     

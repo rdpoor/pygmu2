@@ -7,7 +7,7 @@ MIT License
 """
 
 from pygmu2.config import ErrorMode, set_error_mode, get_error_mode, handle_error
-from pygmu2.extent import Extent
+from pygmu2.extent import Extent, ExtendMode
 from pygmu2.snippet import Snippet
 from pygmu2.processing_element import ProcessingElement, SourcePE
 from pygmu2.renderer import Renderer, ProfileReport, PEProfile
@@ -60,6 +60,7 @@ from pygmu2.conversions import (
     seconds_to_samples,
 )
 from pygmu2.logger import setup_logging, get_logger
+from pygmu2.debug_utils import print_pe_tree
 
 __version__ = "0.1.0"
 
@@ -86,6 +87,7 @@ __all__ = [
     "handle_error",
     # Core classes
     "Extent",
+    "ExtendMode",
     "Snippet",
     "ProcessingElement",
     "SourcePE",
@@ -138,6 +140,7 @@ __all__ = [
     "BiquadMode",
     "DetectionMode",
     "DynamicsMode",
+    "ExtendMode",
     "LadderMode",
     "InterpolationMode",
     "OutOfBoundsMode",
@@ -156,6 +159,8 @@ __all__ = [
     # Logging utilities
     "setup_logging",
     "get_logger",
+    # Debug utilities
+    "print_pe_tree",
     # Version
     "__version__",
 ]

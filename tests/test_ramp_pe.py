@@ -8,7 +8,7 @@ MIT License
 
 import pytest
 import numpy as np
-from pygmu2 import RampPE, NullRenderer, Extent
+from pygmu2 import RampPE, NullRenderer, Extent, ExtendMode, CropPE
 
 
 class TestRampPEBasics:
@@ -32,18 +32,18 @@ class TestRampPEBasics:
         assert extent.end == 100
     
     def test_infinite_extent_with_hold(self):
-        """RampPE with hold_extents=True has infinite extent."""
-        ramp = RampPE(0.0, 1.0, duration=100, hold_extents=True)
+        """RampPE with ExtendMode.HOLD_BOTH has infinite extent."""
+        ramp = RampPE(0.0, 1.0, duration=100, extend_mode=ExtendMode.HOLD_BOTH)
         extent = ramp.extent()
         assert extent.start is None
         assert extent.end is None
     
-    def test_hold_extents_property(self):
-        ramp = RampPE(0.0, 1.0, duration=100, hold_extents=True)
-        assert ramp.hold_extents is True
+    def test_extend_mode_property(self):
+        ramp = RampPE(0.0, 1.0, duration=100, extend_mode=ExtendMode.HOLD_BOTH)
+        assert ramp.extend_mode == ExtendMode.HOLD_BOTH
         
         ramp2 = RampPE(0.0, 1.0, duration=100)
-        assert ramp2.hold_extents is False
+        assert ramp2.extend_mode == ExtendMode.ZERO
     
     def test_is_pure(self):
         ramp = RampPE(0.0, 1.0, duration=100)
@@ -224,9 +224,9 @@ class TestRampPERender:
             np.full((100, 1), 0.5, dtype=np.float32)
         )
     
-    def test_hold_extents_before_ramp(self):
-        """With hold_extents=True, values before ramp hold start_value."""
-        ramp = RampPE(0.0, 1.0, duration=100, hold_extents=True)
+    def test_extend_mode_before_ramp(self):
+        """With extend_mode=ExtendMode.HOLD_BOTH, values before ramp hold start_value."""
+        ramp = RampPE(0.0, 1.0, duration=100, extend_mode=ExtendMode.HOLD_BOTH)
         self.renderer.set_source(ramp)
         
         snippet = ramp.render(-50, 50)
@@ -237,9 +237,9 @@ class TestRampPERender:
             np.zeros((50, 1), dtype=np.float32)
         )
     
-    def test_hold_extents_after_ramp(self):
-        """With hold_extents=True, values after ramp hold end_value."""
-        ramp = RampPE(0.0, 1.0, duration=100, hold_extents=True)
+    def test_extend_mode_after_ramp(self):
+        """With extend_mode=ExtendMode.HOLD_BOTH, values after ramp hold end_value."""
+        ramp = RampPE(0.0, 1.0, duration=100, extend_mode=ExtendMode.HOLD_BOTH)
         self.renderer.set_source(ramp)
         
         snippet = ramp.render(100, 50)
@@ -250,9 +250,9 @@ class TestRampPERender:
             np.ones((50, 1), dtype=np.float32)
         )
     
-    def test_hold_extents_spanning_start(self):
-        """Render spanning start with hold_extents=True."""
-        ramp = RampPE(0.5, 1.0, duration=100, hold_extents=True)
+    def test_extend_mode_spanning_start(self):
+        """Render spanning start with extend_mode=ExtendMode.HOLD_BOTH."""
+        ramp = RampPE(0.5, 1.0, duration=100, extend_mode=ExtendMode.HOLD_BOTH)
         self.renderer.set_source(ramp)
         
         snippet = ramp.render(-25, 50)
@@ -265,9 +265,9 @@ class TestRampPERender:
         # Sample 25 should be 0.5 (start of ramp)
         assert abs(snippet.data[25, 0] - 0.5) < 1e-6
     
-    def test_hold_extents_spanning_end(self):
-        """Render spanning end with hold_extents=True."""
-        ramp = RampPE(0.0, 1.0, duration=100, hold_extents=True)
+    def test_extend_mode_spanning_end(self):
+        """Render spanning end with extend_mode=ExtendMode.HOLD_BOTH."""
+        ramp = RampPE(0.0, 1.0, duration=100, extend_mode=ExtendMode.HOLD_BOTH)
         self.renderer.set_source(ramp)
         
         snippet = ramp.render(75, 50)
@@ -281,9 +281,9 @@ class TestRampPERender:
             np.ones(25, dtype=np.float32)
         )
     
-    def test_hold_extents_stereo(self):
-        """hold_extents works with multi-channel ramps."""
-        ramp = RampPE(0.0, 1.0, duration=100, channels=2, hold_extents=True)
+    def test_extend_mode_stereo(self):
+        """extend_mode works with multi-channel ramps."""
+        ramp = RampPE(0.0, 1.0, duration=100, channels=2, extend_mode=ExtendMode.HOLD_BOTH)
         self.renderer.set_source(ramp)
         
         # Before ramp: hold start_value
@@ -299,3 +299,72 @@ class TestRampPERender:
             snippet_after.data,
             np.ones((10, 2), dtype=np.float32)
         )
+
+
+class TestRampPERegression:
+    """Regression tests for RampPE with extend_mode and cropping."""
+    
+    def setup_method(self):
+        self.renderer = NullRenderer(sample_rate=44100)
+    
+    def test_ramp_with_extend_mode_has_infinite_extent(self):
+        """
+        Regression test: RampPE with extend_mode=ExtendMode.HOLD_BOTH should have infinite extent.
+        """
+        ramp = RampPE(0.0, 1.0, duration=100, extend_mode=ExtendMode.HOLD_BOTH)
+        extent = ramp.extent()
+        
+        assert extent.start is None
+        assert extent.end is None
+    
+    def test_crop_ramp_with_extend_mode_limits_output(self):
+        """
+        Regression test: CropPE should properly limit RampPE with infinite extent.
+        
+        RampPE with extend_mode=ExtendMode.HOLD_BOTH has infinite extent. This test verifies
+        that CropPE correctly limits it to a finite window.
+        """
+        ramp = RampPE(10.0, 20.0, duration=100, extend_mode=ExtendMode.HOLD_BOTH)
+        cropped = CropPE(ramp, Extent(0, 150))  # Crop to 150 samples
+        
+        self.renderer.set_source(cropped)
+        
+        # Render within crop window
+        snippet1 = cropped.render(50, 50)
+        # Should get ramp values (samples 50-99 are in ramp, 100-149 hold end_value)
+        assert snippet1.data[0, 0] == pytest.approx(15.0, abs=0.1)  # Middle of ramp
+        assert snippet1.data[49, 0] == pytest.approx(20.0, abs=0.1)  # End value
+        
+        # Render after crop window - should be zeros
+        snippet2 = cropped.render(200, 50)
+        np.testing.assert_array_almost_equal(
+            snippet2.data,
+            np.zeros((50, 1), dtype=np.float32),
+            decimal=5
+        )
+    
+    def test_crop_ramp_with_extend_mode_before_ramp(self):
+        """
+        Regression test: CropPE should handle RampPE with extend_mode when cropped
+        before the ramp starts.
+        """
+        ramp = RampPE(5.0, 10.0, duration=100, extend_mode=ExtendMode.HOLD_BOTH)
+        # Crop to start before ramp (at sample -50, extending to sample 50)
+        cropped = CropPE(ramp, Extent(-50, 50))
+        
+        self.renderer.set_source(cropped)
+        
+        # Render the cropped region
+        snippet = cropped.render(-50, 100)
+        
+        # First 50 samples should hold start_value (5.0)
+        np.testing.assert_array_almost_equal(
+            snippet.data[:50, 0],
+            np.full(50, 5.0, dtype=np.float32),
+            decimal=5
+        )
+        
+        # Next 50 samples should be ramp values (0-49 of ramp)
+        # Sample 50 should be approximately 5.0 (start of ramp)
+        assert snippet.data[50, 0] == pytest.approx(5.0, abs=0.1)
+    

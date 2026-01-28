@@ -7,7 +7,16 @@ MIT License
 """
 
 from __future__ import annotations
+from enum import Enum
 from typing import Optional
+
+
+class ExtendMode(Enum):
+    """Behavior for samples outside a ProcessingElement's extent."""
+    ZERO = "zero"           # Output zeros (default)
+    HOLD_FIRST = "hold_first"  # Hold first value before extent
+    HOLD_LAST = "hold_last"    # Hold last value after extent
+    HOLD_BOTH = "hold_both"    # Hold first before, last after
 
 
 class Extent:

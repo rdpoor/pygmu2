@@ -153,7 +153,11 @@ class DelayPE(ProcessingElement):
     
     def _render_int(self, start: int, duration: int) -> Snippet:
         """Fast path for integer delay - no interpolation."""
-        source_snippet = self._source.render(start - self._delay, duration)
+        # Delay "looks into the past": at output time t, we read source time (t - delay)
+        # This means we can request negative source times, which the source will handle
+        # appropriately (e.g., IdentityPE returns negative values, ArrayPE returns zeros)
+        source_start = start - self._delay
+        source_snippet = self._source.render(source_start, duration)
         return Snippet(start, source_snippet.data)
     
     def _render_float(self, start: int, duration: int) -> Snippet:

@@ -140,7 +140,8 @@ class TestDelayPEIntegerRender:
         
         self.renderer.set_source(delay)
         
-        # Before delayed start - should be zeros
+        # Before delayed start - DelayPE looks at source time -50, which is before
+        # RampPE's extent (0-100), so RampPE returns zeros (its ExtendMode.ZERO behavior)
         snippet = delay.render(0, 50)
         np.testing.assert_array_equal(
             snippet.data, np.zeros((50, 1), dtype=np.float32)
