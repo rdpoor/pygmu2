@@ -64,7 +64,7 @@ def demo_explicit_durations():
     
     # With explicit durations, overlap=True makes the most sense
     # since we're controlling the timing ourselves
-    seq = SequencePE(sequence, overlap=True)
+    seq = SequencePE(sequence)
     
     # Apply gain to avoid clipping
     output = GainPE(seq, gain=0.5)
@@ -115,7 +115,7 @@ def demo_mixed_format():
     ]
     
     # With overlap=False, e_note will be cropped to prevent overlap with g_note
-    seq = SequencePE(sequence, overlap=False)
+    seq = SequencePE(sequence)
     
     # Apply gain
     output = GainPE(seq, gain=0.5)
@@ -160,7 +160,7 @@ def demo_staccato_pattern():
         sequence.append((note_pe, start_time, note_length))
     
     # Use overlap=True since we're explicitly controlling timing
-    seq = SequencePE(sequence, overlap=True)
+    seq = SequencePE(sequence)
     
     # Apply gain
     output = GainPE(seq, gain=0.6)

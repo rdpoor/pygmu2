@@ -91,7 +91,7 @@ def demo_slice_polka():
         (slices['kick'], ss(3.0 * SECONDS_PER_BEAT)),
         (slices['cowbell'], ss(3.5 * SECONDS_PER_BEAT)),
         (slices['man'], ss(3.5 * SECONDS_PER_BEAT)),
-        ], overlap=True)
+        ])
 
     # Play the measure 4 times
     mix_stream = LoopPE(
