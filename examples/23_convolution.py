@@ -116,15 +116,14 @@ def _demo_wet(source_path: Path, ir_path: Path, *, wet_gain: float = 0.25) -> No
     # Create wet signal (convolved with IR), normalized by energy
     wet_stream = ConvolvePE(source_stream, ir_stream)
     wet_gained = GainPE(wet_stream, gain=wet_gain / ir_energy)
-    # Note: lookahead=0 required because ConvolvePE is stateful
-    # wet_gained_limited = LimiterPE(wet_gained, ceiling=1.0, release=15.0, attack=0.01, lookahead=0)
+    wet_gained_limited = LimiterPE(wet_gained, ceiling=1.0, release=15.0, attack=0.01, lookahead=0.005)
 
     # Create dry signal at (1 - wet_gain) level
     dry_gain = 1.0 - wet_gain
     dry_gained = GainPE(source_stream, gain=dry_gain)
 
     # Mix dry and wet signals
-    out_stream = MixPE(dry_gained, wet_gained)
+    out_stream = MixPE(dry_gained, wet_gained_limited)
 
     print(f"Source: {source_path.name}")
     print(f"IR:     {ir_path.name}")
@@ -161,7 +160,7 @@ def demo_drums_short():
 
 def demo_drums_long():
     print("=== Demo: drums * long_ir ===")
-    _demo_wet(DRUMS_PATH, LONG_IR_PATH, wet_gain=0.20)
+    _demo_wet(DRUMS_PATH, LONG_IR_PATH, wet_gain=0.50)
 
 
 def demo_all():
