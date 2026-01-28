@@ -9,11 +9,15 @@ MIT License
 from typing import Optional
 
 from pygmu2.processing_element import SourcePE, ProcessingElement
-from pygmu2.extent import Extent
+from pygmu2.extent import Extent, ExtendMode
 from pygmu2.snippet import Snippet
 from pygmu2.sequence_pe import SequencePE
 from pygmu2.ramp_pe import RampPE
 from pygmu2.constant_pe import ConstantPE
+from pygmu2.crop_pe import CropPE
+from pygmu2.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class PortamentoPE(SourcePE):
@@ -26,6 +30,57 @@ class PortamentoPE(SourcePE):
     
     The first pitch in the list determines the initial pitch - no portamento
     is required on the first note.
+    
+    Behavior with disjoint or overlapping notes:
+    
+    Disjoint notes (gap between notes):
+        When notes have a gap between them, the pitch holds the previous note's
+        value during the gap, then transitions when the next note starts.
+        
+        Example: [(69, 0, 500), (73, 1000, 500)]
+        - Note 0: pitch=69 from t=0 to t=500 (ends at 500)
+        - Gap: t=500 to t=1000 (500 samples)
+        - Note 1: pitch=73 from t=1000 to t=1500
+        - Behavior:
+          * t=0 to t=1000: pitch=69 (held from first note, before ramp starts)
+          * t=1000: ramp begins, transitions from 69 to 73
+          * After ramp: pitch=73 (held for note 1's duration)
+    
+    Overlapping notes:
+        When notes overlap, the pitch transitions during the overlap period.
+        
+        Example: [(69, 0, 1500), (73, 1000, 1500)]
+        - Note 0: pitch=69 from t=0 to t=1500
+        - Note 1: pitch=73 from t=1000 to t=2500
+        - Overlap: t=1000 to t=1500 (500 samples)
+        - Behavior:
+          * t=0 to t=1000: pitch=69 (held from first note, before ramp starts)
+          * t=1000: ramp begins, transitions from 69 to 73 during overlap
+          * After ramp completes: pitch=73 (held for note 1's duration)
+    
+    Behavior outside note range:
+        PortamentoPE has infinite extent and holds pitch values outside the note range:
+        
+        Before first note:
+            The pitch holds the first note's pitch value for all times before the first
+            note starts. This is because the first ramp (transitioning to the second note)
+            uses ExtendMode.HOLD_BOTH and holds the start value (first note's pitch) before
+            the ramp begins.
+            
+            Example: For notes [(69, 0, 500), (73, 1000, 500)]
+            - At time -500: pitch=69.0 (first note's pitch, held)
+            - At time -100: pitch=69.0 (first note's pitch, held)
+        
+        After last note:
+            The pitch holds the last note's pitch value for all times after the last note
+            ends. This is because the last ramp has infinite extent (not cropped) and uses
+            ExtendMode.HOLD_BOTH, holding the end value (last note's pitch) after the ramp
+            completes.
+            
+            Example: For notes [(69, 0, 500), (73, 1000, 500)]
+            - Last note ends at: 1000 + 500 = 1500
+            - At time 2000: pitch=73.0 (last note's pitch, held)
+            - At time 5000: pitch=73.0 (last note's pitch, held)
     
     Args:
         notes: List of (pitch, sample_index, duration) tuples where:
@@ -126,6 +181,22 @@ class PortamentoPE(SourcePE):
         """Configure the portamento PE with sample rate and build the sequence."""
         super().configure(sample_rate)
         
+        # Zero notes: should have been caught in __init__, but handle gracefully
+        if not self._notes:
+            raise ValueError("PortamentoPE: notes list cannot be empty")
+        
+        # One note: return ConstantPE delayed to note's start (infinite extent, consistent with N>=2)
+        if len(self._notes) == 1:
+            pitch, start, _duration = self._notes[0]
+            from pygmu2.delay_pe import DelayPE
+            constant_pe = ConstantPE(pitch, channels=self._channels)
+            # Delay to note's start time (infinite extent, like last ramp in N>=2 case)
+            delayed = DelayPE(constant_pe, delay=start)
+            self._sequence_pe = delayed
+            self._sequence_pe.configure(sample_rate)
+            return
+        
+        # N notes (N >= 2): create N-1 ramps with HOLD_BOTH
         # Resolve max_ramp_samples using _time_to_samples pattern
         max_ramp_samples_resolved = self._time_to_samples(
             samples=self._max_ramp_samples,
@@ -135,58 +206,90 @@ class PortamentoPE(SourcePE):
         # Ensure at least 1 sample
         max_ramp_samples_resolved = max(1, max_ramp_samples_resolved)
         
-        # Build sequence of PEs now that we have sample_rate
         sequence_items = []
         
-        if not self._notes:
-            # Should not happen (checked in __init__), but handle gracefully
-            self._sequence_pe = ConstantPE(0.0, channels=self._channels)
-            self._sequence_pe.configure(sample_rate)
-            return
-        
-        # First note: output constant pitch from time 0 (before first note starts)
-        # The first pitch determines the initial pitch - no portamento on first note
-        first_pitch, first_start, _first_duration = self._notes[0]
-        sequence_items.append((ConstantPE(first_pitch, channels=self._channels), 0))
-        
-        # Process transitions between notes
+        # Create N-1 ramps for transitions between notes
+        # Each ramp transitions from previous note's pitch to current note's pitch
+        # Ramps start at the current note's start time (when transition begins)
+        # HOLD_BOTH ensures:
+        #   - First ramp holds note 0's pitch before it starts (covering note 0's period)
+        #   - Each ramp holds its end pitch after completion (covering the note's duration)
+        #   - Last ramp holds last note's pitch indefinitely (infinite extent)
         for i in range(len(self._notes) - 1):
             prev_pitch, prev_start, prev_duration = self._notes[i]
             curr_pitch, curr_start, curr_duration = self._notes[i + 1]
             
-            if abs(curr_pitch - prev_pitch) < 1e-6:
-                # Same pitch: no portamento needed, use constant starting at current note
-                sequence_items.append((ConstantPE(curr_pitch, channels=self._channels), curr_start))
+            # Calculate when next ramp starts (if there is one)
+            next_ramp_start = None
+            if i < len(self._notes) - 2:
+                next_ramp_start = self._notes[i + 2][1]  # Start time of note after next
+            
+            # Debug: log note transition
+            from pygmu2.conversions import pitch_to_freq
+            prev_freq = pitch_to_freq(prev_pitch)
+            curr_freq = pitch_to_freq(curr_pitch)
+            logger.debug(
+                f"PortamentoPE: Note transition {i}->{i+1} - "
+                f"prev_pitch={prev_pitch:.2f} (freq={prev_freq:.2f} Hz), "
+                f"curr_pitch={curr_pitch:.2f} (freq={curr_freq:.2f} Hz), "
+                f"prev_start={prev_start}, curr_start={curr_start}, curr_duration={curr_duration} samples"
+            )
+            
+            # Adaptive ramp duration: min(max_ramp_time, current_note_duration * ramp_fraction)
+            # The ramp duration is limited by the current note's duration
+            adaptive_ramp_samples = min(max_ramp_samples_resolved, int(round(curr_duration * self._ramp_fraction)))
+            # Ensure at least 1 sample
+            ramp_duration = max(1, adaptive_ramp_samples)
+            
+            logger.debug(
+                f"PortamentoPE: Creating ramp - duration={ramp_duration} samples, "
+                f"start_value={prev_pitch:.2f}, end_value={curr_pitch:.2f}, channels={self._channels}"
+            )
+            
+            # Create ramp from previous pitch to current pitch
+            # With ExtendMode.HOLD_BOTH:
+            #   - Before ramp start: holds prev_pitch (covers previous note's duration)
+            #   - During ramp: ramps from prev_pitch to curr_pitch
+            #   - After ramp: holds curr_pitch (covers current note's duration)
+            ramp = RampPE(
+                start_value=prev_pitch,
+                end_value=curr_pitch,
+                duration=ramp_duration,
+                channels=self._channels,
+                extend_mode=ExtendMode.HOLD_BOTH,
+            )
+            
+            # Crop ramps to prevent unwanted contributions:
+            # - First ramp: crop end to start of next note (if there is one), no start crop (holds first note's pitch)
+            # - Middle ramps: crop start (to time 0) and end (to next note's start)
+            # - Last ramp: crop start (to time 0), no end crop (infinite extent)
+            # Exception: single ramp (2 notes total): no cropping (infinite extent on both sides)
+            if len(self._notes) == 2:
+                # Single ramp: no cropping - infinite extent on both sides
+                # Holds first note's pitch before ramp, last note's pitch after ramp
+                cropped_ramp = ramp
+            elif i == 0:
+                # First ramp (3+ notes): crop end to next ramp's start
+                # No start crop - needs to hold first note's pitch before ramp starts
+                # Use HOLD_FIRST to hold the ramp's start value (first note's pitch) before crop window
+                crop_duration = next_ramp_start - curr_start
+                cropped_ramp = CropPE(ramp, Extent(None, crop_duration), extend_mode=ExtendMode.HOLD_FIRST)
+            elif i == len(self._notes) - 2:
+                # Last ramp: crop start (to time 0), no end crop (infinite extent)
+                cropped_ramp = CropPE(ramp, Extent(0, None), extend_mode=ExtendMode.ZERO)
             else:
-                # Different pitch: create ramp with adaptive duration
-                # Adaptive ramp duration: min(max_ramp_time, note_duration * ramp_fraction)
-                adaptive_ramp_samples = min(max_ramp_samples_resolved, int(round(curr_duration * self._ramp_fraction)))
-                # Ensure at least 1 sample
-                ramp_duration = max(1, adaptive_ramp_samples)
-                
-                # Create ramp from previous pitch to current pitch
-                # Ramp starts at current note's start_time
-                # With hold_extents=True:
-                #   - Before ramp start: holds prev_pitch (from hold_extents)
-                #   - During ramp: ramps from prev_pitch to curr_pitch
-                #   - After ramp: holds curr_pitch (from hold_extents)
-                ramp = RampPE(
-                    start_value=prev_pitch,
-                    end_value=curr_pitch,
-                    duration=ramp_duration,
-                    channels=self._channels,
-                    hold_extents=True,
-                )
-                sequence_items.append((ramp, curr_start))
+                # Middle ramps: crop start (to time 0) and end (to next note's start)
+                crop_duration = next_ramp_start - curr_start
+                cropped_ramp = CropPE(ramp, Extent(0, crop_duration), extend_mode=ExtendMode.ZERO)
+            
+            # Ramp starts at current note's start time
+            sequence_items.append((cropped_ramp, curr_start))
         
-        # Use SequencePE with overlap=False
-        # With overlap=False, SequencePE will crop each PE to prevent overlap with the next.
-        # This ensures that:
-        # - The first ConstantPE outputs first_pitch from 0 until the next item starts
-        # - Each subsequent item (ramp or constant) takes over at its start_time
-        # - RampPE with hold_extents=True will hold values before/after the ramp, ensuring
-        #   smooth transitions without gaps
-        self._sequence_pe = SequencePE(sequence_items, channels=self._channels, overlap=False)
+        # Create SequencePE (always delays and mixes all inputs)
+        # SequencePE delays each ramp to its start time and mixes them together
+        # The last ramp is never cropped, so it has infinite extent (HOLD_BOTH holds last pitch)
+        # This gives PortamentoPE infinite extent with HOLD_BOTH behavior
+        self._sequence_pe = SequencePE(sequence_items, channels=self._channels)
         self._sequence_pe.configure(sample_rate)
     
     def inputs(self) -> list[ProcessingElement]:
@@ -210,7 +313,25 @@ class PortamentoPE(SourcePE):
     def _render(self, start: int, duration: int) -> Snippet:
         """Render portamento pitch values."""
         if self._sequence_pe is not None:
-            return self._sequence_pe.render(start, duration)
+            snippet = self._sequence_pe.render(start, duration)
+            # Debug: log sample values at key points
+            if duration > 0:
+                import numpy as np
+                # Log first, middle, and last sample
+                first_pitch = snippet.data[0, 0] if snippet.data.shape[0] > 0 else 0
+                mid_idx = duration // 2
+                mid_pitch = snippet.data[mid_idx, 0] if mid_idx < snippet.data.shape[0] else 0
+                last_pitch = snippet.data[-1, 0] if snippet.data.shape[0] > 0 else 0
+                
+                from pygmu2.conversions import pitch_to_freq
+                logger.debug(
+                    f"PortamentoPE._render: start={start}, duration={duration}, "
+                    f"first_pitch={first_pitch:.2f} (freq={pitch_to_freq(first_pitch):.2f} Hz), "
+                    f"mid_pitch={mid_pitch:.2f} (freq={pitch_to_freq(mid_pitch):.2f} Hz), "
+                    f"last_pitch={last_pitch:.2f} (freq={pitch_to_freq(last_pitch):.2f} Hz), "
+                    f"data_shape={snippet.data.shape}"
+                )
+            return snippet
         return Snippet.from_zeros(start, duration, self._channels)
     
     def __repr__(self) -> str:

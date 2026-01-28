@@ -8,8 +8,6 @@ MIT License
 from pygmu2 import (
     AudioRenderer,
     AdsrPE,
-    BiquadPE,
-    BiquadMode,
     ConstantPE,
     CropPE,
     DelayPE,
@@ -17,6 +15,7 @@ from pygmu2 import (
     FunctionGenPE,
     GainPE,
     MixPE,
+    PortamentoPE,
     ResetPE,
     SequencePE,
     SlicePE,
@@ -28,8 +27,10 @@ from pygmu2 import (
     setup_logging,
 )
 
+from pygmu2 import print_pe_tree
+
 import logging
-setup_logging(level="INFO")
+setup_logging(level="INFO")  # Enable DEBUG to see PortamentoPE note transitions
 logger = get_logger(__name__)  # or get_logger("my_module")
 
 # Configuration
@@ -236,21 +237,21 @@ def demo_gating_02():
     print("=== Add Portamento ===")
 
     next_start = 0
-    notes = []
+    portamento_notes = []
     for pitch, duration, articulation in moz_k333:
         # pitch = MIDI pitch
         # duration = duration in beats (until the next note)  
         # articulation = lengthens or shortens how long the note sounds
         if pitch != pRest:
-            notes.append((pitch, bs(next_start)))
+            note_start = bs(next_start)
+            note_duration = bs(duration)
+            portamento_notes.append((float(pitch), note_start, note_duration))
         # bump note_start to the next start time
         next_start += duration
-
-    pitch_stream = SequencePE(notes)
-    # put pitches through low pass for portamento effect    
-    porta_stream = BiquadPE(pitch_stream, frequency=20, q=0.7, mode=BiquadMode.LOWPASS)
+    # Use PortamentoPE for smooth pitch gliding between notes
+    pitch_stream = PortamentoPE(portamento_notes, max_ramp_seconds=0.05, ramp_fraction=0.3)
     # convert to frequencies
-    freq_stream = TransformPE(porta_stream, func=pitch_to_freq)
+    freq_stream = TransformPE(pitch_stream, func=pitch_to_freq)
     synth_stream = FunctionGenPE(freq_stream, waveform='sawtooth')
 
     # mix all notes and attenuate some
@@ -258,6 +259,9 @@ def demo_gating_02():
 
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(CropPE(mix_stream, Extent(0, bs(next_start))))
+
+    # For debugging: print out PE tree
+    # print_pe_tree(renderer.source)
 
     with renderer:
         renderer.start()
@@ -270,21 +274,22 @@ def demo_gating_03():
     print("=== Add ADSR, retrigger on every note ===")
 
     next_start = 0
-    notes = []
+    portamento_notes = []
     for pitch, duration, articulation in moz_k333:
         # pitch = MIDI pitch
         # duration = duration in beats (until the next note)  
         # articulation = lengthens or shortens how long the note sounds
         if pitch != pRest:
-            notes.append((pitch, bs(next_start)))
+            note_start = bs(next_start)
+            note_duration = bs(duration)
+            portamento_notes.append((float(pitch), note_start, note_duration))
         # bump note_start to the next start time
         next_start += duration
 
-    pitch_stream = SequencePE(notes)
-    # put pitches through low pass for portamento effect    
-    porta_stream = BiquadPE(pitch_stream, frequency=20, q=0.7, mode=BiquadMode.LOWPASS)
+    # Use PortamentoPE for smooth pitch gliding between notes
+    pitch_stream = PortamentoPE(portamento_notes, max_ramp_seconds=0.05, ramp_fraction=0.3)
     # convert pitches to frequencies
-    freq_stream = TransformPE(porta_stream, func=pitch_to_freq)
+    freq_stream = TransformPE(pitch_stream, func=pitch_to_freq)
     # generate tones (monophonic)
     synth_stream = FunctionGenPE(freq_stream, waveform='sawtooth')
 
@@ -300,7 +305,7 @@ def demo_gating_03():
         # bump note_start to the next start time
         next_start += duration
 
-    gate_stream = SequencePE(gates, overlap=False)
+    gate_stream = SequencePE(gates)
     envelope_stream = AdsrPE(
         gate_stream,
         attack_seconds=0.02,
@@ -327,21 +332,22 @@ def demo_gating_04():
     print("=== Add ADSR with articulation ===")
 
     next_start = 0
-    notes = []
+    portamento_notes = []
     for pitch, duration, articulation in moz_k333:
         # pitch = MIDI pitch
         # duration = duration in beats (until the next note)  
         # articulation = lengthens or shortens how long the note sounds
         if pitch != pRest:
-            notes.append((pitch, bs(next_start)))
+            note_start = bs(next_start)
+            note_duration = bs(duration)
+            portamento_notes.append((float(pitch), note_start, note_duration))
         # bump note_start to the next start time
         next_start += duration
 
-    pitch_stream = SequencePE(notes)
-    # put pitches through low pass for portamento effect    
-    porta_stream = BiquadPE(pitch_stream, frequency=20, q=0.7, mode=BiquadMode.LOWPASS)
+    # Use PortamentoPE for smooth pitch gliding between notes
+    pitch_stream = PortamentoPE(portamento_notes, max_ramp_seconds=0.05, ramp_fraction=0.3)
     # convert pitches to frequencies
-    freq_stream = TransformPE(porta_stream, func=pitch_to_freq)
+    freq_stream = TransformPE(pitch_stream, func=pitch_to_freq)
     # generate tones (monophonic)
     synth_stream = FunctionGenPE(freq_stream, waveform='sawtooth')
 
@@ -362,7 +368,7 @@ def demo_gating_04():
         # bump note_start to the next start time
         next_start += duration
 
-    gate_stream = SequencePE(gates, overlap=False)
+    gate_stream = SequencePE(gates)
     envelope_stream = AdsrPE(
         gate_stream,
         attack_seconds=0.02,
@@ -389,21 +395,22 @@ def demo_gating_05():
     print("=== Add ADSR with newer synth ===")
 
     next_start = 0
-    notes = []
+    portamento_notes = []
     for pitch, duration, articulation in moz_k333:
         # pitch = MIDI pitch
         # duration = duration in beats (until the next note)  
         # articulation = lengthens or shortens how long the note sounds
         if pitch != pRest:
-            notes.append((pitch, bs(next_start)))
+            note_start = bs(next_start)
+            note_duration = bs(duration)
+            portamento_notes.append((float(pitch), note_start, note_duration))
         # bump note_start to the next start time
         next_start += duration
 
-    pitch_stream = SequencePE(notes)
-    # put pitches through low pass for portamento effect    
-    porta_stream = BiquadPE(pitch_stream, frequency=20, q=0.7, mode=BiquadMode.LOWPASS)
+    # Use PortamentoPE for smooth pitch gliding between notes
+    pitch_stream = PortamentoPE(portamento_notes, max_ramp_seconds=0.05, ramp_fraction=0.3)
     # convert pitches to frequencies
-    freq_stream = TransformPE(porta_stream, func=pitch_to_freq)
+    freq_stream = TransformPE(pitch_stream, func=pitch_to_freq)
     # generate tones (monophonic)
     synth_stream = SuperSawPE(
         frequency=freq_stream, 
@@ -427,7 +434,7 @@ def demo_gating_05():
         # bump note_start to the next start time
         next_start += duration
 
-    gate_stream = SequencePE(gates, overlap=False)
+    gate_stream = SequencePE(gates)
     envelope_stream = AdsrPE(
         gate_stream,
         attack_seconds=0.02,
@@ -454,21 +461,22 @@ def demo_gating_06():
     print("=== Add ADSR with resync on articulated notes ===")
 
     next_start = 0
-    notes = []
+    portamento_notes = []
     for pitch, duration, articulation in moz_k333:
         # pitch = MIDI pitch
         # duration = duration in beats (until the next note)  
         # articulation = lengthens or shortens how long the note sounds
         if pitch != pRest:
-            notes.append((pitch, bs(next_start)))
+            note_start = bs(next_start)
+            note_duration = bs(duration)
+            portamento_notes.append((float(pitch), note_start, note_duration))
         # bump note_start to the next start time
         next_start += duration
 
-    pitch_stream = SequencePE(notes)
-    # put pitches through low pass for portamento effect    
-    porta_stream = BiquadPE(pitch_stream, frequency=20, q=0.7, mode=BiquadMode.LOWPASS)
+    # Use PortamentoPE for smooth pitch gliding between notes
+    pitch_stream = PortamentoPE(portamento_notes, max_ramp_seconds=0.05, ramp_fraction=0.3)
     # convert pitches to frequencies
-    freq_stream = TransformPE(porta_stream, func=pitch_to_freq)
+    freq_stream = TransformPE(pitch_stream, func=pitch_to_freq)
     # generate tones (monophonic)
     synth_stream = SuperSawPE(
         frequency=freq_stream, 
@@ -492,7 +500,7 @@ def demo_gating_06():
         # bump note_start to the next start time
         next_start += duration
 
-    gate_stream = SequencePE(gates, overlap=False)
+    gate_stream = SequencePE(gates)
     envelope_stream = AdsrPE(
         gate_stream,
         attack_seconds=0.1,

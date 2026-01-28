@@ -9,7 +9,7 @@ MIT License
 import numpy as np
 
 from pygmu2.processing_element import SourcePE
-from pygmu2.extent import Extent
+from pygmu2.extent import Extent, ExtendMode
 from pygmu2.snippet import Snippet
 
 
@@ -18,21 +18,25 @@ class RampPE(SourcePE):
     A SourcePE that outputs a linear ramp from start_value to end_value.
     
     The ramp spans a fixed number of samples. Behavior outside this range
-    is controlled by hold_extents.
+    is controlled by extend_mode.
     
     Useful for:
     - Envelope generation (attack/decay ramps)
     - Parameter automation
     - Crossfades
     - Testing
+    - Portamento effects (with HOLD_BOTH)
     
     Args:
         start_value: Value at the beginning of the ramp
         end_value: Value at the end of the ramp
         duration: Length of the ramp in samples
         channels: Number of output channels (default: 1)
-        hold_extents: If True, hold start_value before ramp and end_value after
-                      ramp. If False (default), output zeros outside ramp range.
+        extend_mode: Behavior outside ramp range (default: ZERO)
+                     - ZERO: Output zeros outside ramp
+                     - HOLD_FIRST: Hold start_value before ramp
+                     - HOLD_LAST: Hold end_value after ramp
+                     - HOLD_BOTH: Hold start_value before, end_value after
     
     Example:
         # Fade in over 1 second at 44100 Hz
@@ -46,7 +50,8 @@ class RampPE(SourcePE):
         sine_stream = SinePE(frequency=sweep_stream)
         
         # Ramp that holds values outside its range (useful for portamento)
-        portamento_stream = RampPE(440.0, 880.0, duration=1000, hold_extents=True)
+        from pygmu2 import ExtendMode
+        portamento_stream = RampPE(440.0, 880.0, duration=1000, extend_mode=ExtendMode.HOLD_BOTH)
     """
     
     def __init__(
@@ -55,13 +60,13 @@ class RampPE(SourcePE):
         end_value: float,
         duration: int,
         channels: int = 1,
-        hold_extents: bool = False,
+        extend_mode: ExtendMode = ExtendMode.ZERO,
     ):
         self._start_value = start_value
         self._end_value = end_value
         self._duration = duration
         self._channels = channels
-        self._hold_extents = bool(hold_extents)
+        self._extend_mode = extend_mode
         
         # Pre-compute the full ramp for efficiency
         t = np.linspace(0, 1, duration, dtype=np.float32)
@@ -92,14 +97,10 @@ class RampPE(SourcePE):
         
         Returns:
             Snippet containing ramp data. Behavior outside ramp extent depends
-            on hold_extents: zeros if False, held values if True.
+            on extend_mode.
         """
-        if self._hold_extents:
-            # Initialize with held values
-            data = np.full((duration, self._channels), self._start_value, dtype=np.float32)
-        else:
-            # Initialize with zeros
-            data = np.zeros((duration, self._channels), dtype=np.float32)
+        # Initialize with zeros
+        data = np.zeros((duration, self._channels), dtype=np.float32)
         
         # Calculate overlap with ramp extent
         ramp_start = 0
@@ -125,8 +126,13 @@ class RampPE(SourcePE):
             data[output_slice_start:output_slice_end, :] = ramp_values.reshape(-1, 1)
         
         # Handle held values outside ramp extent
-        if self._hold_extents:
-            # Before ramp: hold start_value (already set in initialization)
+        if self._extend_mode in (ExtendMode.HOLD_FIRST, ExtendMode.HOLD_BOTH):
+            # Before ramp: hold start_value
+            if req_start < ramp_start:
+                before_count = min(duration, ramp_start - req_start)
+                data[:before_count, :] = self._start_value
+        
+        if self._extend_mode in (ExtendMode.HOLD_LAST, ExtendMode.HOLD_BOTH):
             # After ramp: hold end_value
             if req_end > ramp_end:
                 after_start = max(0, ramp_end - req_start)
@@ -139,10 +145,10 @@ class RampPE(SourcePE):
         """
         Return the extent of the ramp.
         
-        If hold_extents=True, the extent is infinite (holds values outside ramp).
-        If hold_extents=False, the extent is finite (0 to duration).
+        If extend_mode holds values (HOLD_FIRST, HOLD_LAST, or HOLD_BOTH),
+        the extent is infinite. Otherwise (ZERO), the extent is finite.
         """
-        if self._hold_extents:
+        if self._extend_mode != ExtendMode.ZERO:
             return Extent(None, None)  # Infinite extent (holds values)
         return Extent(0, self._duration)  # Finite extent (zeros outside)
     
@@ -151,13 +157,13 @@ class RampPE(SourcePE):
         return self._channels
     
     @property
-    def hold_extents(self) -> bool:
-        """Whether values are held outside the ramp range."""
-        return self._hold_extents
+    def extend_mode(self) -> ExtendMode:
+        """Behavior for samples outside the ramp range."""
+        return self._extend_mode
     
     def __repr__(self) -> str:
-        hold_str = f", hold_extents={self._hold_extents}" if self._hold_extents else ""
+        extend_str = f", extend_mode={self._extend_mode.value}" if self._extend_mode != ExtendMode.ZERO else ""
         return (
             f"RampPE(start_value={self._start_value}, end_value={self._end_value}, "
-            f"duration={self._duration}, channels={self._channels}{hold_str})"
+            f"duration={self._duration}, channels={self._channels}{extend_str})"
         )
