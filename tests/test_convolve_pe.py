@@ -157,3 +157,26 @@ class TestConvolvePERender:
         y_chunk = np.concatenate(y_parts)[: len(y_full)]
         np.testing.assert_allclose(y_chunk, y_full, atol=1e-5, rtol=0.0)
 
+
+class TestConvolvePEIrEnergyNorm:
+    """Tests for ConvolvePE.ir_energy_norm()."""
+
+    def test_finite_filter_energy_norm(self):
+        # sqrt(3^2 + 4^2) = 5
+        filt = ArrayPE([3.0, 4.0])
+        assert ConvolvePE.ir_energy_norm(filt) == pytest.approx(5.0, rel=1e-5)
+
+    def test_unit_impulse_norm_one(self):
+        filt = ArrayPE([1.0])
+        assert ConvolvePE.ir_energy_norm(filt) == pytest.approx(1.0, rel=1e-5)
+
+    def test_zero_filter_returns_one(self):
+        filt = ArrayPE([0.0, 0.0])
+        assert ConvolvePE.ir_energy_norm(filt) == 1.0
+
+    def test_stereo_filter_sums_all_channels(self):
+        # (1,1) and (1,1) per frame -> sum of squares = 4, norm = 2
+        h = np.array([[1.0, 1.0], [1.0, 1.0]], dtype=np.float32)
+        filt = ArrayPE(h)
+        assert ConvolvePE.ir_energy_norm(filt) == pytest.approx(2.0, rel=1e-5)
+

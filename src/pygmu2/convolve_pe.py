@@ -84,6 +84,30 @@ class ConvolvePE(ProcessingElement):
     def inputs(self) -> list[ProcessingElement]:
         return [self._src, self._filter]
 
+    @staticmethod
+    def ir_energy_norm(filter_pe: ProcessingElement) -> float:
+        """
+        Compute the energy norm of a filter/IR PE: sqrt(sum of squared samples).
+
+        Useful for normalizing convolution output so it has similar energy to the
+        input. Divide the wet gain by this value when mixing dry/wet.
+
+        The filter PE must have finite extent (extent().start and extent().end
+        must be not None). If the extent is unbounded, returns 1.0. If the
+        computed norm is zero or very small, returns 1.0 to avoid division by zero.
+
+        Returns:
+            The energy norm (sqrt of sum of squared samples), or 1.0 if
+            unbounded or zero.
+        """
+        extent = filter_pe.extent()
+        if extent.start is None or extent.end is None:
+            return 1.0
+        duration = extent.end - extent.start
+        data = filter_pe.render(extent.start, duration).data
+        energy_norm = np.sqrt(np.sum(data.astype(np.float64) ** 2))
+        return float(energy_norm) if energy_norm > 1e-10 else 1.0
+
     def is_pure(self) -> bool:
         # Keeps history for streaming overlap-save
         return False

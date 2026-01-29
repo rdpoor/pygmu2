@@ -20,17 +20,22 @@ Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
 MIT License
 """
 
+import logging
 from pathlib import Path
-
-import numpy as np
 
 from pygmu2 import (
     AudioRenderer,
     ConvolvePE,
+    CropPE,
+    DelayPE,
+    DiracPE,
+    Extent,
     GainPE,
     LimiterPE,
     MixPE,
+    seconds_to_samples,
     SpatialAdapter,
+    SpatialLinear,
     SpatialPE,
     WavReaderPE,
 )
@@ -43,7 +48,50 @@ DRUMS_PATH = AUDIO_DIR / "acoustic_drums44.wav"
 DRUMS_MONO_PATH = AUDIO_DIR / "acoustic_drums_mono44.wav"
 PLATE_IR_PATH = AUDIO_DIR / "plate_ir44.wav"
 LONG_IR_PATH = AUDIO_DIR / "long_ir44.wav"
-PING_PONG_IR_PATH = AUDIO_DIR / "PingPong.wav"
+
+logger = logging.getLogger(__name__)
+
+
+def create_pingpong_ir_pe(sample_rate: int, beats_per_minute: float = 92):
+    """
+    Create a stereo 'ping pong' impluse response.  It produces two impulse
+    responses:
+    After one beat, it emits a unit impulse in the left channel.
+    After two beats, it emits a unit impulse in the right channel.
+    """
+    logger.debug(
+        "create_pingpong_ir_pe(sample_rate=%s, beats_per_minute=%s)",
+        sample_rate,
+        beats_per_minute,
+    )
+    seconds_per_beat = 60.0 / beats_per_minute
+    impulse = DiracPE(channels=1)
+    delay_1_beat = int(round(float(seconds_to_samples(seconds_per_beat, sample_rate))))
+    delay_2_beats = int(round(float(seconds_to_samples(2 * seconds_per_beat, sample_rate))))
+    logger.debug(
+        "create_pingpong_ir_pe: delay_1_beat=%s, delay_2_beats=%s",
+        delay_1_beat,
+        delay_2_beats,
+    )
+    beat_1_impulse = DelayPE(impulse, delay=delay_1_beat)
+    beat_1_impulse = SpatialPE(
+        beat_1_impulse, method=SpatialLinear(azimuth=-90.0)
+    )
+    beat_2_impulse = DelayPE(impulse, delay=delay_2_beats)
+    beat_2_impulse = SpatialPE(
+        beat_2_impulse, method=SpatialLinear(azimuth=90.0)
+    )
+    mix_stream = MixPE(beat_1_impulse, beat_2_impulse)
+    pe = CropPE(mix_stream, Extent(0, delay_2_beats+1))
+    ext = pe.extent()
+    logger.debug(
+        "create_pingpong_ir_pe: channels=%s, extent=(%s, %s)",
+        pe.channel_count(),
+        ext.start,
+        ext.end,
+    )
+    return pe
+
 
 def _load_wav(path: Path) -> WavReaderPE:
     if not path.exists():
@@ -61,29 +109,6 @@ def _assert_sample_rate_match(source: WavReaderPE, ir: WavReaderPE) -> None:
             f"Sample rate mismatch: source={sr_s} Hz, IR={sr_i} Hz. "
             f"Please provide an IR at the same sample rate as the source for this demo."
         )
-
-
-def _compute_ir_energy_norm(ir_stream: WavReaderPE) -> float:
-    """
-    Compute the energy norm of the IR: sqrt(sum of squares).
-    
-    This measures the total energy in the IR. Dividing by this value
-    normalizes the convolution output to have similar energy to the input.
-    
-    Returns:
-        The energy norm (sqrt of sum of squared samples).
-    """
-    extent = ir_stream.extent()
-    if extent.start is None or extent.end is None:
-        return 1.0
-    
-    duration = extent.end - extent.start
-    ir_data = ir_stream.render(extent.start, duration).data
-    
-    # Energy norm = sqrt(sum of squares)
-    energy_norm = np.sqrt(np.sum(ir_data ** 2))
-    
-    return energy_norm if energy_norm > 1e-10 else 1.0
 
 
 def _play(source_pe, sample_rate: int) -> None:
@@ -106,15 +131,34 @@ def _demo_dry(source_path: Path, *, gain: float = 0.8) -> None:
     _play(out_stream, sample_rate)
 
 
-def _demo_wet(source_path: Path, ir_path: Path, *, wet_gain: float = 0.25) -> None:
+def _demo_wet(
+    source_path: Path,
+    ir_path: Path | None = None,
+    *,
+    ir_pe=None,
+    wet_gain: float = 0.25,
+) -> None:
+    logger.debug(
+        "_demo_wet(source_path=%s, ir_path=%s, ir_pe=%s, wet_gain=%s)",
+        source_path,
+        ir_path,
+        "PE" if ir_pe is not None else None,
+        wet_gain,
+    )
+    if ir_pe is None and ir_path is None:
+        raise ValueError("Provide either ir_path or ir_pe")
     source_stream = _load_wav(source_path)
-    ir_stream = _load_wav(ir_path)
-    _assert_sample_rate_match(source_stream, ir_stream)
+    ir_stream = _load_wav(ir_path) if ir_path is not None else ir_pe
+    logger.debug("_demo_wet: ir_stream from %s", "ir_path" if ir_path is not None else "ir_pe")
+    if ir_path is not None:
+        _assert_sample_rate_match(source_stream, ir_stream)
 
     sample_rate = int(source_stream.file_sample_rate)
+    logger.debug("_demo_wet: sample_rate=%s", sample_rate)
 
     # Compute IR energy norm for normalization
-    ir_energy = _compute_ir_energy_norm(ir_stream)
+    ir_energy = ConvolvePE.ir_energy_norm(ir_stream)
+    logger.debug("_demo_wet: ir_energy=%s", ir_energy)
 
     # Create wet signal (convolved with IR), normalized by energy
     wet_stream = ConvolvePE(source_stream, ir_stream)
@@ -133,8 +177,9 @@ def _demo_wet(source_path: Path, ir_path: Path, *, wet_gain: float = 0.25) -> No
     # Mix dry and wet signals
     out_stream = MixPE(dry_stream, wet_stream)
 
+    ir_label = ir_path.name if ir_path is not None else "ping-pong IR (PE)"
     print(f"Source: {source_path.name}")
-    print(f"IR:     {ir_path.name}")
+    print(f"IR:     {ir_label}")
     print(f"IR energy norm: {ir_energy:.2f}")
     print(f"Dry gain: {dry_gain:.2f}")
     print(f"Wet gain: {wet_gain:.2f} (effective: {wet_gain / ir_energy:.4f})")
@@ -173,8 +218,11 @@ def demo_drums_mono_dry():
     _demo_dry(DRUMS_MONO_PATH, gain=0.8)
 
 def demo_drums_mono_to_stereo():
-    print("=== Demo: drums * plate_ir ===")
-    _demo_wet(DRUMS_MONO_PATH, PING_PONG_IR_PATH, wet_gain=0.65)
+    print("=== Demo: drums (mono) spread to stereo via ping-pong IR (PE) ===")
+    source_stream = _load_wav(DRUMS_MONO_PATH)
+    sample_rate = int(source_stream.file_sample_rate)
+    ir_pe = create_pingpong_ir_pe(sample_rate, beats_per_minute=91)
+    _demo_wet(DRUMS_MONO_PATH, ir_pe=ir_pe, wet_gain=0.65)
 
 def demo_all():
     demo_spoken_dry()
@@ -187,7 +235,13 @@ def demo_all():
     demo_drums_mono_to_stereo()
 
 if __name__ == "__main__":
+    import os
     import sys
+
+    # Enable DEBUG to see create_pingpong_ir_pe and _demo_wet flow (e.g. PYGMU_DEBUG=1)
+    if os.environ.get("PYGMU_DEBUG"):
+        logging.basicConfig(level=logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
 
     demos = [
         ("1", "spoken voice, dry", demo_spoken_dry),
