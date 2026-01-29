@@ -90,6 +90,43 @@ class TestConvolvePERender:
         np.testing.assert_allclose(y[:, 0], y_expected_l, atol=1e-5, rtol=0.0)
         np.testing.assert_allclose(y[:, 1], y_expected_r, atol=1e-5, rtol=0.0)
 
+    def test_mono_src_multi_channel_filter_fans_out(self):
+        """
+        Mono source with multi-channel filter should fan out to multi-channel output.
+
+        This is useful for HRTF-style processing where a mono signal is convolved
+        with a stereo (or multi-channel) impulse response to produce a multi-
+        channel result.
+        """
+        # Mono input
+        x = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32)
+        # Simple 2-channel FIR: left=[1, 0.5], right=[-1, 0.5]
+        h = np.stack(
+            [
+                np.array([1.0, 0.5], dtype=np.float32),
+                np.array([-1.0, 0.5], dtype=np.float32),
+            ],
+            axis=1,
+        )  # shape (2, 2)
+
+        src = ArrayPE(x)
+        filt = ArrayPE(h)
+        pe = ConvolvePE(src, filt, fft_size=16)
+        self.renderer.set_source(pe)
+
+        # Expected per-channel convolutions
+        h_l = h[:, 0]
+        h_r = h[:, 1]
+        y_expected_l = np.convolve(x, h_l, mode="full")
+        y_expected_r = np.convolve(x, h_r, mode="full")
+
+        y = pe.render(0, len(y_expected_l)).data
+
+        # Output should be stereo (2 channels)
+        assert y.shape[1] == 2
+        np.testing.assert_allclose(y[:, 0], y_expected_l, atol=1e-5, rtol=0.0)
+        np.testing.assert_allclose(y[:, 1], y_expected_r, atol=1e-5, rtol=0.0)
+
     def test_chunked_render_matches_full(self):
         rng = np.random.default_rng(0)
         x = rng.normal(size=200).astype(np.float32)

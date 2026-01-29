@@ -30,6 +30,8 @@ from pygmu2 import (
     GainPE,
     LimiterPE,
     MixPE,
+    SpatialAdapter,
+    SpatialPE,
     WavReaderPE,
 )
 
@@ -38,9 +40,10 @@ AUDIO_DIR = Path(__file__).parent / "audio"
 
 SPOKEN_PATH = AUDIO_DIR / "spoken_voice44.wav"
 DRUMS_PATH = AUDIO_DIR / "acoustic_drums44.wav"
+DRUMS_MONO_PATH = AUDIO_DIR / "acoustic_drums_mono44.wav"
 PLATE_IR_PATH = AUDIO_DIR / "plate_ir44.wav"
 LONG_IR_PATH = AUDIO_DIR / "long_ir44.wav"
-
+PING_PONG_IR_PATH = AUDIO_DIR / "PingPong.wav"
 
 def _load_wav(path: Path) -> WavReaderPE:
     if not path.exists():
@@ -115,16 +118,20 @@ def _demo_wet(source_path: Path, ir_path: Path, *, wet_gain: float = 0.25) -> No
 
     # Create wet signal (convolved with IR), normalized by energy
     wet_stream = ConvolvePE(source_stream, ir_stream)
-    wet_gained = GainPE(wet_stream, gain=wet_gain / ir_energy)
+    wet_stream = GainPE(wet_stream, gain=wet_gain / ir_energy)
     # Note: lookahead=0 required because ConvolvePE is stateful
     # wet_gained_limited = LimiterPE(wet_gained, ceiling=1.0, release=15.0, attack=0.01, lookahead=0)
 
     # Create dry signal at (1 - wet_gain) level
     dry_gain = 1.0 - wet_gain
-    dry_gained = GainPE(source_stream, gain=dry_gain)
+    dry_stream = GainPE(source_stream, gain=dry_gain)
+    # coerce dry_stream to have the same # of channels as wet_stream
+    dry_stream = SpatialPE(
+        dry_stream, 
+        method=SpatialAdapter(channels=wet_stream.channel_count()))
 
     # Mix dry and wet signals
-    out_stream = MixPE(dry_gained, wet_gained)
+    out_stream = MixPE(dry_stream, wet_stream)
 
     print(f"Source: {source_path.name}")
     print(f"IR:     {ir_path.name}")
@@ -153,16 +160,21 @@ def demo_drums_dry():
     print("=== Demo: drums (dry) ===")
     _demo_dry(DRUMS_PATH, gain=0.8)
 
-
 def demo_drums_short():
     print("=== Demo: drums * plate_ir ===")
     _demo_wet(DRUMS_PATH, PLATE_IR_PATH, wet_gain=0.35)
-
 
 def demo_drums_long():
     print("=== Demo: drums * long_ir ===")
     _demo_wet(DRUMS_PATH, LONG_IR_PATH, wet_gain=0.20)
 
+def demo_drums_mono_dry():
+    print("=== Demo: mono drums (dry) ===")
+    _demo_dry(DRUMS_MONO_PATH, gain=0.8)
+
+def demo_drums_mono_to_stereo():
+    print("=== Demo: drums * plate_ir ===")
+    _demo_wet(DRUMS_MONO_PATH, PING_PONG_IR_PATH, wet_gain=0.65)
 
 def demo_all():
     demo_spoken_dry()
@@ -171,7 +183,8 @@ def demo_all():
     demo_drums_dry()
     demo_drums_short()
     demo_drums_long()
-
+    demo_drums_mono_dry()
+    demo_drums_mono_to_stereo()
 
 if __name__ == "__main__":
     import sys
@@ -183,6 +196,8 @@ if __name__ == "__main__":
         ("4", "drums, dry", demo_drums_dry),
         ("5", "drums * plate_ir", demo_drums_short),
         ("6", "drums * long_ir", demo_drums_long),
+        ("7", "drums (mono) dry", demo_drums_mono_dry),
+        ("8", "drums (mono) spread to stereo via reverb", demo_drums_mono_to_stereo),
         ("a", "All demos", demo_all),
     ]
 
@@ -194,7 +209,7 @@ if __name__ == "__main__":
         for key, name, _ in demos:
             print(f"{key}: {name}")
         print()
-        choice = input("Choose a demo (1-6 or 'a' for all): ").strip().lower()
+        choice = input(f"Choose a demo (1-{len(demos)-1} or 'a' for all): ").strip().lower()
         print()
 
     try:

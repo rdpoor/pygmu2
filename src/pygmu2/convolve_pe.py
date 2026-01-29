@@ -89,7 +89,36 @@ class ConvolvePE(ProcessingElement):
         return False
 
     def channel_count(self) -> Optional[int]:
-        return self._src.channel_count()
+        """
+        Determine output channel count based on source and filter.
+
+        Channel handling:
+        - mono filter: out_ch == src_ch
+        - multi-channel filter with same channel count as src: out_ch == src_ch
+        - mono src + multi-channel filter: out_ch == filter channels
+        """
+        src_ch = self._src.channel_count()
+        filt_ch = self._filter.channel_count()
+
+        if src_ch is None and filt_ch is None:
+            return None
+        if src_ch is None:
+            return filt_ch
+        if filt_ch is None or int(filt_ch) == 1:
+            # Mono (or unknown) filter: output matches source
+            return src_ch
+
+        # At this point, filt_ch > 1
+        if int(src_ch) == 1:
+            # Fan-out: mono src -> multi-channel via multi-channel filter
+            return int(filt_ch)
+
+        if int(filt_ch) == int(src_ch):
+            # Multi-channel filter matches source channels
+            return src_ch
+
+        # Mismatched multi-channel counts; will be rejected at prepare time.
+        return src_ch
 
     def on_start(self) -> None:
         self._reset_state()
@@ -154,14 +183,21 @@ class ConvolvePE(ProcessingElement):
 
         filt_ch = int(h.shape[1])
         if filt_ch == 1:
+            # Mono filter applies to every source channel
             out_ch = int(src_ch)
         else:
-            if filt_ch != int(src_ch):
+            # Multi-channel filter:
+            # - if source is mono, fan out to filter channels (e.g. mono -> stereo)
+            # - otherwise, require filter channels to match source channels
+            if int(src_ch) == 1:
+                out_ch = filt_ch
+            elif filt_ch == int(src_ch):
+                out_ch = filt_ch
+            else:
                 raise ValueError(
                     f"ConvolvePE filter channels ({filt_ch}) must match src channels ({src_ch}), "
-                    f"or be mono."
+                    f"or be mono, or be multi-channel with a mono source."
                 )
-            out_ch = filt_ch
 
         # Choose FFT size
         if self._fft_size is None:
@@ -210,10 +246,12 @@ class ConvolvePE(ProcessingElement):
 
         src_ch = x.shape[1]
 
-        # Determine output channels (mono filter applies to all)
+        # Determine output channels
         if self._H.ndim == 1:
+            # Mono filter: output matches source channels
             out_ch = src_ch
         else:
+            # Multi-channel filter: number of channels dictated by filter
             out_ch = self._H.shape[1]
 
         # Ensure tail has correct channel count (can differ from src if filter dictates)
@@ -236,12 +274,16 @@ class ConvolvePE(ProcessingElement):
             if tail_len > 0:
                 x_block[:tail_len, :] = self._tail
 
-            # Current segment: copy/match channels
+            # Current segment: copy/match/fan-out channels
             if out_ch == src_ch:
+                # 1:1 channel mapping
                 x_block[tail_len:tail_len + n, :] = x_seg
+            elif src_ch == 1:
+                # Mono source, multi-channel filter: fan out mono channel
+                x_block[tail_len:tail_len + n, :] = np.repeat(x_seg, out_ch, axis=1)
             else:
-                # Filter is multi-channel matching src: out_ch == src_ch. Otherwise shouldn't happen.
-                # If mono filter, out_ch==src_ch.
+                # Multi-channel source, fewer/equal output channels (should only happen
+                # when filter channels <= src channels and were validated earlier).
                 x_block[tail_len:tail_len + n, :] = x_seg[:, :out_ch]
 
             # FFT -> multiply -> IFFT
@@ -261,7 +303,13 @@ class ConvolvePE(ProcessingElement):
                 if n >= tail_len:
                     self._tail = x_block[tail_len + n - tail_len:tail_len + n, :].copy()
                 else:
-                    combined = np.vstack([self._tail, x_seg if out_ch == src_ch else x_seg[:, :out_ch]])
+                    if out_ch == src_ch:
+                        new_seg = x_seg
+                    elif src_ch == 1:
+                        new_seg = np.repeat(x_seg, out_ch, axis=1)
+                    else:
+                        new_seg = x_seg[:, :out_ch]
+                    combined = np.vstack([self._tail, new_seg])
                     self._tail = combined[-tail_len:, :].copy()
 
             out_pos += n
