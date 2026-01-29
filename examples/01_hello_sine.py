@@ -4,7 +4,7 @@ Example 01: Hello Sine - Introduction to pygmu2
 Creates a major triad from three sine waves, applies gain,
 crops to 8 seconds, and plays through the audio output.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

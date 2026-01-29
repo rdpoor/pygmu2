@@ -11,7 +11,7 @@ Conceptually, SlicePE is equivalent to (in samples):
 
 where the envelope is 1.0 in the middle and ramps at the edges.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
 """

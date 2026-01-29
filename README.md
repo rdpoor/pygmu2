@@ -350,6 +350,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines, architecture 
 
 ## License
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License - see [LICENSE](LICENSE) for details.

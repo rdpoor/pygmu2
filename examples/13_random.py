@@ -4,7 +4,7 @@ Example 13: RandomPE - Musical Randomness
 Demonstrates various modes and uses of RandomPE for generating
 random notes, modulating parameters, and random walks.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

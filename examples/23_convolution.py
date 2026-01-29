@@ -16,7 +16,7 @@ Notes:
 - For simplicity, this demo assumes source and IR sample rates match.
 - IRs should be mono, or match the source's channel count.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

@@ -1,7 +1,7 @@
 """
 Extent class for defining temporal bounds of ProcessingElements.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
 """

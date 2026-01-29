@@ -4,7 +4,7 @@ SuperSawPE - detuned unison sawtooth oscillator for warm, rich sounds.
 Inspired by the Roland JP-8000's "Supersaw" waveform, this PE creates
 multiple slightly-detuned sawtooth oscillators mixed together.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
 """

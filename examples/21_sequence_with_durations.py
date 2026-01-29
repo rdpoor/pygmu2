@@ -5,7 +5,7 @@ Example 21: SequencePE with Explicit Durations
 Demonstrates the 3-tuple format for SequencePE where you can specify
 (PE, start_time, duration) to have precise control over timing.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

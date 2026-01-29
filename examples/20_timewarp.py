@@ -9,7 +9,7 @@ Demonstrates TimeWarpPE for resampling a source at fixed and time-varying rates.
 - Accelerating demo: loops a spoken sample and accelerates rate from 0.25x to 5.0x
   over 10 seconds
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

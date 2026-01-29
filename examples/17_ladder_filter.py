@@ -3,7 +3,7 @@ Example 13: Ladder Filter - Moog-style ladder responses
 
 Demonstrates LadderPE with resonance, drive, and a cutoff sweep.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

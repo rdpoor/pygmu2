@@ -5,7 +5,7 @@ Example 19: SequencePE - Sequencing audio in time
 Demonstrates SequencePE for arranging multiple audio sources in time,
 both with and without overlap.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

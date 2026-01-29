@@ -3,7 +3,7 @@ BiquadPE - second-order IIR filter with multiple filter types.
 
 Coefficients calculated using Robert Bristow-Johnson's Audio EQ Cookbook.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
 """

@@ -4,7 +4,7 @@ DynamicsPE - Flexible dynamics processor (compressor/limiter/expander/gate).
 Applies gain reduction/expansion based on an external envelope signal,
 enabling sidechain compression and maximum flexibility.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
 """

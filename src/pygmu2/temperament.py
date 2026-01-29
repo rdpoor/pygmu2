@@ -4,7 +4,7 @@ Musical temperament and tuning system support.
 Provides a flexible system for alternative temperaments including equal temperaments,
 just intonation, historical temperaments, and custom tuning systems.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
 """

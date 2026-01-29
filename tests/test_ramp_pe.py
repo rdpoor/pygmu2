@@ -1,14 +1,14 @@
 """
 Tests for RampPE.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
 """
 
 import pytest
 import numpy as np
-from pygmu2 import RampPE, NullRenderer, Extent, ExtendMode, CropPE
+from pygmu2 import RampPE, RampType, NullRenderer, Extent, ExtendMode, CropPE
 
 
 class TestRampPEBasics:
@@ -52,6 +52,12 @@ class TestRampPEBasics:
     def test_no_inputs(self):
         ramp = RampPE(0.0, 1.0, duration=100)
         assert ramp.inputs() == []
+
+    def test_duration_must_be_at_least_one(self):
+        with pytest.raises(ValueError, match="duration must be >= 1"):
+            RampPE(0.0, 1.0, duration=0)
+        with pytest.raises(ValueError, match="duration must be >= 1"):
+            RampPE(0.0, 1.0, duration=-1)
     
     def test_repr(self):
         ramp = RampPE(0.0, 1.0, duration=100)
@@ -367,4 +373,94 @@ class TestRampPERegression:
         # Next 50 samples should be ramp values (0-49 of ramp)
         # Sample 50 should be approximately 5.0 (start of ramp)
         assert snippet.data[50, 0] == pytest.approx(5.0, abs=0.1)
-    
+
+
+class TestRampPERampType:
+    """Test RampPE with LINEAR, EXPONENTIAL, and SIGMOID ramp types."""
+
+    def setup_method(self):
+        self.renderer = NullRenderer(sample_rate=44100)
+
+    def test_linear_default(self):
+        """Default ramp_type is LINEAR; endpoints and mid value."""
+        ramp = RampPE(0.0, 1.0, duration=100)
+        assert ramp.ramp_type == RampType.LINEAR
+        self.renderer.set_source(ramp)
+        snip = ramp.render(0, 100)
+        assert snip.data[0, 0] == pytest.approx(0.0, abs=1e-5)
+        assert snip.data[-1, 0] == pytest.approx(1.0, abs=1e-5)
+        assert snip.data[49, 0] == pytest.approx(0.5, abs=0.02)
+
+    def test_exponential_positive(self):
+        """EXPONENTIAL: start*(end/start)^t; both positive."""
+        ramp = RampPE(1.0, 10.0, duration=101, ramp_type=RampType.EXPONENTIAL)
+        assert ramp.ramp_type == RampType.EXPONENTIAL
+        self.renderer.set_source(ramp)
+        snip = ramp.render(0, 101)
+        # At t=0: 1.0, at t=1: 10.0, at t=0.5: sqrt(10) ~ 3.162
+        assert snip.data[0, 0] == pytest.approx(1.0, abs=1e-5)
+        assert snip.data[-1, 0] == pytest.approx(10.0, abs=1e-5)
+        assert snip.data[50, 0] == pytest.approx(3.16227766, abs=0.02)
+
+    def test_exponential_fallback_for_zero(self):
+        """EXPONENTIAL with start or end 0 falls back to linear."""
+        ramp = RampPE(0.0, 1.0, duration=100, ramp_type=RampType.EXPONENTIAL)
+        self.renderer.set_source(ramp)
+        snip = ramp.render(0, 100)
+        np.testing.assert_allclose(snip.data[:, 0], np.linspace(0, 1, 100), atol=1e-5)
+
+    def test_sigmoid_endpoints_and_middle(self):
+        """SIGMOID: S-curve; endpoints near 0/1, middle ~0.5."""
+        ramp = RampPE(0.0, 1.0, duration=100, ramp_type=RampType.SIGMOID)
+        assert ramp.ramp_type == RampType.SIGMOID
+        self.renderer.set_source(ramp)
+        snip = ramp.render(0, 100)
+        # Logistic doesn't hit 0/1 exactly; first/last sample are close
+        assert snip.data[0, 0] == pytest.approx(0.0, abs=0.01)
+        assert snip.data[-1, 0] == pytest.approx(1.0, abs=0.01)
+        assert snip.data[49, 0] == pytest.approx(0.5, abs=0.05)
+
+    def test_sigmoid_slower_at_ends(self):
+        """SIGMOID: values near 0 and 1 change slower than linear near boundaries."""
+        ramp = RampPE(0.0, 1.0, duration=100, ramp_type=RampType.SIGMOID)
+        self.renderer.set_source(ramp)
+        snip = ramp.render(0, 100)
+        linear = np.linspace(0, 1, 100, dtype=np.float32)
+        # First 10 samples: sigmoid should be below linear (slower start)
+        assert np.all(snip.data[:10, 0] <= linear[:10] + 0.02)
+        # Last 10 samples: sigmoid should be above linear (slower end)
+        assert np.all(snip.data[-10:, 0] >= linear[-10:] - 0.02)
+
+    def test_repr_includes_ramp_type_when_not_linear(self):
+        r = RampPE(0.0, 1.0, duration=100, ramp_type=RampType.EXPONENTIAL)
+        assert "ramp_type" in repr(r)
+        assert "exponential" in repr(r)
+
+    def test_constant_power_fade_in_is_sin(self):
+        """CONSTANT_POWER 0→1 gives sin(π/2·t)."""
+        ramp = RampPE(0.0, 1.0, duration=101, ramp_type=RampType.CONSTANT_POWER)
+        self.renderer.set_source(ramp)
+        snip = ramp.render(0, 101)
+        t = np.linspace(0, 1, 101)
+        expected = np.sin(0.5 * np.pi * t).astype(np.float32)
+        np.testing.assert_allclose(snip.data[:, 0], expected, atol=1e-5)
+
+    def test_constant_power_fade_out_is_cos(self):
+        """CONSTANT_POWER 1→0 gives cos(π/2·t)."""
+        ramp = RampPE(1.0, 0.0, duration=101, ramp_type=RampType.CONSTANT_POWER)
+        self.renderer.set_source(ramp)
+        snip = ramp.render(0, 101)
+        t = np.linspace(0, 1, 101)
+        expected = np.cos(0.5 * np.pi * t).astype(np.float32)
+        np.testing.assert_allclose(snip.data[:, 0], expected, atol=1e-5)
+
+    def test_constant_power_crossfade_pair_sums_to_one(self):
+        """sin² + cos² = 1 when using CONSTANT_POWER fade-in and fade-out together."""
+        fade_in = RampPE(0.0, 1.0, duration=100, ramp_type=RampType.CONSTANT_POWER)
+        fade_out = RampPE(1.0, 0.0, duration=100, ramp_type=RampType.CONSTANT_POWER)
+        self.renderer.set_source(fade_in)
+        in_data = fade_in.render(0, 100).data[:, 0]
+        self.renderer.set_source(fade_out)
+        out_data = fade_out.render(0, 100).data[:, 0]
+        power_sum = in_data ** 2 + out_data ** 2
+        np.testing.assert_allclose(power_sum, np.ones(100, dtype=np.float32), atol=1e-5)

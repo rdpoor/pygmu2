@@ -4,7 +4,7 @@ Example 27: Spatial Audio - Panning and Channel Conversion
 Demonstrates SpatialPE for channel conversion and spatialization (panning)
 using various techniques: SpatialAdapter, SpatialLinear, and SpatialConstantPower.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

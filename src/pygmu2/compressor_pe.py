@@ -3,7 +3,7 @@ CompressorPE - All-in-one audio compressor with integrated envelope follower.
 
 Combines EnvelopePE and DynamicsPE into a single, easy-to-use PE.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
 """

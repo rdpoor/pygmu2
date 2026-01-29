@@ -3,7 +3,7 @@ Example 15: Reverse Pitch Echo - block-based reverse playback
 
 Demonstrates ReversePitchEchoPE with pitch shift and feedback.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

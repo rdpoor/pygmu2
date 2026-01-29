@@ -4,7 +4,7 @@ Example 08: Write to File - Offline rendering to WAV
 Demonstrates rendering audio to a file instead of playing it,
 useful for batch processing, pre-rendering, or creating samples.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

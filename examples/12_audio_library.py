@@ -4,7 +4,7 @@ Example 12: Strudel Audio Library - Lazy downloading and playback
 Downloads a Strudel-style JSON map, resolves one sound, and plays
 the entire sound. Audio files are cached on demand.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

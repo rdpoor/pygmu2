@@ -4,7 +4,7 @@ SpatialPE - spatial audio processing and channel conversion.
 SpatialPE takes an M-channel input and produces an N-channel output, optionally
 applying spatialization (panning/positioning) using various techniques.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
 """

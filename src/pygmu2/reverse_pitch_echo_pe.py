@@ -4,7 +4,7 @@ ReversePitchEchoPE - Pitch-shifted reverse echo effect.
 Inspired by CCRMA "Pitch Shifting Reverse Echo" technique and msynth.
     https://ccrma.stanford.edu/~jingjiez/portfolio/echoing-harmonics/pdfs/A%20Pitch%20Shifting%20Reverse%20Echo%20Audio%20Effect.pdf
 Implements block-based reverse playback with optional alternating direction,
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
 """

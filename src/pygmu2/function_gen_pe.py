@@ -18,7 +18,7 @@ Notes:
   endpoints (0 and 1) as the saw up/down limits and clamp only for the
   interior case.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
 """

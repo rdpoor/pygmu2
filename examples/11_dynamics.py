@@ -7,7 +7,7 @@ including sidechain compression and custom envelope routing.
 
 For simple compression/limiting/gating, see 10_compression.py.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

@@ -7,7 +7,7 @@ define a `benchmark_configs()` class method to provide custom configurations.
 
 Run with: python benchmarks/benchmark_pes.py
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

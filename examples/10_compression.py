@@ -5,7 +5,7 @@ Example 10: Compression, Limiting, and Gating
 Demonstrates the easy-to-use CompressorPE, LimiterPE, and GatePE
 for common dynamics processing tasks.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

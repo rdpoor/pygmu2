@@ -8,7 +8,7 @@ Demonstrates AnalogOscPE (bandlimited polyBLEP-style oscillator):
 2) Morphing Saw/Triangle: duty ramps from near 0 to near 1 (saw up -> triangle -> saw down)
 3) Subtractive Patch: oscillator into LadderPE lowpass
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

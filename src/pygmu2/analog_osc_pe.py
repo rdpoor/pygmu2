@@ -16,7 +16,7 @@ Notes:
 - duty_cycle is clamped away from 0 and 1 (and away from the polyBLEP window
   around discontinuities) to avoid degeneracies under modulation.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
 """

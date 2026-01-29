@@ -4,7 +4,7 @@ Example 18: AdsrPE - Attack-Decay-Sustain-Release Envelope
 Demonstrates various uses of AdsrPE for shaping sounds with
 envelope generators.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 

@@ -9,7 +9,7 @@ Demonstrates chord quality differences between musical tuning systems:
 Plays a C major triad (C-E-G) in each temperament to compare
 consonance and beating characteristics.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
 """

@@ -1,7 +1,7 @@
 """
 pygmu2 - A framework for generating and processing digital audio.
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
 """
@@ -29,7 +29,7 @@ from pygmu2.gain_pe import GainPE
 from pygmu2.identity_pe import IdentityPE
 from pygmu2.ladder_pe import LadderPE, LadderMode
 from pygmu2.loop_pe import LoopPE
-from pygmu2.ramp_pe import RampPE
+from pygmu2.ramp_pe import RampPE, RampType
 from pygmu2.random_pe import RandomPE, RandomMode
 from pygmu2.reset_pe import ResetPE
 from pygmu2.sine_pe import SinePE
@@ -38,7 +38,6 @@ from pygmu2.mix_pe import MixPE
 from pygmu2.comb_pe import CombPE
 from pygmu2.convolve_pe import ConvolvePE
 from pygmu2.audio_library import AudioLibrary
-from pygmu2.sequence_pe import SequencePE
 from pygmu2.slice_pe import SlicePE
 from pygmu2.spatial_pe import (
     SpatialPE,
@@ -48,7 +47,6 @@ from pygmu2.spatial_pe import (
     SpatialConstantPower,
     SpatialHRTF,
 )
-from pygmu2.portamento_pe import PortamentoPE
 from pygmu2.wav_reader_pe import WavReaderPE
 from pygmu2.wav_writer_pe import WavWriterPE
 from pygmu2.transform_pe import TransformPE
@@ -142,11 +140,10 @@ __all__ = [
     "CombPE",
     "ConvolvePE",
     "AudioLibrary",
-    "PortamentoPE",
     "RampPE",
+    "RampType",
     "RandomPE",
     "ResetPE",
-    "SequencePE",
     "SlicePE",
     "SinePE",
     "SpatialPE",

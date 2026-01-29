@@ -7,7 +7,7 @@ These functions now support alternative temperaments via the temperament
 parameter. If not specified, the global default temperament is used
 (12-tone equal temperament by default).
 
-Copyright (c) 2026 R. Dunbar Poor and pygmu2 contributors
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
 """
