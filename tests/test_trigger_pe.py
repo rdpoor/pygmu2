@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from pygmu2.trigger_pe import TriggerPE, TriggerMode
+from pygmu2.trigger_pe import TriggerPE, TriggerMode, TriggerState
 from pygmu2.snippet import Snippet
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.array_pe import ArrayPE
@@ -56,12 +56,12 @@ class TestTriggerPE(unittest.TestCase):
         # Trigger is all zeros
         trigger = MockArrayPE([0.0] * 100)
         
-        pe = TriggerPE(source, trigger, mode=TriggerMode.ONE_SHOT)
+        pe = TriggerPE(source, trigger, trigger_mode=TriggerMode.ONE_SHOT)
         
         result = pe.render(0, 10)
         np.testing.assert_array_equal(result.data, np.zeros((10, 1)))
         
-        self.assertFalse(pe._is_active)
+        self.assertEqual(pe._state, TriggerState.ARMED)
 
     def test_one_shot_basic(self):
         """Test basic triggering in ONE_SHOT mode."""
@@ -70,7 +70,7 @@ class TestTriggerPE(unittest.TestCase):
         trigger_data = [0, 0, 1, 0, 0]
         trigger = MockArrayPE(trigger_data)
         
-        pe = TriggerPE(source, trigger, mode=TriggerMode.ONE_SHOT)
+        pe = TriggerPE(source, trigger, trigger_mode=TriggerMode.ONE_SHOT)
         
         result = pe.render(0, 5)
         
@@ -79,7 +79,7 @@ class TestTriggerPE(unittest.TestCase):
         expected = np.array([[0], [0], [0], [1], [2]], dtype=np.float32)
         
         np.testing.assert_array_equal(result.data, expected)
-        self.assertTrue(pe._is_active)
+        self.assertEqual(pe._state, TriggerState.ACTIVE)
         self.assertEqual(pe._start_time, 2)
 
     def test_one_shot_ignore_retrigger(self):
@@ -89,7 +89,7 @@ class TestTriggerPE(unittest.TestCase):
         trigger_data = [0, 0, 1, 0, 1, 0]
         trigger = MockArrayPE(trigger_data)
         
-        pe = TriggerPE(source, trigger, mode=TriggerMode.ONE_SHOT)
+        pe = TriggerPE(source, trigger, trigger_mode=TriggerMode.ONE_SHOT)
         
         result = pe.render(0, 6)
         
@@ -115,7 +115,7 @@ class TestTriggerPE(unittest.TestCase):
         trigger_data = [0, 0, 1, 1, 0, 0]
         trigger = MockArrayPE(trigger_data)
         
-        pe = TriggerPE(source, trigger, mode=TriggerMode.GATED)
+        pe = TriggerPE(source, trigger, trigger_mode=TriggerMode.GATED)
         
         result = pe.render(0, 6)
         
@@ -127,31 +127,24 @@ class TestTriggerPE(unittest.TestCase):
         expected = np.array([[0], [0], [0], [1], [0], [0]], dtype=np.float32)
         
         np.testing.assert_array_equal(result.data, expected)
-        self.assertFalse(pe._is_active)
+        self.assertEqual(pe._state, TriggerState.INACTIVE)
 
-    def test_gated_restart(self):
-        """Test that signal restarts when gate opens again in GATED mode."""
+    def test_gated_no_retrigger(self):
+        """Test that GATED does not retrigger after gate closes (one gate per session)."""
         source = MockRampPE()
-        # 0: 0
-        # 1: 1 (Start)
-        # 2: 0 (Stop)
-        # 3: 1 (Restart)
-        # 4: 1 (Continue)
+        # 0: 0, 1: 1 (Start), 2: 0 (Stop), 3-4: no restart (stay silent)
         trigger_data = [0, 1, 0, 1, 1]
         trigger = MockArrayPE(trigger_data)
         
-        pe = TriggerPE(source, trigger, mode=TriggerMode.GATED)
+        pe = TriggerPE(source, trigger, trigger_mode=TriggerMode.GATED)
         
         result = pe.render(0, 5)
         
-        # 0: Silence
-        # 1: source[0] = 0
-        # 2: Silence
-        # 3: source[0] = 0 (Restart)
-        # 4: source[1] = 1
-        expected = np.array([[0], [0], [0], [0], [1]], dtype=np.float32)
+        # 0: Silence, 1: source[0]=0, 2: Silence (gate closed), 3-4: Silence (no retrigger)
+        expected = np.array([[0], [0], [0], [0], [0]], dtype=np.float32)
         
         np.testing.assert_array_equal(result.data, expected)
+        self.assertEqual(pe._state, TriggerState.INACTIVE)
 
     def test_block_boundary_continuation(self):
         """Test state preservation across render blocks."""
@@ -172,7 +165,7 @@ class TestTriggerPE(unittest.TestCase):
                 return Snippet(start, data.reshape(-1, 1))
 
         trigger = StepTrigger()
-        pe = TriggerPE(source, trigger, mode=TriggerMode.ONE_SHOT)
+        pe = TriggerPE(source, trigger, trigger_mode=TriggerMode.ONE_SHOT)
         
         # Render first block (0-5)
         # Trigger at 3.
@@ -182,7 +175,7 @@ class TestTriggerPE(unittest.TestCase):
         r1 = pe.render(0, 5)
         expected1 = np.array([[0], [0], [0], [0], [1]], dtype=np.float32)
         np.testing.assert_array_equal(r1.data, expected1)
-        self.assertTrue(pe._is_active)
+        self.assertEqual(pe._state, TriggerState.ACTIVE)
         
         # Render second block (5-10)
         # Should continue: source[2]=2, source[3]=3...
@@ -195,21 +188,21 @@ class TestTriggerPE(unittest.TestCase):
         trigger = ArrayPE([0, 0, 1, 1, 0, 1, 1, 1, 0])
         signal = ArrayPE([10, 11, 12, 13, 14, 15, 16, 17, 18])
         
-        triggered = TriggerPE(signal, trigger, mode=TriggerMode.ONE_SHOT)
+        triggered = TriggerPE(signal, trigger, trigger_mode=TriggerMode.ONE_SHOT)
         # rendering starts at sample index = 2
         snippet = triggered.render(0, 9)
         expected = np.array([[0.0], [0.0], [10], [11], [12], [13], [14], [15], [16]], dtype=np.float32)
         np.testing.assert_array_equal(snippet.data, expected)
 
     def test_gated_sample_accurate(self):
-        """Test GATED mode with ArrayPE for sample-accurate validation."""
+        """Test GATED mode with ArrayPE: one gate, no retrigger after gate closes."""
         trigger = ArrayPE([0, 0, 1, 1, 0, 1, 1, 1, 0])
         signal = ArrayPE([10, 11, 12, 13, 14, 15, 16, 17, 18])
         
-        triggered = TriggerPE(signal, trigger, mode=TriggerMode.GATED)
-        # rendering starts at sample index = 2, restarts at index = 5
+        triggered = TriggerPE(signal, trigger, trigger_mode=TriggerMode.GATED)
+        # Gate opens at 2, closes at 4; indices 5-7 stay silent (no retrigger)
         snippet = triggered.render(0, 9)
-        expected = np.array([[0.0], [0.0], [10], [11], [0], [10], [11], [12], [0]], dtype=np.float32)
+        expected = np.array([[0.0], [0.0], [10], [11], [0], [0], [0], [0], [0]], dtype=np.float32)
         np.testing.assert_array_equal(snippet.data, expected)
 
 if __name__ == "__main__":

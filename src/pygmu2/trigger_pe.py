@@ -19,8 +19,16 @@ from pygmu2.snippet import Snippet
 
 class TriggerMode(Enum):
     """Trigger behavior modes."""
-    ONE_SHOT = "one_shot"  # Start on first trigger, ignore subsequent
-    GATED = "gated"        # Start on trigger, stop on release, restart on next trigger
+    ONE_SHOT = "one_shot"   # When ARMED and trigger > 0, start source; then run indefinitely
+    GATED = "gated"         # Like ONE_SHOT but stop when trigger <= 0; does not retrigger (unless _reset_state/_on_start)
+    RETRIGGER = "retrigger" # When trigger > 0 start source; when trigger <= 0 output zeros
+
+
+class TriggerState(Enum):
+    """Internal state: armed -> active [-> inactive for GATED only]."""
+    ARMED = "armed"       # Waiting for positive edge
+    ACTIVE = "active"     # Playing source
+    INACTIVE = "inactive" # Gate closed (GATED only); no retrigger until _reset_state/_on_start
 
 
 class TriggerPE(ProcessingElement):
@@ -31,32 +39,38 @@ class TriggerPE(ProcessingElement):
     trigger input. This enables "note-like" behavior where a sound (like an envelope)
     starts its lifecycle at an arbitrary time in response to an event.
 
+    Trigger is treated as mono (channel 0). The PE enters triggered state when
+    the current state is ARMED (idle) and the current trigger sample is positive.
+    No previous-sample comparison; state + current sample suffice.
+
     Modes:
-        ONE_SHOT: Waits for trigger > 0. Once triggered, it starts rendering the
-                  source from t=0 and continues indefinitely, ignoring further
-                  triggers. Ideally used with finite-duration sources.
-        GATED:    Active while trigger > 0. When trigger goes high, source restarts
-                  from t=0. When trigger goes low (<= 0), output is silenced.
+        ONE_SHOT: When ARMED and trigger > 0, start source from t=0 and continue
+                  indefinitely (output zeros after source extent if finite).
+        GATED:    Like ONE_SHOT, but stop when trigger <= 0. Does not retrigger
+                  (unless _reset_state or _on_start is called).
+        RETRIGGER: When trigger > 0 start source from t=0; when trigger <= 0 output zeros.
+
+    Non-pure: maintains internal state. Requires contiguous render() calls.
 
     Args:
         source: The ProcessingElement to render (the "signal").
-        trigger: The control ProcessingElement (trigger signal).
-        mode: TriggerMode (default: ONE_SHOT).
+        trigger: The control ProcessingElement (trigger signal, mono = channel 0).
+        trigger_mode: TriggerMode (default: ONE_SHOT).
     """
 
     def __init__(
         self,
         source: ProcessingElement,
         trigger: ProcessingElement,
-        mode: TriggerMode = TriggerMode.ONE_SHOT,
+        trigger_mode: TriggerMode = TriggerMode.ONE_SHOT,
     ):
         self._source = source
         self._trigger = trigger
-        self._mode = mode
+        self._mode = trigger_mode
 
-        # State
-        self._is_active = False
-        self._start_time = 0  # Absolute sample time when the current trigger started
+        # State: ARMED -> ACTIVE; in GATED, ACTIVE -> INACTIVE (no retrigger); in RETRIGGER, ACTIVE -> ARMED
+        self._state = TriggerState.ARMED
+        self._start_time = 0  # Absolute sample time when the current gate/trigger started
 
     @property
     def source(self) -> ProcessingElement:
@@ -70,7 +84,7 @@ class TriggerPE(ProcessingElement):
 
     @property
     def mode(self) -> TriggerMode:
-        """The trigger mode."""
+        """The trigger mode (same as trigger_mode)."""
         return self._mode
 
     def inputs(self) -> List[ProcessingElement]:
@@ -84,14 +98,12 @@ class TriggerPE(ProcessingElement):
         return self._source.channel_count()
 
     def _compute_extent(self) -> Extent:
-        # The extent is effectively infinite or determined by the trigger,
-        # but locally it behaves like the source's extent shifted in time.
-        # For simplicity, we report indefinite extent as it depends on runtime triggers.
-        return Extent(0, None)
+        # Trigger can fire at any time; output can extend arbitrarily in both directions.
+        return Extent(None, None)
 
     def _reset_state(self) -> None:
         """Reset trigger state."""
-        self._is_active = False
+        self._state = TriggerState.ARMED
         self._start_time = 0
     
     def _on_start(self) -> None:
@@ -105,98 +117,86 @@ class TriggerPE(ProcessingElement):
     def _render(self, start: int, duration: int) -> Snippet:
         trigger_snippet = self._trigger.render(start, duration)
         trigger_data = trigger_snippet.data
-        
-        # If trigger is mono, broadcast if necessary (though we just check > 0)
-        # We'll use the first channel of the trigger signal for logic
-        trig_signal = trigger_data[:, 0] if trigger_data.shape[1] > 0 else np.zeros(duration)
+        trig_signal = trigger_data[:, 0] if trigger_data.shape[1] > 0 else np.zeros(duration, dtype=np.float32)
 
+        # Enter triggered when state is ARMED and current sample is positive (no previous-sample check).
         channels = self.channel_count() or 1
         output_data = np.zeros((duration, channels), dtype=np.float32)
 
-        # Segment-based processing
         current_idx = 0
         while current_idx < duration:
-            # Find next state change
-            # If active, look for trigger <= 0 (if GATED)
-            # If inactive, look for trigger > 0
-            
             remaining = duration - current_idx
-            chunk_len = remaining
 
             if self._mode == TriggerMode.ONE_SHOT:
-                if self._is_active:
-                    # Already triggered, just render the rest
-                    chunk_len = remaining
-                    # Render source
+                if self._state == TriggerState.ACTIVE:
                     local_start = (start + current_idx) - self._start_time
-                    src = self._source.render(local_start, chunk_len)
-                    output_data[current_idx : current_idx + chunk_len] = src.data
-                    current_idx += chunk_len
-                else:
-                    # Not active, look for trigger
-                    # Find first index where trig > 0
-                    trig_slice = trig_signal[current_idx:]
-                    nz_indices = np.where(trig_slice > 0)[0]
-                    
-                    if len(nz_indices) > 0:
-                        # Found a trigger
-                        offset = nz_indices[0]
-                        # Silence until trigger
-                        # (output_data is already zero init)
-                        
-                        # Update state
-                        self._is_active = True
-                        self._start_time = start + current_idx + offset
-                        
-                        current_idx += offset
-                        # Next iteration will handle the active state
+                    src = self._source.render(local_start, remaining)
+                    output_data[current_idx : current_idx + remaining] = src.data
+                    current_idx += remaining
+                else:  # ARMED: first positive sample triggers
+                    found = None
+                    for j in range(current_idx, duration):
+                        if trig_signal[j] > 0:
+                            found = j
+                            break
+                    if found is not None:
+                        self._state = TriggerState.ACTIVE
+                        self._start_time = start + found
+                        current_idx = found
                     else:
-                        # No trigger in this block
                         current_idx += remaining
 
             elif self._mode == TriggerMode.GATED:
-                if self._is_active:
-                    # Look for gate close (<= 0)
-                    trig_slice = trig_signal[current_idx:]
-                    # Find first index where trig <= 0
-                    # Note: we assume 'active' means we are currently playing.
-                    # Ideally we should also check for re-trigger (low->high) 
-                    # but typically gated implies high=on, low=off.
-                    # If the signal drops to zero then goes high again in one block,
-                    # we need to handle that.
-                    
-                    off_indices = np.where(trig_slice <= 0)[0]
-                    
-                    if len(off_indices) > 0:
-                        chunk_len = off_indices[0]
-                    else:
-                        chunk_len = remaining
-                    
-                    # Render active portion
+                if self._state == TriggerState.ACTIVE:
+                    off_idx = None
+                    for j in range(current_idx, duration):
+                        if trig_signal[j] <= 0:
+                            off_idx = j
+                            break
+                    chunk_end = off_idx if off_idx is not None else duration
+                    chunk_len = chunk_end - current_idx
                     if chunk_len > 0:
                         local_start = (start + current_idx) - self._start_time
                         src = self._source.render(local_start, chunk_len)
                         output_data[current_idx : current_idx + chunk_len] = src.data
-                    
-                    current_idx += chunk_len
-                    
-                    if len(off_indices) > 0:
-                        # We hit a gate close
-                        self._is_active = False
-                else:
-                    # Look for gate open (> 0)
-                    trig_slice = trig_signal[current_idx:]
-                    on_indices = np.where(trig_slice > 0)[0]
-                    
-                    if len(on_indices) > 0:
-                        offset = on_indices[0]
-                        # Silence until trigger
-                        current_idx += offset
-                        
-                        # Start new note
-                        self._is_active = True
-                        self._start_time = start + current_idx
+                    current_idx = chunk_end
+                    if off_idx is not None:
+                        self._state = TriggerState.INACTIVE
+                elif self._state == TriggerState.INACTIVE:
+                    current_idx += remaining
+                else:  # ARMED: first positive sample triggers
+                    found = None
+                    for j in range(current_idx, duration):
+                        if trig_signal[j] > 0:
+                            found = j
+                            break
+                    if found is not None:
+                        self._state = TriggerState.ACTIVE
+                        self._start_time = start + found
+                        current_idx = found
                     else:
                         current_idx += remaining
+
+            else:  # RETRIGGER: each positive sample starts a segment (when not in a segment, first >0 triggers)
+                edge_at = None
+                for j in range(current_idx, duration):
+                    if trig_signal[j] > 0:
+                        edge_at = j
+                        break
+                if edge_at is None:
+                    current_idx += remaining
+                    continue
+                current_idx = edge_at
+                off_idx = None
+                for j in range(edge_at, duration):
+                    if trig_signal[j] <= 0:
+                        off_idx = j
+                        break
+                gate_end = off_idx if off_idx is not None else duration
+                gate_len = gate_end - edge_at
+                if gate_len > 0:
+                    src = self._source.render(0, gate_len)
+                    output_data[edge_at : edge_at + gate_len] = src.data
+                current_idx = gate_end
 
         return Snippet(start, output_data)
