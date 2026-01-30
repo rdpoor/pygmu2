@@ -39,7 +39,7 @@ def _make_note(
     channels: int = 1
     ):
     """A thin wrapper around KarplusStrongPE with a duration parameter"""
-    rho=rho_for_decay_db(duration_seconds, frequency, db=-30)
+    rho=rho_for_decay_db(duration_seconds, frequency, SAMPLE_RATE, db=-30)
     print(f'duration={duration_seconds} => rho={rho}')
     return CropPE(
             KarplusStrongPE(

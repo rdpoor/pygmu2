@@ -24,11 +24,15 @@ from pygmu2 import (
     Extent,
     ExtendMode,
     GainPE,
+    KarplusStrongPE,
     MixPE,
     RampPE,
     RampType,
     pitch_to_freq,
+    rho_for_decay_db,
 )
+from typing import Optional
+
 
 SAMPLE_RATE = 44100
 
@@ -37,9 +41,31 @@ C4, E4, G4 = 60, 64, 67
 C_MAJOR = [C4, E4, G4]
 
 
+def _s2s(duration_sec):
+    return int(round(duration_sec * SAMPLE_RATE))
+
 def _make_note(midi: int, amplitude: float = 0.25):
     """One note as BlitSawPE at given MIDI pitch."""
     return BlitSawPE(frequency=pitch_to_freq(midi), amplitude=amplitude)
+
+def _make_plucked_note(midi: int, sustain_seconds: float, amplitude: float = 1.0):
+    """One note as a Karplus-Strong plucked note at a given MIDI pitch"""
+    frequency = pitch_to_freq(midi)
+    rho = rho_for_decay_db(sustain_seconds, frequency, SAMPLE_RATE, db=-10)
+    decay_seconds = 0.2
+    rho_damping = rho_for_decay_db(decay_seconds, frequency, SAMPLE_RATE, db=-10)
+    total_seconds = sustain_seconds + decay_seconds
+    return CropPE(
+            KarplusStrongPE(
+                frequency=frequency,
+                rho=rho,
+                duration=_s2s(sustain_seconds),
+                rho_damping=rho_damping,
+                amplitude=amplitude,
+                seed=1,
+            ),
+            Extent(0, _s2s(total_seconds))
+        )
 
 
 def _play(pe, duration_samples: int, start: int = 0) -> None:
@@ -244,6 +270,7 @@ CONNECTED = 1.0  # notes directly abut one another, no overlap
 DETACHED = 0.7   # slight space between notes
 STACCATO = 0.5   # shortened notes
 
+# ein bisschen Mozart...
 moz_k333 = [
     # midi note, duration, expression
     (F5, QUARTER*DOTTED, CONNECTED),
@@ -258,7 +285,7 @@ moz_k333 = [
     (Ef5, THIRTY_SECOND, CONNECTED),
     (G5, QUARTER, DETACHED),
     (A4, QUARTER, DETACHED),
-    (Rest, EIGHTH, DETACHED),
+    (REST, EIGHTH, DETACHED),
     (A4, EIGHTH, DETACHED),
     # 11
     (C5, EIGHTH, CONNECTED),
@@ -294,7 +321,7 @@ moz_k333 = [
     (Ef5, THIRTY_SECOND, CONNECTED),
     (G5, QUARTER, DETACHED),
     (A4, QUARTER, DETACHED),
-    (Rest, EIGHTH, DETACHED),
+    (REST, EIGHTH, DETACHED),
     (A5, EIGHTH, DETACHED),
     # 15
     (Bf5, EIGHTH*TRIPLET, CONNECTED),
@@ -310,8 +337,83 @@ moz_k333 = [
     (C5, EIGHTH*TRIPLET, CONNECTED),
     (A4, EIGHTH*TRIPLET, DETACHED),
     # 16
-    (Bf4, WHOLE, CONNECTED),
+    (Bf4, QUARTER, CONNECTED),
 ]
+
+BEATS_PER_MINUTE = 166
+
+def _b2s(beat):
+    """convert beats to samples"""
+    seconds = beat * 60.0 / BEATS_PER_MINUTE
+    return _s2s(seconds)
+
+def demo_moz_connected():
+    next_start = 0
+    notes = []
+    for pitch, duration, _ in moz_k333:
+        # Here, pitch is a MIDI pitch, duration is in beats
+        if pitch != REST:
+            notes.append(
+                # make the tone, crop to duration, delay it to next start
+                DelayPE(
+                    CropPE(_make_note(pitch), Extent(0, _b2s(duration))),
+                    _b2s(next_start)))
+        # bump next_start to next start time (in beats)
+        next_start += duration
+
+    # Here, notes[] is a list of ProcessingElements, ready to mix
+    mix_stream = GainPE(MixPE(*notes), 0.33)
+    _play(mix_stream, _b2s(next_start))
+
+def demo_moz_articulated():
+    next_start = 0
+    notes = []
+    for pitch, duration, articulation in moz_k333:
+        # Here, pitch is a MIDI pitch, duration is in beats
+        if pitch != REST:
+            notes.append(
+                # make the tone, crop to articulated duration, delay to next start
+                DelayPE(
+                    CropPE(
+                        _make_note(pitch),
+                        # articulation will extend or shorten duration without
+                        # affecting next_start
+                        Extent(0, _b2s(duration*articulation))),
+                    _b2s(next_start)))
+        # bump next_start to next start time (in beats)
+        next_start += duration
+
+    # Here, notes[] is a list of ProcessingElements, ready to mix
+    mix_stream = GainPE(MixPE(*notes), 0.33)
+    _play(mix_stream, _b2s(next_start))
+
+def demo_moz_plucked():
+    next_start = 0
+    notes = []
+    for pitch, duration, articulation in moz_k333:
+        # Here, pitch is a MIDI pitch, duration is in beats
+        if pitch != REST:
+            articulated_beats = duration * articulation
+            articulated_seconds = articulated_beats * 60.0 / BEATS_PER_MINUTE
+            notes.append(
+                # make the tone, crop to articulated duration, delay to next start
+                DelayPE(
+                    CropPE(
+                        _make_plucked_note(pitch, articulated_seconds),
+                        # articulation will extend or shorten duration without
+                        # affecting next_start
+                        Extent(0, _b2s(duration*articulation))),
+                    _b2s(next_start)))
+        # bump next_start to next start time (in beats)
+        next_start += duration
+
+    # Here, notes[] is a list of ProcessingElements, ready to mix
+    mix_stream = GainPE(MixPE(*notes), 0.7)
+    _play(mix_stream, _b2s(next_start))
+
+# -----------------------------------------------------------------------------
+# Main
+# -----------------------------------------------------------------------------
 
 
 def demo_all_c_major():
@@ -320,6 +422,9 @@ def demo_all_c_major():
     demo_legato_c_major()
     demo_constant_power_ramp()
     demo_exponential_ramp()
+    demo_moz_connected()
+    demo_moz_articulated()
+    demo_moz_plucked()
 
 
 if __name__ == "__main__":
@@ -331,7 +436,10 @@ if __name__ == "__main__":
         ("3", "C major: legato (overlapping)", demo_legato_c_major),
         ("4", "C major: ramped crossfades — CONSTANT_POWER", demo_constant_power_ramp),
         ("5", "C major: ramped crossfades — EXPONENTIAL", demo_exponential_ramp),
-        ("a", "All C major demos", demo_all_c_major),
+        ("6", "Mozart: all connected notes", demo_moz_connected),
+        ("7", "Mozart: articulated notes", demo_moz_articulated),
+        ("8", "Mozart: articulated plucked notes", demo_moz_plucked),
+        ("a", "All sequence demos", demo_all_c_major),
     ]
 
     if len(sys.argv) > 1:
@@ -342,7 +450,7 @@ if __name__ == "__main__":
         for key, name, _ in demos:
             print(f"  {key}: {name}")
         print()
-        choice = input("Choice (1-5 or 'a'): ").strip().lower()
+        choice = input(f"Choice (1-{len(demos)-1} or 'a'): ").strip().lower()
 
     for key, _name, fn in demos:
         if key == choice:

@@ -156,20 +156,28 @@ class TestKarplusStrongPERender:
         assert high_rms > low_rms, "Higher rho should sustain longer"
 
     def test_rho_for_decay_db_formula(self):
-        """rho_for_decay_db(seconds, frequency, db) returns expected rho values."""
-        # rho = 10^(db / (20 * seconds * frequency)); for -60 dB: 10^(-3/(s*f))
-        assert rho_for_decay_db(1.0, 440.0, db=-60.0) == pytest.approx(
-            10 ** (-3 / (1.0 * 440.0)), rel=1e-10
+        """rho_for_decay_db(seconds, frequency, sample_rate, db) returns expected rho (includes cos(pi/N) correction)."""
+        sample_rate = 44100
+        # rho = 10^(db/(20*periods)) / cos(pi/N), clamped to 1.0
+        def expected_rho(seconds, frequency, sr, db=-60.0):
+            periods = seconds * frequency
+            n = max(2, int(sr / frequency))
+            g = np.cos(np.pi / n)
+            rho = 10 ** (db / (20.0 * periods)) / g if g > 0 else 1.0
+            return min(1.0, max(rho, 1e-9))
+
+        assert rho_for_decay_db(1.0, 440.0, sample_rate, db=-60.0) == pytest.approx(
+            expected_rho(1.0, 440.0, sample_rate), rel=1e-10
         )
-        assert rho_for_decay_db(2.0, 440.0, db=-60.0) == pytest.approx(
-            10 ** (-3 / (2.0 * 440.0)), rel=1e-10
+        assert rho_for_decay_db(2.0, 440.0, sample_rate, db=-60.0) == pytest.approx(
+            expected_rho(2.0, 440.0, sample_rate), rel=1e-10
         )
-        assert rho_for_decay_db(0.25, 440.0, db=-60.0) == pytest.approx(
-            10 ** (-3 / (0.25 * 440.0)), rel=1e-10
+        assert rho_for_decay_db(0.25, 440.0, sample_rate, db=-60.0) == pytest.approx(
+            expected_rho(0.25, 440.0, sample_rate), rel=1e-10
         )
         # Higher frequency => higher rho (more periods per second, so each period decays less)
-        rho_440 = rho_for_decay_db(1.0, 440.0, db=-60.0)
-        rho_220 = rho_for_decay_db(1.0, 220.0, db=-60.0)
+        rho_440 = rho_for_decay_db(1.0, 440.0, sample_rate, db=-60.0)
+        rho_220 = rho_for_decay_db(1.0, 220.0, sample_rate, db=-60.0)
         assert rho_440 > rho_220
 
     def test_rho_for_decay_db_empirical(self):
@@ -177,7 +185,7 @@ class TestKarplusStrongPERender:
         sample_rate = 44100
         frequency = 440.0
         seconds = 1.0
-        rho = rho_for_decay_db(seconds, frequency, db=-60.0)
+        rho = rho_for_decay_db(seconds, frequency, sample_rate, db=-60.0)
         ks = KarplusStrongPE(frequency=frequency, rho=rho, seed=42)
         renderer = NullRenderer(sample_rate=sample_rate)
         renderer.set_source(ks)
@@ -194,10 +202,11 @@ class TestKarplusStrongPERender:
 
     def test_rho_for_decay_db_invalid(self):
         """rho_for_decay_db raises when seconds*frequency <= 0."""
+        sample_rate = 44100
         with pytest.raises(ValueError, match="seconds \\* frequency must be positive"):
-            rho_for_decay_db(0, 440.0)
+            rho_for_decay_db(0, 440.0, sample_rate)
         with pytest.raises(ValueError, match="seconds \\* frequency must be positive"):
-            rho_for_decay_db(1.0, 0)
+            rho_for_decay_db(1.0, 0, sample_rate)
 
     def test_two_phase_decay(self):
         """With duration and rho_damping, level drops faster after duration."""

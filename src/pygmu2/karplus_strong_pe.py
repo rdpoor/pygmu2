@@ -23,32 +23,40 @@ from pygmu2.snippet import Snippet
 def rho_for_decay_db(
     seconds: float,
     frequency: float,
+    sample_rate: int,
     db: float = -60.0,
 ) -> float:
     """
     Feedback gain rho such that amplitude decays by |db| dB over `seconds`.
 
     In Karplus-Strong each delay-line cell is updated once per period (N =
-    sample_rate/frequency samples). Amplitude therefore decays by rho per
-    period, not per sample. Periods in `seconds` = seconds * frequency, so:
+    sample_rate/frequency samples) with out = rho * (buf[r] + buf[r+1])/2.
+    The two-point average has magnitude cos(pi/N) at the fundamental, so
+    effective gain per period is rho * cos(pi/N), not rho alone. Thus:
 
-        rho^(seconds * frequency) = 10^(db/20)
-        rho = 10^(db / (20 * seconds * frequency))
+        (rho * cos(pi/N))^(seconds * frequency) = 10^(db/20)
+        rho = 10^(db / (20 * seconds * frequency)) / cos(pi/N)
 
-    For -60 dB over 1 s at 440 Hz: rho = 10^(-3/440) ≈ 0.9843.
+    Result is clamped to 1.0 (rho > 1 would be needed for db=0 due to averaging loss).
 
     Args:
         seconds: Time in seconds over which decay occurs.
         frequency: Fundamental frequency in Hz (sets delay-line length).
+        sample_rate: Sample rate in Hz (to compute N).
         db: Target decay in dB (negative, e.g. -60 for 60 dB down). Default -60.
 
     Returns:
-        rho in (0, 1). May exceed 1 if seconds*frequency is very small; caller can clamp.
+        rho in (0, 1].
     """
     periods = seconds * frequency
     if periods <= 0:
         raise ValueError("seconds * frequency must be positive")
-    return float(10 ** (db / (20.0 * periods)))
+    delay_len = max(2, int(np.floor(sample_rate / frequency)))
+    avg_gain = np.cos(np.pi / delay_len)
+    if avg_gain <= 0:
+        return 1.0
+    rho = float(10 ** (db / (20.0 * periods)) / avg_gain)
+    return min(1.0, max(rho, 1e-9))
 
 
 class KarplusStrongPE(SourcePE):
