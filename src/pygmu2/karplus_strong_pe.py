@@ -20,6 +20,37 @@ from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 
 
+def rho_for_decay_db(
+    seconds: float,
+    frequency: float,
+    db: float = -60.0,
+) -> float:
+    """
+    Feedback gain rho such that amplitude decays by |db| dB over `seconds`.
+
+    In Karplus-Strong each delay-line cell is updated once per period (N =
+    sample_rate/frequency samples). Amplitude therefore decays by rho per
+    period, not per sample. Periods in `seconds` = seconds * frequency, so:
+
+        rho^(seconds * frequency) = 10^(db/20)
+        rho = 10^(db / (20 * seconds * frequency))
+
+    For -60 dB over 1 s at 440 Hz: rho = 10^(-3/440) ≈ 0.9843.
+
+    Args:
+        seconds: Time in seconds over which decay occurs.
+        frequency: Fundamental frequency in Hz (sets delay-line length).
+        db: Target decay in dB (negative, e.g. -60 for 60 dB down). Default -60.
+
+    Returns:
+        rho in (0, 1). May exceed 1 if seconds*frequency is very small; caller can clamp.
+    """
+    periods = seconds * frequency
+    if periods <= 0:
+        raise ValueError("seconds * frequency must be positive")
+    return float(10 ** (db / (20.0 * periods)))
+
+
 class KarplusStrongPE(SourcePE):
     """
     Plucked string using the classic Karplus-Strong algorithm.
@@ -33,9 +64,15 @@ class KarplusStrongPE(SourcePE):
 
     Extent is (0, None) — infinite. Use CropPE (or similar) to limit duration.
 
+    Optional two-phase decay: if both duration and rho_damping are provided,
+    use rho for the first duration samples (sustain), then rho_damping
+    (faster fade-out). If either is omitted, use a single rho throughout.
+
     Args:
         frequency: Fundamental frequency in Hz.
-        rho: Feedback gain in (0, 1]. Lower = faster decay (duller); 1 = longest ring.
+        rho: Feedback gain in (0, 1]. Sustain decay rate (or sole rate if no two-phase).
+        duration: Optional sample count after which to switch to rho_damping.
+        rho_damping: Optional feedback gain after duration (0 < rho_damping <= 1).
         amplitude: Scale of the initial noise (default 0.3).
         seed: Optional random seed for reproducible excitation.
         channels: Output channel count (default 1).
@@ -43,12 +80,16 @@ class KarplusStrongPE(SourcePE):
     Example:
         pluck = KarplusStrongPE(frequency=440.0, rho=0.996)
         one_sec = CropPE(pluck, Extent(0, 44100))
+        # Sustain 1 sec then fade faster:
+        pluck2 = KarplusStrongPE(440.0, rho=0.996, duration=44100, rho_damping=0.95)
     """
 
     def __init__(
         self,
         frequency: float,
         rho: float = 0.996,
+        duration: Optional[int] = None,
+        rho_damping: Optional[float] = None,
         amplitude: float = 0.3,
         seed: Optional[int] = None,
         channels: int = 1,
@@ -59,9 +100,16 @@ class KarplusStrongPE(SourcePE):
             raise ValueError(f"rho must be in (0, 1], got {rho}")
         if amplitude <= 0:
             raise ValueError(f"amplitude must be positive, got {amplitude}")
+        if duration is not None and rho_damping is not None:
+            if duration < 0:
+                raise ValueError(f"duration must be >= 0, got {duration}")
+            if not (0 < rho_damping <= 1.0):
+                raise ValueError(f"rho_damping must be in (0, 1], got {rho_damping}")
 
         self._frequency = float(frequency)
         self._rho = float(rho)
+        self._duration_param: Optional[int] = duration if (duration is not None and rho_damping is not None) else None
+        self._rho_damping: Optional[float] = float(rho_damping) if (duration is not None and rho_damping is not None) else None
         self._amplitude = float(amplitude)
         self._seed = seed
         self._channels = channels
@@ -118,8 +166,13 @@ class KarplusStrongPE(SourcePE):
 
         out = np.zeros(need, dtype=np.float32)
         for i in range(need):
+            # Two-phase decay: use rho_damping after duration samples (global index ks_start + i)
+            rho_eff = self._rho
+            if self._duration_param is not None and self._rho_damping is not None:
+                if (ks_start + i) >= self._duration_param:
+                    rho_eff = self._rho_damping
             r_next = (r + 1) % delay_len
-            out_val = self._rho * (buf[r] + buf[r_next]) * 0.5
+            out_val = rho_eff * (buf[r] + buf[r_next]) * 0.5
             ap_out = allpass_c * out_val + ap_in_prev - allpass_c * ap_out_prev
             ap_in_prev = out_val
             ap_out_prev = ap_out
@@ -150,4 +203,6 @@ class KarplusStrongPE(SourcePE):
         return False
 
     def __repr__(self) -> str:
+        if self._duration_param is not None and self._rho_damping is not None:
+            return f"KarplusStrongPE(frequency={self._frequency}, rho={self._rho}, duration={self._duration_param}, rho_damping={self._rho_damping})"
         return f"KarplusStrongPE(frequency={self._frequency}, rho={self._rho})"

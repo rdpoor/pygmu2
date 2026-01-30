@@ -12,6 +12,7 @@ from pygmu2 import (
     KarplusStrongPE,
     NullRenderer,
     Extent,
+    rho_for_decay_db,
 )
 
 
@@ -80,6 +81,13 @@ class TestKarplusStrongPEBasics:
         ks = KarplusStrongPE(frequency=440.0)
         assert ks.is_pure() is False
 
+    def test_two_phase_repr(self):
+        """Repr includes duration and rho_damping when both provided."""
+        ks = KarplusStrongPE(frequency=440.0, rho=0.996, duration=44100, rho_damping=0.95)
+        r = repr(ks)
+        assert "duration=44100" in r
+        assert "rho_damping=0.95" in r
+
 
 class TestKarplusStrongPERender:
     """Test KarplusStrongPE rendering."""
@@ -146,3 +154,60 @@ class TestKarplusStrongPERender:
         low_rms = np.sqrt(np.mean(low_snippet.data[start:end] ** 2))
         assert not np.allclose(high_snippet.data, low_snippet.data)
         assert high_rms > low_rms, "Higher rho should sustain longer"
+
+    def test_rho_for_decay_db_formula(self):
+        """rho_for_decay_db(seconds, frequency, db) returns expected rho values."""
+        # rho = 10^(db / (20 * seconds * frequency)); for -60 dB: 10^(-3/(s*f))
+        assert rho_for_decay_db(1.0, 440.0, db=-60.0) == pytest.approx(
+            10 ** (-3 / (1.0 * 440.0)), rel=1e-10
+        )
+        assert rho_for_decay_db(2.0, 440.0, db=-60.0) == pytest.approx(
+            10 ** (-3 / (2.0 * 440.0)), rel=1e-10
+        )
+        assert rho_for_decay_db(0.25, 440.0, db=-60.0) == pytest.approx(
+            10 ** (-3 / (0.25 * 440.0)), rel=1e-10
+        )
+        # Higher frequency => higher rho (more periods per second, so each period decays less)
+        rho_440 = rho_for_decay_db(1.0, 440.0, db=-60.0)
+        rho_220 = rho_for_decay_db(1.0, 220.0, db=-60.0)
+        assert rho_440 > rho_220
+
+    def test_rho_for_decay_db_empirical(self):
+        """KS with rho from rho_for_decay_db decays ~60 dB over the given duration."""
+        sample_rate = 44100
+        frequency = 440.0
+        seconds = 1.0
+        rho = rho_for_decay_db(seconds, frequency, db=-60.0)
+        ks = KarplusStrongPE(frequency=frequency, rho=rho, seed=42)
+        renderer = NullRenderer(sample_rate=sample_rate)
+        renderer.set_source(ks)
+        n = int(seconds * sample_rate)
+        snippet = ks.render(0, n)
+        # Peak/RMS near start vs near end; expect ~60 dB drop
+        early = snippet.data[: n // 10]
+        late = snippet.data[9 * n // 10 :]
+        rms_early = np.sqrt(np.mean(early ** 2)) + 1e-12
+        rms_late = np.sqrt(np.mean(late ** 2)) + 1e-12
+        ratio_db = 20 * np.log10(rms_late / rms_early)
+        assert ratio_db <= -50, "Late window should be at least ~50 dB below early"
+        assert ratio_db >= -75, "Decay should not be much more than 60 dB (tolerance)"
+
+    def test_rho_for_decay_db_invalid(self):
+        """rho_for_decay_db raises when seconds*frequency <= 0."""
+        with pytest.raises(ValueError, match="seconds \\* frequency must be positive"):
+            rho_for_decay_db(0, 440.0)
+        with pytest.raises(ValueError, match="seconds \\* frequency must be positive"):
+            rho_for_decay_db(1.0, 0)
+
+    def test_two_phase_decay(self):
+        """With duration and rho_damping, level drops faster after duration."""
+        # Sustain 2000 samples with rho=0.996, then rho_damping=0.92
+        ks = KarplusStrongPE(
+            frequency=440.0, rho=0.996, duration=2000, rho_damping=0.92, seed=42
+        )
+        self.renderer.set_source(ks)
+        snippet = ks.render(0, 8000)
+        # RMS in late sustain (samples 1500-2000) vs well into damping (5000-6000)
+        sustain_rms = np.sqrt(np.mean(snippet.data[1500:2000] ** 2))
+        damping_rms = np.sqrt(np.mean(snippet.data[5000:6000] ** 2))
+        assert damping_rms < sustain_rms, "After duration, rho_damping should decay faster"
