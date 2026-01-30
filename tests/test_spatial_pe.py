@@ -16,6 +16,7 @@ from pygmu2 import (
     SpatialAdapter,
     SpatialLinear,
     SpatialConstantPower,
+    SpatialHRTF,
 )
 
 
@@ -411,3 +412,68 @@ class TestSpatialPEBasics:
         repr_str = repr(panned)
         assert "SpatialLinear" in repr_str
         assert "45.0" in repr_str
+
+
+class TestSpatialHRTFHrtfFilenameFor:
+    """Test SpatialHRTF.hrtf_filename_for (KEMAR nearest-position lookup)."""
+
+    def test_front_returns_zero_azimuth_file(self):
+        """Azimuth 0 (front) should return a file with 0° azimuth."""
+        name = SpatialHRTF.hrtf_filename_for(0.0, 0.0)
+        assert name == "H0e000a.wav"
+
+    def test_45_right_returns_45_azimuth_file(self):
+        """Azimuth 45° (right) should return H0e045a.wav (0° elevation, 45° azimuth)."""
+        name = SpatialHRTF.hrtf_filename_for(45.0, 0.0)
+        assert name == "H0e045a.wav"
+
+    def test_45_left_returns_same_file_as_45_right(self):
+        """Azimuth -45° (left) uses same file as 45° (caller swaps L/R at render)."""
+        name_left = SpatialHRTF.hrtf_filename_for(-45.0, 0.0)
+        name_right = SpatialHRTF.hrtf_filename_for(45.0, 0.0)
+        assert name_left == name_right == "H0e045a.wav"
+
+    def test_90_right_returns_90_azimuth_file(self):
+        """Azimuth 90° should return a file with 90° azimuth at 0° elevation."""
+        name = SpatialHRTF.hrtf_filename_for(90.0, 0.0)
+        assert name == "H0e090a.wav"
+
+    def test_elevation_affects_choice(self):
+        """Elevation 30° should return a file with elevation near 30°."""
+        name = SpatialHRTF.hrtf_filename_for(0.0, 30.0)
+        assert "30" in name or "H30" in name
+        assert name.endswith(".wav")
+
+    def test_returns_string_from_kemar_entries(self):
+        """Returned name must be one of the embedded KEMAR filenames."""
+        name = SpatialHRTF.hrtf_filename_for(12.0, -10.0)
+        assert isinstance(name, str)
+        assert name in {e[2] for e in SpatialHRTF.KEMAR_HRTF_ENTRIES}
+
+
+class TestSpatialHRTFStaticOnly:
+    """Test that SpatialHRTF accepts only static azimuth/elevation."""
+
+    def test_rejects_dynamic_azimuth(self):
+        """SpatialHRTF must reject ProcessingElement for azimuth."""
+        from pygmu2 import ConstantPE
+        with pytest.raises(ValueError, match="azimuth and elevation must be static"):
+            SpatialHRTF(azimuth=ConstantPE(45.0), elevation=0.0)
+
+    def test_rejects_dynamic_elevation(self):
+        """SpatialHRTF must reject ProcessingElement for elevation."""
+        from pygmu2 import ConstantPE
+        with pytest.raises(ValueError, match="azimuth and elevation must be static"):
+            SpatialHRTF(azimuth=0.0, elevation=ConstantPE(15.0))
+
+    def test_accepts_static_float(self):
+        """SpatialHRTF accepts float azimuth and elevation."""
+        method = SpatialHRTF(azimuth=45.0, elevation=15.0)
+        assert method.azimuth == 45.0
+        assert method.elevation == 15.0
+
+    def test_accepts_static_int(self):
+        """SpatialHRTF accepts int azimuth and elevation."""
+        method = SpatialHRTF(azimuth=45, elevation=0)
+        assert method.azimuth == 45.0
+        assert method.elevation == 0.0

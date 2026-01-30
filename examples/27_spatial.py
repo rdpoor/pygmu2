@@ -2,32 +2,52 @@
 Example 27: Spatial Audio - Panning and Channel Conversion
 
 Demonstrates SpatialPE for channel conversion and spatialization (panning)
-using various techniques: SpatialAdapter, SpatialLinear, and SpatialConstantPower.
+using various techniques: SpatialAdapter, SpatialLinear, SpatialConstantPower,
+and HRTF binaural spatialization (KEMAR) with ConvolvePE.
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
 from pathlib import Path
+
+import soundfile as sf
+
 from pygmu2 import (
+    ArrayPE,
     AudioRenderer,
-    WavReaderPE,
+    ConvolvePE,
+    CropPE,
+    DelayPE,
+    Extent,
+    GainPE,
+    MixPE,
+    RampPE,
     SpatialPE,
     SpatialAdapter,
-    SpatialLinear,
     SpatialConstantPower,
-    RampPE,
-    DelayPE,
-    MixPE,
-    GainPE,
-    CropPE,
-    Extent,
+    SpatialHRTF,
+    SpatialLinear,
+    WavReaderPE,
     seconds_to_samples,
 )
 
 # Path to audio files (relative to this script)
 AUDIO_DIR = Path(__file__).parent / "audio"
+KEMAR_DIR = AUDIO_DIR / "kemar"
 SAMPLE_RATE = 44100
+DJEMBE_HIT_PATH = AUDIO_DIR / "djembe_hit.wav"
+
+def _load_hrtf_ir_pe(filename: str, swap_lr: bool = False) -> ArrayPE:
+    """Load a KEMAR HRTF WAV as an ArrayPE filter. If swap_lr, swap L/R for left-side rendering."""
+    path = KEMAR_DIR / filename
+    if not path.exists():
+        raise FileNotFoundError(f"HRTF file not found: {path}")
+    data, _ = sf.read(path, dtype="float32", always_2d=True)
+    if swap_lr and data.shape[1] >= 2:
+        data = data[:, [1, 0]]
+    return ArrayPE(data)
+
 
 def demo_channel_conversion():
     """Demo 1: Channel conversion using SpatialAdapter."""
@@ -224,15 +244,99 @@ def demo_multiple_sources_panned():
     print("Done!\n", flush=True)
 
 
-if __name__ == "__main__":
-    print("=== pygmu2 Example 27: Spatial Audio ===\n", flush=True)
-    
-    # Run demos
+def demo_hrtf_spatialization():
+    """Demo 7: HRTF binaural spatialization of djembe hit at several positions."""
+    print("=== Demo 7: HRTF Binaural Spatialization (djembe hit) ===")
+
+    if not DJEMBE_HIT_PATH.exists():
+        print(f"  Skipping: {DJEMBE_HIT_PATH} not found.", flush=True)
+        return
+    if not KEMAR_DIR.exists():
+        print(f"  Skipping: KEMAR directory {KEMAR_DIR} not found.", flush=True)
+        return
+
+    # Mono source (djembe hit)
+    mono_source = WavReaderPE(str(DJEMBE_HIT_PATH))
+    # Ensure mono for convolution (ConvolvePE mono + stereo filter -> stereo out)
+    if mono_source.channel_count() != 1:
+        mono_source = SpatialPE(mono_source, method=SpatialAdapter(channels=1))
+
+    # Positions: 7 azimuths [-90 to +90] × 3 elevations [0, 10, 20] (by elevation, then azimuth)
+    azimuths = [-90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0]
+    elevations = [0.0, 20.0, 40.0]
+    positions = [(az, el) for el in elevations for az in azimuths]
+
+    panned_streams = []
+    delay_samples = 0
+    gap = seconds_to_samples(0.4, SAMPLE_RATE)
+
+    for az, el in positions:
+        filename = SpatialHRTF.hrtf_filename_for(az, el)
+        swap_lr = az < 0
+        ir_pe = _load_hrtf_ir_pe(filename, swap_lr=swap_lr)
+        hrtf_out = ConvolvePE(mono_source, ir_pe)
+        panned_streams.append(DelayPE(hrtf_out, delay=delay_samples))
+        extent = mono_source.extent()
+        delay_samples += (extent.end - extent.start) + gap
+
+    mixed_stream = MixPE(*panned_streams)
+
+    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
+    renderer.set_source(mixed_stream)
+
+    extent = mixed_stream.extent()
+    duration_seconds = (extent.end - extent.start) / SAMPLE_RATE
+    print(
+        f"Playing {duration_seconds:.2f} seconds: 7 azimuths (-90° to +90°) × 3 elevations (0°, 20°, 40°) — {len(positions)} positions (HRTF)...",
+        flush=True,
+    )
+
+    with renderer:
+        renderer.start()
+        renderer.play_extent()
+
+    print("Done!\n", flush=True)
+
+
+def demo_all():
+    """Run all spatial demos in order."""
     demo_channel_conversion()
     demo_linear_panning()
     demo_constant_power_panning()
     demo_dynamic_panning()
     demo_stereo_to_mono()
     demo_multiple_sources_panned()
-    
+    demo_hrtf_spatialization()
     print("All demos complete!", flush=True)
+
+
+if __name__ == "__main__":
+    import sys
+
+    demos = [
+        ("1", "Channel conversion (Mono → Stereo)", demo_channel_conversion),
+        ("2", "Linear panning (Left → Center → Right)", demo_linear_panning),
+        ("3", "Constant-power panning (Left → Center → Right)", demo_constant_power_panning),
+        ("4", "Dynamic panning (sweep Left → Right)", demo_dynamic_panning),
+        ("5", "Stereo to mono conversion", demo_stereo_to_mono),
+        ("6", "Multiple sources panned (left and right)", demo_multiple_sources_panned),
+        ("7", "HRTF binaural spatialization (djembe hit)", demo_hrtf_spatialization),
+        ("a", "All demos", demo_all),
+    ]
+
+    if len(sys.argv) > 1:
+        choice = sys.argv[1].strip().lower()
+    else:
+        print("Example 27: Spatial Audio - Panning and Channel Conversion")
+        print("-----------------------------------------------------------")
+        for key, name, _ in demos:
+            print(f"  {key}: {name}")
+        print()
+        choice = input("Choice (1-7 or 'a'): ").strip().lower()
+
+    for key, _name, fn in demos:
+        if key == choice:
+            fn()
+            break
+    else:
+        print("Invalid choice.")
