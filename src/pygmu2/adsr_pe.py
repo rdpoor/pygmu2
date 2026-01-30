@@ -156,11 +156,11 @@ class AdsrPE(ProcessingElement):
         self._phase_start_value = 0.0
         self._prev_gate = 0.0
     
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """Reset state at start of rendering."""
         self._reset_state()
-    
-    def on_stop(self) -> None:
+
+    def _on_stop(self) -> None:
         """Reset state at end of rendering."""
         self._reset_state()
 

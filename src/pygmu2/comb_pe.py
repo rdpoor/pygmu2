@@ -220,12 +220,12 @@ class CombPE(ProcessingElement):
         self._write_pos = 0
         self._smoothed_freq = -1.0  # -1 signals uninitialized
 
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """Allocate delay buffer and reset state."""
         channels = self._source.channel_count() or 1
         self._allocate_buffer(channels)
 
-    def on_stop(self) -> None:
+    def _on_stop(self) -> None:
         """Clear state."""
         self._buffer = None
         self._write_pos = 0

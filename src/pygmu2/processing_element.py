@@ -37,7 +37,10 @@ class ProcessingElement(ABC):
     
     # Cached extent (computed lazily on first access)
     _cached_extent: Optional[Extent] = None
-    
+
+    # For impure PEs: end of last render request; used to enforce contiguous requests
+    _last_rendered_end: Optional[int] = None
+
     @property
     def sample_rate(self) -> int:
         """
@@ -67,6 +70,7 @@ class ProcessingElement(ABC):
             sample_rate: The sample rate in Hz
         """
         self._sample_rate = sample_rate
+        self._last_rendered_end = None  # Reset for impure contiguous-request enforcement
         for input_pe in self.inputs():
             input_pe.configure(sample_rate)
     
@@ -96,8 +100,21 @@ class ProcessingElement(ABC):
                 channels = 1
 
             return Snippet.from_zeros(start, 0, int(channels))
-            
-        return self._render(start, duration)
+
+        # Impure PEs require contiguous requests (state precludes arbitrary render times)
+        if not self.is_pure():
+            if self._last_rendered_end is not None and start != self._last_rendered_end:
+                raise ValueError(
+                    f"{self.__class__.__name__} is not pure; render requests must be contiguous. "
+                    f"Expected start={self._last_rendered_end}, got start={start}."
+                )
+
+        result = self._render(start, duration)
+
+        if not self.is_pure():
+            self._last_rendered_end = start + duration
+
+        return result
 
     @abstractmethod
     def _render(self, start: int, duration: int) -> Snippet:
@@ -159,15 +176,16 @@ class ProcessingElement(ABC):
     
     def is_pure(self) -> bool:
         """
-        Returns True if this PE is stateless (pure/idempotent).
+        Returns True if this PE is pure (arbitrary render times, multi-sink OK).
         
-        A pure PE:
-        - Has no mutable internal state that changes between render() calls
-        - Always returns the same output for the same (start, duration) inputs
-        - Can safely have multiple sinks (outputs connected to multiple PEs)
+        pure == True: render() may be called with arbitrary (start, duration)
+        in any order; same (start, duration) always yields the same output.
+        Multiple consumers (sinks) are allowed.
         
-        Non-pure PEs (e.g., ReverbPE with internal delay buffers) must have
-        exactly one sink to ensure correct render order.
+        pure == False: the PE has state. After the first call, each
+        render(start, duration) must have start equal to the end of the
+        previous request (contiguous, no gaps, no out-of-order). The
+        framework enforces this. Exactly one consumer (sink) is allowed.
         
         Default: False (safe default for stateful PEs)
         """
@@ -220,23 +238,26 @@ class ProcessingElement(ABC):
         """
         Called once before first render, after configure().
         
-        Override to allocate resources, open files, initialize state, etc.
         Called by Renderer.start() in bottom-up order (inputs first).
-        
-        Default implementation does nothing.
+        Performs framework work (e.g. reset contiguous-request watermark for
+        impure PEs), then calls _on_start() if the subclass implements it.
+        Subclasses should override _on_start() (not this method).
         """
-        pass
-    
+        if not self.is_pure():
+            self._last_rendered_end = None
+        if hasattr(self, '_on_start'):
+            self._on_start()
+
     def on_stop(self) -> None:
         """
         Called once after final render.
         
-        Override to release resources, close files, finalize output, etc.
         Called by Renderer.stop() in top-down order (outputs first).
-        
-        Default implementation does nothing.
+        Calls _on_stop() if the subclass implements it.
+        Subclasses should override _on_stop() (not this method).
         """
-        pass
+        if hasattr(self, '_on_stop'):
+            self._on_stop()
     
     def reset_state(self) -> None:
         """
@@ -253,7 +274,11 @@ class ProcessingElement(ABC):
         - Re-initializing stateful PEs during rendering
         
         Default implementation calls _reset_state() if it exists.
+        For impure PEs, also resets the contiguous-request watermark so the
+        next render() may use any start (new stream).
         """
+        if not self.is_pure():
+            self._last_rendered_end = None
         if hasattr(self, '_reset_state'):
             self._reset_state()
 
@@ -372,7 +397,7 @@ class SourcePE(ProcessingElement):
     Sources generate audio from external data (files, synthesis, etc.)
     rather than processing input from other PEs.
     
-    Sources are typically pure (stateless) and must declare their
+    Sources are typically pure (arbitrary render times, multi-sink OK) and must declare their
     output channel count explicitly.
     """
     
@@ -382,10 +407,10 @@ class SourcePE(ProcessingElement):
     
     def is_pure(self) -> bool:
         """
-        Sources are typically pure (stateless).
+        Sources are typically pure (arbitrary render times, multi-sink OK).
         
-        Override and return False for sources with internal state
-        (e.g., noise generator without fixed seed).
+        Override and return False for sources with state that require
+        contiguous render requests.
         """
         return True
     

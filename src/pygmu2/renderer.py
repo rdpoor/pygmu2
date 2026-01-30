@@ -363,7 +363,7 @@ class Renderer(ABC):
         Recursively validate the processing graph.
         
         Checks:
-        - Non-pure PEs have only one sink (not reused)
+        - Non-pure PEs have only one sink (stateful PEs cannot be shared)
         - Channel counts are compatible
         
         Args:
@@ -381,7 +381,7 @@ class Renderer(ABC):
         
         pe_id = id(pe)
         
-        # Check for PE reuse (multi-sink)
+        # Check for PE reuse (multi-sink) — only pure PEs may have multiple sinks
         if pe_id in seen:
             if not pe.is_pure():
                 raise ValueError(

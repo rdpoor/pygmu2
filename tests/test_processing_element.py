@@ -88,15 +88,13 @@ class MixPE(ProcessingElement):
     def _render(self, start: int, duration: int) -> Snippet:
         if not self._sources:
             return Snippet.from_zeros(start, duration, 1)
-        
-        # Get channel count from first source
-        channels = self._sources[0].render(0, 1).channels
-        result = np.zeros((duration, channels))
-        
-        for source in self._sources:
-            snippet = source.render(start, duration)
+
+        # Render all inputs (contiguous request per source)
+        snippets = [source.render(start, duration) for source in self._sources]
+        channels = snippets[0].channels
+        result = snippets[0].data.copy()
+        for snippet in snippets[1:]:
             result += snippet.data
-        
         return Snippet(start, result)
     
     def extent(self) -> Extent:
@@ -120,10 +118,19 @@ class TestSourcePE:
         assert source.inputs() == []
     
     def test_source_is_pure_by_default(self):
-        """Test that sources are pure by default."""
+        """Test that sources are pure by default (arbitrary render times, multi-sink OK)."""
         source = ConstantPE(1.0, 100)
         assert source.is_pure() is True
-    
+
+    def test_impure_pe_requires_contiguous_requests(self):
+        """Test that impure PEs raise when given non-contiguous render requests."""
+        source = ConstantPE(1.0, 100)
+        stateful = StatefulPE(source)  # StatefulPE is impure
+        stateful.configure(44100)
+        stateful.render(0, 10)  # First request: ok
+        with pytest.raises(ValueError, match="contiguous"):
+            stateful.render(20, 10)  # Non-contiguous: expected start=10, got start=20
+
     def test_source_must_declare_channels(self):
         """Test that source channel_count returns int."""
         source = ConstantPE(1.0, 100, channels=2)

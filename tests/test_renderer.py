@@ -215,13 +215,13 @@ class TestGraphValidation:
         """Test that pure PEs can have multiple sinks."""
         renderer = MockRenderer()
         source = ConstantPE(1.0, 100)  # Pure source
-        gain1 = GainPE(source, 0.5)  # Pure processor
+        gain1 = GainPE(source, 0.5)
         gain2 = GainPE(source, 0.3)  # Same source, different sink
         mix = MixPE([gain1, gain2])
-        
-        # Should not raise - source is pure
+
+        # Should not raise — source is pure
         renderer.set_source(mix)
-    
+
     def test_non_pure_multi_sink_raises(self):
         """Test that non-pure PEs with multiple sinks raise error."""
         renderer = MockRenderer()
@@ -230,7 +230,7 @@ class TestGraphValidation:
         gain1 = GainPE(stateful, 0.5)
         gain2 = GainPE(stateful, 0.3)  # Same stateful PE
         mix = MixPE([gain1, gain2])
-        
+
         with pytest.raises(ValueError, match="not pure"):
             renderer.set_source(mix)
     
@@ -277,10 +277,10 @@ class TestComplexGraphs:
         gain1 = GainPE(source, 0.5)
         gain2 = GainPE(source, 0.3)
         mix = MixPE([gain1, gain2])
-        
+
         renderer.set_source(mix)
         assert renderer.channel_count == 1
-    
+
     def test_multi_level_reuse(self):
         """Test multi-level reuse of pure PE."""
         renderer = MockRenderer()
@@ -289,7 +289,7 @@ class TestComplexGraphs:
         gain2 = GainPE(gain1, 0.3)
         gain3 = GainPE(gain1, 0.2)  # Reuse gain1
         mix = MixPE([gain2, gain3])
-        
+
         renderer.set_source(mix)
 
 
@@ -508,7 +508,7 @@ class TestRendererLifecycle:
         proc2 = LifecycleTrackingProcessorPE(source)
         mix = MixPE([proc1, proc2])
         renderer.set_source(mix)
-        
+
         renderer.start()
         assert source.start_count == 1  # Only once, not twice
         renderer.stop()

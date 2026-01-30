@@ -3,8 +3,8 @@
 Example 29: Karplus-Strong plucked string synthesis
 
 Minimal K-S: delay line (one period), white noise excitation,
-feedback through two-point average with gain rho. Parameters:
-frequency, duration, rho (0 < rho <= 1; lower = faster decay).
+feedback through two-point average with gain rho. Extent is infinite;
+crop with CropPE for desired duration. Parameters: frequency, rho.
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
@@ -37,7 +37,6 @@ def demo_single_pluck():
     print("=== Karplus-Strong: single pluck (440 Hz, 1 s, rho=0.996) ===")
     ks = KarplusStrongPE(
         frequency=440.0,
-        duration=1.0,
         rho=0.996,
         amplitude=0.35,
         seed=42,
@@ -55,14 +54,12 @@ def demo_high_rho_vs_low_rho():
 
     high = KarplusStrongPE(
         frequency=330.0,
-        duration=pluck_sec,
         rho=0.999,
         amplitude=0.35,
         seed=1,
     )
     low = KarplusStrongPE(
         frequency=330.0,
-        duration=pluck_sec,
         rho=0.98,
         amplitude=0.35,
         seed=1,
@@ -87,7 +84,6 @@ def demo_c_major_arpeggio():
     for i, midi in enumerate(midi_notes):
         ks = KarplusStrongPE(
             frequency=pitch_to_freq(midi),
-            duration=pluck_sec,
             rho=0.996,
             amplitude=0.3,
             seed=10 + i,

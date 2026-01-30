@@ -127,11 +127,11 @@ class BlitSawPE(ProcessingElement):
         self._integrator = 0.0
         self._last_render_end = None
     
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """Reset state on start."""
         self._reset_state()
-    
-    def on_stop(self) -> None:
+
+    def _on_stop(self) -> None:
         """Reset state on stop."""
         self._reset_state()
     

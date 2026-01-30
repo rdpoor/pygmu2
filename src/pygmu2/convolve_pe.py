@@ -144,10 +144,10 @@ class ConvolvePE(ProcessingElement):
         # Mismatched multi-channel counts; will be rejected at prepare time.
         return src_ch
 
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         self._reset_state()
 
-    def on_stop(self) -> None:
+    def _on_stop(self) -> None:
         self._reset_state()
 
     def _reset_state(self) -> None:

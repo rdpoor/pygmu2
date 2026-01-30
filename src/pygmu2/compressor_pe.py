@@ -188,12 +188,12 @@ class CompressorPE(ProcessingElement):
         """Return extent from source."""
         return self._source.extent()
     
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """Start internal PEs."""
         self._envelope_pe.on_start()
         # DynamicsPE is pure, no on_start needed
-    
-    def on_stop(self) -> None:
+
+    def _on_stop(self) -> None:
         """Stop internal PEs."""
         self._envelope_pe.on_stop()
     
@@ -392,11 +392,11 @@ class GatePE(ProcessingElement):
         """Return extent from source."""
         return self._source.extent()
     
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """Start internal PEs."""
         self._envelope_pe.on_start()
-    
-    def on_stop(self) -> None:
+
+    def _on_stop(self) -> None:
         """Stop internal PEs."""
         self._envelope_pe.on_stop()
     

@@ -75,7 +75,7 @@ class WavReaderPE(SourcePE):
                 self._channels = f.channels
                 self._file_sample_rate = f.samplerate
     
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """Open the WAV file for reading."""
         self._file = sf.SoundFile(self._path, mode='r')
         self._frame_count = self._file.frames
@@ -86,7 +86,7 @@ class WavReaderPE(SourcePE):
             f"{self._channels} channels, {self._file_sample_rate} Hz"
         )
     
-    def on_stop(self) -> None:
+    def _on_stop(self) -> None:
         """Close the WAV file."""
         if self._file is not None:
             self._file.close()

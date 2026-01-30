@@ -233,12 +233,12 @@ class SuperSawPE(ProcessingElement):
         """Return the number of output channels."""
         return self._channels
     
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """Start all internal oscillators."""
         for osc in self._oscillators:
             osc.on_start()
-    
-    def on_stop(self) -> None:
+
+    def _on_stop(self) -> None:
         """Stop all internal oscillators."""
         for osc in self._oscillators:
             osc.on_stop()

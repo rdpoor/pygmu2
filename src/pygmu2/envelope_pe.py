@@ -117,11 +117,11 @@ class EnvelopePE(ProcessingElement):
         """Reset envelope state."""
         self._envelope = None
     
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """Reset envelope state at start of rendering."""
         self._reset_state()
-    
-    def on_stop(self) -> None:
+
+    def _on_stop(self) -> None:
         """Clear envelope state at end of rendering."""
         self._reset_state()
     

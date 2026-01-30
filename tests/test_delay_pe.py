@@ -484,9 +484,9 @@ class TestDelayPEChaining:
         source = ConstantPE(1.0)
         delayed = DelayPE(source, delay=50)
         mixed = MixPE(source, delayed)
-        
+
         self.renderer.set_source(mixed)
-        
+
         # Both contribute, so sum is 2.0
         snippet = mixed.render(0, 50)
         np.testing.assert_array_equal(

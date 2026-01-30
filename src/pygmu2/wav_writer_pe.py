@@ -96,7 +96,7 @@ class WavWriterPE(ProcessingElement):
         """
         return False
     
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """Open the WAV file for writing."""
         # Determine sample rate
         rate = self._output_sample_rate or self.sample_rate
@@ -132,7 +132,7 @@ class WavWriterPE(ProcessingElement):
             f"{channels} channels, {rate} Hz, {self._subtype}"
         )
     
-    def on_stop(self) -> None:
+    def _on_stop(self) -> None:
         """Close the WAV file."""
         if self._file is not None:
             self._file.close()

@@ -168,11 +168,11 @@ class RandomPE(SourcePE):
         self._sample_counter = 0
         self._last_trigger = 0.0
     
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """Initialize RNG and state."""
         self._reset_state()
-    
-    def on_stop(self) -> None:
+
+    def _on_stop(self) -> None:
         """Clean up state."""
         self._rng = None
     

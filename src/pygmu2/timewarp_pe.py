@@ -131,10 +131,10 @@ class TimeWarpPE(ProcessingElement):
             n_end = n_start
         return Extent(n_start, n_end)
 
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         self._reset_state()
 
-    def on_stop(self) -> None:
+    def _on_stop(self) -> None:
         self._reset_state()
 
     def _reset_state(self) -> None:

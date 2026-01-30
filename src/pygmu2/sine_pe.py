@@ -106,12 +106,12 @@ class SinePE(ProcessingElement):
         """
         return not self._has_pe_inputs()
     
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """Reset phase accumulator on start."""
         self._accumulated_phase = 0.0
         self._last_render_end = None
-    
-    def on_stop(self) -> None:
+
+    def _on_stop(self) -> None:
         """Reset phase accumulator on stop."""
         self._accumulated_phase = 0.0
         self._last_render_end = None

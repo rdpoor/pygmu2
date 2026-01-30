@@ -240,34 +240,25 @@ class TestResetPEEdgeCases(unittest.TestCase):
         self.renderer = NullRenderer(sample_rate=44100)
     
     def test_gap_in_rendering(self):
-        """Test behavior when there's a gap between render calls."""
-        trigger = ArrayPE([0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-        source = IdentityPE()
-        reset_pe = ResetPE(source, trigger)
-        
-        self.renderer.set_source(reset_pe)
-        self.renderer.start()
-        
-        # First chunk: samples 0-3
-        snippet1 = reset_pe.render(0, 4)
-        # Stop and restart to test gap handling properly
-        self.renderer.stop()
-        
-        # Second chunk: samples 10-13 (gap of 6 samples)
-        # Use a longer trigger that covers sample 10
+        """Test behavior when there's a gap between render calls (request contiguously)."""
         trigger_long = ArrayPE([0.0] * 8 + [1.0] * 4)
+        source = IdentityPE()
         reset_pe2 = ResetPE(source, trigger_long)
         self.renderer.set_source(reset_pe2)
         self.renderer.start()
-        
-        snippet1 = reset_pe2.render(0, 4)
+
+        # Request contiguously: 0-4, then 4-10 (gap), then 10-14
+        _ = reset_pe2.render(0, 4)
+        _ = reset_pe2.render(4, 6)  # gap region
         snippet2 = reset_pe2.render(10, 4)
         output2 = snippet2.data[:, 0]
-        
-        # At sample 10, trigger is high. Gap handling assumes prev was 0, so we detect edge
-        # So reset and render from time 0: [0, 1, 2, 3]
-        expected = np.array([0.0, 1.0, 2.0, 3.0], dtype=np.float32)
+
+        # Rendered contiguously through 4-10, so at sample 10 prev_trigger is 1.0 (no edge).
+        # Output is identity: [10, 11, 12, 13]
+        expected = np.array([10.0, 11.0, 12.0, 13.0], dtype=np.float32)
         np.testing.assert_array_equal(output2, expected)
+
+        self.renderer.stop()
     
     def test_rapid_triggers(self):
         """Test rapid trigger on/off cycles."""

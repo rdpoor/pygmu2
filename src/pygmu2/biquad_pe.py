@@ -198,11 +198,11 @@ class BiquadPE(ProcessingElement):
         
         return extent
     
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """Reset filter state at start of rendering."""
         self._reset_state()
-    
-    def on_stop(self) -> None:
+
+    def _on_stop(self) -> None:
         """Clear filter state at end of rendering."""
         self._state = None
         self._lfilter_state = None

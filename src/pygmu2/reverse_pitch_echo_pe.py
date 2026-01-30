@@ -468,7 +468,7 @@ class ReversePitchEchoPE(ProcessingElement):
 
         return extent
 
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """
         Allocate buffers and reset state for rendering.
 
@@ -515,7 +515,7 @@ class ReversePitchEchoPE(ProcessingElement):
         self._previous_block_samples = 0
         self._playback_reverse = True
 
-    def on_stop(self) -> None:
+    def _on_stop(self) -> None:
         """Clear state."""
         self._buffer_a = None
         self._buffer_b = None

@@ -346,11 +346,11 @@ class LadderPE(ProcessingElement):
 
         return extent
 
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """Reset filter state."""
         self._reset_state()
 
-    def on_stop(self) -> None:
+    def _on_stop(self) -> None:
         """Clear filter state."""
         self._z0 = None
         self._z1 = None

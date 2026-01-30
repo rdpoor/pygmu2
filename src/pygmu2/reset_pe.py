@@ -80,12 +80,12 @@ class ResetPE(ProcessingElement):
         """Return the extent of the source."""
         return self._source.extent()
     
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """Reset trigger state at start of rendering."""
         self._prev_trigger = 0.0
         self._last_render_end = None
-    
-    def on_stop(self) -> None:
+
+    def _on_stop(self) -> None:
         """Reset trigger state at end of rendering."""
         self._prev_trigger = 0.0
         self._last_render_end = None
