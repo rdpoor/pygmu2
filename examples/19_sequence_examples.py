@@ -205,6 +205,114 @@ def demo_exponential_ramp():
 # 3. Sequencing of control streams (e.g. pitch) — TBD
 # -----------------------------------------------------------------------------
 
+# ===== MIDI notes
+Cm1, Dfm1, Dm1, Efm1, Em1, Fm1, Gfm1, Gm1, Afm1, Am1, Bfm1, Bm1 = range(0, 12)
+C0, Df0, D0, Ef0, E0, F0, Gf0, G0, Af0, A0, Bf0, B0 = range(12, 24)
+C1, Df1, D1, Ef1, E1, F1, Gf1, G1, Af1, A1, Bf1, B1 = range(24, 36)
+C2, Df2, D2, Ef2, E2, F2, Gf2, G2, Af2, A2, Bf2, B2 = range(36, 48)
+C3, Df3, D3, Ef3, E3, F3, Gf3, G3, Af3, A3, Bf3, B3 = range(48, 60)
+C4, Df4, D4, Ef4, E4, F4, Gf4, G4, Af4, A4, Bf4, B4 = range(60, 72)
+C5, Df5, D5, Ef5, E5, F5, Gf5, G5, Af5, A5, Bf5, B5 = range(72, 84)
+C6, Df6, D6, Ef6, E6, F6, Gf6, G6, Af6, A6, Bf6, B6 = range(84, 96)
+
+# Sharp equivalents
+Asm1, Csm1, Dsm1, Fsm1, Gsm1 = [Bfm1, Dfm1, Efm1, Gfm1, Afm1]
+As0, Cs0, Ds0, Fs0, Gs0 = [Bf0, Df0, Ef0, Gf0, Af0]
+As1, Cs1, Ds1, Fs1, Gs1 = [Bf1, Df1, Ef1, Gf1, Af1]
+As2, Cs2, Ds2, Fs2, Gs2 = [Bf2, Df2, Ef2, Gf2, Af2]
+As3, Cs3, Ds3, Fs3, Gs3 = [Bf3, Df3, Ef3, Gf3, Af3]
+As4, Cs4, Ds4, Fs4, Gs4 = [Bf4, Df4, Ef4, Gf4, Af4]
+As5, Cs5, Ds5, Fs5, Gs5 = [Bf5, Df5, Ef5, Gf5, Af5]
+As6, Cs6, Ds6, Fs6, Gs6 = [Bf6, Df6, Ef6, Gf6, Af6]
+
+REST = -1 # an out-of-band value
+
+# ===== Durations, expressed as beats
+WHOLE = 4.0
+HALF = 2.0
+QUARTER = 1.0
+EIGHTH = 0.5
+SIXTEENTH = 0.25
+THIRTY_SECOND = 0.125
+DOTTED = 1.5           # multiplicative modifier
+TRIPLET = (2.0/3.0)    # multiplicative modifier
+
+# ===== Articulation, scales duration
+
+LEGATO = 1.2     # mild overlap
+CONNECTED = 1.0  # notes directly abut one another, no overlap
+DETACHED = 0.7   # slight space between notes
+STACCATO = 0.5   # shortened notes
+
+moz_k333 = [
+    # midi note, duration, expression
+    (F5, QUARTER*DOTTED, CONNECTED),
+    (D5, EIGHTH, CONNECTED),
+    (Bf4, QUARTER, DETACHED),
+    (Bf4, QUARTER, DETACHED),
+    # 10
+    (Ef5, EIGHTH, CONNECTED),
+    (F5, THIRTY_SECOND, CONNECTED),
+    (Ef5, THIRTY_SECOND, CONNECTED),
+    (D5, THIRTY_SECOND, CONNECTED),
+    (Ef5, THIRTY_SECOND, CONNECTED),
+    (G5, QUARTER, DETACHED),
+    (A4, QUARTER, DETACHED),
+    (Rest, EIGHTH, DETACHED),
+    (A4, EIGHTH, DETACHED),
+    # 11
+    (C5, EIGHTH, CONNECTED),
+    (Bf4, EIGHTH, DETACHED),
+    (D5, EIGHTH, CONNECTED),
+    (C5, EIGHTH, CONNECTED),
+    (Ef5, EIGHTH, CONNECTED),
+    (D5, EIGHTH, DETACHED),
+    (F5, EIGHTH, CONNECTED),
+    (Ef5, EIGHTH, DETACHED),
+    # 12
+    (D5, QUARTER*DOTTED, CONNECTED),
+    (Ef5, SIXTEENTH, CONNECTED),
+    (D5, SIXTEENTH, CONNECTED),
+    (C5, EIGHTH, CONNECTED),
+    (D5, EIGHTH, CONNECTED),
+    (Ef5, EIGHTH, CONNECTED),
+    (E5, EIGHTH, DETACHED),
+    # 13
+    (F5, QUARTER*DOTTED, CONNECTED),
+    (Ef5, SIXTEENTH*TRIPLET, CONNECTED),
+    (D5, SIXTEENTH*TRIPLET, CONNECTED),
+    (C5, SIXTEENTH*TRIPLET, DETACHED),
+    (Bf4, EIGHTH, STACCATO),
+    (Bf4, EIGHTH, STACCATO),
+    (Bf4, EIGHTH, STACCATO),
+    (Bf4, EIGHTH, STACCATO),
+    # 14        
+    (Ef5, EIGHTH, CONNECTED),
+    (F5, THIRTY_SECOND, CONNECTED),
+    (Ef5, THIRTY_SECOND, CONNECTED),
+    (D5, THIRTY_SECOND, CONNECTED),
+    (Ef5, THIRTY_SECOND, CONNECTED),
+    (G5, QUARTER, DETACHED),
+    (A4, QUARTER, DETACHED),
+    (Rest, EIGHTH, DETACHED),
+    (A5, EIGHTH, DETACHED),
+    # 15
+    (Bf5, EIGHTH*TRIPLET, CONNECTED),
+    (F5, EIGHTH*TRIPLET, CONNECTED),
+    (D5, EIGHTH*TRIPLET, CONNECTED),
+    (G5, EIGHTH*TRIPLET, CONNECTED),
+    (Ef5, EIGHTH*TRIPLET, CONNECTED),
+    (C5, EIGHTH*TRIPLET, CONNECTED),
+    (F5, EIGHTH*TRIPLET, CONNECTED),
+    (D5, EIGHTH*TRIPLET, CONNECTED),
+    (Bf4, EIGHTH*TRIPLET, CONNECTED),
+    (Ef5, EIGHTH*TRIPLET, CONNECTED),
+    (C5, EIGHTH*TRIPLET, CONNECTED),
+    (A4, EIGHTH*TRIPLET, DETACHED),
+    # 16
+    (Bf4, WHOLE, CONNECTED),
+]
+
 
 def demo_all_c_major():
     demo_gapless_c_major()

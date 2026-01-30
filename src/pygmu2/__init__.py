@@ -27,6 +27,7 @@ from pygmu2.dynamics_pe import DynamicsPE, DynamicsMode
 from pygmu2.envelope_pe import EnvelopePE, DetectionMode
 from pygmu2.gain_pe import GainPE
 from pygmu2.identity_pe import IdentityPE
+from pygmu2.karplus_strong_pe import KarplusStrongPE
 from pygmu2.ladder_pe import LadderPE, LadderMode
 from pygmu2.loop_pe import LoopPE
 from pygmu2.ramp_pe import RampPE, RampType
@@ -133,6 +134,7 @@ __all__ = [
     "GainPE",
     "GatePE",
     "IdentityPE",
+    "KarplusStrongPE",
     "LadderPE",
     "LimiterPE",
     "LoopPE",
