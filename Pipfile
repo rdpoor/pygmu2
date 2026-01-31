@@ -10,6 +10,9 @@ sounddevice = "*"
 soundfile = "*"
 numba = "*"
 pygmu2 = {path = ".", editable = true}
+mido = "*"
+rtmidi = "*"
+python-rtmidi = "*"
 
 [dev-packages]
 pytest = ">=7.0.0"

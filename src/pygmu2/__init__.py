@@ -30,6 +30,7 @@ from pygmu2.identity_pe import IdentityPE
 from pygmu2.karplus_strong_pe import KarplusStrongPE, rho_for_decay_db
 from pygmu2.ladder_pe import LadderPE, LadderMode
 from pygmu2.loop_pe import LoopPE
+from pygmu2.midi_in_pe import MidiInPE
 from pygmu2.ramp_pe import RampPE, RampType
 from pygmu2.random_pe import RandomPE, RandomMode
 from pygmu2.reset_pe import ResetPE
@@ -90,6 +91,7 @@ __version__ = "0.1.0"
 _lazy_imports = {
     "BiquadPE": ("pygmu2.biquad_pe", "BiquadPE"),
     "BiquadMode": ("pygmu2.biquad_pe", "BiquadMode"),
+    "SVFilterPE": ("pygmu2.svfilter_pe", "SVFilterPE"),
 }
 
 def __getattr__(name):
@@ -139,6 +141,7 @@ __all__ = [
     "LadderPE",
     "LimiterPE",
     "LoopPE",
+    "MidiInPE",
     "MixPE",
     "CombPE",
     "ConvolvePE",
@@ -149,6 +152,7 @@ __all__ = [
     "ResetPE",
     "SlicePE",
     "SinePE",
+    "SVFilterPE",
     "SpatialPE",
     "SpatialMethod",
     "SpatialAdapter",

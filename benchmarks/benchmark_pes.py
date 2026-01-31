@@ -246,6 +246,11 @@ def setup_fallback_configs():
         has_biquad = True
     except ImportError:
         has_biquad = False
+    try:
+        from pygmu2 import SVFilterPE
+        has_svfilter = True
+    except ImportError:
+        has_svfilter = False
     
     # === Source PEs ===
     register_fallback("SinePE", [
@@ -360,6 +365,20 @@ def setup_fallback_configs():
             BenchmarkConfig("BiquadPE (bandpass, modulated Q)", lambda: BiquadPE(
                 SinePE(frequency=440.0), mode=BiquadMode.BANDPASS, 
                 frequency=1000.0, q=SinePE(frequency=2.0, amplitude=1.0),
+            ), "filter"),
+        ])
+
+    if has_svfilter:
+        register_fallback("SVFilterPE", [
+            BenchmarkConfig("SVFilterPE (lowpass, fixed)", lambda: SVFilterPE(
+                SinePE(frequency=440.0), mode=BiquadMode.LOWPASS, frequency=1000.0, q=0.707,
+            ), "filter"),
+            BenchmarkConfig("SVFilterPE (bandpass, fixed)", lambda: SVFilterPE(
+                SinePE(frequency=440.0), mode=BiquadMode.BANDPASS, frequency=1000.0, q=2.0,
+            ), "filter"),
+            BenchmarkConfig("SVFilterPE (lowpass, modulated freq)", lambda: SVFilterPE(
+                SinePE(frequency=440.0), mode=BiquadMode.LOWPASS,
+                frequency=SinePE(frequency=5.0, amplitude=500.0), q=0.707,
             ), "filter"),
         ])
 
