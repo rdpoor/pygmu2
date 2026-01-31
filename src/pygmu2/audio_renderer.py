@@ -72,10 +72,12 @@ class AudioRenderer(Renderer):
         self._blocksize = blocksize
         self._latency = latency
         
-        # Streaming state
+        # Streaming state (for stream_start/stream_stop callback mode)
         self._stream: Optional[sd.OutputStream] = None
         self._stream_position: int = 0
         self._stream_end: Optional[int] = None
+        # Single long-lived stream for blocking render() loop (avoids open/close per block)
+        self._blocking_stream: Optional[sd.OutputStream] = None
     
     @property
     def device(self) -> Optional[int | str]:
@@ -90,23 +92,24 @@ class AudioRenderer(Renderer):
     def _output(self, snippet: Snippet) -> None:
         """
         Play a snippet through the audio output (blocking).
-        
-        This is called by render() and plays synchronously.
-        Uses OutputStream.write() to avoid CFFI callback bugs in sd.play().
-        
+
+        This is called by render() and plays synchronously. Uses a single
+        long-lived OutputStream (opened on first write, closed in stop())
+        to avoid the cost of opening/closing the stream every block.
+
         Args:
             snippet: The audio data to play
         """
         channels = snippet.channels
-        
-        # Use OutputStream with blocking write to avoid callback issues
-        with sd.OutputStream(
-            samplerate=self._sample_rate,
-            channels=channels,
-            dtype='float32',
-            device=self._device,
-        ) as stream:
-            stream.write(snippet.data)
+        if self._blocking_stream is None:
+            self._blocking_stream = sd.OutputStream(
+                samplerate=self._sample_rate,
+                channels=channels,
+                dtype='float32',
+                device=self._device,
+            )
+            self._blocking_stream.start()
+        self._blocking_stream.write(snippet.data)
     
     def play_range(self, start: int, duration: int) -> None:
         """
@@ -274,6 +277,13 @@ class AudioRenderer(Renderer):
         Stop the renderer and any active streams.
         """
         self.stream_stop()
+        if self._blocking_stream is not None:
+            try:
+                self._blocking_stream.stop()
+                self._blocking_stream.close()
+            except Exception:
+                pass
+            self._blocking_stream = None
         super().stop()
     
     @staticmethod

@@ -21,14 +21,14 @@ class TriggerMode(Enum):
     """Trigger behavior modes."""
     ONE_SHOT = "one_shot"   # When ARMED and trigger > 0, start source; then run indefinitely
     GATED = "gated"         # Like ONE_SHOT but stop when trigger <= 0; does not retrigger (unless _reset_state/_on_start)
-    RETRIGGER = "retrigger" # When trigger > 0 start source; when trigger <= 0 output zeros
+    RETRIGGER = "retrigger" # Like GATED but retriggers when gate goes high again after low
 
 
 class TriggerState(Enum):
-    """Internal state: armed -> active [-> inactive for GATED only]."""
+    """Internal state: armed -> active [-> inactive for GATED/RETRIGGER]."""
     ARMED = "armed"       # Waiting for positive edge
     ACTIVE = "active"     # Playing source
-    INACTIVE = "inactive" # Gate closed (GATED only); no retrigger until _reset_state/_on_start
+    INACTIVE = "inactive" # Gate closed; GATED stays here until reset; RETRIGGER retriggers on next gate high
 
 
 class TriggerPE(ProcessingElement):
@@ -43,12 +43,16 @@ class TriggerPE(ProcessingElement):
     the current state is ARMED (idle) and the current trigger sample is positive.
     No previous-sample comparison; state + current sample suffice.
 
+    Each time the PE enters ACTIVE state (first trigger or retrigger), it calls
+    source.reset_state() so the source plays from the beginning.
+
     Modes:
         ONE_SHOT: When ARMED and trigger > 0, start source from t=0 and continue
                   indefinitely (output zeros after source extent if finite).
         GATED:    Like ONE_SHOT, but stop when trigger <= 0. Does not retrigger
-                  (unless _reset_state or _on_start is called).
-        RETRIGGER: When trigger > 0 start source from t=0; when trigger <= 0 output zeros.
+                  when gate goes high again (stay INACTIVE until _reset_state/_on_start).
+        RETRIGGER: Like GATED (continuous playback while gate high, stop when low),
+                   but retriggers from t=0 when gate goes high again after being low.
 
     Non-pure: maintains internal state. Requires contiguous render() calls.
 
@@ -68,7 +72,8 @@ class TriggerPE(ProcessingElement):
         self._trigger = trigger
         self._mode = trigger_mode
 
-        # State: ARMED -> ACTIVE; in GATED, ACTIVE -> INACTIVE (no retrigger); in RETRIGGER, ACTIVE -> ARMED
+        # State: ARMED -> ACTIVE; GATED/RETRIGGER: ACTIVE -> INACTIVE on gate low.
+        # GATED: INACTIVE stays until reset. RETRIGGER: INACTIVE -> ACTIVE on gate high (retrigger).
         self._state = TriggerState.ARMED
         self._start_time = 0  # Absolute sample time when the current gate/trigger started
 
@@ -114,12 +119,25 @@ class TriggerPE(ProcessingElement):
         """Reset state at end of rendering."""
         self._reset_state()
 
+    @staticmethod
+    def _first_positive(trig: np.ndarray, start: int, end: int) -> Optional[int]:
+        """First index in [start, end) where trig[i] > 0, or None."""
+        segment = trig[start:end]
+        pos = np.flatnonzero(segment > 0)
+        return start + int(pos[0]) if len(pos) > 0 else None
+
+    @staticmethod
+    def _first_non_positive(trig: np.ndarray, start: int, end: int) -> Optional[int]:
+        """First index in [start, end) where trig[i] <= 0, or None."""
+        segment = trig[start:end]
+        pos = np.flatnonzero(segment <= 0)
+        return start + int(pos[0]) if len(pos) > 0 else None
+
     def _render(self, start: int, duration: int) -> Snippet:
         trigger_snippet = self._trigger.render(start, duration)
         trigger_data = trigger_snippet.data
         trig_signal = trigger_data[:, 0] if trigger_data.shape[1] > 0 else np.zeros(duration, dtype=np.float32)
 
-        # Enter triggered when state is ARMED and current sample is positive (no previous-sample check).
         channels = self.channel_count() or 1
         output_data = np.zeros((duration, channels), dtype=np.float32)
 
@@ -134,25 +152,18 @@ class TriggerPE(ProcessingElement):
                     output_data[current_idx : current_idx + remaining] = src.data
                     current_idx += remaining
                 else:  # ARMED: first positive sample triggers
-                    found = None
-                    for j in range(current_idx, duration):
-                        if trig_signal[j] > 0:
-                            found = j
-                            break
+                    found = self._first_positive(trig_signal, current_idx, duration)
                     if found is not None:
                         self._state = TriggerState.ACTIVE
                         self._start_time = start + found
+                        self._source.reset_state()
                         current_idx = found
                     else:
                         current_idx += remaining
 
             elif self._mode == TriggerMode.GATED:
                 if self._state == TriggerState.ACTIVE:
-                    off_idx = None
-                    for j in range(current_idx, duration):
-                        if trig_signal[j] <= 0:
-                            off_idx = j
-                            break
+                    off_idx = self._first_non_positive(trig_signal, current_idx, duration)
                     chunk_end = off_idx if off_idx is not None else duration
                     chunk_len = chunk_end - current_idx
                     if chunk_len > 0:
@@ -164,39 +175,45 @@ class TriggerPE(ProcessingElement):
                         self._state = TriggerState.INACTIVE
                 elif self._state == TriggerState.INACTIVE:
                     current_idx += remaining
-                else:  # ARMED: first positive sample triggers
-                    found = None
-                    for j in range(current_idx, duration):
-                        if trig_signal[j] > 0:
-                            found = j
-                            break
+                else:  # ARMED
+                    found = self._first_positive(trig_signal, current_idx, duration)
                     if found is not None:
                         self._state = TriggerState.ACTIVE
                         self._start_time = start + found
+                        self._source.reset_state()
                         current_idx = found
                     else:
                         current_idx += remaining
 
-            else:  # RETRIGGER: each positive sample starts a segment (when not in a segment, first >0 triggers)
-                edge_at = None
-                for j in range(current_idx, duration):
-                    if trig_signal[j] > 0:
-                        edge_at = j
-                        break
-                if edge_at is None:
-                    current_idx += remaining
-                    continue
-                current_idx = edge_at
-                off_idx = None
-                for j in range(edge_at, duration):
-                    if trig_signal[j] <= 0:
-                        off_idx = j
-                        break
-                gate_end = off_idx if off_idx is not None else duration
-                gate_len = gate_end - edge_at
-                if gate_len > 0:
-                    src = self._source.render(0, gate_len)
-                    output_data[edge_at : edge_at + gate_len] = src.data
-                current_idx = gate_end
+            else:  # RETRIGGER
+                if self._state == TriggerState.ACTIVE:
+                    off_idx = self._first_non_positive(trig_signal, current_idx, duration)
+                    chunk_end = off_idx if off_idx is not None else duration
+                    chunk_len = chunk_end - current_idx
+                    if chunk_len > 0:
+                        local_start = (start + current_idx) - self._start_time
+                        src = self._source.render(local_start, chunk_len)
+                        output_data[current_idx : current_idx + chunk_len] = src.data
+                    current_idx = chunk_end
+                    if off_idx is not None:
+                        self._state = TriggerState.INACTIVE
+                elif self._state == TriggerState.INACTIVE:
+                    found = self._first_positive(trig_signal, current_idx, duration)
+                    if found is not None:
+                        self._state = TriggerState.ACTIVE
+                        self._start_time = start + found
+                        self._source.reset_state()
+                        current_idx = found
+                    else:
+                        current_idx += remaining
+                else:  # ARMED
+                    found = self._first_positive(trig_signal, current_idx, duration)
+                    if found is not None:
+                        self._state = TriggerState.ACTIVE
+                        self._start_time = start + found
+                        self._source.reset_state()
+                        current_idx = found
+                    else:
+                        current_idx += remaining
 
         return Snippet(start, output_data)

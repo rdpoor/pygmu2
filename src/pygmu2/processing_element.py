@@ -7,12 +7,20 @@ MIT License
 """
 
 from __future__ import annotations
+import time
 from abc import ABC, abstractmethod
 from typing import Optional, Union
 
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 from pygmu2.config import handle_error
+from pygmu2.diagnostics import (
+    is_enabled,
+    pull_count_enabled,
+    record_pull,
+    record_timing,
+    timing_enabled,
+)
 
 
 class ProcessingElement(ABC):
@@ -91,6 +99,9 @@ class ProcessingElement(ABC):
         if duration < 0:
             raise ValueError(f"duration must be >= 0, got {duration}")
 
+        if is_enabled() and pull_count_enabled():
+            record_pull(self)
+
         if duration == 0:
             # Determine channel count (concrete value needed for shape).
             channels = self.channel_count()
@@ -109,7 +120,12 @@ class ProcessingElement(ABC):
                     f"Expected start={self._last_rendered_end}, got start={start}."
                 )
 
-        result = self._render(start, duration)
+        if is_enabled() and timing_enabled():
+            t0 = time.perf_counter_ns()
+            result = self._render(start, duration)
+            record_timing(self, time.perf_counter_ns() - t0)
+        else:
+            result = self._render(start, duration)
 
         if not self.is_pure():
             self._last_rendered_end = start + duration

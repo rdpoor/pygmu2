@@ -195,7 +195,7 @@ class TestTriggerPE(unittest.TestCase):
         np.testing.assert_array_equal(snippet.data, expected)
 
     def test_gated_sample_accurate(self):
-        """Test GATED mode with ArrayPE: one gate, no retrigger after gate closes."""
+        """Test GATED mode with ArrayPE: gate opens at 2, closes at 4; no retrigger at 5-7."""
         trigger = ArrayPE([0, 0, 1, 1, 0, 1, 1, 1, 0])
         signal = ArrayPE([10, 11, 12, 13, 14, 15, 16, 17, 18])
         
@@ -203,6 +203,31 @@ class TestTriggerPE(unittest.TestCase):
         # Gate opens at 2, closes at 4; indices 5-7 stay silent (no retrigger)
         snippet = triggered.render(0, 9)
         expected = np.array([[0.0], [0.0], [10], [11], [0], [0], [0], [0], [0]], dtype=np.float32)
+        np.testing.assert_array_equal(snippet.data, expected)
+
+    def test_retrigger_when_gate_high_again(self):
+        """Test that RETRIGGER retriggers when gate goes high again after closing."""
+        source = MockRampPE()
+        trigger_data = [0, 1, 0, 1, 1]
+        trigger = MockArrayPE(trigger_data)
+        
+        pe = TriggerPE(source, trigger, trigger_mode=TriggerMode.RETRIGGER)
+        
+        result = pe.render(0, 5)
+        # 0: Silence, 1: source[0]=0, 2: Silence (gate closed), 3: source[0]=0 (retrigger), 4: source[1]=1
+        expected = np.array([[0], [0], [0], [0], [1]], dtype=np.float32)
+        
+        np.testing.assert_array_equal(result.data, expected)
+        self.assertEqual(pe._state, TriggerState.ACTIVE)
+
+    def test_retrigger_sample_accurate(self):
+        """Test RETRIGGER mode: gate opens at 2, closes at 4; retrigger at 5."""
+        trigger = ArrayPE([0, 0, 1, 1, 0, 1, 1, 1, 0])
+        signal = ArrayPE([10, 11, 12, 13, 14, 15, 16, 17, 18])
+        
+        triggered = TriggerPE(signal, trigger, trigger_mode=TriggerMode.RETRIGGER)
+        snippet = triggered.render(0, 9)
+        expected = np.array([[0.0], [0.0], [10], [11], [0], [10], [11], [12], [0]], dtype=np.float32)
         np.testing.assert_array_equal(snippet.data, expected)
 
 if __name__ == "__main__":
