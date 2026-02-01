@@ -20,6 +20,7 @@ from pygmu2 import (
     AudioRenderer,
     ConstantPE,
     GainPE,
+    LoopPE,
     MidiInPE,
     MixPE,
     SlicePE,
@@ -35,8 +36,6 @@ from pygmu2 import (
 )
 logger = get_logger("toy_midi_sampler")
 
-AUDIO_DIR = Path(__file__).parent.parent / "examples" / "audio"
-VOICE_WAV = AUDIO_DIR / "spoken_voice44.wav"
 SAMPLE_RATE = 44100
 BLOCK_SIZE = 512
 NOTE_LO, NOTE_HI = 48, 73  # 25 keys: 48..72 inclusive
@@ -49,8 +48,21 @@ def ss(t: float) -> int:
     """Seconds to samples at 44.1 kHz."""
     return int(round(t * SAMPLE_RATE))
 
-WORDS_STREAM = WavReaderPE(str(VOICE_WAV))
-SLICE_SOURCE = SlicePE(WORDS_STREAM, start=ss(1.407), duration=ss(0.483))
+AUDIO_DIR = Path(__file__).parent.parent / "examples" / "audio"
+
+# VOICE_WAV = AUDIO_DIR / "spoken_voice44.wav"
+# WORDS_STREAM = WavReaderPE(str(VOICE_WAV))
+# SLICE_SOURCE = SlicePE(WORDS_STREAM, start=ss(1.407), duration=ss(0.483))
+
+CHOIR_WAV = AUDIO_DIR / "choir.wav"
+SLICE_SOURCE = LoopPE(
+    SlicePE(
+        WavReaderPE(str(CHOIR_WAV)),
+        5978,
+        184210),
+    )
+
+
 # Mono slice so MixPE gets uniform channel count (midi_silence is 1 ch)
 SLICE_MONO = SpatialPE(SLICE_SOURCE, method=SpatialAdapter(channels=1))
 
