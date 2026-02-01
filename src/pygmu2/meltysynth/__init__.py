@@ -6,7 +6,7 @@ See LICENSE in this directory.
 """
 
 from pygmu2.meltysynth.exceptions import MeltysynthError
-from pygmu2.meltysynth.math_utils import create_buffer
+from pygmu2.meltysynth.math_utils import create_buffer, create_buffer_numpy
 from pygmu2.meltysynth.model import (
     Instrument,
     InstrumentRegion,
@@ -24,6 +24,7 @@ from pygmu2.meltysynth.midi import MidiFile, MidiFileSequencer
 __all__ = [
     "MeltysynthError",
     "create_buffer",
+    "create_buffer_numpy",
     "SoundFont",
     "SoundFontInfo",
     "SoundFontVersion",

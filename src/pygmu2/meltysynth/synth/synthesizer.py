@@ -1,11 +1,13 @@
 from collections.abc import MutableSequence, Sequence
 from typing import Optional
 
+import numpy as np
+
 from pygmu2.meltysynth.math_utils import (
     ArrayMath,
     NON_AUDIBLE,
     SoundFontMath,
-    create_buffer,
+    create_buffer_numpy,
 )
 from pygmu2.meltysynth.model.instrument import InstrumentRegion
 from pygmu2.meltysynth.model.preset import Preset
@@ -45,8 +47,8 @@ class Synthesizer:
                 Channel(self, i == Synthesizer._PERCUSSION_CHANNEL)
             )
         self._voices = VoiceCollection(self, self._maximum_polyphony)
-        self._block_left = create_buffer(self._block_size)
-        self._block_right = create_buffer(self._block_size)
+        self._block_left = create_buffer_numpy(self._block_size)
+        self._block_right = create_buffer_numpy(self._block_size)
         self._inverse_block_size = 1.0 / self._block_size
         self._block_read = self._block_size
         self._master_volume = 0.5
@@ -211,21 +213,33 @@ class Synthesizer:
             src_rem = self._block_size - self._block_read
             dst_rem = count - wrote
             rem = min(src_rem, dst_rem)
-            for t in range(rem):
-                left[offset + wrote + t] = self._block_left[
-                    self._block_read + t
-                ]
-                right[offset + wrote + t] = self._block_right[
-                    self._block_read + t
-                ]
+            src_slice = slice(self._block_read, self._block_read + rem)
+            dst_slice = slice(offset + wrote, offset + wrote + rem)
+            if isinstance(left, np.ndarray) and isinstance(
+                self._block_left, np.ndarray
+            ):
+                left[dst_slice] = self._block_left[src_slice]
+                right[dst_slice] = self._block_right[src_slice]
+            else:
+                for t in range(rem):
+                    left[offset + wrote + t] = self._block_left[
+                        self._block_read + t
+                    ]
+                    right[offset + wrote + t] = self._block_right[
+                        self._block_read + t
+                    ]
             self._block_read += rem
             wrote += rem
 
     def _render_block(self) -> None:
         self._voices.process()
-        for t in range(self._block_size):
-            self._block_left[t] = 0
-            self._block_right[t] = 0
+        if isinstance(self._block_left, np.ndarray):
+            self._block_left.fill(0)
+            self._block_right.fill(0)
+        else:
+            for t in range(self._block_size):
+                self._block_left[t] = 0
+                self._block_right[t] = 0
         for i in range(self._voices.active_voice_count):
             voice = self._voices._voices[i]
             previous_gain_left = (

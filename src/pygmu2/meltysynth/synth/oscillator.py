@@ -4,6 +4,8 @@ import math
 from collections.abc import MutableSequence, Sequence
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 from pygmu2.meltysynth.model.types import LoopMode
 
 if TYPE_CHECKING:
@@ -64,10 +66,40 @@ class Oscillator:
     def fill_block(
         self, block: MutableSequence[float], pitch_ratio: float
     ) -> bool:
+        if isinstance(block, np.ndarray) and isinstance(self._data, np.ndarray):
+            if self._looping:
+                return self._fill_block_continuous_np(block, pitch_ratio)
+            else:
+                return self._fill_block_no_loop_np(block, pitch_ratio)
         if self._looping:
             return self.fill_block_continuous(block, pitch_ratio)
         else:
             return self.fill_block_no_loop(block, pitch_ratio)
+
+    def _fill_block_no_loop_np(
+        self, block: np.ndarray, pitch_ratio: float
+    ) -> bool:
+        n = len(block)
+        positions = self._position + np.arange(n, dtype=np.float64) * pitch_ratio
+        idx_past = np.searchsorted(positions, self._end)
+        if idx_past == 0:
+            return False
+        data = self._data
+        if idx_past < n:
+            pos_valid = positions[:idx_past]
+            index_lo = pos_valid.astype(np.intp)
+            frac = pos_valid - index_lo
+            block[:idx_past] = (1 - frac) * data[index_lo] + frac * data[
+                index_lo + 1
+            ]
+            block[idx_past:] = 0
+            self._position = positions[idx_past - 1] + pitch_ratio
+        else:
+            index_lo = positions.astype(np.intp)
+            frac = positions - index_lo
+            block[:] = (1 - frac) * data[index_lo] + frac * data[index_lo + 1]
+            self._position = positions[-1] + pitch_ratio
+        return True
 
     def fill_block_no_loop(
         self, block: MutableSequence[float], pitch_ratio: float
@@ -90,6 +122,29 @@ class Oscillator:
 
             self._position += pitch_ratio
 
+        return True
+
+    def _fill_block_continuous_np(
+        self, block: np.ndarray, pitch_ratio: float
+    ) -> bool:
+        loop_length = float(self._end_loop - self._start_loop)
+        end_loop_position = float(self._end_loop)
+        n = len(block)
+        positions = self._position + np.arange(n, dtype=np.float64) * pitch_ratio
+        position_wrapped = (
+            positions - self._start_loop
+        ) % loop_length + self._start_loop
+        index_lo = position_wrapped.astype(np.intp)
+        frac = position_wrapped - index_lo
+        index_hi = index_lo + 1
+        index_hi = np.where(
+            index_hi >= self._end_loop, self._start_loop, index_hi
+        )
+        data = self._data
+        block[:] = (1 - frac) * data[index_lo] + frac * data[index_hi]
+        self._position = positions[-1] + pitch_ratio
+        if self._position >= end_loop_position:
+            self._position -= loop_length
         return True
 
     def fill_block_continuous(

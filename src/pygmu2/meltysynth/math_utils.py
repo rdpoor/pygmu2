@@ -1,7 +1,7 @@
 import math
 from array import array
 from collections.abc import MutableSequence, Sequence
-
+import numpy as np
 import itertools
 
 # Module-level constants for hot paths (avoids repeated log/calls in voice/envelope).
@@ -12,6 +12,11 @@ HALF_PI = math.pi / 2
 
 def create_buffer(length: int) -> MutableSequence[float]:
     return array("d", itertools.repeat(0, length))
+
+
+def create_buffer_numpy(length: int) -> np.ndarray:
+    """Create a zeroed float64 buffer as a NumPy array for vectorized hot paths."""
+    return np.zeros(length, dtype=np.float64)
 
 
 class SoundFontMath:
@@ -65,8 +70,11 @@ class ArrayMath:
     def multiply_add(
         a: float, x: Sequence[float], destination: MutableSequence[float]
     ) -> None:
-        for i in range(len(destination)):
-            destination[i] += a * x[i]
+        if isinstance(destination, np.ndarray) and isinstance(x, np.ndarray):
+            destination += a * x
+        else:
+            for i in range(len(destination)):
+                destination[i] += a * x[i]
 
     @staticmethod
     def multiply_add_slope(
@@ -75,6 +83,11 @@ class ArrayMath:
         x: Sequence[float],
         destination: MutableSequence[float],
     ) -> None:
-        for i in range(len(destination)):
-            destination[i] += a * x[i]
-            a += step
+        if isinstance(destination, np.ndarray) and isinstance(x, np.ndarray):
+            n = len(destination)
+            ramp = a + step * np.arange(n, dtype=np.float64)
+            destination += ramp * x
+        else:
+            for i in range(len(destination)):
+                destination[i] += a * x[i]
+                a += step

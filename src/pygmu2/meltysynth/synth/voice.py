@@ -2,7 +2,12 @@ import math
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from pygmu2.meltysynth.math_utils import HALF_PI, NON_AUDIBLE, SoundFontMath, create_buffer
+from pygmu2.meltysynth.math_utils import (
+    HALF_PI,
+    NON_AUDIBLE,
+    SoundFontMath,
+    create_buffer_numpy,
+)
 from pygmu2.meltysynth.model.instrument import InstrumentRegion
 from pygmu2.meltysynth.synth.envelope import ModulationEnvelope, VolumeEnvelope
 from pygmu2.meltysynth.synth.filter_ import BiQuadFilter
@@ -31,7 +36,7 @@ class Voice:
         self._mod_lfo = Lfo(synthesizer)
         self._oscillator = Oscillator(synthesizer)
         self._filter = BiQuadFilter(synthesizer)
-        self._block = create_buffer(synthesizer.block_size)
+        self._block = create_buffer_numpy(synthesizer.block_size)
         self._previous_mix_gain_left = 0
         self._previous_mix_gain_right = 0
         self._current_mix_gain_left = 0

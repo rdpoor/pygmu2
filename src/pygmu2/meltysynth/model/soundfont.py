@@ -1,6 +1,8 @@
 from io import BufferedIOBase
 from typing import Sequence
 
+import numpy as np
+
 from pygmu2.meltysynth.exceptions import MeltysynthError
 from pygmu2.meltysynth.io.binary_reader import BinaryReaderEx
 from pygmu2.meltysynth.model.instrument import Instrument
@@ -31,7 +33,9 @@ class SoundFont:
 
         sample_data = SoundFontSampleData(reader)
         self._bits_per_sample = sample_data.bits_per_sample
-        self._wave_data = sample_data.samples
+        self._wave_data = np.asarray(
+            sample_data.samples, dtype=np.float64
+        )
 
         parameters = SoundFontParameters(reader)
         self._sample_headers = parameters.sample_headers
