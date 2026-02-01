@@ -78,7 +78,7 @@ class BinaryReaderEx:
     ) -> Sequence[float]:
         from array import array
 
-        count = int(size / 2)
+        count = size // 2
         data = array("h")
         data.fromfile(reader, count)
         return array("f", map(lambda x: x / 32768.0, data))

@@ -18,10 +18,10 @@ class PresetInfo:
     def read_from_chunk(
         reader: BufferedIOBase, size: int
     ) -> Sequence["PresetInfo"]:
-        if int(size % 38) != 0:
+        if size % 38 != 0:
             raise MeltysynthError("The preset list is invalid.")
 
-        count = int(size / 38)
+        count = size // 38
         presets: list[PresetInfo] = []
 
         for i in range(count):

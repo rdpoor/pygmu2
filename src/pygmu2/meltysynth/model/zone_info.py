@@ -14,10 +14,10 @@ class ZoneInfo:
     def read_from_chunk(
         reader: BufferedIOBase, size: int
     ) -> Sequence["ZoneInfo"]:
-        if int(size % 4) != 0:
+        if size % 4 != 0:
             raise MeltysynthError("The zone list is invalid.")
 
-        count = int(size / 4)
+        count = size // 4
         zones: list[ZoneInfo] = []
 
         for i in range(count):

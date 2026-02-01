@@ -13,10 +13,10 @@ class InstrumentInfo:
     def read_from_chunk(
         reader: BufferedIOBase, size: int
     ) -> Sequence["InstrumentInfo"]:
-        if int(size % 22) != 0:
+        if size % 22 != 0:
             raise MeltysynthError("The instrument list is invalid.")
 
-        count = int(size / 22)
+        count = size // 22
         instruments: list[InstrumentInfo] = []
 
         for i in range(count):

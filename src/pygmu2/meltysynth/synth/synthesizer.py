@@ -14,6 +14,7 @@ from pygmu2.meltysynth.synth.voice_collection import VoiceCollection
 class Synthesizer:
     _CHANNEL_COUNT = 16
     _PERCUSSION_CHANNEL = 9
+    _INITIAL_MIN_PRESET_ID = 10**10
 
     def __init__(
         self, sound_font: SoundFont, settings: SynthesizerSettings
@@ -23,9 +24,9 @@ class Synthesizer:
         self._block_size = settings.block_size
         self._maximum_polyphony = settings.maximum_polyphony
         self._enable_reverb_and_chorus = settings.enable_reverb_and_chorus
-        self._minimum_voice_duration = int(self._sample_rate / 500)
+        self._minimum_voice_duration = self._sample_rate // 500
         self._preset_lookup: dict[int, Preset] = {}
-        min_preset_id = 10000000000
+        min_preset_id = Synthesizer._INITIAL_MIN_PRESET_ID
         for preset in self._sound_font.presets:
             preset_id = (preset.bank_number << 16) | preset.patch_number
             self._preset_lookup[preset_id] = preset

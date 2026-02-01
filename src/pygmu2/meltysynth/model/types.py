@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import IntEnum
 
 
@@ -83,15 +84,9 @@ class LoopMode(IntEnum):
     LOOP_UNTIL_NOTE_OFF = 3
 
 
+@dataclass(frozen=True)
 class SoundFontVersion:
-    def __init__(self, major: int, minor: int) -> None:
-        self._major = major
-        self._minor = minor
+    """SoundFont version (major, minor)."""
 
-    @property
-    def major(self) -> int:
-        return self._major
-
-    @property
-    def minor(self) -> int:
-        return self._minor
+    major: int
+    minor: int

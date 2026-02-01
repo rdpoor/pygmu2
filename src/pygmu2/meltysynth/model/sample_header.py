@@ -22,10 +22,10 @@ class SampleHeader:
     def _read_from_chunk(
         reader: BufferedIOBase, size: int
     ) -> Sequence["SampleHeader"]:
-        if int(size % 46) != 0:
+        if size % 46 != 0:
             raise MeltysynthError("The sample header list is invalid.")
 
-        count = int(size / 46) - 1
+        count = size // 46 - 1
         headers: list[SampleHeader] = []
 
         for _ in range(count):

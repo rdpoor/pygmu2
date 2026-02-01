@@ -15,10 +15,10 @@ class Generator:
     def read_from_chunk(
         reader: BufferedIOBase, size: int
     ) -> Sequence["Generator"]:
-        if int(size % 4) != 0:
+        if size % 4 != 0:
             raise MeltysynthError("The generator list is invalid.")
 
-        count = int(size / 4) - 1
+        count = size // 4 - 1
         generators: list[Generator] = []
 
         for _ in range(count):

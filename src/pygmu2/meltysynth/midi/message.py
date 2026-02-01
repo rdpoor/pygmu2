@@ -45,13 +45,12 @@ class MidiMessage:
 
     @property
     def type(self) -> MidiMessageType:
-        match self.channel:
-            case int(MidiMessageType.TEMPO_CHANGE):
-                return MidiMessageType.TEMPO_CHANGE
-            case int(MidiMessageType.END_OF_TRACK):
-                return MidiMessageType.END_OF_TRACK
-            case _:
-                return MidiMessageType.NORMAL
+        first_byte = self._data[0]
+        if first_byte == MidiMessageType.TEMPO_CHANGE:
+            return MidiMessageType.TEMPO_CHANGE
+        if first_byte == MidiMessageType.END_OF_TRACK:
+            return MidiMessageType.END_OF_TRACK
+        return MidiMessageType.NORMAL
 
     @property
     def channel(self) -> int:

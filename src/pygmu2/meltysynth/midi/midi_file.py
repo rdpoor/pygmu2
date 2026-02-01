@@ -7,6 +7,8 @@ from pygmu2.meltysynth.exceptions import MeltysynthError
 from pygmu2.meltysynth.io.binary_reader import BinaryReaderEx
 from pygmu2.meltysynth.midi.message import MidiMessage, MidiMessageType
 
+_INITIAL_MIN_TICK = 10**10
+
 
 class MidiFile:
     def __init__(self, reader: BufferedIOBase) -> None:
@@ -138,7 +140,7 @@ class MidiFile:
         tempo: float = 120.0
 
         while True:
-            min_tick = 10000000000
+            min_tick = _INITIAL_MIN_TICK
             min_index = -1
 
             for ch in range(len(tick_lists)):

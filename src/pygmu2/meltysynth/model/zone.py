@@ -1,5 +1,6 @@
 from typing import Sequence
 
+from pygmu2.meltysynth.exceptions import MeltysynthError
 from pygmu2.meltysynth.model.generator import Generator
 from pygmu2.meltysynth.model.zone_info import ZoneInfo
 
@@ -20,9 +21,10 @@ class Zone:
 
         for i in range(count):
             info = infos[i]
-            gs: list[Generator] = []
-            for j in range(info.generator_count):
-                gs.append(generators[info.generator_index + j])
+            gs = [
+                generators[info.generator_index + j]
+                for j in range(info.generator_count)
+            ]
             zones.append(Zone(gs))
 
         return zones

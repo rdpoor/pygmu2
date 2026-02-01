@@ -1,12 +1,8 @@
 import math
 from array import array
 from collections.abc import MutableSequence, Sequence
-from typing import TYPE_CHECKING
 
 import itertools
-
-if TYPE_CHECKING:
-    pass
 
 
 def create_buffer(length: int) -> MutableSequence[float]:
@@ -52,19 +48,15 @@ class SoundFontMath:
 
     @staticmethod
     def exp_cutoff(x: float) -> float:
-        if x < SoundFontMath.log_non_audible():
-            return 0.0
-        else:
-            return math.exp(x)
+        return (
+            0.0
+            if x < SoundFontMath.log_non_audible()
+            else math.exp(x)
+        )
 
     @staticmethod
     def clamp(value: float, min_val: float, max_val: float) -> float:
-        if value < min_val:
-            return min_val
-        elif value > max_val:
-            return max_val
-        else:
-            return value
+        return max(min_val, min(max_val, value))
 
 
 class ArrayMath:
