@@ -15,7 +15,7 @@ from pygmu2 import (
     GainPE,
     LadderPE,
     LadderMode,
-    RampPE,
+    PiecewisePE,
     WavReaderPE,
 )
 
@@ -57,7 +57,7 @@ with renderer:
 
 # --- Part 3: Cutoff sweep ---
 print("\nPart 3: Ladder sweep (200 Hz -> 4 kHz)", flush=True)
-cutoff_sweep_stream = RampPE(200.0, 4000.0, duration=duration_samples)
+cutoff_sweep_stream = PiecewisePE([(0, 200.0), (duration_samples, 4000.0)])
 sweep_stream = LadderPE(source_stream, frequency=cutoff_sweep_stream, resonance=0.3, mode=LadderMode.LP12, drive=1.2)
 sweep_stream = GainPE(sweep_stream, gain=0.8)
 sweep_out_stream = CropPE(sweep_stream, Extent(0, duration_samples))

@@ -5,7 +5,7 @@ from pygmu2 import (
     DiracPE,
     DelayPE,
     MixPE,
-    RampPE,
+    PiecewisePE,
     SinePE,
     TriggerPE,
     TriggerMode,
@@ -48,7 +48,7 @@ def demo_one_shot_trigger():
     
     # Wrap the drums in a TriggerPE
     # The drums will only start playing when the trigger arrives (at t=1.0s)
-    triggered_drums_stream = TriggerPE(drums_stream, trigger_stream, mode=TriggerMode.ONE_SHOT)
+    triggered_drums_stream = TriggerPE(drums_stream, trigger_stream, trigger_mode=TriggerMode.ONE_SHOT)
     
     # Mix the bass (playing immediately) with the triggered drums
     # We delay the triggered drums slightly less than the trigger time simply to show 
@@ -66,72 +66,39 @@ def demo_one_shot_trigger():
 
 def demo_gated_retrigger():
     """
-    Demonstrate GATED triggering with restart.
-    
-    A sine wave with increasing frequency acts as a trigger source.
-    Every time the sine wave crosses zero (goes positive), it restarts
-    a percussive sample (djembe). As the frequency increases, the
-    re-triggering gets faster, creating a "stutter" or "drill" effect.
-    """
-    print("\n=== Demo: GATED Retriggering ===")
-    print("Using an LFO to repeatedly trigger a sample with increasing speed...")
+    Demonstrate GATED triggering.
 
-    # Load a short percussive sound
+    A sine LFO (2 Hz -> 20 Hz over 5 s) gates a djembe sample. Sample plays
+    while LFO > 0 and stops when LFO <= 0. GATED does not retrigger when the
+    gate goes high again (one segment per run).
+    """
+    print("\n=== Demo: GATED ===")
+    print("Sample plays while LFO > 0, stops when LFO <= 0 (no retrigger).")
+
     sample_stream = WavReaderPE("examples/audio/djembe.wav")
-    
-    # We want to re-trigger this sample rhythmically.
-    # We'll use a Sine wave as the LFO (Low Frequency Oscillator).
-    # Its frequency will ramp up from 2 Hz to 20 Hz over 5 seconds.
-    
-    # 1. Create the frequency ramp
-    freq_ramp_stream = WindowPE(
-        SinePE(frequency=0.0), # Dummy input, not used by WindowPE directly this way usually? 
-        # Wait, WindowPE is for envelopes. Let's use linear interpolation or just a Sweep.
-        # We can use a Wavetable or just simple math if we had a RampPE.
-        # Let's use a SinePE to modulate the frequency of another SinePE (FM).
-        # Or better, just a helper for linear ramp.
-        # Actually we have RampPE? Let's check imports. No RampPE imported.
-        # We can use a very slow SinePE as an LFO for frequency.
-    )
-    # Re-writing the frequency ramp concept using what we have.
-    # We want f(t) to go from 2 to 20.
-    # We can use a SinePE at 0Hz (DC offset) ? No, SinePE frequency is constant.
-    # Wait, SinePE frequency CAN be a PE!
-    
-    # LFO Frequency control: A ramp from 2 to 20 over 5 seconds.
-    # Since we don't have a simple Line/Ramp PE in the standard import list above (let me check),
-    # I'll implement a quick ramp using a very slow sine wave segment or just add RampPE to imports if available.
-    # I see RampPE in __init__.py from previous context. I will add it to imports.
-        
-    # Assume 44100 Hz
-    SAMPLE_RATE = 44100
-    lfo_freq_stream = RampPE(start_value=2.0, end_value=20.0, duration=int(seconds_to_samples(5.0, SAMPLE_RATE)))
-    
-    # The Trigger LFO
-    trigger_lfo_stream = SinePE(frequency=lfo_freq_stream)
-    
-    # The Gated Trigger
-    # When LFO > 0, it plays. When LFO <= 0, it stops (and resets for next time).
-    # This chops the sample, playing only the first half-cycle duration of the LFO.
-    # As LFO speeds up, we hear shorter and shorter chunks of the start of the sample.
-    stutter_stream = TriggerPE(sample_stream, trigger_lfo_stream, mode=TriggerMode.GATED)
-    
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
+    sample_rate = 44100
+    dur = int(seconds_to_samples(5.0, sample_rate))
+
+    # LFO frequency ramps 2 Hz -> 20 Hz over the demo duration
+    lfo_freq = PiecewisePE([(0, 2.0), (dur, 20.0)])
+    trigger_lfo = SinePE(frequency=lfo_freq)
+    stutter_stream = TriggerPE(sample_stream, trigger_lfo, trigger_mode=TriggerMode.GATED)
+
+    renderer = AudioRenderer(sample_rate=sample_rate)
     renderer.set_source(stutter_stream)
-    
     with renderer:
         renderer.start()
-        renderer.play_range(0, seconds_to_samples(5.0, SAMPLE_RATE).astype(int))
+        renderer.play_range(0, dur)
 
 def demo_gated_rhythm():
     """
-    Demonstrate GATED mode for rhythmic patterns.
-    
-    We create a simple sequencer using a WavetablePE as a control signal
-    to gate a continuous sound (like a choir or pad).
+    Demonstrate RETRIGGER mode for rhythmic patterns.
+
+    An 8-step pattern (1 0 1 1 0 1 0 0) at 2 Hz gates a choir pad. Each time
+    the pattern goes high, the pad retriggers from the start (RETRIGGER mode).
     """
-    print("\n=== Demo: GATED Rhythm ===")
-    print("Gating a choir pad with a rhythmic control pattern...")
+    print("\n=== Demo: RETRIGGER Rhythm ===")
+    print("Choir pad retriggers from the start on each pattern step (RETRIGGER).")
     
     choir_stream = WavReaderPE("examples/audio/choir.wav")
     sample_rate = choir_stream.file_sample_rate
@@ -141,20 +108,15 @@ def demo_gated_rhythm():
     pattern = np.array([1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0], dtype=np.float32)
     # Note: TriggerPE uses >0 for ON. So -1 is OFF.
     
-    # Create a sequencer by driving a WavetablePE with a phasor (RampPE)
+    # Create a sequencer by driving a WavetablePE with a phasor (PiecewisePE)
     # 1. Create the data source (the sequence pattern)
     pattern_source_stream = ArrayPE(pattern)
     
-    # 2. Create the indexer (Phasor)
-    # We want to scan through the 8-step pattern at 2 Hz.
-    # Cycle duration = sample_rate / 2.0
-    
-    from pygmu2 import RampPE, LoopPE
-    
+    # 2. Create the indexer (phasor): ramp 0..8 over one cycle, loop at 2 Hz
     cycle_samples = int(sample_rate / 2.0)
-    
+
     # Create a single ramp from 0 to 8 (length of pattern)
-    one_cycle_stream = RampPE(start_value=0.0, end_value=len(pattern), duration=cycle_samples)
+    one_cycle_stream = PiecewisePE([(0, 0.0), (cycle_samples, len(pattern))])
     
     # Loop it indefinitely to create a phasor
     phasor_stream = LoopPE(one_cycle_stream)
@@ -167,7 +129,7 @@ def demo_gated_rhythm():
         out_of_bounds=OutOfBoundsMode.WRAP
     )
     
-    gated_pad_stream = TriggerPE(choir_stream, sequencer_stream, mode=TriggerMode.GATED)
+    gated_pad_stream = TriggerPE(choir_stream, sequencer_stream, trigger_mode=TriggerMode.RETRIGGER)
     
     renderer = AudioRenderer(sample_rate=sample_rate)
     renderer.set_source(gated_pad_stream)

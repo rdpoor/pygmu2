@@ -14,7 +14,7 @@ from pygmu2 import (
     ConstantPE,
     SinePE,
     DiracPE,
-    RampPE,
+    PiecewisePE,
     NullRenderer,
 )
 
@@ -71,7 +71,7 @@ class TestWindowPEBasics:
         assert win.channel_count() == 2
     
     def test_extent_from_source(self):
-        source = RampPE(0.0, 1.0, duration=1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])
         win = WindowPE(source)
         
         extent = win.extent()

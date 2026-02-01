@@ -12,7 +12,7 @@ from pygmu2 import (
     SVFilterPE,
     BiquadMode,
     ConstantPE,
-    RampPE,
+    PiecewisePE,
     SinePE,
     DiracPE,
     NullRenderer,
@@ -51,7 +51,7 @@ class TestSVFilterPEBasics:
 
     def test_create_with_pe_frequency(self):
         source = ConstantPE(1.0)
-        freq_pe = RampPE(100.0, 5000.0, duration=44100)
+        freq_pe = PiecewisePE(100.0, 5000.0, duration=44100)
         svf = SVFilterPE(
             source, frequency=freq_pe, q=1.0, mode=BiquadMode.LOWPASS
         )
@@ -59,7 +59,7 @@ class TestSVFilterPEBasics:
 
     def test_create_with_pe_q(self):
         source = ConstantPE(1.0)
-        q_pe = RampPE(0.5, 10.0, duration=44100)
+        q_pe = PiecewisePE([(0, 0.5), (44100, 10.0)])
         svf = SVFilterPE(
             source, frequency=1000.0, q=q_pe, mode=BiquadMode.LOWPASS
         )
@@ -82,7 +82,7 @@ class TestSVFilterPEBasics:
 
     def test_inputs_with_pe_frequency(self):
         source = ConstantPE(1.0)
-        freq_pe = RampPE(100.0, 5000.0, duration=44100)
+        freq_pe = PiecewisePE(100.0, 5000.0, duration=44100)
         svf = SVFilterPE(
             source, frequency=freq_pe, q=1.0, mode=BiquadMode.LOWPASS
         )
@@ -264,7 +264,7 @@ class TestSVFilterPETimeVarying:
 
     def test_frequency_sweep(self):
         source = ConstantPE(1.0)
-        freq_sweep = RampPE(100.0, 10000.0, duration=1000)
+        freq_sweep = PiecewisePE(100.0, 10000.0, duration=1000)
         svf = SVFilterPE(
             source, frequency=freq_sweep, q=0.707, mode=BiquadMode.LOWPASS
         )
@@ -277,7 +277,7 @@ class TestSVFilterPETimeVarying:
 
     def test_q_modulation(self):
         source = ConstantPE(1.0)
-        q_mod = RampPE(0.5, 10.0, duration=1000)
+        q_mod = PiecewisePE([(0, 0.5), (1000, 10.0)])
         svf = SVFilterPE(
             source, frequency=1000.0, q=q_mod, mode=BiquadMode.LOWPASS
         )

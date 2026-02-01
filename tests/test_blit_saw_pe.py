@@ -12,7 +12,7 @@ from pygmu2 import (
     BlitSawPE,
     ConstantPE,
     CropPE,
-    RampPE,
+    PiecewisePE,
     NullRenderer,
     Extent,
 )
@@ -395,7 +395,7 @@ class TestBlitSawPEModulation:
     def test_extent_with_pe_inputs(self):
         """Extent should be intersection of PE input extents."""
         # Create a PE with finite extent
-        finite_pe = RampPE(0.0, 1.0, duration=1000)
+        finite_pe = PiecewisePE([(0, 0.0), (1000, 1.0)])
         saw = BlitSawPE(frequency=440.0, amplitude=finite_pe)
         
         extent = saw.extent()

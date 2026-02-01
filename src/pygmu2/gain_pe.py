@@ -46,7 +46,7 @@ class GainPE(ProcessingElement):
         tremolo = GainPE(source, gain=tremolo_gain)
         
         # Fade in envelope
-        fade_in = RampPE(0.0, 1.0, duration=44100)  # 1 second fade
+        fade_in = PiecewisePE([(0, 0.0), (44100, 1.0)])  # 1 second fade
         faded = GainPE(source, gain=fade_in)
         
         # Ducking (reduce gain when another signal is present)

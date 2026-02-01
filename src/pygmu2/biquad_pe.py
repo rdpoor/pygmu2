@@ -105,7 +105,7 @@ class BiquadPE(ProcessingElement):
         autowah_stream = BiquadPE(source_stream, frequency=freq_mod_stream, q=5.0, mode=BiquadMode.BANDPASS)
         
         # Filter sweep
-        freq_sweep = RampPE(100.0, 5000.0, duration=44100*2)  # 2 second sweep
+        freq_sweep = PiecewisePE([(0, 100.0), (44100*2, 5000.0)])  # 2 second sweep
         sweep = BiquadPE(source, frequency=freq_sweep, q=2.0, mode=BiquadMode.LOWPASS)
         
         # Parametric EQ boost at 1kHz

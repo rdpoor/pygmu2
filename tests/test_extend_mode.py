@@ -14,7 +14,7 @@ from pygmu2 import (
     NullRenderer,
     Extent,
     ExtendMode,
-    RampPE,
+    PiecewisePE,
     CropPE,
 )
 
@@ -73,7 +73,7 @@ class TestRampExtendMode:
         # extend_mode = ZERO
         # sample index:    -2 -1   0     1     2     3   4  5
         # values:           0, 0, 10.0, 13.33, 16.67, 20.0, 0, 0
-        ramp_stream = RampPE(10.0, 20.0, duration=4, extend_mode=ExtendMode.ZERO)
+        ramp_stream = PiecewisePE([(0, 10.0), (4, 20.0)], extend_mode=ExtendMode.ZERO)
 
         self.renderer.set_source(ramp_stream)
         snippet = ramp_stream.render(-2, 8)
@@ -83,7 +83,7 @@ class TestRampExtendMode:
         # extend_mode = HOLD_FIRST
         # sample index:     -2   -1    0     1     2     3   4  5
         # values:           10.0, 10.0, 10.0, 13.33, 16.67, 20.0, 0, 0
-        ramp_stream = RampPE(10.0, 20.0, duration=4, extend_mode=ExtendMode.HOLD_FIRST)
+        ramp_stream = PiecewisePE([(0, 10.0), (4, 20.0)], extend_mode=ExtendMode.HOLD_FIRST)
 
         self.renderer.set_source(ramp_stream)
         snippet = ramp_stream.render(-2, 8)
@@ -93,7 +93,7 @@ class TestRampExtendMode:
         # extend_mode = HOLD_LAST
         # sample index:     -2 -1   0     1     2     3     4     5
         # values:            0, 0, 10.0, 13.33, 16.67, 20.0, 20.0, 20.0
-        ramp_stream = RampPE(10.0, 20.0, duration=4, extend_mode=ExtendMode.HOLD_LAST)
+        ramp_stream = PiecewisePE([(0, 10.0), (4, 20.0)], extend_mode=ExtendMode.HOLD_LAST)
 
         self.renderer.set_source(ramp_stream)
         snippet = ramp_stream.render(-2, 8)
@@ -103,7 +103,7 @@ class TestRampExtendMode:
         # extend_mode = HOLD_BOTH
         # sample index:     -2   -1    0     1     2     3     4     5
         # values:           10.0, 10.0, 10.0, 13.33, 16.67, 20.0, 20.0, 20.0
-        ramp_stream = RampPE(10.0, 20.0, duration=4, extend_mode=ExtendMode.HOLD_BOTH)
+        ramp_stream = PiecewisePE([(0, 10.0), (4, 20.0)], extend_mode=ExtendMode.HOLD_BOTH)
 
         self.renderer.set_source(ramp_stream)
         snippet = ramp_stream.render(-2, 8)

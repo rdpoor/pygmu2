@@ -25,7 +25,7 @@ from pygmu2 import (
     FunctionGenPE,
     GainPE,
     MixPE,
-    RampPE,
+    PiecewisePE,
     SinePE,
     TransformPE,
     seconds_to_samples,
@@ -67,7 +67,7 @@ def demo_morph_naive():
     print()
 
     dur = int(seconds_to_samples(8.0, SAMPLE_RATE))
-    duty_stream = RampPE(0.0, 1.0, duration=dur)
+    duty_stream = PiecewisePE([(0, 0.0), (dur, 1.0)])
 
     osc_stream = FunctionGenPE(frequency=220.0, duty_cycle=duty_stream, waveform="sawtooth")
     out_stream = GainPE(osc_stream, gain=0.35)
@@ -93,7 +93,7 @@ def demo_ab_high_pitch():
     dur = int(seconds_to_samples(6.0, SAMPLE_RATE))
 
     # Sweep from 500 Hz up near Nyquist
-    freq_stream = RampPE(500.0, 12_000.0, duration=dur)
+    freq_stream = PiecewisePE([(0, 500.0), (dur, 12_000.0)])
 
     duty = 0.2
 

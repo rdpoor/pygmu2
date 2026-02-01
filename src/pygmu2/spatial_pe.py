@@ -349,7 +349,7 @@ class SpatialPE(ProcessingElement):
         )
         
         # Dynamic panning: Azimuth controlled by a PE
-        pan_control = RampPE(-90.0, 90.0, duration=44100)  # Sweep left to right
+        pan_control = PiecewisePE([(0, -90.0), (44100, 90.0)])  # Sweep left to right
         panned = SpatialPE(mono_source, method=SpatialConstantPower(azimuth=pan_control))
     """
     

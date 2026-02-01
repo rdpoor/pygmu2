@@ -7,7 +7,7 @@ MIT License
 """
 
 import numpy as np
-from pygmu2 import CombPE, ConstantPE, NullRenderer, RampPE
+from pygmu2 import CombPE, ConstantPE, NullRenderer, PiecewisePE
 
 
 class TestCombPEBasics:
@@ -21,8 +21,8 @@ class TestCombPEBasics:
 
     def test_inputs_with_param_pes(self):
         source = ConstantPE(1.0)
-        freq = RampPE(200.0, 800.0, duration=1000)
-        fb = RampPE(0.0, 0.5, duration=1000)
+        freq = PiecewisePE([(0, 200.0), (1000, 800.0)])
+        fb = PiecewisePE([(0, 0.0), (1000, 0.5)])
 
         comb = CombPE(source, frequency=freq, feedback=fb)
         inputs = comb.inputs()

@@ -11,7 +11,7 @@ import numpy as np
 from pygmu2 import (
     LoopPE,
     ConstantPE,
-    RampPE,
+    PiecewisePE,
     DiracPE,
     NullRenderer,
 )
@@ -21,7 +21,7 @@ class TestLoopPEBasics:
     """Test basic LoopPE creation and properties."""
     
     def test_create_default(self):
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         loop = LoopPE(source)
         
         assert loop.source is source
@@ -31,7 +31,7 @@ class TestLoopPEBasics:
         assert loop.crossfade_seconds == 0.0
     
     def test_create_with_params(self):
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         loop = LoopPE(
             source,
             loop_start=10,
@@ -46,7 +46,7 @@ class TestLoopPEBasics:
         assert loop.crossfade_seconds == 0.01
     
     def test_negative_crossfade_clamped(self):
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         loop = LoopPE(source, crossfade_seconds=-0.1)
         
         # Negative times are invalid; error is raised when the graph is configured.
@@ -56,14 +56,14 @@ class TestLoopPEBasics:
             renderer.set_source(loop)
     
     def test_inputs(self):
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         loop = LoopPE(source)
         
         assert loop.inputs() == [source]
     
     def test_is_pure(self):
         """LoopPE is stateless, so is_pure() should return True."""
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         loop = LoopPE(source)
         
         assert loop.is_pure() is True
@@ -75,12 +75,12 @@ class TestLoopPEBasics:
         assert loop.channel_count() == 2
     
     def test_repr(self):
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         loop = LoopPE(source, loop_start=10, loop_end=50, count=4)
         
         repr_str = repr(loop)
         assert "LoopPE" in repr_str
-        assert "RampPE" in repr_str
+        assert "PiecewisePE" in repr_str
         assert "10" in repr_str
         assert "50" in repr_str
         assert "count=4" in repr_str
@@ -94,7 +94,7 @@ class TestLoopPEExtent:
     
     def test_infinite_loop_extent(self):
         """Infinite loop should have infinite extent."""
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         loop = LoopPE(source)
         
         self.renderer.set_source(loop)
@@ -105,7 +105,7 @@ class TestLoopPEExtent:
     
     def test_finite_loop_extent(self):
         """Finite loop should have bounded extent."""
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         loop = LoopPE(source, count=3)
         
         self.renderer.set_source(loop)
@@ -116,7 +116,7 @@ class TestLoopPEExtent:
     
     def test_custom_region_extent(self):
         """Loop with custom region should calculate extent correctly."""
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         loop = LoopPE(source, loop_start=20, loop_end=60, count=5)
         
         self.renderer.set_source(loop)
@@ -134,7 +134,7 @@ class TestLoopPEBasicLooping:
     
     def test_single_loop_matches_source(self):
         """First iteration should match source."""
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         loop = LoopPE(source)
         
         self.renderer.set_source(loop)
@@ -153,7 +153,7 @@ class TestLoopPEBasicLooping:
     
     def test_second_iteration_repeats(self):
         """Second iteration should repeat first."""
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         loop = LoopPE(source)
         
         self.renderer.set_source(loop)
@@ -173,7 +173,7 @@ class TestLoopPEBasicLooping:
     def test_loop_wraps_correctly(self):
         """Values should wrap at loop boundary."""
         # Create a simple pattern: 0, 1, 2, 3, 4
-        source = RampPE(0.0, 4.0, duration=5)
+        source = PiecewisePE([(0, 0.0), (5, 4.0)])
         loop = LoopPE(source)
         
         self.renderer.set_source(loop)
@@ -199,7 +199,7 @@ class TestLoopPECustomRegion:
     def test_custom_loop_region(self):
         """Should loop only the specified region."""
         # Create ramp 0-9 over 10 samples
-        source = RampPE(0.0, 9.0, duration=10)
+        source = PiecewisePE([(0, 0.0), (10, 9.0)])
         # Loop only samples 2-5 (values 2, 3, 4)
         loop = LoopPE(source, loop_start=2, loop_end=5)
         
@@ -235,7 +235,7 @@ class TestLoopPEFiniteCount:
     def test_stops_after_count(self):
         """Should output silence after count iterations."""
         source = ConstantPE(1.0)
-        source_cropped = RampPE(1.0, 1.0, duration=10)  # 10 samples of 1.0
+        source_cropped = PiecewisePE([(0, 1.0), (10, 1.0)])  # 10 samples of 1.0
         loop = LoopPE(source_cropped, count=2)
         
         self.renderer.set_source(loop)
@@ -256,7 +256,7 @@ class TestLoopPEFiniteCount:
     
     def test_partial_final_render(self):
         """Render spanning end of loop should be partial."""
-        source = RampPE(1.0, 1.0, duration=10)
+        source = PiecewisePE([(0, 1.0), (10, 1.0)])
         loop = LoopPE(source, count=2)  # Total 20 samples
         
         self.renderer.set_source(loop)
@@ -283,11 +283,11 @@ class TestLoopPECrossfade:
         """Crossfade should smooth the loop boundary."""
         # Create a step function: 0 for first half, 1 for second half
         # Without crossfade, loop point would have a hard edge
-        source = RampPE(0.0, 0.0, duration=50)  # First 50 samples = 0
+        source = PiecewisePE([(0, 0.0), (50, 0.0)])  # First 50 samples = 0
         # Actually let's use a simpler test - constant values
         
         # Create source with different start and end values
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         
         # With crossfade
         loop_xfade = LoopPE(source, crossfade_seconds=0.02)  # 20 samples at 1kHz
@@ -314,7 +314,7 @@ class TestLoopPECrossfade:
     
     def test_no_crossfade_has_discontinuity(self):
         """Without crossfade, there should be a discontinuity."""
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         loop_no_xfade = LoopPE(source, crossfade_seconds=0.0)
         
         self.renderer.set_source(loop_no_xfade)
@@ -367,7 +367,7 @@ class TestLoopPEErrors:
     
     def test_invalid_loop_length(self):
         """Should raise error if loop_end <= loop_start."""
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         loop = LoopPE(source, loop_start=50, loop_end=50)
         
         with pytest.raises(ValueError, match="positive"):

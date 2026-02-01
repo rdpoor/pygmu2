@@ -31,7 +31,6 @@ from pygmu2.karplus_strong_pe import KarplusStrongPE, rho_for_decay_db
 from pygmu2.ladder_pe import LadderPE, LadderMode
 from pygmu2.loop_pe import LoopPE
 from pygmu2.midi_in_pe import MidiInPE
-from pygmu2.ramp_pe import RampPE, RampType
 from pygmu2.random_pe import RandomPE, RandomMode
 from pygmu2.reset_pe import ResetPE
 from pygmu2.sine_pe import SinePE
@@ -57,6 +56,7 @@ from pygmu2.wavetable_pe import WavetablePE, InterpolationMode, OutOfBoundsMode
 from pygmu2.window_pe import WindowPE, WindowMode
 from pygmu2.reverse_pitch_echo_pe import ReversePitchEchoPE
 from pygmu2.timewarp_pe import TimeWarpPE
+from pygmu2.piecewise_pe import PiecewisePE, TransitionType
 from pygmu2.conversions import (
     pitch_to_freq,
     freq_to_pitch,
@@ -124,6 +124,8 @@ __all__ = [
     "AnalogOscPE",
     "ArrayPE",
     "FunctionGenPE",
+    "PiecewisePE",
+    "TransitionType",
     "BiquadPE",
     "BlitSawPE",
     "CompressorPE",
@@ -146,8 +148,6 @@ __all__ = [
     "CombPE",
     "ConvolvePE",
     "AudioLibrary",
-    "RampPE",
-    "RampType",
     "RandomPE",
     "ResetPE",
     "SlicePE",

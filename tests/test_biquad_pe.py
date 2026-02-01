@@ -12,7 +12,7 @@ from pygmu2 import (
     BiquadPE,
     BiquadMode,
     ConstantPE,
-    RampPE,
+    PiecewisePE,
     SinePE,
     DiracPE,
     NullRenderer,
@@ -42,7 +42,7 @@ class TestBiquadPEBasics:
     
     def test_create_with_pe_frequency(self):
         source = ConstantPE(1.0)
-        freq_pe = RampPE(100.0, 5000.0, duration=44100)
+        freq_pe = PiecewisePE([(0, 100.0), (44100, 5000.0)])
         
         bq = BiquadPE(source, frequency=freq_pe, q=1.0, mode=BiquadMode.LOWPASS)
         
@@ -50,7 +50,7 @@ class TestBiquadPEBasics:
     
     def test_create_with_pe_q(self):
         source = ConstantPE(1.0)
-        q_pe = RampPE(0.5, 10.0, duration=44100)
+        q_pe = PiecewisePE(0.5, 10.0, duration=44100)
         
         bq = BiquadPE(source, frequency=1000.0, q=q_pe, mode=BiquadMode.LOWPASS)
         
@@ -73,7 +73,7 @@ class TestBiquadPEBasics:
     
     def test_inputs_with_pe_frequency(self):
         source = ConstantPE(1.0)
-        freq_pe = RampPE(100.0, 5000.0, duration=44100)
+        freq_pe = PiecewisePE([(0, 100.0), (44100, 5000.0)])
         
         bq = BiquadPE(source, frequency=freq_pe, q=1.0, mode=BiquadMode.LOWPASS)
         
@@ -84,7 +84,7 @@ class TestBiquadPEBasics:
     
     def test_inputs_with_pe_q(self):
         source = ConstantPE(1.0)
-        q_pe = RampPE(0.5, 10.0, duration=44100)
+        q_pe = PiecewisePE(0.5, 10.0, duration=44100)
         
         bq = BiquadPE(source, frequency=1000.0, q=q_pe, mode=BiquadMode.LOWPASS)
         
@@ -95,8 +95,8 @@ class TestBiquadPEBasics:
     
     def test_inputs_with_both_pe(self):
         source = ConstantPE(1.0)
-        freq_pe = RampPE(100.0, 5000.0, duration=44100)
-        q_pe = RampPE(0.5, 10.0, duration=44100)
+        freq_pe = PiecewisePE([(0, 100.0), (44100, 5000.0)])
+        q_pe = PiecewisePE(0.5, 10.0, duration=44100)
         
         bq = BiquadPE(source, frequency=freq_pe, q=q_pe, mode=BiquadMode.LOWPASS)
         
@@ -120,7 +120,7 @@ class TestBiquadPEBasics:
         assert bq.channel_count() == 2
     
     def test_extent_from_source(self):
-        source = RampPE(0.0, 1.0, duration=1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])
         bq = BiquadPE(source, frequency=1000.0, q=1.0, mode=BiquadMode.LOWPASS)
         
         extent = bq.extent()
@@ -343,7 +343,7 @@ class TestBiquadPETimeVarying:
     def test_frequency_sweep(self):
         """Test filter with sweeping frequency."""
         source = ConstantPE(1.0)
-        freq_sweep = RampPE(100.0, 10000.0, duration=1000)
+        freq_sweep = PiecewisePE(100.0, 10000.0, duration=1000)
         
         bq = BiquadPE(source, frequency=freq_sweep, q=0.707, mode=BiquadMode.LOWPASS)
         
@@ -361,7 +361,7 @@ class TestBiquadPETimeVarying:
     def test_q_modulation(self):
         """Test filter with modulated Q."""
         source = ConstantPE(1.0)
-        q_mod = RampPE(0.5, 10.0, duration=1000)
+        q_mod = PiecewisePE([(0, 0.5), (1000, 10.0)])
         
         bq = BiquadPE(source, frequency=1000.0, q=q_mod, mode=BiquadMode.LOWPASS)
         

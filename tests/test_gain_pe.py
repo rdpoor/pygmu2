@@ -11,7 +11,7 @@ import numpy as np
 from pygmu2 import (
     GainPE,
     ConstantPE,
-    RampPE,
+    PiecewisePE,
     SinePE,
     IdentityPE,
     MixPE,
@@ -38,7 +38,7 @@ class TestGainPEBasics:
 
     def test_create_with_pe_gain(self):
         source = ConstantPE(1.0)
-        gain_pe = RampPE(0.0, 1.0, duration=100)
+        gain_pe = PiecewisePE([(0, 0.0), (100, 1.0)])
         gain = GainPE(source, gain=gain_pe)
         assert gain.gain is gain_pe
 
@@ -49,7 +49,7 @@ class TestGainPEBasics:
 
     def test_inputs_pe_gain(self):
         source = ConstantPE(1.0)
-        gain_pe = RampPE(0.0, 1.0, duration=100)
+        gain_pe = PiecewisePE([(0, 0.0), (100, 1.0)])
         gain = GainPE(source, gain=gain_pe)
         assert gain.inputs() == [source, gain_pe]
 
@@ -60,7 +60,7 @@ class TestGainPEBasics:
 
     def test_is_pure_with_pe_gain(self):
         source = ConstantPE(1.0)
-        gain_pe = RampPE(0.0, 1.0, duration=100)
+        gain_pe = PiecewisePE([(0, 0.0), (100, 1.0)])
         gain = GainPE(source, gain=gain_pe)
         assert gain.is_pure() is True
 
@@ -79,11 +79,11 @@ class TestGainPEBasics:
 
     def test_repr_pe_gain(self):
         source = ConstantPE(1.0)
-        gain_pe = RampPE(0.0, 1.0, duration=100)
+        gain_pe = PiecewisePE([(0, 0.0), (100, 1.0)])
         gain = GainPE(source, gain=gain_pe)
         repr_str = repr(gain)
         assert "GainPE" in repr_str
-        assert "RampPE" in repr_str
+        assert "PiecewisePE" in repr_str
 
 
 class TestGainPEExtent:
@@ -98,7 +98,7 @@ class TestGainPEExtent:
         assert extent.end is None
 
     def test_extent_constant_gain_finite_source(self):
-        source = RampPE(0.0, 1.0, duration=1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])
         gain = GainPE(source, gain=0.5)
 
         extent = gain.extent()
@@ -106,8 +106,8 @@ class TestGainPEExtent:
         assert extent.end == 1000
 
     def test_extent_pe_gain_both_finite(self):
-        source = RampPE(0.0, 1.0, duration=1000)  # Extent (0, 1000)
-        gain_pe = RampPE(0.0, 1.0, duration=500)  # Extent (0, 500)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent (0, 1000)
+        gain_pe = PiecewisePE([(0, 0.0), (500, 1.0)])  # Extent (0, 500)
         gain = GainPE(source, gain=gain_pe)
 
         # Intersection is (0, 500)
@@ -116,7 +116,7 @@ class TestGainPEExtent:
         assert extent.end == 500
 
     def test_extent_pe_gain_no_overlap(self):
-        source = RampPE(0.0, 1.0, duration=100)  # Extent (0, 100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])  # Extent (0, 100)
         gain_pe = CropPE(ConstantPE(0.5), Extent(200, 300))  # Extent (200, 300)
         gain = GainPE(source, gain=gain_pe)
 
@@ -126,7 +126,7 @@ class TestGainPEExtent:
         assert extent.is_empty() is True
 
     def test_extent_pe_gain_infinite(self):
-        source = RampPE(0.0, 1.0, duration=1000)  # Extent (0, 1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent (0, 1000)
         gain_pe = ConstantPE(0.5)  # Infinite extent
         gain = GainPE(source, gain=gain_pe)
 
@@ -237,7 +237,7 @@ class TestGainPERenderPE:
     def test_render_ramp_gain(self):
         """Gain ramps from 0 to 1."""
         source = ConstantPE(1.0)
-        gain_pe = RampPE(0.0, 1.0, duration=100)
+        gain_pe = PiecewisePE([(0, 0.0), (100, 1.0)])
         gain = GainPE(source, gain=gain_pe)
 
         renderer = NullRenderer(sample_rate=44100)
@@ -254,8 +254,8 @@ class TestGainPERenderPE:
 
     def test_render_pe_gain_on_ramp_source(self):
         """Both source and gain are ramps - result is product."""
-        source = RampPE(0.0, 2.0, duration=100)
-        gain_pe = RampPE(0.0, 0.5, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 2.0)])
+        gain_pe = PiecewisePE([(0, 0.0), (100, 0.5)])
         gain = GainPE(source, gain=gain_pe)
 
         renderer = NullRenderer(sample_rate=44100)
@@ -275,7 +275,7 @@ class TestGainPERenderPE:
     def test_render_pe_gain_mono_on_stereo(self):
         """Mono gain PE applied to stereo source."""
         source = ConstantPE(1.0, channels=2)
-        gain_pe = RampPE(0.0, 1.0, duration=100)
+        gain_pe = PiecewisePE([(0, 0.0), (100, 1.0)])
         gain = GainPE(source, gain=gain_pe)
 
         renderer = NullRenderer(sample_rate=44100)
@@ -316,7 +316,7 @@ class TestGainPEUseCases:
     def test_fade_in(self):
         """Create a fade-in effect."""
         source = ConstantPE(1.0)
-        fade = RampPE(0.0, 1.0, duration=1000)
+        fade = PiecewisePE([(0, 0.0), (1000, 1.0)])
         faded = GainPE(source, gain=fade)
 
         renderer = NullRenderer(sample_rate=44100)
@@ -336,7 +336,7 @@ class TestGainPEUseCases:
     def test_fade_out(self):
         """Create a fade-out effect."""
         source = ConstantPE(1.0)
-        fade = RampPE(1.0, 0.0, duration=1000)
+        fade = PiecewisePE([(0, 1.0), (1000, 0.0)])
         faded = GainPE(source, gain=fade)
 
         renderer = NullRenderer(sample_rate=44100)

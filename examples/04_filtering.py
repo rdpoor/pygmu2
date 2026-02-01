@@ -13,7 +13,7 @@ from pygmu2 import (
     WavReaderPE,
     BiquadPE,
     BiquadMode,
-    RampPE,
+    PiecewisePE,
     CropPE,
     AudioRenderer,
     Extent,
@@ -41,7 +41,7 @@ duration_samples = int(DURATION_SECONDS * sample_rate)
 print(f"\nPart 1: Lowpass sweep {LO_FREQUENCY}Hz -> {HI_FREQUENCY}Hz - {DURATION_SECONDS}s, Q={Q}", flush=True)
 
 # Create frequency sweep from 200Hz to 8000Hz
-freq_sweep_up_stream = RampPE(LO_FREQUENCY, HI_FREQUENCY, duration=duration_samples)
+freq_sweep_up_stream = PiecewisePE([(0, LO_FREQUENCY), (duration_samples, HI_FREQUENCY)])
 
 # Apply lowpass filter with sweeping frequency
 filtered_up_stream = BiquadPE(
@@ -63,7 +63,7 @@ with renderer:
 print(f"\nPart 2: Lowpass sweep {HI_FREQUENCY}Hz -> {LO_FREQUENCY}Hz - {DURATION_SECONDS}s, Q={Q}", flush=True)
 
 # Create frequency sweep from 8000Hz to 200Hz
-freq_sweep_down_stream = RampPE(HI_FREQUENCY, LO_FREQUENCY, duration=duration_samples)
+freq_sweep_down_stream = PiecewisePE([(0, HI_FREQUENCY), (duration_samples, LO_FREQUENCY)])
 
 # Apply lowpass filter with sweeping frequency
 filtered_down_stream = BiquadPE(
@@ -84,7 +84,7 @@ with renderer:
 # --- Part 3: Resonant bandpass sweep ---
 print(f"\nPart 3: Resonant bandpass sweep 300Hz -> 3000Hz (Q=5) - {DURATION_SECONDS}s", flush=True)
 
-freq_sweep_bp_stream = RampPE(300.0, 3000.0, duration=duration_samples)
+freq_sweep_bp_stream = PiecewisePE([(0, 300.0), (duration_samples, 3000.0)])
 
 filtered_bp_stream = BiquadPE(
     source_stream,

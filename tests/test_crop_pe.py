@@ -11,7 +11,7 @@ import numpy as np
 from pygmu2 import (
     CropPE,
     ConstantPE,
-    RampPE,
+    PiecewisePE,
     SinePE,
     IdentityPE,
     DelayPE,
@@ -101,7 +101,7 @@ class TestCropPEExtent:
         assert extent.end == 200
 
     def test_extent_finite_source_fully_contains_crop(self):
-        source = RampPE(0.0, 1.0, duration=1000)  # Extent (0, 1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent (0, 1000)
         crop = CropPE(source, Extent(100, 200))
 
         extent = crop.extent()
@@ -109,7 +109,7 @@ class TestCropPEExtent:
         assert extent.end == 200
 
     def test_extent_finite_source_crop_extends_before(self):
-        source = RampPE(0.0, 1.0, duration=1000)  # Extent (0, 1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent (0, 1000)
         crop = CropPE(source, Extent(-100, 200))
 
         # Intersection of (-100, 200) and (0, 1000) is (0, 200)
@@ -118,7 +118,7 @@ class TestCropPEExtent:
         assert extent.end == 200
 
     def test_extent_finite_source_crop_extends_after(self):
-        source = RampPE(0.0, 1.0, duration=1000)  # Extent (0, 1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent (0, 1000)
         crop = CropPE(source, Extent(800, 1200))
 
         # Intersection of (800, 1200) and (0, 1000) is (800, 1000)
@@ -127,7 +127,7 @@ class TestCropPEExtent:
         assert extent.end == 1000
 
     def test_extent_no_overlap(self):
-        source = RampPE(0.0, 1.0, duration=100)  # Extent (0, 100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])  # Extent (0, 100)
         crop = CropPE(source, Extent(200, 300))
 
         # No intersection -> empty extent at boundary
@@ -136,7 +136,7 @@ class TestCropPEExtent:
         assert extent.is_empty() is True
 
     def test_extent_none_start_finite_source(self):
-        source = RampPE(0.0, 1.0, duration=1000)  # Extent (0, 1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent (0, 1000)
         crop = CropPE(source, Extent(None, 500))
 
         # Intersection of (None, 500) and (0, 1000) is (0, 500)
@@ -145,7 +145,7 @@ class TestCropPEExtent:
         assert extent.end == 500
 
     def test_extent_none_end_finite_source(self):
-        source = RampPE(0.0, 1.0, duration=1000)  # Extent (0, 1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent (0, 1000)
         crop = CropPE(source, Extent(500, None))
 
         # Intersection of (500, None) and (0, 1000) is (500, 1000)
@@ -154,7 +154,7 @@ class TestCropPEExtent:
         assert extent.end == 1000
 
     def test_extent_both_none_finite_source(self):
-        source = RampPE(0.0, 1.0, duration=1000)  # Extent (0, 1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent (0, 1000)
         crop = CropPE(source, Extent(None, None))
 
         # No constraint - returns source extent
@@ -408,7 +408,7 @@ class TestCropPEWithOtherPEs:
         assert burst.extent().end == 1000
 
     def test_crop_ramp(self):
-        ramp = RampPE(0.0, 100.0, duration=100)
+        ramp = PiecewisePE([(0, 0.0), (100, 100.0)])
         cropped = CropPE(ramp, Extent(25, 75))
 
         renderer = NullRenderer(sample_rate=44100)
@@ -452,7 +452,7 @@ class TestCropPEWithOtherPEs:
         renderer.stop()
 
     def test_crop_to_another_pe_extent(self):
-        reference = RampPE(0.0, 1.0, duration=500)
+        reference = PiecewisePE([(0, 0.0), (500, 1.0)])
         source = ConstantPE(1.0)
 
         cropped = CropPE(source, reference.extent())
@@ -486,14 +486,14 @@ class TestCropPEIntegration:
         assert crop3.extent().end == 800
 
     def test_trim_start_of_finite_source(self):
-        source = RampPE(0.0, 1.0, duration=1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])
         trimmed = CropPE(source, Extent(100, None))
 
         assert trimmed.extent().start == 100
         assert trimmed.extent().end == 1000
 
     def test_trim_end_of_finite_source(self):
-        source = RampPE(0.0, 1.0, duration=1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])
         trimmed = CropPE(source, Extent(None, 800))
 
         assert trimmed.extent().start == 0
@@ -508,13 +508,13 @@ class TestCropPERegression:
     
     def test_crop_ramp_with_extend_mode_infinite_source(self):
         """
-        Regression test: CropPE should properly limit RampPE with extend_mode=ExtendMode.HOLD_BOTH
+        Regression test: CropPE should properly limit PiecewisePE with extend_mode=ExtendMode.HOLD_BOTH
         (infinite extent) so it outputs zeros outside the crop window.
         
-        Bug: RampPE with extend_mode=ExtendMode.HOLD_BOTH has infinite extent. CropPE must
+        Bug: PiecewisePE with extend_mode=ExtendMode.HOLD_BOTH has infinite extent. CropPE must
         ensure it outputs zeros after the crop end, not hold values.
         """
-        ramp = RampPE(10.0, 20.0, duration=100, extend_mode=ExtendMode.HOLD_BOTH)
+        ramp = PiecewisePE([(0, 10.0), (100, 20.0)], extend_mode=ExtendMode.HOLD_BOTH)
         
         # Verify infinite extent
         assert ramp.extent().start is None
@@ -543,10 +543,10 @@ class TestCropPERegression:
     
     def test_crop_ramp_with_extend_mode_before_ramp(self):
         """
-        Regression test: CropPE should handle RampPE with extend_mode when
+        Regression test: CropPE should handle PiecewisePE with extend_mode when
         cropped to start before the ramp.
         """
-        ramp = RampPE(5.0, 10.0, duration=100, extend_mode=ExtendMode.HOLD_BOTH)
+        ramp = PiecewisePE([(0, 5.0), (100, 10.0)], extend_mode=ExtendMode.HOLD_BOTH)
         cropped = CropPE(ramp, Extent(-50, 50))
         
         self.renderer.set_source(cropped)
@@ -565,10 +565,10 @@ class TestCropPERegression:
     
     def test_crop_ramp_with_extend_mode_after_ramp(self):
         """
-        Regression test: CropPE should limit RampPE with extend_mode when
+        Regression test: CropPE should limit PiecewisePE with extend_mode when
         cropped to end after the ramp completes.
         """
-        ramp = RampPE(10.0, 20.0, duration=100, extend_mode=ExtendMode.HOLD_BOTH)
+        ramp = PiecewisePE([(0, 10.0), (100, 20.0)], extend_mode=ExtendMode.HOLD_BOTH)
         cropped = CropPE(ramp, Extent(0, 150))
         
         self.renderer.set_source(cropped)
@@ -596,7 +596,7 @@ class TestCropPERegression:
         Regression test: CropPE extent calculation should correctly intersect
         crop extent with source's infinite extent.
         """
-        ramp = RampPE(10.0, 20.0, duration=100, extend_mode=ExtendMode.HOLD_BOTH)
+        ramp = PiecewisePE([(0, 10.0), (100, 20.0)], extend_mode=ExtendMode.HOLD_BOTH)
         
         # Crop with finite bounds
         cropped1 = CropPE(ramp, Extent(0, 200))

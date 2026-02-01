@@ -7,7 +7,7 @@ MIT License
 """
 
 import numpy as np
-from pygmu2 import ConstantPE, LadderPE, LadderMode, NullRenderer, RampPE
+from pygmu2 import ConstantPE, LadderPE, LadderMode, NullRenderer, PiecewisePE
 
 
 class TestLadderPEBasics:
@@ -22,8 +22,8 @@ class TestLadderPEBasics:
 
     def test_inputs_with_param_pes(self):
         source = ConstantPE(1.0)
-        freq = RampPE(200.0, 2000.0, duration=1000)
-        res = RampPE(0.1, 0.9, duration=1000)
+        freq = PiecewisePE([(0, 200.0), (1000, 2000.0)])
+        res = PiecewisePE([(0, 0.1), (1000, 0.9)])
 
         ladder = LadderPE(source, frequency=freq, resonance=res, mode=LadderMode.HP12)
 
@@ -38,7 +38,7 @@ class TestLadderPEBasics:
         assert ladder.is_pure() is False
 
     def test_extent_from_source(self):
-        source = RampPE(0.0, 1.0, duration=500)
+        source = PiecewisePE([(0, 0.0), (500, 1.0)])
         ladder = LadderPE(source, frequency=1000.0, resonance=0.2)
         extent = ladder.extent()
         assert extent.start == 0

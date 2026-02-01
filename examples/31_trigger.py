@@ -16,7 +16,7 @@ from pygmu2 import (
     AudioRenderer,
     CropPE,
     Extent,
-    RampPE,
+    PiecewisePE,
     SinePE,
     TriggerPE,
     TriggerMode,
@@ -31,7 +31,7 @@ DURATION_SECONDS = 8.0
 
 def _make_trigger_sweep(sample_rate: int, duration_samples: int):
     """Swept sine 1 Hz -> 8 Hz over duration_samples (trigger uses channel 0, >0 = on)."""
-    freq_ramp = RampPE(1.0, 8.0, duration=duration_samples)
+    freq_ramp = PiecewisePE([(0, 1.0), (duration_samples, 8.0)])
     return SinePE(frequency=freq_ramp, amplitude=1.0)
 
 

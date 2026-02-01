@@ -8,7 +8,7 @@ MIT License
 
 import pytest
 import numpy as np
-from pygmu2 import MixPE, ConstantPE, SinePE, RampPE, NullRenderer, Extent
+from pygmu2 import MixPE, ConstantPE, SinePE, PiecewisePE, NullRenderer, Extent
 
 
 class TestMixPEBasics:
@@ -170,8 +170,8 @@ class TestMixPEExtent:
     
     def test_extent_union_finite(self):
         """Finite extents union to cover full range."""
-        ramp1 = RampPE(0.0, 1.0, duration=100)  # 0 to 100
-        ramp2 = RampPE(0.0, 1.0, duration=200)  # 0 to 200
+        ramp1 = PiecewisePE([(0, 0.0), (100, 1.0)])  # 0 to 100
+        ramp2 = PiecewisePE([(0, 0.0), (200, 1.0)])  # 0 to 200
         mix = MixPE(ramp1, ramp2)
         
         extent = mix.extent()
@@ -180,7 +180,7 @@ class TestMixPEExtent:
     
     def test_extent_union_mixed(self):
         """Mix of infinite and finite gives infinite."""
-        ramp = RampPE(0.0, 1.0, duration=100)  # Finite: 0 to 100
+        ramp = PiecewisePE([(0, 0.0), (100, 1.0)])  # Finite: 0 to 100
         constant = ConstantPE(0.5)  # Infinite
         mix = MixPE(ramp, constant)
         

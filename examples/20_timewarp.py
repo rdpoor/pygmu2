@@ -21,7 +21,7 @@ from pygmu2 import (
     Extent,
     GainPE,
     LoopPE,
-    RampPE,
+    PiecewisePE,
     TimeWarpPE,
     WavReaderPE,
     seconds_to_samples,
@@ -93,7 +93,7 @@ def demo_accelerating_loop():
     dur_samples = int(seconds_to_samples(10.0, sample_rate))
 
     # Rate ramp is a PE, so TimeWarpPE's extent becomes finite (matches the rate extent).
-    rate_stream = RampPE(0.25, 5.0, duration=dur_samples)
+    rate_stream = PiecewisePE([(0, 0.25), (dur_samples, 5.0)])
 
     warped_stream = TimeWarpPE(looped_stream, rate=rate_stream)
     output_stream = GainPE(warped_stream, gain=0.8)
@@ -120,7 +120,7 @@ def demo_jog_shuttle():
 
     # Rate ramp is a PE, so TimeWarpPE's extent becomes finite (matches the rate extent).
     demo_length = int(seconds_to_samples(10, sample_rate))
-    rate_stream = RampPE(2.0, -2.0, duration=demo_length)
+    rate_stream = PiecewisePE([(0, 2.0), (demo_length, -2.0)])
 
     warped_stream = TimeWarpPE(LoopPE(drums_stream), rate=rate_stream)
     output_stream = GainPE(warped_stream, gain=0.8)

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Example 19: Sequencing with MixPE, CropPE, SlicePE, DelayPE, RampPE
+Example 19: Sequencing with MixPE, CropPE, SlicePE, DelayPE, PiecewisePE
 
 Demonstrates techniques for sequencing sounds and data streams without
 SequencePE: gapless, staccato, legato, and crossfaded (ramped) note sequences
-using only MixPE, CropPE, DelayPE, RampPE, and GainPE.
+using only MixPE, CropPE, DelayPE, PiecewisePE, and GainPE.
 
 Sections:
   1. Sequencing notes of a C major chord (BlitSawPE) — implemented
@@ -26,8 +26,8 @@ from pygmu2 import (
     GainPE,
     KarplusStrongPE,
     MixPE,
-    RampPE,
-    RampType,
+    PiecewisePE,
+    TransitionType,
     pitch_to_freq,
     rho_for_decay_db,
 )
@@ -160,13 +160,13 @@ def demo_legato_c_major():
     _play(mix, mix.extent().duration)
 
 
-def _ramped_c_major(ramp_type: str, title: str):
+def _ramped_c_major(transition_type: TransitionType, title: str):
     """
     Shared ramped C major: C crossfades with E crossfades with G.
 
     Each note lasts note_duration seconds (1.0), each crossfade xfade seconds (0.25).
     Per note: ramp up xfade s, hold (note_duration - xfade) s, ramp down xfade s.
-    Same delay and gain formula for every note; ramp_type controls crossfade curve.
+    Same delay and gain formula for every note; transition_type controls crossfade curve.
     """
     print(title)
     note_duration_sec = 1.0
@@ -183,12 +183,12 @@ def _ramped_c_major(ramp_type: str, title: str):
         delayed = DelayPE(cropped, delay=i * d - xfade_half)
 
         gain = MixPE(
-            DelayPE(RampPE(0.0, 1.0, xfade, ramp_type=ramp_type), i * d - xfade_half),
+            DelayPE(PiecewisePE([(0, 0.0), (xfade, 1.0)], transition_type=transition_type), i * d - xfade_half),
             CropPE(
                 ConstantPE(1.0),
                 Extent(i * d + xfade_half, (i + 1) * d - xfade_half),
             ),
-            DelayPE(RampPE(1.0, 0.0, xfade, ramp_type=ramp_type), (i + 1) * d - xfade_half),
+            DelayPE(PiecewisePE([(0, 1.0), (xfade, 0.0)], transition_type=transition_type), (i + 1) * d - xfade_half),
         )
 
         notes.append(GainPE(delayed, gain=gain))
@@ -198,14 +198,26 @@ def _ramped_c_major(ramp_type: str, title: str):
     _play(mix, ext.duration, start=ext.start)
 
 
+def demo_sigmoid_ramp():
+    """
+    Ramped C major using SIGMOID crossfades (S-curve).
+
+    Smooth crossfades; good for A/B comparison with exponential.
+    """
+    _ramped_c_major(
+        TransitionType.SIGMOID,
+        "=== C major: ramped with SIGMOID crossfades (C ⟷ E ⟷ G) ===",
+    )
+
+
 def demo_constant_power_ramp():
     """
     Ramped C major using CONSTANT_POWER crossfades (sin/cos).
 
-    Perceived level stays even during crossfades; good for A/B comparison with exponential.
+    Perceived level stays even during crossfades; sin²+cos²=1.
     """
     _ramped_c_major(
-        RampType.CONSTANT_POWER,
+        TransitionType.CONSTANT_POWER,
         "=== C major: ramped with CONSTANT_POWER crossfades (C ⟷ E ⟷ G) ===",
     )
 
@@ -214,10 +226,10 @@ def demo_exponential_ramp():
     """
     Ramped C major using EXPONENTIAL crossfades.
 
-    Exponential curves can sound more natural for some material; compare with constant-power.
+    Exponential curves can sound more natural for some material; compare with sigmoid.
     """
     _ramped_c_major(
-        RampType.EXPONENTIAL,
+        TransitionType.EXPONENTIAL,
         "=== C major: ramped with EXPONENTIAL crossfades (C ⟷ E ⟷ G) ===",
     )
 
@@ -434,18 +446,19 @@ if __name__ == "__main__":
         ("1", "C major: gapless (C → E → G)", demo_gapless_c_major),
         ("2", "C major: staccato (C · E · G)", demo_staccato_c_major),
         ("3", "C major: legato (overlapping)", demo_legato_c_major),
-        ("4", "C major: ramped crossfades — CONSTANT_POWER", demo_constant_power_ramp),
-        ("5", "C major: ramped crossfades — EXPONENTIAL", demo_exponential_ramp),
-        ("6", "Mozart: all connected notes", demo_moz_connected),
-        ("7", "Mozart: articulated notes", demo_moz_articulated),
-        ("8", "Mozart: articulated plucked notes", demo_moz_plucked),
+        ("4", "C major: ramped crossfades — SIGMOID", demo_sigmoid_ramp),
+        ("5", "C major: ramped crossfades — CONSTANT_POWER", demo_constant_power_ramp),
+        ("6", "C major: ramped crossfades — EXPONENTIAL", demo_exponential_ramp),
+        ("7", "Mozart: all connected notes", demo_moz_connected),
+        ("8", "Mozart: articulated notes", demo_moz_articulated),
+        ("9", "Mozart: articulated plucked notes", demo_moz_plucked),
         ("a", "All sequence demos", demo_all_c_major),
     ]
 
     if len(sys.argv) > 1:
         choice = sys.argv[1].strip().lower()
     else:
-        print("Sequence examples (MixPE, CropPE, DelayPE, RampPE)")
+        print("Sequence examples (MixPE, CropPE, DelayPE, PiecewisePE)")
         print("---------------------------------------------------")
         for key, name, _ in demos:
             print(f"  {key}: {name}")

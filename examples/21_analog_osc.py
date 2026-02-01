@@ -20,7 +20,7 @@ from pygmu2 import (
     GainPE,
     LadderMode,
     LadderPE,
-    RampPE,
+    PiecewisePE,
     SinePE,
     TransformPE,
     seconds_to_samples,
@@ -65,7 +65,7 @@ def demo_morphing_saw_triangle():
     print()
 
     dur_samples = int(seconds_to_samples(8.0, SAMPLE_RATE))
-    duty = RampPE(0.05, 0.95, duration=dur_samples)
+    duty = PiecewisePE([(0, 0.05), (dur_samples, 0.95)])
 
     osc = AnalogOscPE(frequency=220.0, duty_cycle=duty, waveform="sawtooth")
     out = GainPE(osc, gain=0.35)
@@ -96,7 +96,7 @@ def demo_subtractive_patch():
     osc = AnalogOscPE(frequency=110.0, duty_cycle=duty, waveform="rectangle")
 
     # Slow cutoff sweep
-    cutoff = RampPE(400.0, 3200.0, duration=dur_samples)
+    cutoff = PiecewisePE([(0, 400.0), (dur_samples, 3200.0)])
     filtered = LadderPE(
         osc,
         mode=LadderMode.LP24,

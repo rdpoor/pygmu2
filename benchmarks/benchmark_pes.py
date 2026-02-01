@@ -231,7 +231,7 @@ def setup_fallback_configs():
     
     # Import what we need
     from pygmu2 import (
-        SinePE, ConstantPE, RampPE, IdentityPE, DiracPE,
+        SinePE, ConstantPE, PiecewisePE, IdentityPE, DiracPE,
         BlitSawPE, SuperSawPE,
         GainPE, DelayPE, CropPE, MixPE, TransformPE,
         EnvelopePE, WindowPE, LoopPE,
@@ -261,8 +261,8 @@ def setup_fallback_configs():
         BenchmarkConfig("ConstantPE", lambda: ConstantPE(0.5), "source"),
     ])
     
-    register_fallback("RampPE", [
-        BenchmarkConfig("RampPE", lambda: RampPE(0.0, 1.0, duration=44100), "source"),
+    register_fallback("PiecewisePE", [
+        BenchmarkConfig("PiecewisePE", lambda: PiecewisePE([(0, 0.0), (44100, 1.0)]), "source"),
     ])
     
     register_fallback("IdentityPE", [

@@ -27,7 +27,7 @@ from pygmu2 import (
     GainPE,
     LoopPE,
     MixPE,
-    RampPE,
+    PiecewisePE,
     SinePE,
     SuperSawPE,
     WavReaderPE,

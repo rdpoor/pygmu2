@@ -12,7 +12,7 @@ from pygmu2.processing_element import SourcePE, ProcessingElement
 from pygmu2.extent import Extent, ExtendMode
 from pygmu2.snippet import Snippet
 from pygmu2.sequence_pe import SequencePE
-from pygmu2.ramp_pe import RampPE
+from pygmu2.piecewise_pe import PiecewisePE
 from pygmu2.constant_pe import ConstantPE
 from pygmu2.crop_pe import CropPE
 from pygmu2.logger import get_logger
@@ -251,12 +251,10 @@ class PortamentoPE(SourcePE):
             #   - Before ramp start: holds prev_pitch (covers previous note's duration)
             #   - During ramp: ramps from prev_pitch to curr_pitch
             #   - After ramp: holds curr_pitch (covers current note's duration)
-            ramp = RampPE(
-                start_value=prev_pitch,
-                end_value=curr_pitch,
-                duration=ramp_duration,
-                channels=self._channels,
+            ramp = PiecewisePE(
+                [(0, prev_pitch), (ramp_duration, curr_pitch)],
                 extend_mode=ExtendMode.HOLD_BOTH,
+                channels=self._channels,
             )
             
             # Crop ramps to prevent unwanted contributions:

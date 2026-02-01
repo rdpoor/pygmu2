@@ -58,10 +58,10 @@ with renderer:
     renderer.play_extent()
 
 # --- Part 2: Light saturation ---
-print(f"\nPart 2: Light saturation (2x drive into tanh) - {DURATION_SECONDS}s", flush=True)
+print(f"\nPart 2: Light saturation (1.5x drive into tanh) - {DURATION_SECONDS}s", flush=True)
 
 # Drive the signal harder, then soft clip
-driven_light = GainPE(source, gain=2.0)
+driven_light = GainPE(source, gain=1.5)
 saturated_light = TransformPE(driven_light, func=np.tanh, name="tanh")
 # Compensate for level reduction
 output_light = GainPE(saturated_light, gain=0.6)
@@ -75,9 +75,9 @@ with renderer:
     renderer.play_extent()
 
 # --- Part 3: Heavy saturation ---
-print(f"\nPart 3: Heavy saturation (5x drive into tanh) - {DURATION_SECONDS}s", flush=True)
+print(f"\nPart 3: Heavy saturation (4x drive into tanh) - {DURATION_SECONDS}s", flush=True)
 
-driven_heavy = GainPE(source, gain=5.0)
+driven_heavy = GainPE(source, gain=4.0)
 saturated_heavy = TransformPE(driven_heavy, func=np.tanh, name="tanh")
 output_heavy = GainPE(saturated_heavy, gain=0.5)
 output_heavy = CropPE(output_heavy, Extent(0, DURATION_SAMPLES))
@@ -98,7 +98,7 @@ def asymmetric_clip(x):
     # Positive half: gentle clipping
     # Negative half: hard clipping (creates even harmonics)
     pos = np.tanh(x * 1.0)
-    neg = np.tanh(x * 4.0)  # Much harder negative clipping
+    neg = np.tanh(x * 5.0)  # Much harder negative clipping
     return np.where(x >= 0, pos, neg)
 
 

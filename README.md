@@ -129,7 +129,7 @@ renderer = NullRenderer(sample_rate=44100)
 | PE | Description |
 |----|-------------|
 | `ConstantPE(value, channels)` | Constant value |
-| `RampPE(start, end, duration)` | Linear ramp |
+| `PiecewisePE(points, transition_type)` | Piecewise curve (replaces RampPE) |
 | `DiracPE(channels)` | Unit impulse |
 | `IdentityPE(channels)` | Sample index as output |
 | `WavReaderPE(path)` | Read from WAV file |

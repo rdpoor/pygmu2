@@ -13,7 +13,7 @@ from pygmu2 import (
     InterpolationMode,
     OutOfBoundsMode,
     ConstantPE,
-    RampPE,
+    PiecewisePE,
     IdentityPE,
     NullRenderer,
     Extent,
@@ -24,7 +24,7 @@ class TestWavetablePEBasics:
     """Test basic WavetablePE creation and properties."""
     
     def test_create_wavetable_pe(self):
-        wavetable = RampPE(0.0, 1.0, duration=100)
+        wavetable = PiecewisePE([(0, 0.0), (100, 1.0)])
         indexer = ConstantPE(50.0)
         
         wt_pe = WavetablePE(wavetable, indexer)
@@ -35,7 +35,7 @@ class TestWavetablePEBasics:
         assert wt_pe.out_of_bounds == OutOfBoundsMode.ZERO
     
     def test_create_with_options(self):
-        wavetable = RampPE(0.0, 1.0, duration=100)
+        wavetable = PiecewisePE([(0, 0.0), (100, 1.0)])
         indexer = ConstantPE(50.0)
         
         wt_pe = WavetablePE(
@@ -49,7 +49,7 @@ class TestWavetablePEBasics:
         assert wt_pe.out_of_bounds == OutOfBoundsMode.WRAP
     
     def test_inputs(self):
-        wavetable = RampPE(0.0, 1.0, duration=100)
+        wavetable = PiecewisePE([(0, 0.0), (100, 1.0)])
         indexer = ConstantPE(50.0)
         
         wt_pe = WavetablePE(wavetable, indexer)
@@ -60,22 +60,22 @@ class TestWavetablePEBasics:
         assert indexer in inputs
     
     def test_is_pure(self):
-        wavetable = RampPE(0.0, 1.0, duration=100)
+        wavetable = PiecewisePE([(0, 0.0), (100, 1.0)])
         indexer = ConstantPE(50.0)
         
         wt_pe = WavetablePE(wavetable, indexer)
         assert wt_pe.is_pure() is True
     
     def test_channel_count_from_wavetable(self):
-        wavetable = RampPE(0.0, 1.0, duration=100, channels=2)
+        wavetable = PiecewisePE([(0, 0.0), (100, 1.0)], channels=2)
         indexer = ConstantPE(50.0)
         
         wt_pe = WavetablePE(wavetable, indexer)
         assert wt_pe.channel_count() == 2
     
     def test_extent_from_indexer(self):
-        wavetable = RampPE(0.0, 1.0, duration=100)  # Extent: (0, 100)
-        indexer = RampPE(0.0, 99.0, duration=200)   # Extent: (0, 200)
+        wavetable = PiecewisePE([(0, 0.0), (100, 1.0)])  # Extent: (0, 100)
+        indexer = PiecewisePE([(0, 0.0), (200, 99.0)])   # Extent: (0, 200)
         
         wt_pe = WavetablePE(wavetable, indexer)
         extent = wt_pe.extent()
@@ -85,14 +85,14 @@ class TestWavetablePEBasics:
         assert extent.end == 200
     
     def test_repr(self):
-        wavetable = RampPE(0.0, 1.0, duration=100)
+        wavetable = PiecewisePE([(0, 0.0), (100, 1.0)])
         indexer = ConstantPE(50.0)
         
         wt_pe = WavetablePE(wavetable, indexer)
         repr_str = repr(wt_pe)
         
         assert "WavetablePE" in repr_str
-        assert "RampPE" in repr_str
+        assert "PiecewisePE" in repr_str
         assert "ConstantPE" in repr_str
         assert "linear" in repr_str
         assert "zero" in repr_str
@@ -145,7 +145,7 @@ class TestWavetablePELinearInterpolation:
         # Wavetable: [0, 1, 2, ..., 99]
         wavetable = IdentityPE()
         # Indexer: ramp from 0 to 9 over 10 samples
-        indexer = RampPE(0.0, 9.0, duration=10)
+        indexer = PiecewisePE([(0, 0.0), (10, 9.0)])
         
         wt_pe = WavetablePE(wavetable, indexer)
         self.renderer.set_source(wt_pe)
@@ -158,7 +158,7 @@ class TestWavetablePELinearInterpolation:
     
     def test_stereo_wavetable(self):
         """Test with stereo wavetable."""
-        wavetable = RampPE(0.0, 1.0, duration=100, channels=2)
+        wavetable = PiecewisePE([(0, 0.0), (100, 1.0)], channels=2)
         indexer = ConstantPE(50.0)
         
         wt_pe = WavetablePE(wavetable, indexer)
@@ -240,7 +240,7 @@ class TestWavetablePEOutOfBounds:
     def test_zero_mode_out_of_bounds(self):
         """ZERO mode: output 0 for out-of-bounds indices."""
         # Wavetable extent: [0, 100)
-        wavetable = RampPE(1.0, 2.0, duration=100)  # Values 1.0 to 2.0
+        wavetable = PiecewisePE([(0, 1.0), (100, 2.0)])  # Values 1.0 to 2.0
         indexer = ConstantPE(150.0)  # Way out of bounds
         
         wt_pe = WavetablePE(
@@ -260,7 +260,7 @@ class TestWavetablePEOutOfBounds:
     
     def test_zero_mode_negative_index(self):
         """ZERO mode: output 0 for negative indices."""
-        wavetable = RampPE(1.0, 2.0, duration=100)
+        wavetable = PiecewisePE([(0, 1.0), (100, 2.0)])
         indexer = ConstantPE(-10.0)  # Negative index
         
         wt_pe = WavetablePE(
@@ -280,7 +280,7 @@ class TestWavetablePEOutOfBounds:
     def test_clamp_mode_high(self):
         """CLAMP mode: clamp to max valid index."""
         # Wavetable: values from 0.0 to 1.0 over 100 samples
-        wavetable = RampPE(0.0, 1.0, duration=100)
+        wavetable = PiecewisePE([(0, 0.0), (100, 1.0)])
         indexer = ConstantPE(150.0)  # Out of bounds high
         
         wt_pe = WavetablePE(
@@ -296,7 +296,7 @@ class TestWavetablePEOutOfBounds:
     
     def test_clamp_mode_low(self):
         """CLAMP mode: clamp to min valid index."""
-        wavetable = RampPE(0.0, 1.0, duration=100)
+        wavetable = PiecewisePE([(0, 0.0), (100, 1.0)])
         indexer = ConstantPE(-50.0)  # Out of bounds low
         
         wt_pe = WavetablePE(
@@ -428,7 +428,7 @@ class TestWavetablePEEdgeCases:
     
     def test_indexer_with_infinite_extent(self):
         """Test with indexer that has infinite extent (like ConstantPE)."""
-        wavetable = RampPE(0.0, 1.0, duration=100)
+        wavetable = PiecewisePE([(0, 0.0), (100, 1.0)])
         indexer = ConstantPE(50.0)  # Infinite extent
         
         wt_pe = WavetablePE(wavetable, indexer)

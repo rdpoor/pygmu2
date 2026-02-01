@@ -17,7 +17,7 @@ from pygmu2 import (
     SinePE,
     ConstantPE,
     CropPE,
-    RampPE,
+    PiecewisePE,
     Extent,
 )
 

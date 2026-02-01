@@ -12,7 +12,7 @@ from pygmu2 import (
     DelayPE,
     InterpolationMode,
     ConstantPE,
-    RampPE,
+    PiecewisePE,
     SinePE,
     MixPE,
     IdentityPE,
@@ -83,7 +83,7 @@ class TestDelayPEIntegerExtent:
     """Test DelayPE extent calculation with integer delay."""
     
     def test_extent_finite_positive_delay(self):
-        source = RampPE(0.0, 1.0, duration=1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])
         delay = DelayPE(source, delay=500)
         
         extent = delay.extent()
@@ -91,7 +91,7 @@ class TestDelayPEIntegerExtent:
         assert extent.end == 1500
     
     def test_extent_finite_zero_delay(self):
-        source = RampPE(0.0, 1.0, duration=1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])
         delay = DelayPE(source, delay=0)
         
         extent = delay.extent()
@@ -99,7 +99,7 @@ class TestDelayPEIntegerExtent:
         assert extent.end == 1000
     
     def test_extent_finite_negative_delay(self):
-        source = RampPE(0.0, 1.0, duration=1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])
         delay = DelayPE(source, delay=-200)
         
         extent = delay.extent()
@@ -135,13 +135,13 @@ class TestDelayPEIntegerRender:
         )
     
     def test_render_ramp_delayed(self):
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         delay = DelayPE(source, delay=50)
         
         self.renderer.set_source(delay)
         
         # Before delayed start - DelayPE looks at source time -50, which is before
-        # RampPE's extent (0-100), so RampPE returns zeros (its ExtendMode.ZERO behavior)
+        # PiecewisePE's extent (0-100), so PiecewisePE returns zeros (its ExtendMode.ZERO behavior)
         snippet = delay.render(0, 50)
         np.testing.assert_array_equal(
             snippet.data, np.zeros((50, 1), dtype=np.float32)
@@ -153,7 +153,7 @@ class TestDelayPEIntegerRender:
         np.testing.assert_array_almost_equal(snippet.data, expected, decimal=5)
     
     def test_render_zero_delay(self):
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         delay = DelayPE(source, delay=0)
         
         self.renderer.set_source(delay)
@@ -163,7 +163,7 @@ class TestDelayPEIntegerRender:
         np.testing.assert_array_equal(snippet.data, source_snippet.data)
     
     def test_render_negative_delay(self):
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         delay = DelayPE(source, delay=-25)
         
         self.renderer.set_source(delay)
@@ -308,8 +308,8 @@ class TestDelayPEVariableBasics:
         assert delay_pe in inputs
     
     def test_extent_from_delay_pe(self):
-        source = RampPE(0.0, 1.0, duration=1000)  # Extent: (0, 1000)
-        delay_pe = RampPE(0.0, 100.0, duration=500)  # Extent: (0, 500)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent: (0, 1000)
+        delay_pe = PiecewisePE([(0, 0.0), (500, 100.0)])  # Extent: (0, 500)
         
         delay = DelayPE(source, delay=delay_pe)
         extent = delay.extent()
@@ -394,7 +394,7 @@ class TestDelayPEVariableRender:
         """Test with time-varying delay."""
         source = IdentityPE()
         # Delay ramps from 0 to 9 over 10 samples
-        delay_pe = RampPE(0.0, 9.0, duration=10)
+        delay_pe = PiecewisePE([(0, 0.0), (10, 9.0)])
         
         delay = DelayPE(source, delay=delay_pe)
         self.renderer.set_source(delay)
@@ -471,7 +471,7 @@ class TestDelayPEChaining:
         self.renderer = NullRenderer(sample_rate=44100)
     
     def test_double_delay(self):
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         delay1 = DelayPE(source, delay=50)
         delay2 = DelayPE(delay1, delay=50)
         
@@ -508,7 +508,7 @@ class TestDelayPEIntegration:
         self.renderer = NullRenderer(sample_rate=44100)
     
     def test_full_render_cycle(self):
-        source = RampPE(0.0, 1.0, duration=100)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)])
         delay = DelayPE(source, delay=100)
         
         self.renderer.set_source(delay)
@@ -542,7 +542,7 @@ class TestDelayPEStereo:
         self.renderer = NullRenderer(sample_rate=44100)
     
     def test_stereo_integer_delay(self):
-        source = RampPE(0.0, 1.0, duration=100, channels=2)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)], channels=2)
         delay = DelayPE(source, delay=50)
         
         self.renderer.set_source(delay)
@@ -551,7 +551,7 @@ class TestDelayPEStereo:
         assert snippet.channels == 2
     
     def test_stereo_float_delay(self):
-        source = RampPE(0.0, 1.0, duration=100, channels=2)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)], channels=2)
         delay = DelayPE(source, delay=50.5)
         
         self.renderer.set_source(delay)
@@ -560,7 +560,7 @@ class TestDelayPEStereo:
         assert snippet.channels == 2
     
     def test_stereo_pe_delay(self):
-        source = RampPE(0.0, 1.0, duration=100, channels=2)
+        source = PiecewisePE([(0, 0.0), (100, 1.0)], channels=2)
         delay_pe = ConstantPE(50.0)
         delay = DelayPE(source, delay=delay_pe)
         

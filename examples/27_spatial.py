@@ -22,7 +22,7 @@ from pygmu2 import (
     Extent,
     GainPE,
     MixPE,
-    RampPE,
+    PiecewisePE,
     SpatialPE,
     SpatialAdapter,
     SpatialConstantPower,
@@ -160,7 +160,7 @@ def demo_dynamic_panning():
     duration_samples = extent.end - extent.start
     
     # Create a ramp that sweeps azimuth from -90° to +90°
-    pan_control = RampPE(-90.0, 90.0, duration=duration_samples)
+    pan_control = PiecewisePE([(0, -90.0), (duration_samples, 90.0)])
     
     # Apply constant-power panning with dynamic azimuth
     panned_stream = SpatialPE(mono_source, method=SpatialConstantPower(azimuth=pan_control))

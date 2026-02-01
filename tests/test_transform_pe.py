@@ -12,7 +12,7 @@ from pygmu2 import (
     TransformPE,
     ConstantPE,
     SinePE,
-    RampPE,
+    PiecewisePE,
     NullRenderer,
     ratio_to_db,
     pitch_to_freq,
@@ -63,7 +63,7 @@ class TestTransformPEBasics:
         assert transform.channel_count() == 2
     
     def test_extent_from_source(self):
-        source = RampPE(0.0, 1.0, duration=1000)
+        source = PiecewisePE(0.0, 1.0, duration=1000)
         transform = TransformPE(source, func=np.abs)
         
         extent = transform.extent()
@@ -218,7 +218,7 @@ class TestTransformPEWithConversions:
     def test_varying_pitch_to_freq(self):
         """Test converting varying pitch to frequency."""
         # Ramp from MIDI 60 to 72 (C4 to C5)
-        source = RampPE(60.0, 72.0, duration=1000)
+        source = PiecewisePE([(0, 60.0), (1000, 72.0)])
         transform = TransformPE(source, func=pitch_to_freq)
         
         self.renderer.set_source(transform)

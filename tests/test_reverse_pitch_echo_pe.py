@@ -7,7 +7,7 @@ MIT License
 """
 
 import numpy as np
-from pygmu2 import ConstantPE, NullRenderer, RampPE, ReversePitchEchoPE
+from pygmu2 import ConstantPE, NullRenderer, PiecewisePE, ReversePitchEchoPE
 
 
 class TestReversePitchEchoPEBasics:
@@ -39,9 +39,9 @@ class TestReversePitchEchoPEBasics:
 
     def test_inputs_with_pe_params(self):
         source = ConstantPE(1.0)
-        block_pe = RampPE(0.05, 0.2, duration=1000)
-        pitch_pe = RampPE(0.5, 2.0, duration=1000)
-        fb_pe = RampPE(0.0, 0.8, duration=1000)
+        block_pe = PiecewisePE([(0, 0.05), (1000, 0.2)])
+        pitch_pe = PiecewisePE([(0, 0.5), (1000, 2.0)])
+        fb_pe = PiecewisePE([(0, 0.0), (1000, 0.8)])
         alt_pe = ConstantPE(1.0)
 
         rpe = ReversePitchEchoPE(

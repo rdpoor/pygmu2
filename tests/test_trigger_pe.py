@@ -33,7 +33,7 @@ class MockArrayPE(ProcessingElement):
             
         return Snippet(start, out)
 
-class MockRampPE(ProcessingElement):
+class MockPiecewisePE(ProcessingElement):
     """Output = current time index (0, 1, 2...). Stateless, so pure."""
     def inputs(self):
         return []
@@ -52,7 +52,7 @@ class TestTriggerPE(unittest.TestCase):
 
     def test_idle(self):
         """Test silence when no trigger occurs."""
-        source = MockRampPE()
+        source = MockPiecewisePE()
         # Trigger is all zeros
         trigger = MockArrayPE([0.0] * 100)
         
@@ -65,7 +65,7 @@ class TestTriggerPE(unittest.TestCase):
 
     def test_one_shot_basic(self):
         """Test basic triggering in ONE_SHOT mode."""
-        source = MockRampPE()
+        source = MockPiecewisePE()
         # Trigger at index 2
         trigger_data = [0, 0, 1, 0, 0]
         trigger = MockArrayPE(trigger_data)
@@ -84,7 +84,7 @@ class TestTriggerPE(unittest.TestCase):
 
     def test_one_shot_ignore_retrigger(self):
         """Test that subsequent triggers are ignored in ONE_SHOT mode."""
-        source = MockRampPE()
+        source = MockPiecewisePE()
         # Trigger at 2, and again at 4
         trigger_data = [0, 0, 1, 0, 1, 0]
         trigger = MockArrayPE(trigger_data)
@@ -105,7 +105,7 @@ class TestTriggerPE(unittest.TestCase):
 
     def test_gated_cutoff(self):
         """Test that signal stops when gate goes low in GATED mode."""
-        source = MockRampPE()
+        source = MockPiecewisePE()
         # High at 2, Low at 4 (inclusive of low sample? "trigger <= 0")
         # 0: 0
         # 1: 0
@@ -131,7 +131,7 @@ class TestTriggerPE(unittest.TestCase):
 
     def test_gated_no_retrigger(self):
         """Test that GATED does not retrigger after gate closes (one gate per session)."""
-        source = MockRampPE()
+        source = MockPiecewisePE()
         # 0: 0, 1: 1 (Start), 2: 0 (Stop), 3-4: no restart (stay silent)
         trigger_data = [0, 1, 0, 1, 1]
         trigger = MockArrayPE(trigger_data)
@@ -148,7 +148,7 @@ class TestTriggerPE(unittest.TestCase):
 
     def test_block_boundary_continuation(self):
         """Test state preservation across render blocks."""
-        source = MockRampPE()
+        source = MockPiecewisePE()
         # Trigger at index 8 (inside first block of 10? No, let's render in chunks of 5)
         # We'll use a constant trigger of 0 then 1
         
@@ -207,7 +207,7 @@ class TestTriggerPE(unittest.TestCase):
 
     def test_retrigger_when_gate_high_again(self):
         """Test that RETRIGGER retriggers when gate goes high again after closing."""
-        source = MockRampPE()
+        source = MockPiecewisePE()
         trigger_data = [0, 1, 0, 1, 1]
         trigger = MockArrayPE(trigger_data)
         
