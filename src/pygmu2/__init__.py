@@ -30,6 +30,7 @@ from pygmu2.identity_pe import IdentityPE
 from pygmu2.karplus_strong_pe import KarplusStrongPE, rho_for_decay_db
 from pygmu2.ladder_pe import LadderPE, LadderMode
 from pygmu2.loop_pe import LoopPE
+from pygmu2.meltysynth_pe import MeltysynthPE
 from pygmu2.midi_in_pe import MidiInPE
 from pygmu2.random_pe import RandomPE, RandomMode
 from pygmu2.reset_pe import ResetPE
@@ -143,6 +144,7 @@ __all__ = [
     "LadderPE",
     "LimiterPE",
     "LoopPE",
+    "MeltysynthPE",
     "MidiInPE",
     "MixPE",
     "CombPE",

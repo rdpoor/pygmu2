@@ -107,6 +107,8 @@ class AudioRenderer(Renderer):
                 channels=channels,
                 dtype='float32',
                 device=self._device,
+                blocksize=self._blocksize,
+                latency=self._latency,
             )
             self._blocking_stream.start()
         self._blocking_stream.write(snippet.data)
