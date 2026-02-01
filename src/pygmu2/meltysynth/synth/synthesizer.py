@@ -185,14 +185,15 @@ class Synthesizer:
         offset: Optional[int] = None,
         count: Optional[int] = None,
     ) -> None:
+        """Render audio into left/right buffers. Raises MeltysynthError if buffer lengths differ; ValueError if offset is set without count."""
         if len(left) != len(right):
-            raise Exception(
+            raise MeltysynthError(
                 "The output buffers for the left and right must be the same length."
             )
         if offset is None:
             offset = 0
         elif count is None:
-            raise Exception("'count' must be set if 'offset' is set.")
+            raise ValueError("'count' must be set if 'offset' is set.")
         if count is None:
             count = len(left)
 

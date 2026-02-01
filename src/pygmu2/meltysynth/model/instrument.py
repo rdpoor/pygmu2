@@ -21,7 +21,7 @@ class Instrument:
 
         zone_count = info.zone_end_index - info.zone_start_index + 1
         if zone_count <= 0:
-            raise Exception("The instrument '" + info.name + "' has no zone.")
+            raise MeltysynthError(f"The instrument '{info.name}' has no zone.")
 
         zone_span = zones[
             info.zone_start_index : info.zone_start_index + zone_count
@@ -90,16 +90,12 @@ class InstrumentRegion:
         for generator in local_zone.generators:
             self._set_parameter(generator)
 
-        id = self._gs[GeneratorType.SAMPLE_ID]
-        if not (0 <= id and id < len(samples)):
-            raise Exception(
-                "The instrument '"
-                + instrument.name
-                + "' contains an invalid sample ID '"
-                + str(id)
-                + "'."
+        sample_id = self._gs[GeneratorType.SAMPLE_ID]
+        if not (0 <= sample_id and sample_id < len(samples)):
+            raise MeltysynthError(
+                f"The instrument '{instrument.name}' contains an invalid sample ID '{sample_id}'."
             )
-        self._sample = samples[id]
+        self._sample = samples[sample_id]
 
     @staticmethod
     def _create(

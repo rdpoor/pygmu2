@@ -38,12 +38,12 @@ class SoundFontSampleData:
                 case "sm24":
                     reader.seek(size, io.SEEK_CUR)
                 case _:
-                    raise Exception(
-                        "The INFO list contains an unknown ID '" + id + "'."
+                    raise MeltysynthError(
+                        f"The INFO list contains an unknown ID '{sub_id}'."
                     )
 
         if samples is None:
-            raise Exception("No valid sample data was found.")
+            raise MeltysynthError("No valid sample data was found.")
 
         self._bits_per_sample = bits_per_sample
         self._samples = samples

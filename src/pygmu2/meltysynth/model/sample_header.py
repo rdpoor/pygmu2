@@ -23,7 +23,7 @@ class SampleHeader:
         reader: BufferedIOBase, size: int
     ) -> Sequence["SampleHeader"]:
         if int(size % 46) != 0:
-            raise Exception("The sample header list is invalid.")
+            raise MeltysynthError("The sample header list is invalid.")
 
         count = int(size / 46) - 1
         headers: list[SampleHeader] = []

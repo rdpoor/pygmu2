@@ -1,6 +1,7 @@
 from io import BufferedIOBase
 from typing import Optional, Sequence
 
+from pygmu2.meltysynth.exceptions import MeltysynthError
 from pygmu2.meltysynth.io.binary_reader import BinaryReaderEx
 from pygmu2.meltysynth.model.generator import Generator
 from pygmu2.meltysynth.model.instrument import Instrument
@@ -17,17 +18,15 @@ class SoundFontParameters:
     def __init__(self, reader: BufferedIOBase) -> None:
         chunk_id = BinaryReaderEx.read_four_cc(reader)
         if chunk_id != "LIST":
-            raise Exception("The LIST chunk was not found.")
+            raise MeltysynthError("The LIST chunk was not found.")
 
         end = BinaryReaderEx.read_int32(reader)
         end += reader.tell()
 
         list_type = BinaryReaderEx.read_four_cc(reader)
         if list_type != "pdta":
-            raise Exception(
-                "The type of the LIST chunk must be 'pdta', but was '"
-                + list_type
-                + "'."
+            raise MeltysynthError(
+                f"The type of the LIST chunk must be 'pdta', but was '{list_type}'."
             )
 
         preset_infos: Optional[Sequence[PresetInfo]] = None
@@ -66,24 +65,24 @@ class SoundFontParameters:
                 case "shdr":
                     sample_headers = SampleHeader._read_from_chunk(reader, size)
                 case _:
-                    raise Exception(
-                        "The INFO list contains an unknown ID '" + id + "'."
+                    raise MeltysynthError(
+                        f"The INFO list contains an unknown ID '{sub_id}'."
                     )
 
         if preset_infos is None:
-            raise Exception("The PHDR sub-chunk was not found.")
+            raise MeltysynthError("The PHDR sub-chunk was not found.")
         if preset_bag is None:
-            raise Exception("The PBAG sub-chunk was not found.")
+            raise MeltysynthError("The PBAG sub-chunk was not found.")
         if preset_generators is None:
-            raise Exception("The PGEN sub-chunk was not found.")
+            raise MeltysynthError("The PGEN sub-chunk was not found.")
         if instrument_infos is None:
-            raise Exception("The INST sub-chunk was not found.")
+            raise MeltysynthError("The INST sub-chunk was not found.")
         if instrument_bag is None:
-            raise Exception("The IBAG sub-chunk was not found.")
+            raise MeltysynthError("The IBAG sub-chunk was not found.")
         if instrument_generators is None:
-            raise Exception("The IGEN sub-chunk was not found.")
+            raise MeltysynthError("The IGEN sub-chunk was not found.")
         if sample_headers is None:
-            raise Exception("The SHDR sub-chunk was not found.")
+            raise MeltysynthError("The SHDR sub-chunk was not found.")
 
         self._sample_headers = sample_headers
 

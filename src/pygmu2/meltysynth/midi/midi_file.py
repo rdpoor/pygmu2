@@ -3,6 +3,7 @@ import itertools
 from io import BufferedIOBase
 from typing import Sequence
 
+from pygmu2.meltysynth.exceptions import MeltysynthError
 from pygmu2.meltysynth.io.binary_reader import BinaryReaderEx
 from pygmu2.meltysynth.midi.message import MidiMessage, MidiMessageType
 
@@ -53,10 +54,8 @@ class MidiFile:
     ) -> tuple[list[MidiMessage], list[int]]:
         chunk_type = BinaryReaderEx.read_four_cc(reader)
         if chunk_type != "MTrk":
-            raise Exception(
-                "The chunk type must be 'MTrk', but was '"
-                + chunk_type
-                + "'."
+            raise MeltysynthError(
+                f"The chunk type must be 'MTrk', but was '{chunk_type}'."
             )
 
         end = BinaryReaderEx.read_int32_big_endian(reader)
@@ -173,7 +172,7 @@ class MidiFile:
     def read_tempo(reader: BufferedIOBase) -> int:
         size = BinaryReaderEx.read_int_variable_length(reader)
         if size != 3:
-            raise Exception("Failed to read the tempo value.")
+            raise MeltysynthError("Failed to read the tempo value.")
         b1 = BinaryReaderEx.read_uint8(reader)
         b2 = BinaryReaderEx.read_uint8(reader)
         b3 = BinaryReaderEx.read_uint8(reader)

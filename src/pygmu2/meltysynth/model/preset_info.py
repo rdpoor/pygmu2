@@ -19,7 +19,7 @@ class PresetInfo:
         reader: BufferedIOBase, size: int
     ) -> Sequence["PresetInfo"]:
         if int(size % 38) != 0:
-            raise Exception("The preset list is invalid.")
+            raise MeltysynthError("The preset list is invalid.")
 
         count = int(size / 38)
         presets: list[PresetInfo] = []

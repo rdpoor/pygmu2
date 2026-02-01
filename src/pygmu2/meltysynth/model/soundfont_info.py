@@ -1,31 +1,44 @@
 from io import BufferedIOBase
 
+from pygmu2.meltysynth.exceptions import MeltysynthError
 from pygmu2.meltysynth.io.binary_reader import BinaryReaderEx
 from pygmu2.meltysynth.model.types import SoundFontVersion
 
 
 class SoundFontInfo:
+    """SoundFont INFO chunk metadata (version, names, comments)."""
+
     def __init__(self, reader: BufferedIOBase) -> None:
+        self._version = SoundFontVersion(0, 0)
+        self._target_sound_engine = ""
+        self._bank_name = ""
+        self._rom_name = ""
+        self._rom_version = SoundFontVersion(0, 0)
+        self._creation_date = ""
+        self._author = ""
+        self._target_product = ""
+        self._copyright = ""
+        self._comments = ""
+        self._tools = ""
+
         chunk_id = BinaryReaderEx.read_four_cc(reader)
         if chunk_id != "LIST":
-            raise Exception("The LIST chunk was not found.")
+            raise MeltysynthError("The LIST chunk was not found.")
 
         end = BinaryReaderEx.read_uint32(reader)
         end += reader.tell()
 
         list_type = BinaryReaderEx.read_four_cc(reader)
         if list_type != "INFO":
-            raise Exception(
-                "The type of the LIST chunk must be 'INFO', but was '"
-                + list_type
-                + "'."
+            raise MeltysynthError(
+                f"The type of the LIST chunk must be 'INFO', but was '{list_type}'."
             )
 
         while reader.tell() < end:
-            id = BinaryReaderEx.read_four_cc(reader)
+            sub_id = BinaryReaderEx.read_four_cc(reader)
             size = BinaryReaderEx.read_uint32(reader)
 
-            match id:
+            match sub_id:
                 case "ifil":
                     self._version = SoundFontVersion(
                         BinaryReaderEx.read_uint16(reader),
@@ -73,8 +86,8 @@ class SoundFontInfo:
                         reader, size
                     )
                 case _:
-                    raise Exception(
-                        "The INFO list contains an unknown ID '" + id + "'."
+                    raise MeltysynthError(
+                        f"The INFO list contains an unknown ID '{sub_id}'."
                     )
 
     @property

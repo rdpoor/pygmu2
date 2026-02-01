@@ -1,6 +1,7 @@
 from io import BufferedIOBase
 from typing import Sequence
 
+from pygmu2.meltysynth.exceptions import MeltysynthError
 from pygmu2.meltysynth.io.binary_reader import BinaryReaderEx
 from pygmu2.meltysynth.model.instrument import Instrument
 from pygmu2.meltysynth.model.parameters import SoundFontParameters
@@ -11,19 +12,19 @@ from pygmu2.meltysynth.model.soundfont_info import SoundFontInfo
 
 
 class SoundFont:
+    """Loaded SoundFont (SF2) with presets, instruments, and sample data."""
+
     def __init__(self, reader: BufferedIOBase) -> None:
         chunk_id = BinaryReaderEx.read_four_cc(reader)
         if chunk_id != "RIFF":
-            raise Exception("The RIFF chunk was not found.")
+            raise MeltysynthError("The RIFF chunk was not found.")
 
         BinaryReaderEx.read_uint32(reader)
 
         form_type = BinaryReaderEx.read_four_cc(reader)
         if form_type != "sfbk":
-            raise Exception(
-                "The type of the RIFF chunk must be 'sfbk', but was '"
-                + form_type
-                + "'."
+            raise MeltysynthError(
+                f"The type of the RIFF chunk must be 'sfbk', but was '{form_type}'."
             )
 
         self._info = SoundFontInfo(reader)
@@ -39,6 +40,7 @@ class SoundFont:
 
     @classmethod
     def from_file(cls, file_path: str) -> "SoundFont":
+        """Load a SoundFont from a file path. Raises MeltysynthError on invalid format."""
         with open(file_path, "rb") as f:
             return cls(f)
 

@@ -73,7 +73,7 @@ class VolumeEnvelope:
                 case EnvelopeStage.HOLD:
                     end_time = self._decay_start_time
                 case _:
-                    raise Exception("Invalid envelope stage.")
+                    raise ValueError("Invalid envelope stage.")
 
             if current_time < end_time:
                 break
@@ -182,7 +182,7 @@ class ModulationEnvelope:
                 case EnvelopeStage.HOLD:
                     end_time = self._decay_start_time
                 case _:
-                    raise Exception("Invalid envelope stage.")
+                    raise ValueError("Invalid envelope stage.")
 
             if current_time < end_time:
                 break

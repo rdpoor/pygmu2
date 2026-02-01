@@ -1,5 +1,6 @@
 from typing import Sequence
 
+from pygmu2.meltysynth.exceptions import MeltysynthError
 from pygmu2.meltysynth.math_utils import SoundFontMath
 from pygmu2.meltysynth.model.generator import Generator
 from pygmu2.meltysynth.model.instrument import Instrument
@@ -24,7 +25,7 @@ class Preset:
 
         zone_count = info.zone_end_index - info.zone_start_index + 1
         if zone_count <= 0:
-            raise Exception("The preset '" + info.name + "' has no zone.")
+            raise MeltysynthError(f"The preset '{info.name}' has no zone.")
 
         zone_span = zones[
             info.zone_start_index : info.zone_start_index + zone_count
@@ -99,16 +100,12 @@ class PresetRegion:
         for generator in local_zone.generators:
             self._set_parameter(generator)
 
-        id = self._gs[GeneratorType.INSTRUMENT]
-        if not (0 <= id and id < len(instruments)):
-            raise Exception(
-                "The preset '"
-                + preset.name
-                + "' contains an invalid instrument ID '"
-                + str(id)
-                + "'."
+        inst_id = self._gs[GeneratorType.INSTRUMENT]
+        if not (0 <= inst_id and inst_id < len(instruments)):
+            raise MeltysynthError(
+                f"The preset '{preset.name}' contains an invalid instrument ID '{inst_id}'."
             )
-        self._instrument = instruments[id]
+        self._instrument = instruments[inst_id]
 
     @staticmethod
     def _create(

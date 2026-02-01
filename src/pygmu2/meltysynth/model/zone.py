@@ -13,7 +13,7 @@ class Zone:
         infos: Sequence[ZoneInfo], generators: Sequence[Generator]
     ) -> Sequence["Zone"]:
         if len(infos) <= 1:
-            raise Exception("No valid zone was found.")
+            raise MeltysynthError("No valid zone was found.")
 
         count = len(infos) - 1
         zones: list[Zone] = []

@@ -1,6 +1,7 @@
 from io import BufferedIOBase
 from typing import Sequence
 
+from pygmu2.meltysynth.exceptions import MeltysynthError
 from pygmu2.meltysynth.io.binary_reader import BinaryReaderEx
 from pygmu2.meltysynth.model.types import GeneratorType
 
@@ -15,7 +16,7 @@ class Generator:
         reader: BufferedIOBase, size: int
     ) -> Sequence["Generator"]:
         if int(size % 4) != 0:
-            raise Exception("The generator list is invalid.")
+            raise MeltysynthError("The generator list is invalid.")
 
         count = int(size / 4) - 1
         generators: list[Generator] = []

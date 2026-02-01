@@ -15,19 +15,19 @@ class SynthesizerSettings:
     @staticmethod
     def _check_sample_rate(value: int) -> None:
         if not (16000 <= value and value <= 192000):
-            raise Exception(
+            raise ValueError(
                 "The sample rate must be between 16000 and 192000."
             )
 
     @staticmethod
     def _check_block_size(value: int) -> None:
         if not (8 <= value and value <= 1024):
-            raise Exception("The block size must be between 8 and 1024.")
+            raise ValueError("The block size must be between 8 and 1024.")
 
     @staticmethod
     def _check_maximum_polyphony(value: int) -> None:
         if not (8 <= value and value <= 256):
-            raise Exception(
+            raise ValueError(
                 "The maximum number of polyphony must be between 8 and 256."
             )
 

@@ -1,6 +1,8 @@
 from io import BufferedIOBase
 from typing import Sequence
 
+from pygmu2.meltysynth.exceptions import MeltysynthError
+
 
 class BinaryReaderEx:
     @staticmethod
@@ -37,6 +39,7 @@ class BinaryReaderEx:
 
     @staticmethod
     def read_int_variable_length(reader: BufferedIOBase) -> int:
+        """Read a variable-length quantity (1–4 bytes). Raises MeltysynthError if more than 4 bytes."""
         acc = 0
         count = 0
         while True:
@@ -46,7 +49,7 @@ class BinaryReaderEx:
                 break
             count += 1
             if count == 4:
-                raise Exception(
+                raise MeltysynthError(
                     "The length of the value must be equal to or less than 4."
                 )
         return acc
@@ -62,12 +65,12 @@ class BinaryReaderEx:
     @staticmethod
     def read_fixed_length_string(reader: BufferedIOBase, length: int) -> str:
         data = reader.read(length)
-        actualLength = 0
+        actual_length = 0
         for value in data:
             if value == 0:
                 break
-            actualLength += 1
-        return data[0:actualLength].decode("ascii")
+            actual_length += 1
+        return data[0:actual_length].decode("ascii")
 
     @staticmethod
     def read_int16_array_as_float_array(

@@ -1,6 +1,7 @@
 from io import BufferedIOBase
 from typing import Sequence
 
+from pygmu2.meltysynth.exceptions import MeltysynthError
 from pygmu2.meltysynth.io.binary_reader import BinaryReaderEx
 
 
@@ -14,7 +15,7 @@ class ZoneInfo:
         reader: BufferedIOBase, size: int
     ) -> Sequence["ZoneInfo"]:
         if int(size % 4) != 0:
-            raise Exception("The zone list is invalid.")
+            raise MeltysynthError("The zone list is invalid.")
 
         count = int(size / 4)
         zones: list[ZoneInfo] = []

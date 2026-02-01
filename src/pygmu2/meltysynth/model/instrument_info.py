@@ -14,7 +14,7 @@ class InstrumentInfo:
         reader: BufferedIOBase, size: int
     ) -> Sequence["InstrumentInfo"]:
         if int(size % 22) != 0:
-            raise Exception("The instrument list is invalid.")
+            raise MeltysynthError("The instrument list is invalid.")
 
         count = int(size / 22)
         instruments: list[InstrumentInfo] = []
