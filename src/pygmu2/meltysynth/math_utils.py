@@ -4,6 +4,11 @@ from collections.abc import MutableSequence, Sequence
 
 import itertools
 
+# Module-level constants for hot paths (avoids repeated log/calls in voice/envelope).
+NON_AUDIBLE = 1.0e-3
+LOG_NON_AUDIBLE = math.log(NON_AUDIBLE)
+HALF_PI = math.pi / 2
+
 
 def create_buffer(length: int) -> MutableSequence[float]:
     return array("d", itertools.repeat(0, length))
@@ -48,11 +53,7 @@ class SoundFontMath:
 
     @staticmethod
     def exp_cutoff(x: float) -> float:
-        return (
-            0.0
-            if x < SoundFontMath.log_non_audible()
-            else math.exp(x)
-        )
+        return 0.0 if x < LOG_NON_AUDIBLE else math.exp(x)
 
     @staticmethod
     def clamp(value: float, min_val: float, max_val: float) -> float:

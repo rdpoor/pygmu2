@@ -2,7 +2,7 @@ import math
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from pygmu2.meltysynth.math_utils import SoundFontMath, create_buffer
+from pygmu2.meltysynth.math_utils import HALF_PI, NON_AUDIBLE, SoundFontMath, create_buffer
 from pygmu2.meltysynth.model.instrument import InstrumentRegion
 from pygmu2.meltysynth.synth.envelope import ModulationEnvelope, VolumeEnvelope
 from pygmu2.meltysynth.synth.filter_ import BiQuadFilter
@@ -114,7 +114,7 @@ class Voice:
         self._note_gain = 0
 
     def process(self) -> bool:
-        if self._note_gain < SoundFontMath.non_audible():
+        if self._note_gain < NON_AUDIBLE:
             return False
 
         channel_info: Channel = self._synthesizer._channels[self._channel]
@@ -186,7 +186,7 @@ class Voice:
         if angle <= 0:
             self._current_mix_gain_left = mix_gain
             self._current_mix_gain_right = 0
-        elif angle >= SoundFontMath.half_pi():
+        elif angle >= HALF_PI:
             self._current_mix_gain_left = 0
             self._current_mix_gain_right = mix_gain
         else:
@@ -223,7 +223,7 @@ class Voice:
 
     @property
     def priority(self) -> float:
-        if self._note_gain < SoundFontMath.non_audible():
+        if self._note_gain < NON_AUDIBLE:
             return 0
         else:
             return self._vol_env.priority

@@ -81,4 +81,4 @@ class BinaryReaderEx:
         count = size // 2
         data = array("h")
         data.fromfile(reader, count)
-        return array("f", map(lambda x: x / 32768.0, data))
+        return array("f", (x / 32768.0 for x in data))

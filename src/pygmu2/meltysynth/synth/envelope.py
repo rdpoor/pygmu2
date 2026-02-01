@@ -1,7 +1,7 @@
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from pygmu2.meltysynth.math_utils import SoundFontMath
+from pygmu2.meltysynth.math_utils import NON_AUDIBLE, SoundFontMath
 
 if TYPE_CHECKING:
     from pygmu2.meltysynth.synth.synthesizer import Synthesizer
@@ -104,14 +104,14 @@ class VolumeEnvelope:
                     self._sustain_level,
                 )
                 self._priority = 1 + self._value
-                return self._value > SoundFontMath.non_audible()
+                return self._value > NON_AUDIBLE
             case EnvelopeStage.RELEASE:
                 self._value = self._release_level * SoundFontMath.exp_cutoff(
                     self._release_slope
                     * (current_time - self._release_start_time)
                 )
                 self._priority = self._value
-                return self._value > SoundFontMath.non_audible()
+                return self._value > NON_AUDIBLE
 
     @property
     def value(self) -> float:
@@ -207,7 +207,7 @@ class ModulationEnvelope:
                     * (self._decay_end_time - current_time),
                     self._sustain_level,
                 )
-                return self._value > SoundFontMath.non_audible()
+                return self._value > NON_AUDIBLE
             case EnvelopeStage.RELEASE:
                 self._value = max(
                     self._release_level
@@ -215,7 +215,7 @@ class ModulationEnvelope:
                     * (self._release_end_time - current_time),
                     0,
                 )
-                return self._value > SoundFontMath.non_audible()
+                return self._value > NON_AUDIBLE
 
     @property
     def value(self) -> float:

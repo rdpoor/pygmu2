@@ -1,7 +1,12 @@
 from collections.abc import MutableSequence, Sequence
 from typing import Optional
 
-from pygmu2.meltysynth.math_utils import ArrayMath, SoundFontMath, create_buffer
+from pygmu2.meltysynth.math_utils import (
+    ArrayMath,
+    NON_AUDIBLE,
+    SoundFontMath,
+    create_buffer,
+)
 from pygmu2.meltysynth.model.instrument import InstrumentRegion
 from pygmu2.meltysynth.model.preset import Preset
 from pygmu2.meltysynth.model.soundfont import SoundFont
@@ -255,7 +260,7 @@ class Synthesizer:
         source: Sequence[float],
         destination: MutableSequence[float],
     ) -> None:
-        if max(previous_gain, current_gain) < SoundFontMath.non_audible():
+        if max(previous_gain, current_gain) < NON_AUDIBLE:
             return
         if abs(current_gain - previous_gain) < 1.0e-3:
             ArrayMath.multiply_add(current_gain, source, destination)
