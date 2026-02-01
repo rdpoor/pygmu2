@@ -31,10 +31,11 @@ from pygmu2 import (
     WavReaderPE,
     seconds_to_samples,
 )
+from pygmu2.assets import get_kemar_dir
 
 # Path to audio files (relative to this script)
 AUDIO_DIR = Path(__file__).parent / "audio"
-KEMAR_DIR = AUDIO_DIR / "kemar"
+KEMAR_DIR = get_kemar_dir()
 SAMPLE_RATE = 44100
 DJEMBE_HIT_PATH = AUDIO_DIR / "djembe_hit.wav"
 

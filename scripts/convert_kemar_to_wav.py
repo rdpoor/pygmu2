@@ -7,13 +7,13 @@ per channel, interleaved L/R). Writes 44.1 kHz stereo WAV with the same
 base name (e.g. H0e0a.dat -> H0e0a.wav).
 
 Note: compact.zip from MIT may already contain .wav files; in that case
-just unzip into examples/audio/kemar and skip this script.
+just unzip into src/pygmu2/assets/kemar and skip this script.
 
 Usage (only if your archive has .dat files):
   1. Download compact.zip from https://sound.media.mit.edu/resources/KEMAR/
   2. Unzip into a directory (e.g. kemar_raw).
   3. Run:
-       python scripts/convert_kemar_to_wav.py --input kemar_raw --output examples/audio/kemar
+       python scripts/convert_kemar_to_wav.py --input kemar_raw --output src/pygmu2/assets/kemar
 
 Filenames: H{elevation}e{azimuth}a — elevation = optional '-' + two-digit number (degrees);
 azimuth = three-digit number (degrees). E.g. H00e045a, H-40e090a, H90e180a.
@@ -78,8 +78,8 @@ def main() -> int:
         "--output",
         "-o",
         type=Path,
-        default=Path("examples/audio/kemar"),
-        help="Output directory for .wav files (default: examples/audio/kemar)",
+        default=Path(__file__).resolve().parent.parent / "src" / "pygmu2" / "assets" / "kemar",
+        help="Output directory for .wav files (default: src/pygmu2/assets/kemar)",
     )
     parser.add_argument(
         "--dry-run",
