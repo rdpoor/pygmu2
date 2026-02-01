@@ -51,7 +51,7 @@ class TestSVFilterPEBasics:
 
     def test_create_with_pe_frequency(self):
         source = ConstantPE(1.0)
-        freq_pe = PiecewisePE(100.0, 5000.0, duration=44100)
+        freq_pe = PiecewisePE([(0, 100.0), (44100, 5000.0)])
         svf = SVFilterPE(
             source, frequency=freq_pe, q=1.0, mode=BiquadMode.LOWPASS
         )
@@ -82,7 +82,7 @@ class TestSVFilterPEBasics:
 
     def test_inputs_with_pe_frequency(self):
         source = ConstantPE(1.0)
-        freq_pe = PiecewisePE(100.0, 5000.0, duration=44100)
+        freq_pe = PiecewisePE([(0, 100.0), (44100, 5000.0)])
         svf = SVFilterPE(
             source, frequency=freq_pe, q=1.0, mode=BiquadMode.LOWPASS
         )
@@ -264,7 +264,7 @@ class TestSVFilterPETimeVarying:
 
     def test_frequency_sweep(self):
         source = ConstantPE(1.0)
-        freq_sweep = PiecewisePE(100.0, 10000.0, duration=1000)
+        freq_sweep = PiecewisePE([(0, 100.0), (1000, 10000.0)])
         svf = SVFilterPE(
             source, frequency=freq_sweep, q=0.707, mode=BiquadMode.LOWPASS
         )

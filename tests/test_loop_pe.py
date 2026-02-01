@@ -172,7 +172,7 @@ class TestLoopPEBasicLooping:
     
     def test_loop_wraps_correctly(self):
         """Values should wrap at loop boundary."""
-        # Create a simple pattern: 0, 1, 2, 3, 4
+        # Ramp [0,5): values 0, 0.8, 1.6, 2.4, 3.2 at samples 0-4
         source = PiecewisePE([(0, 0.0), (5, 4.0)])
         loop = LoopPE(source)
         
@@ -181,13 +181,13 @@ class TestLoopPEBasicLooping:
         with self.renderer:
             self.renderer.start()
             
-            # Render across loop boundary
-            snippet = loop.render(3, 4)  # Should get: 3, 4, 0, 1
+            # Render across loop boundary: positions 3,4,0,1 → source 2.4, 3.2, 0, 0.8
+            snippet = loop.render(3, 4)
             
-            assert snippet.data[0, 0] == pytest.approx(3.0, abs=0.1)
-            assert snippet.data[1, 0] == pytest.approx(4.0, abs=0.1)
+            assert snippet.data[0, 0] == pytest.approx(2.4, abs=0.1)
+            assert snippet.data[1, 0] == pytest.approx(3.2, abs=0.1)
             assert snippet.data[2, 0] == pytest.approx(0.0, abs=0.1)
-            assert snippet.data[3, 0] == pytest.approx(1.0, abs=0.1)
+            assert snippet.data[3, 0] == pytest.approx(0.8, abs=0.1)
 
 
 class TestLoopPECustomRegion:
@@ -198,9 +198,9 @@ class TestLoopPECustomRegion:
     
     def test_custom_loop_region(self):
         """Should loop only the specified region."""
-        # Create ramp 0-9 over 10 samples
+        # Ramp [0,10): at sample i value = 0.9*i → 0, 0.9, 1.8, ..., 8.1
         source = PiecewisePE([(0, 0.0), (10, 9.0)])
-        # Loop only samples 2-5 (values 2, 3, 4)
+        # Loop only samples 2-5 (indices 2,3,4 → values 1.8, 2.7, 3.6)
         loop = LoopPE(source, loop_start=2, loop_end=5)
         
         self.renderer.set_source(loop)
@@ -210,20 +210,18 @@ class TestLoopPECustomRegion:
             
             snippet = loop.render(0, 9)  # 3 iterations
             
-            # First iteration: 2, 3, 4
-            assert snippet.data[0, 0] == pytest.approx(2.0, abs=0.1)
-            assert snippet.data[1, 0] == pytest.approx(3.0, abs=0.1)
-            assert snippet.data[2, 0] == pytest.approx(4.0, abs=0.1)
+            # Each iteration: 1.8, 2.7, 3.6
+            assert snippet.data[0, 0] == pytest.approx(1.8, abs=0.1)
+            assert snippet.data[1, 0] == pytest.approx(2.7, abs=0.1)
+            assert snippet.data[2, 0] == pytest.approx(3.6, abs=0.1)
             
-            # Second iteration: 2, 3, 4
-            assert snippet.data[3, 0] == pytest.approx(2.0, abs=0.1)
-            assert snippet.data[4, 0] == pytest.approx(3.0, abs=0.1)
-            assert snippet.data[5, 0] == pytest.approx(4.0, abs=0.1)
+            assert snippet.data[3, 0] == pytest.approx(1.8, abs=0.1)
+            assert snippet.data[4, 0] == pytest.approx(2.7, abs=0.1)
+            assert snippet.data[5, 0] == pytest.approx(3.6, abs=0.1)
             
-            # Third iteration: 2, 3, 4
-            assert snippet.data[6, 0] == pytest.approx(2.0, abs=0.1)
-            assert snippet.data[7, 0] == pytest.approx(3.0, abs=0.1)
-            assert snippet.data[8, 0] == pytest.approx(4.0, abs=0.1)
+            assert snippet.data[6, 0] == pytest.approx(1.8, abs=0.1)
+            assert snippet.data[7, 0] == pytest.approx(2.7, abs=0.1)
+            assert snippet.data[8, 0] == pytest.approx(3.6, abs=0.1)
 
 
 class TestLoopPEFiniteCount:

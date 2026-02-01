@@ -246,8 +246,8 @@ class TestGainPERenderPE:
 
         snippet = gain.render(0, 100)
 
-        # Result should be ramp from 0 to 1 (source * gain)
-        expected = np.linspace(0.0, 1.0, 100, dtype=np.float32).reshape(-1, 1)
+        # Gain ramp [0,100) gives 0..0.99; result = source * gain
+        expected = np.linspace(0.0, 0.99, 100, dtype=np.float32).reshape(-1, 1)
         np.testing.assert_array_almost_equal(snippet.data, expected, decimal=5)
 
         renderer.stop()
@@ -264,10 +264,9 @@ class TestGainPERenderPE:
 
         snippet = gain.render(0, 100)
 
-        # Result is source * gain
-        source_vals = np.linspace(0.0, 2.0, 100, dtype=np.float32)
-        gain_vals = np.linspace(0.0, 0.5, 100, dtype=np.float32)
-        expected = (source_vals * gain_vals).reshape(-1, 1)
+        # Both ramps [0,100): at sample i, source=2*i/100, gain=0.5*i/100 → product = i²/10000
+        i = np.arange(100, dtype=np.float32)
+        expected = (i * i / 10000.0).reshape(-1, 1)
         np.testing.assert_array_almost_equal(snippet.data, expected, decimal=5)
 
         renderer.stop()
@@ -285,8 +284,8 @@ class TestGainPERenderPE:
         snippet = gain.render(0, 100)
         assert snippet.channels == 2
 
-        # Both channels should have same gain applied
-        expected_mono = np.linspace(0.0, 1.0, 100, dtype=np.float32).reshape(-1, 1)
+        # Gain ramp [0,100) gives 0..0.99; both channels get same gain
+        expected_mono = np.linspace(0.0, 0.99, 100, dtype=np.float32).reshape(-1, 1)
         expected = np.tile(expected_mono, (1, 2))
         np.testing.assert_array_almost_equal(snippet.data, expected, decimal=5)
 

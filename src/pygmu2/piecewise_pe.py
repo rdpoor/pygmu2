@@ -177,15 +177,24 @@ class PiecewisePE(SourcePE):
             if self._extend_mode in (ExtendMode.HOLD_FIRST, ExtendMode.HOLD_BOTH):
                 data[:n_before] = self._values[0]
             # rest filled below or by segment logic
-        # After last point
-        if start >= t_last:
+        # After last point: multi-point extent is [t0, t_last); single-point extent is [t0, t0+1)
+        after_last = start > t_last if self._n == 1 else start >= t_last
+        if after_last:
             if self._extend_mode in (ExtendMode.HOLD_LAST, ExtendMode.HOLD_BOTH):
                 data[:] = self._values[-1]
             return Snippet(start, data)
         if req_end > t_last:
-            n_after = req_end - t_last
+            # Single point occupies [t_last, t_last+1); "after" is only beyond that
+            n_after = (
+                max(0, req_end - (t_last + 1))
+                if self._n == 1
+                else req_end - t_last
+            )
             after_start = duration - n_after
-            if self._extend_mode in (ExtendMode.HOLD_LAST, ExtendMode.HOLD_BOTH):
+            if n_after > 0 and self._extend_mode in (
+                ExtendMode.HOLD_LAST,
+                ExtendMode.HOLD_BOTH,
+            ):
                 data[after_start:] = self._values[-1]
 
         # Single point: one sample at t0
@@ -195,29 +204,27 @@ class PiecewisePE(SourcePE):
                 data[lo, :] = self._values[0]
             return Snippet(start, data)
 
-        # Segments: for each output index s = start + i, find segment and compute value
-        for i in range(duration):
-            s = start + i
-            if s < t0 or s >= t_last:
-                continue
-            # Find segment j: times[j] <= s < times[j+1]
-            j = np.searchsorted(self._times, s, side="right") - 1
-            if j < 0:
-                j = 0
-            if j >= self._n - 1:
-                data[i, :] = self._values[-1]
-                continue
+        # Segments: process each segment in one vectorized call (avoids per-sample exp/sin/cos)
+        for j in range(self._n - 1):
             seg_start = int(self._times[j])
             seg_end = int(self._times[j + 1])
+            if seg_end <= seg_start:
+                continue
+            # Overlap of this segment with requested [start, start+duration)
+            overlap_start = max(seg_start, start)
+            overlap_end = min(seg_end, req_end)
+            if overlap_end <= overlap_start:
+                continue
             v0 = float(self._values[j])
             v1 = float(self._values[j + 1])
-            if seg_end <= seg_start:
-                data[i, :] = v0
-                continue
-            t = (s - seg_start) / (seg_end - seg_start)
-            t_arr = np.array([t], dtype=np.float64)
-            val = _segment_curve(t_arr, v0, v1, self._transition_type)[0]
-            data[i, :] = val
+            # Output indices i such that start+i is in [overlap_start, overlap_end)
+            i_lo = overlap_start - start
+            i_hi = overlap_end - start
+            i_indices = np.arange(i_lo, i_hi, dtype=np.intp)
+            s = start + i_indices  # sample indices (int64)
+            t = (s.astype(np.float64) - seg_start) / (seg_end - seg_start)
+            vals = _segment_curve(t, v0, v1, self._transition_type)
+            data[i_indices, :] = vals[:, np.newaxis]
 
         return Snippet(start, data)
 

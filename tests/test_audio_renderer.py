@@ -99,7 +99,7 @@ class TestAudioRendererLifecycle:
 class TestAudioRendererPlayback:
     """Test AudioRenderer playback methods (mocked)."""
 
-    @patch('sounddevice.OutputStream')
+    @patch('pygmu2.audio_renderer.sd.OutputStream')
     def test_render_calls_sounddevice(self, mock_output_stream):
         mock_stream = MagicMock()
         mock_output_stream.return_value.__enter__ = MagicMock(return_value=mock_stream)
@@ -115,9 +115,10 @@ class TestAudioRendererPlayback:
 
         # Verify OutputStream was used
         mock_output_stream.assert_called_once()
-        # Verify write was called
-        mock_stream.write.assert_called_once()
-        written_data = mock_stream.write.call_args[0][0]
+        # Verify write was called on the stream (blocking path uses return value directly, not context manager)
+        stream = mock_output_stream.return_value
+        stream.write.assert_called_once()
+        written_data = stream.write.call_args[0][0]
         assert written_data.shape == (100, 1)
         np.testing.assert_array_equal(
             written_data, np.full((100, 1), 0.5, dtype=np.float32)
@@ -125,7 +126,7 @@ class TestAudioRendererPlayback:
 
         renderer.stop()
 
-    @patch('sounddevice.OutputStream')
+    @patch('pygmu2.audio_renderer.sd.OutputStream')
     def test_play_range(self, mock_output_stream):
         mock_stream = MagicMock()
         mock_output_stream.return_value.__enter__ = MagicMock(return_value=mock_stream)
@@ -142,7 +143,7 @@ class TestAudioRendererPlayback:
         mock_output_stream.assert_called_once()
         renderer.stop()
 
-    @patch('sounddevice.OutputStream')
+    @patch('pygmu2.audio_renderer.sd.OutputStream')
     def test_play_extent(self, mock_output_stream):
         mock_stream = MagicMock()
         mock_output_stream.return_value.__enter__ = MagicMock(return_value=mock_stream)
@@ -182,7 +183,7 @@ class TestAudioRendererPlayback:
 class TestAudioRendererStreaming:
     """Test AudioRenderer streaming methods (mocked)."""
 
-    @patch('sounddevice.OutputStream')
+    @patch('pygmu2.audio_renderer.sd.OutputStream')
     def test_stream_start_stop(self, mock_output_stream):
         mock_stream = MagicMock()
         mock_stream.active = False
@@ -213,7 +214,7 @@ class TestAudioRendererStreaming:
         with pytest.raises(RuntimeError, match="Not started"):
             renderer.stream_start()
 
-    @patch('sounddevice.OutputStream')
+    @patch('pygmu2.audio_renderer.sd.OutputStream')
     def test_stream_start_twice_raises(self, mock_output_stream):
         mock_stream = MagicMock()
         mock_stream.active = True
@@ -244,14 +245,14 @@ class TestAudioRendererStreaming:
 class TestAudioRendererDevices:
     """Test AudioRenderer device listing."""
 
-    @patch('sounddevice.query_devices')
+    @patch('pygmu2.audio_renderer.sd.query_devices')
     def test_list_devices(self, mock_query):
         mock_query.return_value = "Device list"
         # Just verify it doesn't raise
         AudioRenderer.list_devices()
         mock_query.assert_called_once()
 
-    @patch('sounddevice.query_devices')
+    @patch('pygmu2.audio_renderer.sd.query_devices')
     def test_get_default_device(self, mock_query):
         mock_query.return_value = {'name': 'Default Device'}
         result = AudioRenderer.get_default_device()
@@ -262,7 +263,7 @@ class TestAudioRendererDevices:
 class TestAudioRendererIntegration:
     """Integration tests (still mocked, but fuller scenarios)."""
 
-    @patch('sounddevice.OutputStream')
+    @patch('pygmu2.audio_renderer.sd.OutputStream')
     def test_play_sine_wave(self, mock_output_stream):
         """Simulate playing a 1-second sine wave."""
         mock_stream = MagicMock()
@@ -280,7 +281,7 @@ class TestAudioRendererIntegration:
         # Verify multiple chunks were played
         assert mock_output_stream.call_count >= 1
 
-    @patch('sounddevice.OutputStream')
+    @patch('pygmu2.audio_renderer.sd.OutputStream')
     def test_play_stereo(self, mock_output_stream):
         """Test stereo output."""
         mock_stream = MagicMock()
@@ -295,12 +296,13 @@ class TestAudioRendererIntegration:
         renderer.start()
         renderer.render(0, 100)
 
-        written_data = mock_stream.write.call_args[0][0]
+        stream = mock_output_stream.return_value
+        written_data = stream.write.call_args[0][0]
         assert written_data.shape == (100, 2)
 
         renderer.stop()
 
-    @patch('sounddevice.OutputStream')
+    @patch('pygmu2.audio_renderer.sd.OutputStream')
     def test_play_with_gain(self, mock_output_stream):
         """Test playing with gain applied."""
         mock_stream = MagicMock()
@@ -318,7 +320,8 @@ class TestAudioRendererIntegration:
         renderer.start()
         renderer.render(0, 100)
 
-        written_data = mock_stream.write.call_args[0][0]
+        stream = mock_output_stream.return_value
+        written_data = stream.write.call_args[0][0]
         np.testing.assert_array_almost_equal(
             written_data, np.full((100, 1), 0.5, dtype=np.float32)
         )

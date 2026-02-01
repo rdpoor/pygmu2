@@ -147,9 +147,9 @@ class TestDelayPEIntegerRender:
             snippet.data, np.zeros((50, 1), dtype=np.float32)
         )
         
-        # At delayed start
+        # At delayed start: source ramp [0,100) gives values 0..0.99; we read 0..49 → 0, 0.01, ..., 0.49
         snippet = delay.render(50, 50)
-        expected = np.linspace(0.0, 0.4949494949, 50, dtype=np.float32).reshape(-1, 1)
+        expected = np.linspace(0.0, 0.49, 50, dtype=np.float32).reshape(-1, 1)
         np.testing.assert_array_almost_equal(snippet.data, expected, decimal=5)
     
     def test_render_zero_delay(self):
@@ -393,8 +393,8 @@ class TestDelayPEVariableRender:
     def test_varying_delay(self):
         """Test with time-varying delay."""
         source = IdentityPE()
-        # Delay ramps from 0 to 9 over 10 samples
-        delay_pe = PiecewisePE([(0, 0.0), (10, 9.0)])
+        # Delay ramps from 0 to 10 over 10 samples so at t=k, delay=k → source index 0 for all
+        delay_pe = PiecewisePE([(0, 0.0), (10, 10.0)])
         
         delay = DelayPE(source, delay=delay_pe)
         self.renderer.set_source(delay)
@@ -520,7 +520,8 @@ class TestDelayPEIntegration:
             assert delay.extent().end == 200
             
             snippet = delay.render(100, 100)
-            expected = np.linspace(0.0, 1.0, 100, dtype=np.float32).reshape(-1, 1)
+            # Source ramp [0,100) gives 0..0.99; we read 0..99
+            expected = np.linspace(0.0, 0.99, 100, dtype=np.float32).reshape(-1, 1)
             np.testing.assert_array_almost_equal(snippet.data, expected, decimal=5)
     
     def test_large_delay(self):

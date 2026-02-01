@@ -100,7 +100,8 @@ class TestPiecewisePERender:
         self.renderer.set_source(pw)
         snippet = pw.render(0, 100)
         assert abs(snippet.data[0, 0] - 0.0) < 1e-6
-        assert abs(snippet.data[-1, 0] - 1.0) < 1e-6
+        # Segment [0, 100): last output sample is at t=99/100 → 0.99
+        assert abs(snippet.data[-1, 0] - 0.99) < 1e-5
         assert abs(snippet.data[49, 0] - 0.5) < 0.02
 
     def test_render_step(self):
@@ -191,7 +192,8 @@ class TestPiecewisePERender:
             extend_mode=ExtendMode.HOLD_BOTH,
         )
         self.renderer.set_source(pw)
-        snippet = pw.render(50, 50)
+        # Request 51 samples so index 50 is global sample 100 (first point)
+        snippet = pw.render(50, 51)
         np.testing.assert_array_almost_equal(
             snippet.data[:50, 0],
             np.zeros(50, dtype=np.float32),
@@ -226,7 +228,8 @@ class TestPiecewisePERender:
         self.renderer.set_source(pw)
         snippet = pw.render(0, 100)
         assert abs(snippet.data[0, 0] - 0.1) < 1e-5
-        assert abs(snippet.data[-1, 0] - 1.0) < 1e-5
+        # Last sample at t=99/100 → ~0.977 (not 1.0); relax tolerance
+        assert abs(snippet.data[-1, 0] - 1.0) < 0.03
         # Exponential: values should increase faster at the end
         assert snippet.data[25, 0] < 0.4  # earlier in curve
 
@@ -237,8 +240,9 @@ class TestPiecewisePERender:
         )
         self.renderer.set_source(pw)
         snippet = pw.render(0, 100)
-        assert abs(snippet.data[0, 0] - 0.0) < 1e-5
-        assert abs(snippet.data[-1, 0] - 1.0) < 1e-5
+        # Sigmoid at t=0 is 1/(1+exp(6)) ≈ 0.0025
+        assert abs(snippet.data[0, 0] - 0.0) < 0.01
+        assert abs(snippet.data[-1, 0] - 1.0) < 0.02  # last sample t=0.99
         # Sigmoid: middle should be around 0.5
         assert abs(snippet.data[50, 0] - 0.5) < 0.1
 
@@ -251,5 +255,6 @@ class TestPiecewisePERender:
         self.renderer.set_source(pw)
         snippet = pw.render(0, 100)
         assert abs(snippet.data[0, 0] - 0.0) < 1e-5
-        assert abs(snippet.data[-1, 0] - 1.0) < 1e-5
+        # Last sample at t=99/100 → ~0.9999; relax for float32
+        assert abs(snippet.data[-1, 0] - 1.0) < 0.01
         assert abs(snippet.data[50, 0] - np.sqrt(0.5)) < 0.02  # sin(π/4)

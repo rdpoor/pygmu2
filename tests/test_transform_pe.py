@@ -63,7 +63,7 @@ class TestTransformPEBasics:
         assert transform.channel_count() == 2
     
     def test_extent_from_source(self):
-        source = PiecewisePE(0.0, 1.0, duration=1000)
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])
         transform = TransformPE(source, func=np.abs)
         
         extent = transform.extent()

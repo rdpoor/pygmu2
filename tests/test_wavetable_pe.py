@@ -144,7 +144,7 @@ class TestWavetablePELinearInterpolation:
         """Test with time-varying indexer."""
         # Wavetable: [0, 1, 2, ..., 99]
         wavetable = IdentityPE()
-        # Indexer: ramp from 0 to 9 over 10 samples
+        # Indexer ramp [0,10): values 0, 0.9, 1.8, ..., 8.1 at samples 0-9
         indexer = PiecewisePE([(0, 0.0), (10, 9.0)])
         
         wt_pe = WavetablePE(wavetable, indexer)
@@ -152,8 +152,8 @@ class TestWavetablePELinearInterpolation:
         
         snippet = wt_pe.render(0, 10)
         
-        # Output should be [0, 1, 2, ..., 9]
-        expected = np.arange(10, dtype=np.float32).reshape(-1, 1)
+        # Lookup IdentityPE at indices 0, 0.9, ..., 8.1 → output 0, 0.9, ..., 8.1
+        expected = (0.9 * np.arange(10, dtype=np.float32)).reshape(-1, 1)
         np.testing.assert_array_almost_equal(snippet.data, expected, decimal=4)
     
     def test_stereo_wavetable(self):
