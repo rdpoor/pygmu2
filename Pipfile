@@ -13,6 +13,9 @@ pygmu2 = {path = ".", editable = true}
 mido = "*"
 rtmidi = "*"
 python-rtmidi = "*"
+google-auth = "*"
+google-auth-oauthlib = "*"
+requests = "*"
 
 [dev-packages]
 pytest = ">=7.0.0"

@@ -53,6 +53,12 @@ dev = [
 ssl = [
     "certifi>=2023.0.0",
 ]
+# Google Drive OAuth support
+gdrive = [
+    "google-auth>=2.0.0",
+    "google-auth-oauthlib>=1.0.0",
+    "requests>=2.0.0",
+]
 
 [project.scripts]
 # Add CLI entry points here if needed

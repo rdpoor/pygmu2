@@ -31,7 +31,7 @@ from pygmu2 import (
 logger = get_logger("meltysynth_midi_demo")
 
 SAMPLE_RATE = 44100
-BLOCK_SIZE = 512
+BLOCK_SIZE = 256
 
 AUDIO_DIR = Path(__file__).parent.parent / "examples" / "audio"
 DEFAULT_SOUNDFONT = AUDIO_DIR / "TimGM6mb.sf2"
@@ -78,9 +78,13 @@ def make_meltysynth_midi_demo(soundfont_path: str, program: int | None = None):
             data2 = (raw >> 7) & 0x7F
             synth.process_midi_message(midi_message.channel, 0xE0, data1, data2)
         elif midi_message.type == "control_change":
-            synth.process_midi_message(
-                midi_message.channel, 0xB0, midi_message.control, midi_message.value
-            )
+            # Hack: use knob K8 to select program
+            if midi_message.control == 77:
+                synth.process_midi_message(0, 0xC0, midi_message.value, 0)
+            else:
+                synth.process_midi_message(
+                    midi_message.channel, 0xB0, midi_message.control, midi_message.value
+                )
 
     midi_in_pe = MidiInPE(callback=_callback)
     midi_2ch = SpatialPE(midi_in_pe, method=SpatialAdapter(channels=2))
