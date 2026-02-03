@@ -40,6 +40,11 @@ from pygmu2.mix_pe import MixPE
 from pygmu2.comb_pe import CombPE
 from pygmu2.convolve_pe import ConvolvePE
 from pygmu2.audio_library import AudioLibrary
+from pygmu2.asset_manager import (
+    AssetManager,
+    GoogleDriveAssetLoader,
+    GithubUserContentAssetLoader,
+)
 from pygmu2.slice_pe import SlicePE
 from pygmu2.spatial_pe import (
     SpatialPE,
@@ -150,6 +155,9 @@ __all__ = [
     "CombPE",
     "ConvolvePE",
     "AudioLibrary",
+    "AssetManager",
+    "GoogleDriveAssetLoader",
+    "GithubUserContentAssetLoader",
     "RandomPE",
     "ResetPE",
     "SlicePE",

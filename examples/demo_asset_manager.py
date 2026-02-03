@@ -28,7 +28,7 @@ def demo_google_drive_giant_fish():
     manager = AssetManager(asset_loader=loader)
 
     asset_spec = "GiantFish/SegmentedVoice/N2_1?.wav"
-    # List all matching assets
+    # List all matching assets (returns cache-relative paths)
     remote_assets = manager.list_remote_assets(asset_spec)
     print(f"Google Drive matches for {asset_spec!r}: {len(remote_assets)}")
     for asset in remote_assets:
@@ -50,6 +50,8 @@ def demo_google_drive():
     # Note: This is NOT the token cache file (gdrive_token.json). It is the
     # client secrets file you download from Google Cloud Console.
     # If OAuth libraries are missing, install: google-auth, google-auth-oauthlib, requests
+    # You can omit this parameter if you store the secrets at:
+    #   _default_config_base()/pygmu2/client_secrets.json
     oauth_client_secrets = (
         _default_config_base() / "pygmu2" / "client_secrets.json"
     )
@@ -61,7 +63,7 @@ def demo_google_drive():
     manager = AssetManager(asset_loader=loader)
 
     asset_spec = "multi_samples/Anklung_Hit/Anklung_Hit*.wav"
-    # List all matching assets
+    # List all matching assets (returns cache-relative paths)
     remote_assets = manager.list_remote_assets(asset_spec)
     print(f"Google Drive matches for {asset_spec!r}: {len(remote_assets)}")
     for asset in remote_assets:

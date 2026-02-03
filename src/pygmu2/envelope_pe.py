@@ -10,6 +10,7 @@ from enum import Enum
 from typing import Optional
 
 import numpy as np
+import numba as nb
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
@@ -198,23 +199,13 @@ class EnvelopePE(ProcessingElement):
                 pass  # Fall through to manual implementation
         
         # For asymmetric attack/release, use simple loop
-        # (numpy vectorization per-sample adds overhead for small channel counts)
-        for n in range(duration):
-            for ch in range(channels):
-                target = x[n, ch]
-                if target > env[ch]:
-                    # Attack
-                    env[ch] += attack_coeff * (target - env[ch])
-                else:
-                    # Release
-                    env[ch] += release_coeff * (target - env[ch])
-                output[n, ch] = env[ch]
+        _envelope_ar_numba(x, attack_coeff, release_coeff, env, output)
         
         # Save state
         self._envelope = env
         
         return Snippet(start, output.astype(np.float32))
-    
+
     def _compute_rms(self, x: np.ndarray, window: int) -> np.ndarray:
         """
         Compute windowed RMS of the signal.
@@ -264,3 +255,18 @@ class EnvelopePE(ProcessingElement):
             f"attack={self._attack}, release={self._release}, "
             f"lookahead={self._lookahead}, mode={self._mode.value})"
         )
+
+
+@nb.njit(cache=True)
+def _envelope_ar_numba(x, attack_coeff, release_coeff, env, output):
+    n_samples, channels = x.shape
+    for n in range(n_samples):
+        for ch in range(channels):
+            target = x[n, ch]
+            e = env[ch]
+            if target > e:
+                e = e + attack_coeff * (target - e)
+            else:
+                e = e + release_coeff * (target - e)
+            env[ch] = e
+            output[n, ch] = e

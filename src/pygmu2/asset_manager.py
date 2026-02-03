@@ -161,13 +161,15 @@ class AssetManager:
     def list_remote_assets(self, asset_specification: str) -> list[Path]:
         """
         List remote assets matching the asset specification.
+
+        Returns relative paths (cache-relative) for each matching remote asset.
         """
         if self._asset_loader is None:
             raise AssetLoadFailed(
                 "remote asset loading is not configured for this AssetManager"
             )
         return [
-            self._cache_dir / name
+            Path(name)
             for name in self._asset_loader.list_remote_assets(asset_specification)
         ]
 
@@ -279,6 +281,10 @@ class GoogleDriveAssetLoader(AssetLoader):
         """
         self._folder_id = folder_id
         self._oauth_client_secrets = oauth_client_secrets
+        if self._oauth_client_secrets is None:
+            default_secrets = _default_config_base() / "pygmu2" / "client_secrets.json"
+            if default_secrets.exists():
+                self._oauth_client_secrets = default_secrets
         self._token_path = token_path or (self._default_token_dir() / "gdrive_token.json")
         self._scopes = scopes or [
             "https://www.googleapis.com/auth/drive.readonly"
@@ -287,7 +293,9 @@ class GoogleDriveAssetLoader(AssetLoader):
 
         if self._oauth_client_secrets is None and self._api_key_env_var is None:
             raise AssetLoadFailed(
-                "GoogleDriveAssetLoader requires oauth_client_secrets or api_key_env_var"
+                "GoogleDriveAssetLoader requires oauth_client_secrets or api_key_env_var. "
+                f"Expected default secrets at "
+                f"{_default_config_base() / 'pygmu2' / 'client_secrets.json'}"
             )
 
     def list_remote_assets(self, wildcard_spec: str) -> list[str]:
