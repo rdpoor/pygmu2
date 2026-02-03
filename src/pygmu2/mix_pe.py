@@ -77,28 +77,36 @@ class MixPE(ProcessingElement):
         Returns:
             Snippet containing the sum of all input samples
         """
-        # Render all inputs
-        snippets = [inp.render(start, duration) for inp in self._inputs]
-        
+        # Render only inputs whose extents intersect the requested range
+        req_extent = Extent(start, start + duration)
+        rendered = []
+        for inp in self._inputs:
+            if inp.extent().intersects(req_extent):
+                rendered.append((inp, inp.render(start, duration)))
+
+        if not rendered:
+            channels = self.channel_count() or 1
+            return Snippet.from_zeros(start, duration, channels)
+
         # Debug: log what each input is contributing
-        if len(self._inputs) > 1 and duration > 0:
-            for i, snippet in enumerate(snippets):
+        if len(rendered) > 1 and duration > 0:
+            for i, (inp, snippet) in enumerate(rendered):
                 first_val = snippet.data[0, 0] if snippet.data.shape[0] > 0 else 0
                 mid_idx = duration // 2
                 mid_val = snippet.data[mid_idx, 0] if mid_idx < snippet.data.shape[0] else 0
                 last_val = snippet.data[-1, 0] if snippet.data.shape[0] > 0 else 0
                 logger.debug(
-                    f"MixPE: Input {i} ({self._inputs[i].__class__.__name__}) at start={start}: "
+                    f"MixPE: Input {i} ({inp.__class__.__name__}) at start={start}: "
                     f"first={first_val:.2f}, mid={mid_val:.2f}, last={last_val:.2f}"
                 )
         
         # Sum all data arrays
-        result = snippets[0].data.copy()
-        for snippet in snippets[1:]:
+        result = rendered[0][1].data.copy()
+        for _, snippet in rendered[1:]:
             result += snippet.data
         
         # Debug: log the result
-        if len(self._inputs) > 1 and duration > 0:
+        if len(rendered) > 1 and duration > 0:
             first_result = result[0, 0] if result.shape[0] > 0 else 0
             mid_idx = duration // 2
             mid_result = result[mid_idx, 0] if mid_idx < result.shape[0] else 0

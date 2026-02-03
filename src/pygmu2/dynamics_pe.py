@@ -342,26 +342,25 @@ class DynamicsPE(ProcessingElement):
         source_snippet = self._source.render(start, duration)
         env_snippet = self._envelope.render(start, duration)
         
-        audio = source_snippet.data.astype(np.float64)
-        envelope = env_snippet.data.astype(np.float64)
+        audio = source_snippet.data.astype(np.float32, copy=False)
+        envelope = env_snippet.data.astype(np.float32, copy=False)
         
         channels = audio.shape[1]
         env_channels = envelope.shape[1]
         
         # Handle stereo linking
         if self._stereo_link and env_channels > 1:
-            # Use max across channels for linked stereo
+            # Use max across channels for linked stereo (keep as Nx1 for broadcasting)
             envelope = np.max(envelope, axis=1, keepdims=True)
-            envelope = np.tile(envelope, (1, channels))
         elif env_channels == 1 and channels > 1:
-            # Mono envelope, stereo audio: broadcast
-            envelope = np.tile(envelope, (1, channels))
+            # Mono envelope, stereo audio: keep Nx1 for broadcasting
+            envelope = envelope[:, :1]
         elif env_channels != channels:
-            # Mismatch: use first envelope channel
-            envelope = np.tile(envelope[:, 0:1], (1, channels))
+            # Mismatch: use first envelope channel (Nx1 for broadcasting)
+            envelope = envelope[:, 0:1]
         
         # Convert envelope to dB (with floor to avoid -inf)
-        eps = 1e-10
+        eps = np.float32(1e-10)
         level_db = 20.0 * np.log10(np.maximum(envelope, eps))
         
         # Compute gain in dB
@@ -372,11 +371,12 @@ class DynamicsPE(ProcessingElement):
         
         # Convert to linear gain
         gain_linear = 10.0 ** (gain_db / 20.0)
+        gain_linear = gain_linear.astype(np.float32, copy=False)
         
         # Apply gain
         output = audio * gain_linear
-        
-        return Snippet(start, output.astype(np.float32))
+
+        return Snippet(start, output.astype(np.float32, copy=False))
     
     def __repr__(self) -> str:
         makeup_str = "auto" if self._makeup_gain == self.AUTO else f"{self._makeup_gain_db:.1f}"
