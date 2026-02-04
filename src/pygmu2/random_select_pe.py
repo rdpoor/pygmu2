@@ -1,5 +1,5 @@
 """
-RandomChoicePE - choose one input at start and render it on trigger.
+RandomSelectPE - choose one input at start and render it on trigger.
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
@@ -17,8 +17,10 @@ from pygmu2.snippet import Snippet
 from pygmu2.logger import get_logger
 from pygmu2.trigger_pe import TriggerPE, TriggerMode
 
+logger = get_logger(__name__)
 
-class RandomChoicePE(ProcessingElement):
+
+class RandomSelectPE(ProcessingElement):
     """
     Randomly select one input at start and render it on trigger.
 
@@ -44,7 +46,7 @@ class RandomChoicePE(ProcessingElement):
         trigger_mode: TriggerMode = TriggerMode.RETRIGGER,
     ):
         if not inputs:
-            raise ValueError("RandomChoicePE requires at least one input")
+            raise ValueError("RandomSelectPE requires at least one input")
         if weights is not None and len(weights) != len(inputs):
             raise ValueError("weights must have the same length as inputs")
 
@@ -54,7 +56,7 @@ class RandomChoicePE(ProcessingElement):
         self._rng = random.Random(seed)
         self._trigger_mode = trigger_mode
 
-        self._selector = _RandomChoiceSourcePE(
+        self._selector = _RandomSelectSourcePE(
             inputs=self._inputs,
             weights=self._weights,
             rng=self._rng,
@@ -84,14 +86,14 @@ class RandomChoicePE(ProcessingElement):
 
     def resolve_channel_count(self, input_channel_counts: list[int]) -> int:
         if not input_channel_counts:
-            raise ValueError("RandomChoicePE has no inputs")
+            raise ValueError("RandomSelectPE has no inputs")
         # input_channel_counts includes trigger; inputs start at index 1
         input_counts = input_channel_counts[1:]
         first = input_counts[0]
         for i, count in enumerate(input_counts[1:], start=2):
             if count != first:
                 raise ValueError(
-                    f"RandomChoicePE input channel mismatch: input 1 has {first} channels, "
+                    f"RandomSelectPE input channel mismatch: input 1 has {first} channels, "
                     f"input {i} has {count} channels"
                 )
         return first
@@ -111,7 +113,7 @@ class RandomChoicePE(ProcessingElement):
         return self._trigger_pe.render(start, duration)
 
 
-class _RandomChoiceSourcePE(ProcessingElement):
+class _RandomSelectSourcePE(ProcessingElement):
     """
     Selects one input on reset_state() and renders only that input.
     """
@@ -149,7 +151,7 @@ class _RandomChoiceSourcePE(ProcessingElement):
         self._selected_index = self._rng.choices(indices, weights=self._weights, k=1)[0]
         self._selected_source = self._inputs[self._selected_index]
         logger.debug(
-            "RandomChoicePE selected input %d (%s)",
+            "RandomSelectPE selected input %d (%s)",
             self._selected_index,
             self._selected_source.__class__.__name__,
         )
@@ -166,4 +168,3 @@ class _RandomChoiceSourcePE(ProcessingElement):
         if self._selected_source is None:
             self._reset_state()
         return self._selected_source.render(start, duration)
-logger = get_logger(__name__)

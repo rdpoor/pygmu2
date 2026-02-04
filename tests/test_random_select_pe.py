@@ -3,7 +3,7 @@ import numpy as np
 import pygmu2 as pg
 
 
-def test_random_choice_retrigger_resets_on_trigger():
+def test_random_select_retrigger_resets_on_trigger():
     sample_rate = 10  # small for easy reasoning
 
     source = pg.IdentityPE()
@@ -17,7 +17,7 @@ def test_random_choice_retrigger_resets_on_trigger():
         channels=1,
     )
 
-    chooser = pg.RandomChoicePE(
+    chooser = pg.RandomSelectPE(
         trigger=trigger,
         inputs=[slice_a, slice_b],
         weights=[0.0, 1.0],  # always choose slice_b
@@ -39,7 +39,7 @@ def test_random_choice_retrigger_resets_on_trigger():
     assert np.allclose(out, expected)
 
 
-def test_random_choice_dirac_low_sample_retrigger():
+def test_random_select_dirac_low_sample_retrigger():
     sample_rate = 10  # small for easy reasoning
     period = sample_rate  # 1 Hz
 
@@ -51,7 +51,7 @@ def test_random_choice_dirac_low_sample_retrigger():
     gate = pg.TransformPE(impulse, func=lambda x: 1.0 - x)
     trigger = pg.LoopPE(gate, loop_start=0, loop_end=period)
 
-    chooser = pg.RandomChoicePE(
+    chooser = pg.RandomSelectPE(
         trigger=trigger,
         inputs=[slice_a, slice_b],
         weights=[0.0, 1.0],  # always choose slice_b
@@ -72,7 +72,7 @@ def test_random_choice_dirac_low_sample_retrigger():
 
     assert np.allclose(out, expected)
 
-def test_random_choice_verify_trigger():
+def test_random_select_verify_trigger():
     source_stream = pg.IdentityPE()
     sample_rate = 44100
 
@@ -93,7 +93,7 @@ def test_random_choice_verify_trigger():
         ])
     assert np.allclose(out, expected)
 
-def test_random_choice_slice_shorter_than_retrigger():
+def test_random_select_slice_shorter_than_retrigger():
     sample_rate = 44100
 
     slices = [
@@ -105,7 +105,7 @@ def test_random_choice_slice_shorter_than_retrigger():
         0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
     ])
 
-    chooser = pg.RandomChoicePE(
+    chooser = pg.RandomSelectPE(
         trigger=trigger,
         inputs=slices,
         seed=1234,
@@ -121,7 +121,7 @@ def test_random_choice_slice_shorter_than_retrigger():
     ], dtype=np.float32)
     assert np.allclose(out, expected)
 
-def test_random_choice_slice_longer_than_retrigger():
+def test_random_select_slice_longer_than_retrigger():
     sample_rate = 44100
 
     slices = [
@@ -133,7 +133,7 @@ def test_random_choice_slice_longer_than_retrigger():
         0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
     ])
 
-    chooser = pg.RandomChoicePE(
+    chooser = pg.RandomSelectPE(
         trigger=trigger,
         inputs=slices,
         seed=1234,
@@ -149,7 +149,7 @@ def test_random_choice_slice_longer_than_retrigger():
     ], dtype=np.float32)
     assert np.allclose(out, expected)
 
-def test_random_choice_crop():
+def test_random_select_crop():
     sample_rate = 44100
 
     cropped = pg.SlicePE(pg.IdentityPE(), 10, 5)  # start at 10, end before 15, dur = 5

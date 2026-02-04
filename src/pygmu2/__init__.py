@@ -33,7 +33,7 @@ from pygmu2.loop_pe import LoopPE
 from pygmu2.meltysynth_pe import MeltysynthPE
 from pygmu2.midi_in_pe import MidiInPE
 from pygmu2.random_pe import RandomPE, RandomMode
-from pygmu2.random_choice_pe import RandomChoicePE
+from pygmu2.random_select_pe import RandomSelectPE
 from pygmu2.reset_pe import ResetPE
 from pygmu2.sine_pe import SinePE
 from pygmu2.super_saw_pe import SuperSawPE
@@ -47,6 +47,7 @@ from pygmu2.asset_manager import (
     GithubUserContentAssetLoader,
 )
 from pygmu2.slice_pe import SlicePE
+from pygmu2.sequence_pe import SequencePE, SequenceMode
 from pygmu2.spatial_pe import (
     SpatialPE,
     SpatialMethod,
@@ -160,9 +161,10 @@ __all__ = [
     "GoogleDriveAssetLoader",
     "GithubUserContentAssetLoader",
     "RandomPE",
-    "RandomChoicePE",
+    "RandomSelectPE",
     "ResetPE",
     "SlicePE",
+    "SequencePE",
     "SinePE",
     "SVFilterPE",
     "SpatialPE",
@@ -190,6 +192,7 @@ __all__ = [
     "OutOfBoundsMode",
     "RandomMode",
     "TriggerMode",
+    "SequenceMode",
     "WindowMode",
     # Conversion functions
     "pitch_to_freq",
