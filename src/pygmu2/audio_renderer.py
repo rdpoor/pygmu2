@@ -111,7 +111,10 @@ class AudioRenderer(Renderer):
                 latency=self._latency,
             )
             self._blocking_stream.start()
-        self._blocking_stream.write(snippet.data)
+        data = snippet.data
+        if data.dtype != np.float32:
+            data = data.astype(np.float32, copy=False)
+        self._blocking_stream.write(data)
     
     def play_range(self, start: int, duration: int) -> None:
         """
@@ -170,7 +173,10 @@ class AudioRenderer(Renderer):
                 remaining = extent.end - position
                 this_chunk = min(chunk_size, remaining)
                 snippet = self._source.render(position, this_chunk)
-                stream.write(snippet.data)
+                data = snippet.data
+                if data.dtype != np.float32:
+                    data = data.astype(np.float32, copy=False)
+                stream.write(data)
                 position += this_chunk
         
         logger.info(f"Played {extent.end - extent.start} samples")

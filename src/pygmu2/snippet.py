@@ -40,6 +40,10 @@ class Snippet:
         elif data.ndim != 2:
             raise ValueError(f"data must be 1D or 2D, got {data.ndim}D")
         
+        # Normalize dtype to float32 for consistent audio buffers.
+        if data.dtype != np.float32:
+            data = data.astype(np.float32, copy=False)
+
         # Zero-length snippets are allowed (duration=0)
         self._start = start
         self._data = data
@@ -86,7 +90,7 @@ class Snippet:
         Returns:
             A new Snippet filled with zeros
         """
-        data = np.zeros((duration, channels), dtype=np.float64)
+        data = np.zeros((duration, channels), dtype=np.float32)
         return cls(start, data)
     
     def __repr__(self) -> str:
