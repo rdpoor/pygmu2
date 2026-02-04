@@ -18,12 +18,12 @@ def _build_sources():
     # Original choir
     choir = source
 
-    # Pitch-shift down three semitones (rate = 2^(-3/12))
-    rate = 2 ** (-3 / 12)
+    # Pitch-shift down three semitones
+    rate = pg.semitones_to_ratio(-3)
     choir_down = pg.TimeWarpPE(source, rate=rate)
 
-    # Pitch-shift up four semitones (rate = 2^(-4/12))
-    rate = 2 ** (4 / 12)
+    # Pitch-shift up four semitones
+    rate = pg.semitones_to_ratio(4)
     choir_up = pg.TimeWarpPE(source, rate=rate)
 
     return choir, choir_down, choir_up, sample_rate
