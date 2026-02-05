@@ -30,7 +30,8 @@ class SequencePE(ProcessingElement):
 
     Args:
         *input_start_pairs: (pe, start) pairs, where start is in samples.
-            You may also pass a single list/tuple of pairs.
+            You may also pass a single list/tuple of pairs. A start of None
+            auto-advances to the previous element's end (or 0 if first).
         mode: SequenceMode or "overlap"/"non_overlap" (default: OVERLAP)
 
     Notes:
@@ -53,11 +54,28 @@ class SequencePE(ProcessingElement):
             raise ValueError("SequencePE requires at least one (pe, start) pair")
 
         normalized: list[tuple[ProcessingElement, int]] = []
-        for pair in pairs:
+        prev_end: Optional[int] = None
+        for idx, pair in enumerate(pairs):
             if not isinstance(pair, (list, tuple)) or len(pair) != 2:
                 raise ValueError("Each input must be a (pe, start) pair")
             pe, start = pair
-            normalized.append((pe, int(start)))
+            if start is None:
+                if idx == 0:
+                    start = 0
+                else:
+                    if prev_end is None:
+                        raise ValueError(
+                            "Cannot auto-advance start time after an infinite extent"
+                        )
+                    start = prev_end
+            start = int(start)
+            normalized.append((pe, start))
+            # Update prev_end based on this PE's extent (if finite).
+            extent = pe.extent()
+            if extent.end is None:
+                prev_end = None
+            else:
+                prev_end = start + int(extent.end - (extent.start or 0))
 
         if isinstance(mode, str):
             mode = SequenceMode(mode.lower())
