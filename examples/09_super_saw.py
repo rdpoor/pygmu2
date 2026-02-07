@@ -11,9 +11,6 @@ MIT License
 """
 
 from pygmu2 import (
-import pygmu2 as pg
-pg.set_sample_rate(44100)
-
     SuperSawPE,
     SinePE,
     GainPE,
@@ -22,6 +19,9 @@ pg.set_sample_rate(44100)
     Extent,
     pitch_to_freq,
 )
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
 
 # Try to import BiquadPE (requires scipy)
 try:

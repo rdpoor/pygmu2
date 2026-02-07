@@ -12,9 +12,6 @@ MIT License
 from pathlib import Path
 
 from pygmu2 import (
-import pygmu2 as pg
-pg.set_sample_rate(44100)
-
     AudioRenderer,
     CropPE,
     DelayPE,
@@ -30,6 +27,9 @@ pg.set_sample_rate(44100)
     WavReaderPE,
     seconds_to_samples,
 )
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
 from pygmu2.assets import get_kemar_dir
 
 # Path to audio files (relative to this script)

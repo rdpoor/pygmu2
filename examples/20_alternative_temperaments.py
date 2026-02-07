@@ -15,9 +15,6 @@ MIT License
 """
 
 from pygmu2 import (
-import pygmu2 as pg
-pg.set_sample_rate(44100)
-
     AudioRenderer,
     SinePE,
     MixPE,
@@ -33,6 +30,9 @@ pg.set_sample_rate(44100)
     set_verdi_tuning,
     get_reference_frequency,
 )
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
 
 # Sample rate for conversions
 SAMPLE_RATE = 44100

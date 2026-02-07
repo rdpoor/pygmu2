@@ -8,10 +8,10 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-from pygmu2 import (
 import pygmu2 as pg
 pg.set_sample_rate(44100)
 
+from pygmu2 import (
     SinePE,
     MixPE,
     GainPE,

@@ -10,9 +10,6 @@ MIT License
 
 import numpy as np
 from pygmu2 import (
-import pygmu2 as pg
-pg.set_sample_rate(44100)
-
     SinePE,
     MixPE,
     GainPE,
@@ -22,6 +19,9 @@ pg.set_sample_rate(44100)
     Extent,
     pitch_to_freq,
 )
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
 
 SAMPLE_RATE = 44100
 DURATION_SECONDS = 4

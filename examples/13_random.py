@@ -9,9 +9,6 @@ MIT License
 """
 
 from pygmu2 import (
-import pygmu2 as pg
-pg.set_sample_rate(44100)
-
     AudioRenderer,
     BlitSawPE,
     ConstantPE,
@@ -23,6 +20,9 @@ pg.set_sample_rate(44100)
     TransformPE,
     pitch_to_freq,
 )
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
 
 # Configuration
 SAMPLE_RATE = 44100

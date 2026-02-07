@@ -8,14 +8,15 @@ Fill in the required parameters before running.
 from pathlib import Path
 
 from pygmu2.asset_manager import (
-import pygmu2 as pg
-pg.set_sample_rate(44100)
 
     AssetManager,
     GoogleDriveAssetLoader,
     GithubUserContentAssetLoader,
     _default_config_base,
 )
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
 
 def demo_google_drive_giant_fish():
     print("\n=== Google Drive Giant Fish Demo ===")

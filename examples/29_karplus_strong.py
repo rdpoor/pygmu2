@@ -14,9 +14,6 @@ MIT License
 """
 
 from pygmu2 import (
-import pygmu2 as pg
-pg.set_sample_rate(44100)
-
     AudioRenderer,
     CropPE,
     DelayPE,
@@ -25,6 +22,9 @@ pg.set_sample_rate(44100)
     MixPE,
     pitch_to_freq,
 )
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
 from pygmu2.karplus_strong_pe import rho_for_decay_db
 from typing import Optional
 

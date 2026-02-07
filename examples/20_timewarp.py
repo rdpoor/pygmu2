@@ -16,9 +16,6 @@ MIT License
 from pathlib import Path
 
 from pygmu2 import (
-import pygmu2 as pg
-pg.set_sample_rate(44100)
-
     AudioRenderer,
     CropPE,
     Extent,
@@ -29,6 +26,9 @@ pg.set_sample_rate(44100)
     WavReaderPE,
     seconds_to_samples,
 )
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
 
 
 AUDIO_DIR = Path(__file__).parent / "audio"

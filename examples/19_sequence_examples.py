@@ -16,9 +16,6 @@ MIT License
 """
 
 from pygmu2 import (
-import pygmu2 as pg
-pg.set_sample_rate(44100)
-
     AudioRenderer,
     BlitSawPE,
     ConstantPE,
@@ -34,6 +31,9 @@ pg.set_sample_rate(44100)
     pitch_to_freq,
     rho_for_decay_db,
 )
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
 from typing import Optional
 
 

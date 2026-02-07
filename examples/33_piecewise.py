@@ -11,9 +11,6 @@ MIT License
 """
 
 from pygmu2 import (
-import pygmu2 as pg
-pg.set_sample_rate(44100)
-
     AudioRenderer,
     CropPE,
     Extent,
@@ -25,6 +22,9 @@ pg.set_sample_rate(44100)
     TransitionType,
     pitch_to_freq,
 )
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
 
 SAMPLE_RATE = 44100
 SR = SAMPLE_RATE
