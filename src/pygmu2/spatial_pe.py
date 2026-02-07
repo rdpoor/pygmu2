@@ -20,11 +20,17 @@ from abc import ABC, abstractmethod
 from typing import Optional, Union
 
 import numpy as np
+import soundfile as sf
+from scipy.signal import fftconvolve
 
+from pygmu2.assets import get_kemar_dir
+from pygmu2.config import handle_error
+from pygmu2.logger import get_logger
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 
+logger = get_logger(__name__)
 
 class SpatialMethod(ABC):
     """
@@ -39,6 +45,25 @@ class SpatialMethod(ABC):
     def output_channels(self) -> int:
         """Return the number of output channels this method produces."""
         pass
+
+    @abstractmethod
+    def render(
+        self,
+        source_snippet: Snippet,
+        start: int,
+        duration: int,
+        sample_rate: int,
+    ) -> np.ndarray:
+        """
+        Render spatialization for the given source snippet.
+        """
+        raise NotImplementedError
+
+    def inputs(self) -> list[ProcessingElement]:
+        """
+        Return any dynamic ProcessingElement inputs used by this method.
+        """
+        return []
 
 
 class SpatialAdapter(SpatialMethod):
@@ -66,6 +91,58 @@ class SpatialAdapter(SpatialMethod):
     @property
     def output_channels(self) -> int:
         return self._channels
+
+    def render(
+        self,
+        source_snippet: Snippet,
+        start: int,
+        duration: int,
+        sample_rate: int,
+    ) -> np.ndarray:
+        source_data = source_snippet.data  # shape (duration, M)
+        src_ch = source_snippet.channels
+        out_ch = self.output_channels
+
+        if src_ch == out_ch:
+            return source_data
+
+        output_data = np.zeros((duration, out_ch), dtype=np.float32)
+
+        if src_ch == 1:
+            # Mono → N: Duplicate mono channel to all output channels
+            output_data[:, :] = source_data[:, 0:1]
+        elif out_ch == 1:
+            # M → Mono: Average all input channels
+            output_data[:, 0] = np.mean(source_data, axis=1)
+        elif src_ch == 2 and out_ch == 4:
+            # Stereo → Quad: L→L, R→R, center/surround from mix
+            output_data[:, 0] = source_data[:, 0]  # L
+            output_data[:, 1] = source_data[:, 1]  # R
+            center_surround = np.mean(source_data, axis=1)  # Average of L and R
+            output_data[:, 2] = center_surround  # Center
+            output_data[:, 3] = center_surround  # Surround
+        elif src_ch == 4 and out_ch == 2:
+            # Quad → Stereo: L→L, R→R, ignore center/surround
+            output_data[:, 0] = source_data[:, 0]  # L
+            output_data[:, 1] = source_data[:, 1]  # R
+        else:
+            # Generic conversion: map channels up to min(M, N), then duplicate or average
+            min_ch = min(src_ch, out_ch)
+            output_data[:, :min_ch] = source_data[:, :min_ch]
+
+            if out_ch > src_ch:
+                # Upmix: duplicate last channel to remaining outputs
+                if src_ch > 0:
+                    last_ch = source_data[:, src_ch - 1:src_ch]
+                    output_data[:, src_ch:] = last_ch
+            elif src_ch > out_ch:
+                # Downmix: average remaining channels into last output
+                if out_ch > 0:
+                    remaining = source_data[:, out_ch:]
+                    if remaining.shape[1] > 0:
+                        output_data[:, out_ch - 1] += np.mean(remaining, axis=1)
+
+        return output_data
     
     def __repr__(self) -> str:
         return f"SpatialAdapter(channels={self._channels})"
@@ -94,6 +171,48 @@ class SpatialLinear(SpatialMethod):
     @property
     def output_channels(self) -> int:
         return 2  # Stereo
+
+    def inputs(self) -> list[ProcessingElement]:
+        if isinstance(self.azimuth, ProcessingElement):
+            return [self.azimuth]
+        return []
+
+    def render(
+        self,
+        source_snippet: Snippet,
+        start: int,
+        duration: int,
+        sample_rate: int,
+    ) -> np.ndarray:
+        source_data = source_snippet.data
+
+        # Mix M channels to mono
+        mono_data = np.mean(source_data, axis=1, keepdims=True)  # shape (duration, 1)
+
+        # Get azimuth (static or dynamic)
+        if isinstance(self.azimuth, ProcessingElement):
+            azimuth_snippet = self.azimuth.render(start, duration)
+            azimuth_values = azimuth_snippet.data[:, 0]  # shape (duration,)
+        else:
+            azimuth_values = np.full(duration, float(self.azimuth), dtype=np.float32)
+
+        # Clamp azimuth to [-90, +90]
+        azimuth_values = np.clip(azimuth_values, -90.0, 90.0)
+
+        # Convert azimuth [-90, +90] to pan value [0, 1]
+        # -90° → pan=0 (all left), 0° → pan=0.5 (center), +90° → pan=1 (all right)
+        pan_values = (azimuth_values + 90.0) / 180.0  # shape (duration,)
+
+        # Linear panning: L = 1 - pan, R = pan
+        L_gain = 1.0 - pan_values  # shape (duration,)
+        R_gain = pan_values  # shape (duration,)
+
+        # Apply gains to mono signal
+        output_data = np.zeros((duration, 2), dtype=np.float32)
+        output_data[:, 0] = mono_data[:, 0] * L_gain  # Left
+        output_data[:, 1] = mono_data[:, 0] * R_gain  # Right
+
+        return output_data
     
     def __repr__(self) -> str:
         azimuth_str = f"{self.azimuth:.1f}" if isinstance(self.azimuth, (int, float)) else self.azimuth.__class__.__name__
@@ -123,6 +242,49 @@ class SpatialConstantPower(SpatialMethod):
     @property
     def output_channels(self) -> int:
         return 2  # Stereo
+
+    def inputs(self) -> list[ProcessingElement]:
+        if isinstance(self.azimuth, ProcessingElement):
+            return [self.azimuth]
+        return []
+
+    def render(
+        self,
+        source_snippet: Snippet,
+        start: int,
+        duration: int,
+        sample_rate: int,
+    ) -> np.ndarray:
+        source_data = source_snippet.data
+
+        # Mix M channels to mono
+        mono_data = np.mean(source_data, axis=1, keepdims=True)  # shape (duration, 1)
+
+        # Get azimuth (static or dynamic)
+        if isinstance(self.azimuth, ProcessingElement):
+            azimuth_snippet = self.azimuth.render(start, duration)
+            azimuth_values = azimuth_snippet.data[:, 0]  # shape (duration,)
+        else:
+            azimuth_values = np.full(duration, float(self.azimuth), dtype=np.float32)
+
+        # Clamp azimuth to [-90, +90]
+        azimuth_values = np.clip(azimuth_values, -90.0, 90.0)
+
+        # Convert azimuth [-90, +90] to pan angle [0, 90] degrees
+        # -90° → 0°, 0° → 45°, +90° → 90°
+        pan_angle_deg = (azimuth_values + 90.0) / 2.0  # shape (duration,)
+        pan_angle_rad = np.deg2rad(pan_angle_deg)  # shape (duration,)
+
+        # Constant-power panning: L = cos(angle), R = sin(angle)
+        L_gain = np.cos(pan_angle_rad)  # shape (duration,)
+        R_gain = np.sin(pan_angle_rad)  # shape (duration,)
+
+        # Apply gains to mono signal
+        output_data = np.zeros((duration, 2), dtype=np.float32)
+        output_data[:, 0] = mono_data[:, 0] * L_gain  # Left
+        output_data[:, 1] = mono_data[:, 0] * R_gain  # Right
+
+        return output_data
     
     def __repr__(self) -> str:
         azimuth_str = f"{self.azimuth:.1f}" if isinstance(self.azimuth, (int, float)) else self.azimuth.__class__.__name__
@@ -253,7 +415,16 @@ class SpatialHRTF(SpatialMethod):
             SpatialHRTF.KEMAR_HRTF_ENTRIES,
             key=lambda e: (e[0] - elev) ** 2 + (e[1] - az) ** 2,
         )
-        return best[2]
+        filename = best[2]
+        logger.debug(
+            "SpatialHRTF.hrtf_filename_for: az=%.1f, el=%.1f -> %s (nearest elev=%.1f, az=%.1f)",
+            azimuth,
+            elevation,
+            filename,
+            float(best[0]),
+            float(best[1]),
+        )
+        return filename
 
     def __init__(self, azimuth: Union[float, int], elevation: Union[float, int] = 0.0):
         if isinstance(azimuth, ProcessingElement) or isinstance(elevation, ProcessingElement):
@@ -263,11 +434,90 @@ class SpatialHRTF(SpatialMethod):
             )
         self.azimuth = float(azimuth)
         self.elevation = float(elevation)
+
+        self._ir_cache: dict[str, tuple[np.ndarray, int]] = {}
+        self._tail: Optional[np.ndarray] = None
+        self._last_render_end: Optional[int] = None
+        self._warned_sr_mismatch: bool = False
     
     @property
     def output_channels(self) -> int:
         return 2  # Stereo
-    
+
+    def _load_ir(self) -> tuple[np.ndarray, int]:
+        filename = SpatialHRTF.hrtf_filename_for(self.azimuth, self.elevation)
+        if filename in self._ir_cache:
+            return self._ir_cache[filename]
+
+        path = get_kemar_dir() / filename
+        data, sr = sf.read(str(path), dtype="float32")
+        if data.ndim == 1:
+            data = data.reshape(-1, 1)
+        if data.shape[1] != 2:
+            raise ValueError(f"SpatialHRTF: expected stereo IR, got shape {data.shape} for {path}")
+
+        self._ir_cache[filename] = (data, int(sr))
+        return self._ir_cache[filename]
+
+    def _reset_tail_if_noncontiguous(self, start: int) -> None:
+        if self._last_render_end is None or start != self._last_render_end:
+            self._tail = None
+
+    def render(
+        self,
+        source_snippet: Snippet,
+        start: int,
+        duration: int,
+        sample_rate: int,
+    ) -> np.ndarray:
+        ir_data, ir_sr = self._load_ir()
+        if sample_rate != ir_sr and not self._warned_sr_mismatch:
+            handle_error(
+                f"SpatialHRTF: IR sample rate is {ir_sr} Hz but source is {sample_rate} Hz. "
+                "Proceeding without resampling.",
+                fatal=False,
+            )
+            self._warned_sr_mismatch = True
+
+        # Mix M channels to mono
+        source_data = source_snippet.data
+        mono_data = np.mean(source_data, axis=1).astype(np.float32, copy=False)
+
+        # Select IR channels, swap for left-side azimuth
+        left_ir = ir_data[:, 0]
+        right_ir = ir_data[:, 1]
+        if self.azimuth < 0:
+            left_ir, right_ir = right_ir, left_ir
+
+        ir_len = left_ir.shape[0]
+        tail_len = max(ir_len - 1, 0)
+
+        self._reset_tail_if_noncontiguous(start)
+
+        if tail_len == 0:
+            x = mono_data
+        else:
+            if self._tail is None or self._tail.shape[0] != tail_len:
+                self._tail = np.zeros(tail_len, dtype=np.float32)
+            x = np.concatenate([self._tail, mono_data])
+
+        left = fftconvolve(x, left_ir, mode="full")
+        right = fftconvolve(x, right_ir, mode="full")
+
+        if tail_len == 0:
+            out_left = left[:duration]
+            out_right = right[:duration]
+        else:
+            out_left = left[tail_len:tail_len + duration]
+            out_right = right[tail_len:tail_len + duration]
+
+        if tail_len > 0:
+            self._tail = x[-tail_len:]
+        self._last_render_end = start + duration
+
+        output = np.column_stack([out_left, out_right]).astype(np.float32, copy=False)
+        return output
+
     def __repr__(self) -> str:
         return f"SpatialHRTF(azimuth={self.azimuth:.1f}, elevation={self.elevation:.1f})"
 
@@ -375,21 +625,7 @@ class SpatialPE(ProcessingElement):
         (e.g., dynamic azimuth for SpatialLinear/SpatialConstantPower).
         SpatialHRTF uses static azimuth/elevation only, so it adds no extra inputs.
         """
-        inputs_list = [self._source]
-        
-        # Add any ProcessingElement parameters from the method
-        if isinstance(self._method, SpatialAdapter):
-            # No dynamic parameters
-            pass
-        elif isinstance(self._method, SpatialLinear):
-            if isinstance(self._method.azimuth, ProcessingElement):
-                inputs_list.append(self._method.azimuth)
-        elif isinstance(self._method, SpatialConstantPower):
-            if isinstance(self._method.azimuth, ProcessingElement):
-                inputs_list.append(self._method.azimuth)
-        # SpatialHRTF: azimuth and elevation are static only (no dynamic inputs)
-        
-        return inputs_list
+        return [self._source, *self._method.inputs()]
     
     def is_pure(self) -> bool:
         """SpatialPE is pure - it's a stateless transformation."""
@@ -417,163 +653,13 @@ class SpatialPE(ProcessingElement):
         """
         # Render source
         source_snippet = self._source.render(start, duration)
-        source_data = source_snippet.data  # shape (duration, M)
-        src_ch = source_snippet.channels
-        out_ch = self._method.output_channels
-        
-        # Handle different methods
-        if isinstance(self._method, SpatialAdapter):
-            output_data = self._render_adapter(source_data, src_ch, out_ch)
-        elif isinstance(self._method, SpatialLinear):
-            output_data = self._render_linear(source_data, src_ch, start, duration)
-        elif isinstance(self._method, SpatialConstantPower):
-            output_data = self._render_constant_power(source_data, src_ch, start, duration)
-        elif isinstance(self._method, SpatialHRTF):
-            # TODO: HRTF implementation
-            output_data = np.zeros((duration, out_ch), dtype=np.float32)
-        else:
-            raise ValueError(f"SpatialPE: Unknown method type {type(self._method)}")
-        
+        output_data = self._method.render(
+            source_snippet,
+            start,
+            duration,
+            self._source.sample_rate,
+        )
         return Snippet(start, output_data)
-    
-    def _render_adapter(self, source_data: np.ndarray, src_ch: int, out_ch: int) -> np.ndarray:
-        """
-        Render channel adapter conversion (M→N).
-        
-        Args:
-            source_data: Input data shape (duration, M)
-            src_ch: Source channel count (M)
-            out_ch: Output channel count (N)
-        
-        Returns:
-            Output data shape (duration, N)
-        """
-        duration = source_data.shape[0]
-        
-        if src_ch == out_ch:
-            # Passthrough
-            return source_data.copy()
-        
-        output_data = np.zeros((duration, out_ch), dtype=np.float32)
-        
-        if src_ch == 1:
-            # Mono → N: Duplicate mono channel to all output channels
-            output_data[:, :] = source_data[:, 0:1]
-        elif out_ch == 1:
-            # M → Mono: Average all input channels
-            output_data[:, 0] = np.mean(source_data, axis=1)
-        elif src_ch == 2 and out_ch == 4:
-            # Stereo → Quad: L→L, R→R, center/surround from mix
-            output_data[:, 0] = source_data[:, 0]  # L
-            output_data[:, 1] = source_data[:, 1]  # R
-            center_surround = np.mean(source_data, axis=1)  # Average of L and R
-            output_data[:, 2] = center_surround  # Center
-            output_data[:, 3] = center_surround  # Surround
-        elif src_ch == 4 and out_ch == 2:
-            # Quad → Stereo: L→L, R→R, ignore center/surround
-            output_data[:, 0] = source_data[:, 0]  # L
-            output_data[:, 1] = source_data[:, 1]  # R
-        else:
-            # Generic conversion: map channels up to min(M, N), then duplicate or average
-            min_ch = min(src_ch, out_ch)
-            output_data[:, :min_ch] = source_data[:, :min_ch]
-            
-            if out_ch > src_ch:
-                # Upmix: duplicate last channel to remaining outputs
-                if src_ch > 0:
-                    last_ch = source_data[:, src_ch - 1:src_ch]
-                    output_data[:, src_ch:] = last_ch
-            elif src_ch > out_ch:
-                # Downmix: average remaining channels into last output
-                if out_ch > 0:
-                    remaining = source_data[:, out_ch:]
-                    if remaining.shape[1] > 0:
-                        output_data[:, out_ch - 1] += np.mean(remaining, axis=1)
-        
-        return output_data
-    
-    def _render_linear(self, source_data: np.ndarray, src_ch: int, start: int, duration: int) -> np.ndarray:
-        """
-        Render linear panning.
-        
-        Args:
-            source_data: Input data shape (duration, M)
-            src_ch: Source channel count (M)
-            start: Starting sample index
-            duration: Number of samples
-        
-        Returns:
-            Output data shape (duration, 2) - stereo
-        """
-        # Mix M channels to mono
-        mono_data = np.mean(source_data, axis=1, keepdims=True)  # shape (duration, 1)
-        
-        # Get azimuth (static or dynamic)
-        if isinstance(self._method.azimuth, ProcessingElement):
-            azimuth_snippet = self._method.azimuth.render(start, duration)
-            azimuth_values = azimuth_snippet.data[:, 0]  # shape (duration,)
-        else:
-            azimuth_values = np.full(duration, float(self._method.azimuth), dtype=np.float32)
-        
-        # Clamp azimuth to [-90, +90]
-        azimuth_values = np.clip(azimuth_values, -90.0, 90.0)
-        
-        # Convert azimuth [-90, +90] to pan value [0, 1]
-        # -90° → pan=0 (all left), 0° → pan=0.5 (center), +90° → pan=1 (all right)
-        pan_values = (azimuth_values + 90.0) / 180.0  # shape (duration,)
-        
-        # Linear panning: L = 1 - pan, R = pan
-        L_gain = 1.0 - pan_values  # shape (duration,)
-        R_gain = pan_values  # shape (duration,)
-        
-        # Apply gains to mono signal
-        output_data = np.zeros((duration, 2), dtype=np.float32)
-        output_data[:, 0] = mono_data[:, 0] * L_gain  # Left
-        output_data[:, 1] = mono_data[:, 0] * R_gain  # Right
-        
-        return output_data
-    
-    def _render_constant_power(self, source_data: np.ndarray, src_ch: int, start: int, duration: int) -> np.ndarray:
-        """
-        Render constant-power panning.
-        
-        Args:
-            source_data: Input data shape (duration, M)
-            src_ch: Source channel count (M)
-            start: Starting sample index
-            duration: Number of samples
-        
-        Returns:
-            Output data shape (duration, 2) - stereo
-        """
-        # Mix M channels to mono
-        mono_data = np.mean(source_data, axis=1, keepdims=True)  # shape (duration, 1)
-        
-        # Get azimuth (static or dynamic)
-        if isinstance(self._method.azimuth, ProcessingElement):
-            azimuth_snippet = self._method.azimuth.render(start, duration)
-            azimuth_values = azimuth_snippet.data[:, 0]  # shape (duration,)
-        else:
-            azimuth_values = np.full(duration, float(self._method.azimuth), dtype=np.float32)
-        
-        # Clamp azimuth to [-90, +90]
-        azimuth_values = np.clip(azimuth_values, -90.0, 90.0)
-        
-        # Convert azimuth [-90, +90] to pan angle [0, 90] degrees
-        # -90° → 0°, 0° → 45°, +90° → 90°
-        pan_angle_deg = (azimuth_values + 90.0) / 2.0  # shape (duration,)
-        pan_angle_rad = np.deg2rad(pan_angle_deg)  # shape (duration,)
-        
-        # Constant-power panning: L = cos(angle), R = sin(angle)
-        L_gain = np.cos(pan_angle_rad)  # shape (duration,)
-        R_gain = np.sin(pan_angle_rad)  # shape (duration,)
-        
-        # Apply gains to mono signal
-        output_data = np.zeros((duration, 2), dtype=np.float32)
-        output_data[:, 0] = mono_data[:, 0] * L_gain  # Left
-        output_data[:, 1] = mono_data[:, 0] * R_gain  # Right
-        
-        return output_data
     
     def __repr__(self) -> str:
         return f"SpatialPE(source={self._source.__class__.__name__}, method={self._method})"

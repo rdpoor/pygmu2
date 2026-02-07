@@ -62,7 +62,9 @@ def make_meltysynth_midi_demo(soundfont_path: str, program: int | None = None):
         if synth is None:
             return
         if midi_message.type == "note_on" and midi_message.velocity > 0:
-            synth.note_on(midi_message.channel, midi_message.note, midi_message.velocity)
+            # synth.note_on(midi_message.channel, midi_message.note, midi_message.velocity)
+            # play it loud
+            synth.note_on(midi_message.channel, midi_message.note, 100)
         elif midi_message.type == "note_off" or (
             midi_message.type == "note_on" and midi_message.velocity == 0
         ):

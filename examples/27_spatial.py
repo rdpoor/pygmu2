@@ -3,7 +3,7 @@ Example 27: Spatial Audio - Panning and Channel Conversion
 
 Demonstrates SpatialPE for channel conversion and spatialization (panning)
 using various techniques: SpatialAdapter, SpatialLinear, SpatialConstantPower,
-and HRTF binaural spatialization (KEMAR) with ConvolvePE.
+and HRTF binaural spatialization (KEMAR) via SpatialHRTF.
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
@@ -11,12 +11,8 @@ MIT License
 
 from pathlib import Path
 
-import soundfile as sf
-
 from pygmu2 import (
-    ArrayPE,
     AudioRenderer,
-    ConvolvePE,
     CropPE,
     DelayPE,
     Extent,
@@ -38,16 +34,6 @@ AUDIO_DIR = Path(__file__).parent / "audio"
 KEMAR_DIR = get_kemar_dir()
 SAMPLE_RATE = 44100
 DJEMBE_HIT_PATH = AUDIO_DIR / "djembe_hit.wav"
-
-def _load_hrtf_ir_pe(filename: str, swap_lr: bool = False) -> ArrayPE:
-    """Load a KEMAR HRTF WAV as an ArrayPE filter. If swap_lr, swap L/R for left-side rendering."""
-    path = KEMAR_DIR / filename
-    if not path.exists():
-        raise FileNotFoundError(f"HRTF file not found: {path}")
-    data, _ = sf.read(path, dtype="float32", always_2d=True)
-    if swap_lr and data.shape[1] >= 2:
-        data = data[:, [1, 0]]
-    return ArrayPE(data)
 
 
 def demo_channel_conversion():
@@ -256,28 +242,27 @@ def demo_hrtf_spatialization():
         print(f"  Skipping: KEMAR directory {KEMAR_DIR} not found.", flush=True)
         return
 
-    # Mono source (djembe hit)
-    mono_source = WavReaderPE(str(DJEMBE_HIT_PATH))
-    # Ensure mono for convolution (ConvolvePE mono + stereo filter -> stereo out)
-    if mono_source.channel_count() != 1:
-        mono_source = SpatialPE(mono_source, method=SpatialAdapter(channels=1))
+    # Source (djembe hit)
+    source = WavReaderPE(str(DJEMBE_HIT_PATH))
 
-    # Positions: 7 azimuths [-90 to +90] × 3 elevations [0, 10, 20] (by elevation, then azimuth)
+    # Positions: 7 azimuths [-90 to +90] × 3 elevations [0, 10, 20] (by azimuth, then elevation)
     azimuths = [-90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0]
-    elevations = [0.0, 20.0, 40.0]
-    positions = [(az, el) for el in elevations for az in azimuths]
+    elevations = [0.0, 20.0, 40.0, 60.0, 90.0]
+    positions = [(az, el) for az in azimuths for el in elevations]
 
     panned_streams = []
     delay_samples = 0
     gap = seconds_to_samples(0.4, SAMPLE_RATE)
 
     for az, el in positions:
-        filename = SpatialHRTF.hrtf_filename_for(az, el)
-        swap_lr = az < 0
-        ir_pe = _load_hrtf_ir_pe(filename, swap_lr=swap_lr)
-        hrtf_out = ConvolvePE(mono_source, ir_pe)
+        hrtf_filename = SpatialHRTF.hrtf_filename_for(az, el)
+        print(
+            f"  az={az:+6.1f}°, el={el:+5.1f}° -> {hrtf_filename}",
+            flush=True,
+        )
+        hrtf_out = SpatialPE(source, method=SpatialHRTF(azimuth=az, elevation=el))
         panned_streams.append(DelayPE(hrtf_out, delay=delay_samples))
-        extent = mono_source.extent()
+        extent = source.extent()
         delay_samples += (extent.end - extent.start) + gap
 
     mixed_stream = MixPE(*panned_streams)

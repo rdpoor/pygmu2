@@ -73,7 +73,7 @@ class Snippet:
         """
         The underlying numpy array of shape (samples, channels).
         
-        Note: Returns the actual array, not a copy. Modify with care.
+        Note: Returns the actual array, not a copy. Treat as immutable.
         """
         return self._data
     

@@ -118,6 +118,13 @@ render(start, duration) called on root PE
 
 Each `render()` call returns a `Snippet` containing exactly `duration` samples.
 
+## Immutability Contract
+
+Processing elements must treat input `Snippet` buffers as immutable.
+Do not modify `snippet.data` from any input PE in-place. Always write into
+a new buffer (or a copy) when producing output. This prevents accidental
+buffer aliasing across the graph and keeps PE behavior consistent.
+
 ### Purity and State
 
 **Pure PEs** produce the same output for the same input and can be shared:

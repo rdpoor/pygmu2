@@ -95,6 +95,10 @@ class ProcessingElement(ABC):
         
         Returns:
             Snippet containing the requested audio data
+
+        Notes:
+            Implementations must treat input Snippet buffers as immutable.
+            Do not modify `snippet.data` from any input PE in-place.
         """
         if duration < 0:
             raise ValueError(f"duration must be >= 0, got {duration}")
