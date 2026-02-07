@@ -13,7 +13,10 @@ from typing import Optional, Union
 
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
-from pygmu2.config import handle_error
+from pygmu2.config import (
+    get_sample_rate,
+    handle_error,
+)
 from pygmu2.diagnostics import (
     is_enabled,
     pull_count_enabled,
@@ -48,6 +51,22 @@ class ProcessingElement(ABC):
 
     # For impure PEs: end of last render request; used to enforce contiguous requests
     _last_rendered_end: Optional[int] = None
+
+    def __new__(cls, *args, **kwargs):
+        """
+        Enforce global sample rate requirement before any PE is constructed.
+
+        This runs even when subclasses override __init__ (no super().__init__ needed).
+        """
+        sample_rate = get_sample_rate()
+        if sample_rate is None:
+            raise RuntimeError(
+                "Global sample_rate is required but not set. "
+                "Call pygmu2.set_sample_rate(rate) before constructing PEs."
+            )
+        obj = super().__new__(cls)
+        obj._sample_rate = sample_rate
+        return obj
 
     @property
     def sample_rate(self) -> Optional[int]:

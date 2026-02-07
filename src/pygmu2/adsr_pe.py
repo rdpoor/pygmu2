@@ -89,11 +89,42 @@ class AdsrPE(ProcessingElement):
         self._release_samples = release_samples
         self._release_seconds = release_seconds
 
-        # Resolved times (in samples). These are set in configure() once the
-        # sample rate is known (needed for *_seconds defaults/conversion).
+        # Resolved times (in samples).
         self._attack = 1
         self._decay = 1
         self._release = 1
+
+        def _resolve_time(
+            *,
+            samples: Optional[int],
+            seconds: Optional[float],
+            default_seconds: float,
+            name: str,
+        ) -> int:
+            # Defaults are specified in seconds so they are independent of the
+            # configured sample rate.
+            if samples is None and seconds is None:
+                seconds = default_seconds
+            return max(1, int(self._time_to_samples(samples=samples, seconds=seconds, name=name)))
+
+        self._attack = _resolve_time(
+            samples=self._attack_samples,
+            seconds=self._attack_seconds,
+            default_seconds=DEFAULT_ATTACK_SECONDS,
+            name="attack",
+        )
+        self._decay = _resolve_time(
+            samples=self._decay_samples,
+            seconds=self._decay_seconds,
+            default_seconds=DEFAULT_DECAY_SECONDS,
+            name="decay",
+        )
+        self._release = _resolve_time(
+            samples=self._release_samples,
+            seconds=self._release_seconds,
+            default_seconds=DEFAULT_RELEASE_SECONDS,
+            name="release",
+        )
         
         # State (will be initialized in on_start)
         self._state: Optional[AdsrState] = None
@@ -164,44 +195,6 @@ class AdsrPE(ProcessingElement):
         """Reset state at end of rendering."""
         self._reset_state()
 
-    def configure(self, sample_rate: int) -> None:
-        """
-        Configure with sample rate and resolve optional *_seconds parameters.
-        """
-        super().configure(sample_rate)
-
-        def _resolve_time(
-            *,
-            samples: Optional[int],
-            seconds: Optional[float],
-            default_seconds: float,
-            name: str,
-        ) -> int:
-            # Defaults are specified in seconds so they are independent of the
-            # configured sample rate.
-            if samples is None and seconds is None:
-                seconds = default_seconds
-            return max(1, int(self._time_to_samples(samples=samples, seconds=seconds, name=name)))
-
-        self._attack = _resolve_time(
-            samples=self._attack_samples,
-            seconds=self._attack_seconds,
-            default_seconds=DEFAULT_ATTACK_SECONDS,
-            name="attack",
-        )
-        self._decay = _resolve_time(
-            samples=self._decay_samples,
-            seconds=self._decay_seconds,
-            default_seconds=DEFAULT_DECAY_SECONDS,
-            name="decay",
-        )
-        self._release = _resolve_time(
-            samples=self._release_samples,
-            seconds=self._release_seconds,
-            default_seconds=DEFAULT_RELEASE_SECONDS,
-            name="release",
-        )
-    
     def _render(self, start: int, duration: int) -> Snippet:
         """
         Render ADSR envelope based on gate signal.

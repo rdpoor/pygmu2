@@ -69,38 +69,6 @@ class SlicePE(ProcessingElement):
         crop = CropPE(self._source, Extent(self._start, self._start + self._duration))
         self._base = DelayPE(crop, delay=-self._start)
 
-        # Resolved after configure()
-        self._fade_in: int = 0
-        self._fade_out: int = 0
-        self._out: ProcessingElement = self._base
-
-    @property
-    def source(self) -> ProcessingElement:
-        return self._source
-
-    @property
-    def start(self) -> int:
-        return self._start
-
-    @property
-    def duration(self) -> int:
-        return self._duration
-
-    @property
-    def fade_in_samples(self) -> int:
-        return self._fade_in
-
-    @property
-    def fade_out_samples(self) -> int:
-        return self._fade_out
-
-    def configure(self, sample_rate: int) -> None:
-        """
-        Configure and resolve fade durations (seconds -> samples if provided).
-        """
-        # `_time_to_samples()` consults `self.sample_rate`, so set it early.
-        self._sample_rate = sample_rate
-
         # Resolve fades (None/None -> 0 handled by _time_to_samples).
         self._fade_in = self._time_to_samples(
             samples=self._fade_in_samples,
@@ -133,11 +101,28 @@ class SlicePE(ProcessingElement):
         else:
             self._out = self._base
 
-        # Configure the composed graph via the standard traversal.
-        super().configure(sample_rate)
-
         # Extent may change depending on graph composition
         self._cached_extent = None
+
+    @property
+    def source(self) -> ProcessingElement:
+        return self._source
+
+    @property
+    def start(self) -> int:
+        return self._start
+
+    @property
+    def duration(self) -> int:
+        return self._duration
+
+    @property
+    def fade_in_samples(self) -> int:
+        return self._fade_in
+
+    @property
+    def fade_out_samples(self) -> int:
+        return self._fade_out
 
     def inputs(self) -> list[ProcessingElement]:
         # Delegate to the composed output graph so configure() reaches all internals.
@@ -161,4 +146,3 @@ class SlicePE(ProcessingElement):
             f"start={self._start}, duration={self._duration}, "
             f"fade_in_samples={self._fade_in}, fade_out_samples={self._fade_out})"
         )
-

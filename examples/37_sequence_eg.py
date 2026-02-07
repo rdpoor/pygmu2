@@ -7,6 +7,8 @@ SequencePE example showing OVERLAP and NON_OVERLAP modes with audio material.
 from pathlib import Path
 
 import pygmu2 as pg
+pg.set_sample_rate(44100)
+
 
 
 def _build_sources():

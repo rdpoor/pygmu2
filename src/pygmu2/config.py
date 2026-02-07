@@ -12,6 +12,22 @@ from pygmu2.logger import get_logger
 
 logger = get_logger(__name__)
 
+# -----------------------------------------------------------------------------
+# Global sample rate (single source of truth)
+
+_SAMPLE_RATE = None
+
+
+def set_sample_rate(rate: int) -> None:
+    """Set the global sample rate (Hz). Must be set before PE construction."""
+    global _SAMPLE_RATE
+    _SAMPLE_RATE = int(rate)
+
+
+def get_sample_rate() -> Optional[int]:
+    """Return the global sample rate, if set."""
+    return _SAMPLE_RATE
+
 
 class ErrorMode(Enum):
     """

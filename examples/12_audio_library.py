@@ -9,6 +9,9 @@ MIT License
 """
 
 from pygmu2 import AudioLibrary, WavReaderPE, AudioRenderer, LoopPE, MixPE, DelayPE
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
 
 STRUDEL_JSON_URL = "https://software.tomandandy.com/strudel.json"
 SOUND_NAME = "gettingAction"

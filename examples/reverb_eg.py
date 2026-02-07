@@ -1,13 +1,14 @@
 """
-00_template_eg.py
+reverb_eg.py
 
-Template example with a _play() helper and command-line demo selection.
+Example: ReverbPE with fixed and time-varying wet/dry mix.
 
 Usage:
-  python examples/00_template_eg.py
-  python examples/00_template_eg.py 1
-  python examples/00_template_eg.py 2
-  python examples/00_template_eg.py a
+  python examples/reverb_eg.py
+  python examples/reverb_eg.py 1
+  python examples/reverb_eg.py 2
+  python examples/reverb_eg.py 3
+  python examples/reverb_eg.py a
 """
 
 from pathlib import Path
@@ -18,43 +19,75 @@ pg.set_sample_rate(44100)
 
 
 def _play(source, sample_rate):
-    """
-    Render a source to its full extent using AudioRenderer.
-    """
+    """Render a source to its full extent using AudioRenderer."""
     renderer = pg.AudioRenderer(sample_rate=sample_rate)
     renderer.set_source(source)
     with renderer:
         renderer.start()
         renderer.play_extent()
 
-# ------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------
-# write your demos here, list demo names and demo functions in DEMOS
 
-def demo_one():
-    print("Demo one")
-    print("--------")
+def _load_sources():
     audio_dir = Path(__file__).parent / "audio"
-    wav_path = audio_dir / "choir.wav"
+    wav_path = audio_dir / "djembe44.wav"
+    ir_path = audio_dir / "plate_ir44.wav"
+
     source = pg.WavReaderPE(str(wav_path))
+    ir = pg.WavReaderPE(str(ir_path))
     sample_rate = source.file_sample_rate or 44100
+
+    # Extend source by looping three times
+    source = pg.LoopPE(source, count=3)
+
+    return source, ir, sample_rate
+
+
+# ------------------------------------------------------------------------------
+# Demos
+
+
+def demo_dry_only():
+    print("Demo: dry only")
+    print("--------------")
+    source, _ir, sample_rate = _load_sources()
     _play(source, sample_rate)
 
 
-def demo_two():
-    print("Demo two")
-    print("--------")
-    sample_rate = 44100
-    source = pg.SinePE(frequency=440.0, amplitude=0.3)
-    source = pg.CropPE(source, pg.Extent(0, int(2.0 * sample_rate)))
-    _play(source, sample_rate)
+def demo_fixed_mix():
+    print("Demo: fixed mix (40% wet)")
+    print("-------------------------")
+    source, ir, sample_rate = _load_sources()
+
+    reverb = pg.ReverbPE(source, ir, mix=0.4, normalize_ir=True)
+    _play(reverb, sample_rate)
+
+
+def demo_ramp_mix():
+    print("Demo: ramp mix (wet -> dry)")
+    print("----------------------------")
+    source, ir, sample_rate = _load_sources()
+
+    extent = source.extent()
+    if extent.start is None or extent.end is None:
+        raise ValueError("Expected finite source extent for ramp mix")
+    duration = extent.end - extent.start
+
+    mix_ramp = pg.PiecewisePE(
+        [(0, 1.0), (duration, 0.0)],
+        transition_type=pg.TransitionType.LINEAR,
+        extend_mode=pg.ExtendMode.HOLD_LAST,
+    )
+    reverb = pg.ReverbPE(source, ir, mix=mix_ramp, normalize_ir=True)
+    _play(reverb, sample_rate)
+
 
 DEMOS = {
-    "Demo one": demo_one,
-    "Demo two": demo_two,
+    "Dry only": demo_dry_only,
+    "Fixed mix": demo_fixed_mix,
+    "Ramp mix": demo_ramp_mix,
 }
 
-# ------------------------------------------------------------------------------
+
 # ------------------------------------------------------------------------------
 # Main
 
@@ -62,24 +95,18 @@ if __name__ == "__main__":
     import sys
 
     def resolve_choice(choice: str):
-        """
-        Return (name, fn) on valid choice, (None, None) otherwise.
-        """
+        """Return (name, fn) on valid choice, (None, None) otherwise."""
         item_list = list(DEMOS.items())
 
         if choice.isdigit():
-            # Numerical choice (one-based)
             idx = int(choice)
             if 1 <= idx <= len(item_list):
                 return item_list[idx - 1]
-            else:
-                return None, None
+            return None, None
 
         if choice in DEMOS:
-            # String match
             return choice, DEMOS[choice]
-        else:
-            return None, None
+        return None, None
 
     def print_menu():
         names = list(DEMOS.keys())
@@ -91,10 +118,7 @@ if __name__ == "__main__":
         print("  q: quit")
 
     def choose_and_play():
-        """
-        DEMOS: dict[demo_name, demo_function]
-        Present list of demo names, call user's choice.  Loop until 'q'
-        """
+        """Present list of demo names, call user's choice. Loop until 'q'."""
         while True:
             choice = input("Select demo (name or number): ").strip()
             if choice.lower() == "q":
@@ -114,7 +138,6 @@ if __name__ == "__main__":
                 print(f"unrecognized choice {choice}, '?' to see choices")
 
     if len(sys.argv) > 1:
-        # Command line choice: Run single demo (or 'a' for all') and quit
         choice = sys.argv[1].strip().lower()
         if choice == "a":
             for fn in DEMOS.values():
@@ -126,6 +149,5 @@ if __name__ == "__main__":
         else:
             print(f"Invalid choice '{choice}'")
     else:
-        # Enter interactive loop
         print_menu()
         choose_and_play()

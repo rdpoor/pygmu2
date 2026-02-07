@@ -97,6 +97,7 @@ pygmu2/
 ### Processing Element Lifecycle
 
 ```
+0. set_sample_rate()  Set the global sample rate before any PE construction
 1. Construction     PE created with parameters
 2. configure()      Renderer injects sample_rate into entire graph
 3. set_source()     Renderer validates graph (purity, channels)
@@ -124,6 +125,24 @@ Processing elements must treat input `Snippet` buffers as immutable.
 Do not modify `snippet.data` from any input PE in-place. Always write into
 a new buffer (or a copy) when producing output. This prevents accidental
 buffer aliasing across the graph and keeps PE behavior consistent.
+
+## PE Construction Guidelines
+
+Prefer to compute as much as possible in `__init__` and reserve `configure()` for
+runtime-only details. This keeps PEs predictable and easier to reason about.
+
+**Do in `__init__` whenever possible:**
+- validate parameters and invariants
+- build internal graphs
+- resolve constants
+- infer and set `sample_rate` if it can be computed immediately
+- compute extents and purity if independent of `sample_rate`
+
+**Do in `configure()` only when required:**
+- values that require renderer-provided `sample_rate`
+- seconds → samples conversions
+- extents that depend on `sample_rate` or other configured inputs
+- allocating buffers/state tied to the configured rate
 
 ### Purity and State
 

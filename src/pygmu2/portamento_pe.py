@@ -102,7 +102,7 @@ class PortamentoPE(SourcePE):
             (73.0, 1000, 1000),   # C#5 (MIDI 73) at t=1000, duration 1000 samples
             (76.0, 2000, 1000),   # E5 (MIDI 76) at t=2000, duration 1000 samples
         ]
-        # Using seconds (resolved at configure time)
+        # Using seconds (resolved at construction time)
         pitch_stream = PortamentoPE(notes, max_ramp_seconds=0.05)
         
         # Or using samples directly
@@ -154,8 +154,9 @@ class PortamentoPE(SourcePE):
         self._ramp_fraction = float(ramp_fraction)
         self._channels = int(channels)
         
-        # Sequence will be built in configure() when sample_rate is available
+        # Sequence is built at construction time (sample_rate is globally available).
         self._sequence_pe: Optional[SequencePE] = None
+        self._build_sequence()
     
     @property
     def notes(self) -> list[tuple[float, int, int]]:
@@ -177,10 +178,8 @@ class PortamentoPE(SourcePE):
         """Fraction of note duration used for ramp on short notes."""
         return self._ramp_fraction
     
-    def configure(self, sample_rate: int) -> None:
-        """Configure the portamento PE with sample rate and build the sequence."""
-        super().configure(sample_rate)
-        
+    def _build_sequence(self) -> None:
+        """Build the internal SequencePE based on note list and timing params."""
         # Zero notes: should have been caught in __init__, but handle gracefully
         if not self._notes:
             raise ValueError("PortamentoPE: notes list cannot be empty")
@@ -193,7 +192,6 @@ class PortamentoPE(SourcePE):
             # Delay to note's start time (infinite extent, like last ramp in N>=2 case)
             delayed = DelayPE(constant_pe, delay=start)
             self._sequence_pe = delayed
-            self._sequence_pe.configure(sample_rate)
             return
         
         # N notes (N >= 2): create N-1 ramps with HOLD_BOTH
@@ -288,7 +286,6 @@ class PortamentoPE(SourcePE):
         # The last ramp is never cropped, so it has infinite extent (HOLD_BOTH holds last pitch)
         # This gives PortamentoPE infinite extent with HOLD_BOTH behavior
         self._sequence_pe = SequencePE(sequence_items, channels=self._channels)
-        self._sequence_pe.configure(sample_rate)
     
     def inputs(self) -> list[ProcessingElement]:
         """Return inputs (the internal SequencePE)."""

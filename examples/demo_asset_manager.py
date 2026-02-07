@@ -8,6 +8,9 @@ Fill in the required parameters before running.
 from pathlib import Path
 
 from pygmu2.asset_manager import (
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
     AssetManager,
     GoogleDriveAssetLoader,
     GithubUserContentAssetLoader,

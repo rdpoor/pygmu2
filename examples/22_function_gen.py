@@ -18,6 +18,9 @@ MIT License
 import numpy as np
 
 from pygmu2 import (
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
     AnalogOscPE,
     AudioRenderer,
     CropPE,

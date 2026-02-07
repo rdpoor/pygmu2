@@ -12,6 +12,9 @@ MIT License
 """
 
 import sys
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
 sys.path.insert(0, 'src')
 from pathlib import Path
 

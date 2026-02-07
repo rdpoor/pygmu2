@@ -6,6 +6,8 @@ RandomSelectPE example: choose one source on each trigger and play it.
 
 import pygmu2 as pg
 from pathlib import Path
+pg.set_sample_rate(44100)
+
 
 pg.setup_logging(level="INFO")
 logger = pg.get_logger(__name__)

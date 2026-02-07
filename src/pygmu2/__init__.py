@@ -6,7 +6,20 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-from pygmu2.config import ErrorMode, set_error_mode, get_error_mode, handle_error
+from pygmu2.config import (
+from pygmu2.config import get_sample_rate
+
+_SR = get_sample_rate()
+if _SR is None:
+    raise RuntimeError("Global sample_rate must be set before constructing PEs")
+
+    ErrorMode,
+    set_error_mode,
+    get_error_mode,
+    handle_error,
+    set_sample_rate,
+    get_sample_rate,
+)
 from pygmu2.extent import Extent, ExtendMode
 from pygmu2.snippet import Snippet
 from pygmu2.processing_element import ProcessingElement, SourcePE
@@ -40,6 +53,7 @@ from pygmu2.super_saw_pe import SuperSawPE
 from pygmu2.mix_pe import MixPE
 from pygmu2.comb_pe import CombPE
 from pygmu2.convolve_pe import ConvolvePE
+from pygmu2.reverb_pe import ReverbPE
 from pygmu2.audio_library import AudioLibrary
 from pygmu2.asset_manager import (
     AssetManager,
@@ -116,6 +130,8 @@ __all__ = [
     "set_error_mode",
     "get_error_mode",
     "handle_error",
+    "set_sample_rate",
+    "get_sample_rate",
     # Core classes
     "Extent",
     "ExtendMode",
@@ -156,6 +172,7 @@ __all__ = [
     "MixPE",
     "CombPE",
     "ConvolvePE",
+    "ReverbPE",
     "AudioLibrary",
     "AssetManager",
     "GoogleDriveAssetLoader",

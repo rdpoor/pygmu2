@@ -10,6 +10,9 @@ MIT License
 import time
 from pathlib import Path
 from pygmu2 import WavReaderPE, LoopPE, CropPE, AudioRenderer, Extent
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
 
 # Path to audio file
 AUDIO_DIR = Path(__file__).parent / "audio"

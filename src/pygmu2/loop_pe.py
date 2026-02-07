@@ -13,6 +13,12 @@ import numpy as np
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
+from pygmu2.config import get_sample_rate
+
+_SR = get_sample_rate()
+if _SR is None:
+    raise RuntimeError("Global sample_rate must be set before constructing PEs")
+
 
 
 class LoopPE(ProcessingElement):
@@ -62,6 +68,12 @@ class LoopPE(ProcessingElement):
         self._resolved_end: Optional[int] = None
         self._loop_length: Optional[int] = None
         self._crossfade: int = 0
+
+        # Eager resolution when possible (finite source extent, known sample rate).
+        self._sample_rate = self._source.sample_rate
+        self._resolve_loop_boundaries()
+        if self._sample_rate is not None:
+            self._resolve_crossfade()
     
     @property
     def source(self) -> ProcessingElement:
@@ -105,41 +117,6 @@ class LoopPE(ProcessingElement):
         """Pass through channel count from source."""
         return self._source.channel_count()
     
-    def configure(self, sample_rate: float) -> None:
-        """Configure with sample rate and resolve loop boundaries."""
-        super().configure(sample_rate)
-        
-        # Resolve loop boundaries from source extent
-        source_extent = self._source.extent()
-        
-        if self._loop_start is not None:
-            self._resolved_start = self._loop_start
-        elif source_extent.start is not None:
-            self._resolved_start = source_extent.start
-        else:
-            self._resolved_start = 0
-        
-        if self._loop_end is not None:
-            self._resolved_end = self._loop_end
-        elif source_extent.end is not None:
-            self._resolved_end = source_extent.end
-        else:
-            # Can't loop infinite source without explicit end
-            raise ValueError("Cannot loop source with infinite extent without explicit loop_end")
-        
-        self._loop_length = self._resolved_end - self._resolved_start
-        if self._loop_length <= 0:
-            raise ValueError(f"Loop length must be positive, got {self._loop_length}")
-        
-        # Resolve crossfade samples (seconds -> samples if provided)
-        self._crossfade = self._time_to_samples(
-            samples=self._crossfade_samples,
-            seconds=self._crossfade_seconds,
-            name="crossfade",
-        )
-        # Crossfade can't be more than half the loop length
-        self._crossfade = min(self._crossfade, self._loop_length // 2)
-    
     def _compute_extent(self) -> Extent:
         """Return the extent of this PE."""
         if self._loop_length is None:
@@ -153,6 +130,50 @@ class LoopPE(ProcessingElement):
             # Finite number of loops
             total_length = self._count * self._loop_length
             return Extent(0, total_length)
+
+    def _resolve_loop_boundaries(self) -> None:
+        """
+        Resolve loop boundaries and loop length if possible.
+
+        Safe to call multiple times; later calls can fill in missing info.
+        """
+        # Resolve loop boundaries from source extent
+        source_extent = self._source.extent()
+
+        if self._resolved_start is None:
+            if self._loop_start is not None:
+                self._resolved_start = self._loop_start
+            elif source_extent.start is not None:
+                self._resolved_start = source_extent.start
+            else:
+                self._resolved_start = 0
+
+        if self._resolved_end is None:
+            if self._loop_end is not None:
+                self._resolved_end = self._loop_end
+            elif source_extent.end is not None:
+                self._resolved_end = source_extent.end
+            else:
+                # Can't loop infinite source without explicit end
+                raise ValueError("Cannot loop source with infinite extent without explicit loop_end")
+
+        if self._resolved_start is not None and self._resolved_end is not None:
+            self._loop_length = self._resolved_end - self._resolved_start
+            if self._loop_length <= 0:
+                raise ValueError(f"Loop length must be positive, got {self._loop_length}")
+
+    def _resolve_crossfade(self) -> None:
+        """
+        Resolve crossfade samples (seconds -> samples if provided).
+        """
+        self._crossfade = self._time_to_samples(
+            samples=self._crossfade_samples,
+            seconds=self._crossfade_seconds,
+            name="crossfade",
+        )
+        if self._loop_length is not None:
+            # Crossfade can't be more than half the loop length
+            self._crossfade = min(self._crossfade, self._loop_length // 2)
     
     def _render(self, start: int, duration: int) -> Snippet:
         """

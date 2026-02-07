@@ -9,6 +9,9 @@ MIT License
 
 from pathlib import Path
 from pygmu2 import WavReaderPE, AudioRenderer
+import pygmu2 as pg
+pg.set_sample_rate(44100)
+
 
 # Path to audio file (relative to this script)
 AUDIO_DIR = Path(__file__).parent / "audio"
