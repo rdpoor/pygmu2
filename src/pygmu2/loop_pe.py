@@ -13,12 +13,6 @@ import numpy as np
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
-from pygmu2.config import get_sample_rate
-
-_SR = get_sample_rate()
-if _SR is None:
-    raise RuntimeError("Global sample_rate must be set before constructing PEs")
-
 
 
 class LoopPE(ProcessingElement):

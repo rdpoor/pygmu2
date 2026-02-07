@@ -100,7 +100,7 @@ def demo_ab_high_pitch():
 
     duty = 0.2
 
-    # Make both sources explicitly 2-channel so AudioRenderer configures a 2-channel stream.
+    # Make both sources explicitly 2-channel so AudioRenderer runs a 2-channel stream.
     naive_stream = FunctionGenPE(frequency=freq_stream, duty_cycle=duty, waveform="rectangle", channels=2)
     aa_stream = AnalogOscPE(frequency=freq_stream, duty_cycle=duty, waveform="rectangle", channels=2)
 
@@ -150,4 +150,3 @@ if __name__ == "__main__":
                 break
         else:
             print("Invalid choice.")
-

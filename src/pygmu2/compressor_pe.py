@@ -201,15 +201,6 @@ class CompressorPE(ProcessingElement):
         """Reset internal envelope state."""
         self._envelope_pe.reset_state()
     
-    def configure(self, sample_rate: int) -> None:
-        """Configure this PE and internal PEs with sample rate."""
-        self._sample_rate = sample_rate
-        # Configure internal PEs
-        self._envelope_pe.configure(sample_rate)
-        self._dynamics_pe.configure(sample_rate)
-        # Also configure source (will be done by internal PEs, but be explicit)
-        self._source.configure(sample_rate)
-    
     def _render(self, start: int, duration: int) -> Snippet:
         """
         Render compressed audio.
@@ -403,13 +394,6 @@ class GatePE(ProcessingElement):
     def _reset_state(self) -> None:
         """Reset internal envelope state."""
         self._envelope_pe.reset_state()
-    
-    def configure(self, sample_rate: int) -> None:
-        """Configure this PE and internal PEs with sample rate."""
-        self._sample_rate = sample_rate
-        self._envelope_pe.configure(sample_rate)
-        self._dynamics_pe.configure(sample_rate)
-        self._source.configure(sample_rate)
     
     def _render(self, start: int, duration: int) -> Snippet:
         """Render gated audio."""

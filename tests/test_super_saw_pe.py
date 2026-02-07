@@ -439,6 +439,8 @@ class TestSuperSawPEDifferentSampleRates:
     
     def test_sample_rate_48000(self):
         """Test at 48kHz sample rate."""
+        import pygmu2 as pg
+        pg.set_sample_rate(48000)
         saw = SuperSawPE(frequency=480.0)
         renderer = NullRenderer(sample_rate=48000)
         renderer.set_source(saw)
@@ -451,6 +453,8 @@ class TestSuperSawPEDifferentSampleRates:
     
     def test_sample_rate_22050(self):
         """Test at 22.05kHz sample rate."""
+        import pygmu2 as pg
+        pg.set_sample_rate(22050)
         saw = SuperSawPE(frequency=220.0)
         renderer = NullRenderer(sample_rate=22050)
         renderer.set_source(saw)

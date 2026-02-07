@@ -294,40 +294,29 @@ class TestComplexGraphs:
 
 
 class TestRendererConfiguration:
-    """Test that Renderer configures PEs with sample rate."""
-    
-    def test_set_source_configures_sample_rate(self):
-        """Test that set_source configures the PE with sample rate."""
-        renderer = MockRenderer(sample_rate=48000)
-        source = ConstantPE(1.0, 100)
-        
-        renderer.set_source(source)
-        
-        # Source should now have the renderer's sample rate
-        assert source.sample_rate == 48000
-    
-    def test_set_source_configures_entire_graph(self):
-        """Test that set_source configures all PEs in the graph."""
+    """Test renderer behavior with global sample rate."""
+
+    def test_set_source_does_not_override_global_sample_rate(self):
+        """Renderer should not override the global sample rate."""
+        import pygmu2 as pg
+        pg.set_sample_rate(48000)
+
         renderer = MockRenderer(sample_rate=96000)
         source = ConstantPE(1.0, 100)
-        gain = GainPE(source, 0.5)
-        
-        renderer.set_source(gain)
-        
-        assert gain.sample_rate == 96000
-        assert source.sample_rate == 96000
-    
-    def test_different_renderers_different_sample_rates(self):
-        """Test that same graph can be configured with different sample rates."""
+
+        renderer.set_source(source)
+
+        assert source.sample_rate == 48000
+
+    def test_sample_rate_applies_at_construction(self):
+        """PEs capture the global sample rate at construction time."""
+        import pygmu2 as pg
+        pg.set_sample_rate(44100)
         source1 = ConstantPE(1.0, 100)
+
+        pg.set_sample_rate(48000)
         source2 = ConstantPE(1.0, 100)
-        
-        renderer1 = MockRenderer(sample_rate=44100)
-        renderer2 = MockRenderer(sample_rate=48000)
-        
-        renderer1.set_source(source1)
-        renderer2.set_source(source2)
-        
+
         assert source1.sample_rate == 44100
         assert source2.sample_rate == 48000
 

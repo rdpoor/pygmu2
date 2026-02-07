@@ -86,7 +86,7 @@ class RandomPE(SourcePE):
         
         # State (initialized in on_start)
         self._rng: Optional[np.random.Generator] = None
-        self._sample_rate: Optional[int] = None
+        self._sample_rate: Optional[int] = self.sample_rate
         self._current_value: float = 0.0
         self._next_value: float = 0.0
         self._phase: float = 0.0  # 0-1, progress between values
@@ -153,6 +153,8 @@ class RandomPE(SourcePE):
             # Not initialized yet - initialize now
             self._rng = np.random.default_rng(self._seed)
             self._sample_rate = self.sample_rate
+            if self._sample_rate is None:
+                raise RuntimeError("RandomPE requires global sample_rate to be set before construction.")
             if self._rate > 0:
                 self._samples_per_period = max(1, int(self._sample_rate / self._rate))
             else:

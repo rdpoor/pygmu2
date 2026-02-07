@@ -131,12 +131,17 @@ class KarplusStrongPE(SourcePE):
         self._delay_len: int = 0
         self._allpass_c: float = 0.0
 
-    def configure(self, sample_rate: int) -> None:
-        super().configure(sample_rate)
-        self._ks_buf = None
-
     def _compute_extent(self) -> Extent:
         return Extent(0, None)
+
+    def _reset_state(self) -> None:
+        self._ks_buf = None
+
+    def _on_start(self) -> None:
+        self._reset_state()
+
+    def _on_stop(self) -> None:
+        self._reset_state()
 
     def _render(self, start: int, duration: int) -> Snippet:
         if duration <= 0:

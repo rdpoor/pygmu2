@@ -85,6 +85,8 @@ class TestSinePERender:
     
     def setup_method(self):
         """Create a renderer for configuring PEs."""
+        import pygmu2 as pg
+        pg.set_sample_rate(44100)
         self.renderer = NullRenderer(sample_rate=44100)
     
     def test_render_returns_snippet(self):
@@ -181,11 +183,11 @@ class TestSinePERender:
         assert snippet.start == -100
         assert snippet.duration == 200
     
-    def test_render_requires_configuration(self):
-        """Test that render fails if not configured."""
+    def test_render_uses_global_sample_rate(self):
+        """Render works with globally configured sample rate."""
         sine = SinePE(frequency=440.0)
-        with pytest.raises(RuntimeError, match="sample_rate accessed before configuration"):
-            sine.render(0, 100)
+        snippet = sine.render(0, 100)
+        assert snippet.duration == 100
 
 
 class TestSinePEModulation:
@@ -331,6 +333,8 @@ class TestSinePEDifferentSampleRates:
     """Test SinePE at different sample rates."""
     
     def test_sample_rate_48000(self):
+        import pygmu2 as pg
+        pg.set_sample_rate(48000)
         sine = SinePE(frequency=480.0)  # 480 cycles per second
         renderer = NullRenderer(sample_rate=48000)
         renderer.set_source(sine)
@@ -347,6 +351,8 @@ class TestSinePEDifferentSampleRates:
         assert abs(zero_crossings - 480) <= 1
     
     def test_sample_rate_22050(self):
+        import pygmu2 as pg
+        pg.set_sample_rate(22050)
         sine = SinePE(frequency=220.5)  # 220.5 cycles per second
         renderer = NullRenderer(sample_rate=22050)
         renderer.set_source(sine)
@@ -377,7 +383,7 @@ class TestSinePEVibrato:
         # For now, just test that the PE accepts SinePE as frequency input
         # (Full FM would need an AddPE or similar)
         
-        # Create renderer and configure
+        # Create renderer and set source
         renderer = NullRenderer(sample_rate=44100)
         renderer.set_source(lfo)
         renderer.start()

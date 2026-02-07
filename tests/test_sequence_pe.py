@@ -9,16 +9,15 @@ def _seg(val: float, dur: int) -> pg.ProcessingElement:
 
 def test_sequence_overlap_mix():
     sample_rate = 10
-    a = pg.ConstantPE(1.0)
-    b = pg.ConstantPE(2.0)
+    pg.set_sample_rate(sample_rate)
+    a = _seg(1.0, 10)
+    b = _seg(2.0, 5)
 
     seq = pg.SequencePE(
         (a, 0),
         (b, 5),
         mode=pg.SequenceMode.OVERLAP,
     )
-    seq.configure(sample_rate)
-
     out = seq.render(0, 10).data[:, 0]
     expected = np.array([1, 1, 1, 1, 1, 3, 3, 3, 3, 3], dtype=np.float32)
 
@@ -27,16 +26,15 @@ def test_sequence_overlap_mix():
 
 def test_sequence_cut_stops_previous():
     sample_rate = 10
-    a = pg.ConstantPE(1.0)
-    b = pg.ConstantPE(2.0)
+    pg.set_sample_rate(sample_rate)
+    a = _seg(1.0, 5)
+    b = _seg(2.0, 5)
 
     seq = pg.SequencePE(
         (a, 0),
         (b, 5),
         mode=pg.SequenceMode.NON_OVERLAP,
     )
-    seq.configure(sample_rate)
-
     out = seq.render(0, 10).data[:, 0]
     expected = np.array([1, 1, 1, 1, 1, 2, 2, 2, 2, 2], dtype=np.float32)
 
@@ -45,6 +43,7 @@ def test_sequence_cut_stops_previous():
 
 def test_sequence_auto_start_none():
     sample_rate = 10
+    pg.set_sample_rate(sample_rate)
     a = pg.SlicePE(pg.IdentityPE(), start=0, duration=5)
     b = pg.SlicePE(pg.IdentityPE(), start=10, duration=5)
 
@@ -53,8 +52,6 @@ def test_sequence_auto_start_none():
         (b, None),  # auto -> end of a (5)
         mode=pg.SequenceMode.NON_OVERLAP,
     )
-    seq.configure(sample_rate)
-
     out = seq.render(0, 10).data[:, 0]
     expected = np.array([0, 1, 2, 3, 4, 10, 11, 12, 13, 14], dtype=np.float32)
 
@@ -79,6 +76,7 @@ def test_sequence_auto_start_none_after_infinite_extent_raises():
 
 def test_sequence_auto_start_none_overlap_mode():
     sample_rate = 10
+    pg.set_sample_rate(sample_rate)
     a = _seg(1.0, 3)
     b = _seg(2.0, 3)
 
@@ -87,8 +85,6 @@ def test_sequence_auto_start_none_overlap_mode():
         (b, None),
         mode=pg.SequenceMode.OVERLAP,
     )
-    seq.configure(sample_rate)
-
     out = seq.render(0, 6).data[:, 0]
     expected = np.array([1, 1, 1, 2, 2, 2], dtype=np.float32)
     assert np.allclose(out, expected)
@@ -96,6 +92,7 @@ def test_sequence_auto_start_none_overlap_mode():
 
 def test_sequence_multiple_consecutive_none():
     sample_rate = 10
+    pg.set_sample_rate(sample_rate)
     a = _seg(1.0, 2)
     b = _seg(2.0, 2)
     c = _seg(3.0, 2)
@@ -106,8 +103,6 @@ def test_sequence_multiple_consecutive_none():
         (c, None),
         mode=pg.SequenceMode.NON_OVERLAP,
     )
-    seq.configure(sample_rate)
-
     out = seq.render(0, 6).data[:, 0]
     expected = np.array([1, 1, 2, 2, 3, 3], dtype=np.float32)
     assert np.allclose(out, expected)
@@ -115,6 +110,7 @@ def test_sequence_multiple_consecutive_none():
 
 def test_sequence_mixed_explicit_and_none():
     sample_rate = 10
+    pg.set_sample_rate(sample_rate)
     a = _seg(1.0, 2)  # starts at 0
     b = _seg(2.0, 2)  # explicit start at 5
     c = _seg(3.0, 2)  # auto start after b
@@ -125,8 +121,6 @@ def test_sequence_mixed_explicit_and_none():
         (c, None),
         mode=pg.SequenceMode.NON_OVERLAP,
     )
-    seq.configure(sample_rate)
-
     out = seq.render(0, 9).data[:, 0]
     expected = np.array([1, 1, 0, 0, 0, 2, 2, 3, 3], dtype=np.float32)
     assert np.allclose(out, expected)
@@ -134,6 +128,7 @@ def test_sequence_mixed_explicit_and_none():
 
 def test_sequence_zero_duration_segment():
     sample_rate = 10
+    pg.set_sample_rate(sample_rate)
     a = _seg(1.0, 0)  # zero-duration
     b = _seg(2.0, 2)
 
@@ -142,8 +137,6 @@ def test_sequence_zero_duration_segment():
         (b, None),  # should start at 0
         mode=pg.SequenceMode.NON_OVERLAP,
     )
-    seq.configure(sample_rate)
-
     out = seq.render(0, 2).data[:, 0]
     expected = np.array([2, 2], dtype=np.float32)
     assert np.allclose(out, expected)
@@ -151,6 +144,7 @@ def test_sequence_zero_duration_segment():
 
 def test_sequence_out_of_order_starts_sorted_after_normalization():
     sample_rate = 10
+    pg.set_sample_rate(sample_rate)
     a = _seg(1.0, 2)  # explicit start 10
     b = _seg(2.0, 2)  # auto start after a -> 12
     c = _seg(3.0, 2)  # explicit start 0
@@ -161,8 +155,6 @@ def test_sequence_out_of_order_starts_sorted_after_normalization():
         (c, 0),
         mode=pg.SequenceMode.NON_OVERLAP,
     )
-    seq.configure(sample_rate)
-
     out = seq.render(0, 14).data[:, 0]
     expected = np.array(
         [3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2],
@@ -173,6 +165,7 @@ def test_sequence_out_of_order_starts_sorted_after_normalization():
 
 def test_sequence_negative_start_time():
     sample_rate = 10
+    pg.set_sample_rate(sample_rate)
     a = _seg(1.0, 2)  # start at -2, so it ends at 0
     b = _seg(2.0, 2)  # auto start at 0
 
@@ -181,8 +174,6 @@ def test_sequence_negative_start_time():
         (b, None),
         mode=pg.SequenceMode.NON_OVERLAP,
     )
-    seq.configure(sample_rate)
-
     out = seq.render(0, 2).data[:, 0]
     expected = np.array([2, 2], dtype=np.float32)
     assert np.allclose(out, expected)

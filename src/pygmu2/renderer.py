@@ -227,11 +227,10 @@ class Renderer(ABC):
     
     def set_source(self, source: ProcessingElement) -> None:
         """
-        Set the source ProcessingElement, configure, and validate the graph.
+        Set the source ProcessingElement and validate the graph.
         
         This method:
-        1. Configures all PEs in the graph with the sample rate
-        2. Validates the graph (purity, channel compatibility)
+        1. Validates the graph (purity, channel compatibility)
         
         Does NOT call on_start() - call start() explicitly.
         
@@ -246,9 +245,6 @@ class Renderer(ABC):
         if self._started:
             if handle_error("Cannot set source while started. Call stop() first."):
                 return  # Lenient mode: warn and return
-        
-        # Configure all PEs with sample rate
-        source.configure(self._sample_rate)
         
         # Validate the graph
         self._channel_count = self._validate_graph(source)

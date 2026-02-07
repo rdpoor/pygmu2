@@ -22,12 +22,6 @@ from pygmu2.mix_pe import MixPE
 from pygmu2.constant_pe import ConstantPE
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
-from pygmu2.config import get_sample_rate
-
-_SR = get_sample_rate()
-if _SR is None:
-    raise RuntimeError("Global sample_rate must be set before constructing PEs")
-
 
 
 class ReverbPE(ProcessingElement):
@@ -116,13 +110,6 @@ class ReverbPE(ProcessingElement):
     def ir_energy(self) -> float:
         """Energy norm of the IR (used for normalization)."""
         return self._ir_energy
-
-    def configure(self, sample_rate: int) -> None:
-        """
-        Configure and refresh cached extent.
-        """
-        super().configure(sample_rate)
-        self._cached_extent = None
 
     def inputs(self) -> list[ProcessingElement]:
         # Delegate to the composed output graph so configure() reaches all internals.

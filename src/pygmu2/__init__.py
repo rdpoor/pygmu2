@@ -7,12 +7,6 @@ MIT License
 """
 
 from pygmu2.config import (
-from pygmu2.config import get_sample_rate
-
-_SR = get_sample_rate()
-if _SR is None:
-    raise RuntimeError("Global sample_rate must be set before constructing PEs")
-
     ErrorMode,
     set_error_mode,
     get_error_mode,

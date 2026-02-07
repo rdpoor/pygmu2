@@ -126,7 +126,6 @@ class TestSourcePE:
         """Test that impure PEs raise when given non-contiguous render requests."""
         source = ConstantPE(1.0, 100)
         stateful = StatefulPE(source)  # StatefulPE is impure
-        stateful.configure(44100)
         stateful.render(0, 10)  # First request: ok
         with pytest.raises(ValueError, match="contiguous"):
             stateful.render(20, 10)  # Non-contiguous: expected start=10, got start=20
@@ -278,52 +277,21 @@ class TestResolveOutputChannels:
         assert gain.resolve_channel_count([2, 1, 4]) == 2
 
 
-class TestConfiguration:
-    """Test PE configuration (sample rate injection)."""
-    
-    def test_sample_rate_before_configure_raises(self):
-        """Test that accessing sample_rate before configure raises error."""
+class TestSampleRate:
+    """Test global sample rate behavior."""
+
+    def test_sample_rate_available_on_construction(self):
+        """Sample rate is set at construction time from global value."""
         source = ConstantPE(1.0, 100)
-        with pytest.raises(RuntimeError, match="before configuration"):
-            _ = source.sample_rate
-    
-    def test_configure_sets_sample_rate(self):
-        """Test that configure sets the sample rate."""
-        source = ConstantPE(1.0, 100)
-        source.configure(44100)
         assert source.sample_rate == 44100
-    
-    def test_configure_propagates_to_inputs(self):
-        """Test that configure propagates to all inputs."""
-        source = ConstantPE(1.0, 100)
-        gain = GainPE(source, 0.5)
-        
-        # Configure the processor (should propagate to source)
-        gain.configure(48000)
-        
-        assert gain.sample_rate == 48000
-        assert source.sample_rate == 48000
-    
-    def test_configure_propagates_through_chain(self):
-        """Test that configure propagates through entire chain."""
-        source = ConstantPE(1.0, 100)
-        gain1 = GainPE(source, 0.5)
-        gain2 = GainPE(gain1, 0.5)
-        
-        gain2.configure(96000)
-        
-        assert gain2.sample_rate == 96000
-        assert gain1.sample_rate == 96000
-        assert source.sample_rate == 96000
-    
-    def test_configure_propagates_to_multiple_inputs(self):
-        """Test that configure propagates to all inputs of a multi-input PE."""
-        source1 = ConstantPE(1.0, 100)
-        source2 = ConstantPE(1.0, 100)
-        mix = MixPE([source1, source2])
-        
-        mix.configure(44100)
-        
-        assert mix.sample_rate == 44100
-        assert source1.sample_rate == 44100
-        assert source2.sample_rate == 44100
+
+    def test_missing_sample_rate_raises_on_construction(self):
+        """Constructing a PE without a global sample rate is an error."""
+        import pygmu2.config as cfg
+        prev = cfg.get_sample_rate()
+        cfg._SAMPLE_RATE = None  # test-only: clear global sample rate
+        try:
+            with pytest.raises(RuntimeError, match="Global sample_rate is required"):
+                ConstantPE(1.0, 100)
+        finally:
+            cfg._SAMPLE_RATE = prev

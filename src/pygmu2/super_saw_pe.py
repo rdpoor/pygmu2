@@ -93,8 +93,8 @@ class SuperSawPE(ProcessingElement):
         self._detune_ratios = self._compute_detune_ratios()
         self._mix_gains = self._compute_mix_gains()
         
-        # Create internal oscillators (created fresh on each configure)
-        self._oscillators: list[BlitSawPE] = []
+        # Create internal oscillators (sample_rate is globally available)
+        self._oscillators: list[BlitSawPE] = self._create_oscillators()
     
     @property
     def frequency(self) -> Union[float, ProcessingElement]:
@@ -202,17 +202,6 @@ class SuperSawPE(ProcessingElement):
             oscillators.append(osc)
         
         return oscillators
-    
-    def configure(self, sample_rate: int) -> None:
-        """Configure this PE and create internal oscillators."""
-        super().configure(sample_rate)
-        
-        # Create oscillators after we have sample rate
-        self._oscillators = self._create_oscillators()
-        
-        # Configure all internal oscillators
-        for osc in self._oscillators:
-            osc.configure(sample_rate)
     
     def inputs(self) -> list[ProcessingElement]:
         """Return list of PE inputs (frequency and amplitude if PEs)."""

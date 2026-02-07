@@ -166,7 +166,7 @@ renderer = NullRenderer(sample_rate=44100)
 ### Control
 | PE | Description |
 |----|-------------|
-| `AdsrPE(gate, attack_samples=None, attack_seconds=None, decay_samples=None, decay_seconds=None, sustain_level=0.7, release_samples=None, release_seconds=None)` | ADSR envelope generator (defaults specified in seconds; resolved at configure time) |
+| `AdsrPE(gate, attack_samples=None, attack_seconds=None, decay_samples=None, decay_seconds=None, sustain_level=0.7, release_samples=None, release_seconds=None)` | ADSR envelope generator (defaults specified in seconds; resolved at construction time) |
 
 ### Analysis
 | PE | Description |

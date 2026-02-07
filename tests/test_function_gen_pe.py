@@ -45,6 +45,8 @@ class TestFunctionGenPEBasics:
 
 class TestFunctionGenPERender:
     def setup_method(self):
+        import pygmu2 as pg
+        pg.set_sample_rate(10_000)
         self.renderer = NullRenderer(sample_rate=10_000)
 
     def test_rectangle_exact_plateaus(self):
@@ -100,4 +102,3 @@ class TestFunctionGenPERender:
         y_cat = np.concatenate([y1, y2])
 
         np.testing.assert_allclose(y_cat, y_full, atol=0.0, rtol=0.0)
-

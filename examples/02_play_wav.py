@@ -32,7 +32,7 @@ print(f"  Sample rate: {file_sr} Hz", flush=True)
 renderer = AudioRenderer(sample_rate=file_sr)
 renderer.set_source(source_stream)
 
-# Now we can get extent (after set_source configures the graph)
+# Now we can get extent (sample rate is set globally before construction)
 extent = source_stream.extent()
 duration_samples = extent.end - extent.start
 duration_seconds = duration_samples / file_sr

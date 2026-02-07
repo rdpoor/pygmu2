@@ -99,11 +99,10 @@ pygmu2/
 ```
 0. set_sample_rate()  Set the global sample rate before any PE construction
 1. Construction     PE created with parameters
-2. configure()      Renderer injects sample_rate into entire graph
-3. set_source()     Renderer validates graph (purity, channels)
-4. on_start()       Called bottom-up (inputs before outputs)
-5. render()         Called repeatedly to generate audio
-6. on_stop()        Called top-down (outputs before inputs)
+2. set_source()     Renderer validates graph (purity, channels)
+3. on_start()       Called bottom-up (inputs before outputs)
+4. render()         Called repeatedly to generate audio
+5. on_stop()        Called top-down (outputs before inputs)
 ```
 
 ### Graph Evaluation
@@ -126,10 +125,20 @@ Do not modify `snippet.data` from any input PE in-place. Always write into
 a new buffer (or a copy) when producing output. This prevents accidental
 buffer aliasing across the graph and keeps PE behavior consistent.
 
+## Extent Stability
+
+An element's extent is fixed at construction time and does not change afterward.
+The extent may be finite or indefinite (infinite), but it should never vary over
+the lifetime of the instance.
+
+Because graphs are built from leaves toward the root, input extents are known
+when composing higher-level PEs. As a result, the root extent is determined
+at construction time and remains stable for the life of the graph.
+
 ## PE Construction Guidelines
 
-Prefer to compute as much as possible in `__init__` and reserve `configure()` for
-runtime-only details. This keeps PEs predictable and easier to reason about.
+Prefer to compute as much as possible in `__init__`. This keeps PEs predictable
+and easier to reason about now that sample rate is globally available.
 
 **Do in `__init__` whenever possible:**
 - validate parameters and invariants
@@ -138,10 +147,10 @@ runtime-only details. This keeps PEs predictable and easier to reason about.
 - infer and set `sample_rate` if it can be computed immediately
 - compute extents and purity if independent of `sample_rate`
 
-**Do in `configure()` only when required:**
-- values that require renderer-provided `sample_rate`
+**Do at construction time whenever possible:**
+- values that depend on sample rate (now globally available)
 - seconds → samples conversions
-- extents that depend on `sample_rate` or other configured inputs
+- extents that depend on sample rate or other known inputs
 - allocating buffers/state tied to the configured rate
 
 ### Purity and State
@@ -278,7 +287,7 @@ class MyNewPE(ProcessingElement):
 - **Errors**: Use `config.handle_error()` instead of raising directly
 - **Time parameters**:
   - Prefer defaults expressed in **seconds** (no implicit sample-rate assumptions).
-  - Convert seconds→samples in `configure()` (after `super().configure(sample_rate)`) using `ProcessingElement._time_to_samples(...)`.
+  - Convert seconds→samples in `__init__` using `ProcessingElement._time_to_samples(...)`.
   - If you support both `*_samples` and `*_seconds`, accept them as `Optional[...]` and let `_time_to_samples` enforce mutual exclusion.
 
 ## Testing

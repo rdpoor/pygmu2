@@ -13,6 +13,8 @@ from pygmu2 import ArrayPE, NullRenderer, SlicePE
 
 class TestSlicePEBasics:
     def setup_method(self):
+        import pygmu2 as pg
+        pg.set_sample_rate(48_000)
         self.renderer = NullRenderer(sample_rate=48_000)
 
     def test_slice_extracts_and_shifts_to_zero(self):
@@ -43,4 +45,3 @@ class TestSlicePEBasics:
         # envelope: [0.5,1.0,1.0,0.5,0.0]
         expected = np.array([1.0, 3.0, 4.0, 2.5, 0.0], dtype=np.float32)
         np.testing.assert_allclose(y, expected, atol=1e-6, rtol=0.0)
-

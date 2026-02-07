@@ -5,6 +5,7 @@ import pygmu2 as pg
 
 def test_random_select_retrigger_resets_on_trigger():
     sample_rate = 10  # small for easy reasoning
+    pg.set_sample_rate(sample_rate)
 
     source = pg.IdentityPE()
     slice_a = pg.SlicePE(source, start=0, duration=5)
@@ -25,8 +26,6 @@ def test_random_select_retrigger_resets_on_trigger():
         trigger_mode=pg.TriggerMode.RETRIGGER,
     )
 
-    chooser.configure(sample_rate)
-
     snippet = chooser.render(0, 20)
     out = snippet.data[:, 0]
 
@@ -42,6 +41,7 @@ def test_random_select_retrigger_resets_on_trigger():
 def test_random_select_dirac_low_sample_retrigger():
     sample_rate = 10  # small for easy reasoning
     period = sample_rate  # 1 Hz
+    pg.set_sample_rate(sample_rate)
 
     source = pg.IdentityPE()
     slice_a = pg.SlicePE(source, start=0, duration=5)
@@ -59,8 +59,6 @@ def test_random_select_dirac_low_sample_retrigger():
         trigger_mode=pg.TriggerMode.RETRIGGER,
     )
 
-    chooser.configure(sample_rate)
-
     snippet = chooser.render(0, 20)
     out = snippet.data[:, 0]
 
@@ -73,8 +71,9 @@ def test_random_select_dirac_low_sample_retrigger():
     assert np.allclose(out, expected)
 
 def test_random_select_verify_trigger():
-    source_stream = pg.IdentityPE()
     sample_rate = 44100
+    pg.set_sample_rate(sample_rate)
+    source_stream = pg.IdentityPE()
 
     slices = [
         pg.SlicePE(source_stream, 10, 15),  # start at 10, end at 15, dur = 5
@@ -84,7 +83,6 @@ def test_random_select_verify_trigger():
     gate = pg.TransformPE(impulse, func=lambda x: 1.0 - x)
     trigger = pg.LoopPE(gate, loop_start=0, loop_end=10)  # trigger every 10
 
-    trigger.configure(sample_rate)
     snippet = trigger.render(0, 20)
     out = snippet.data[:, 0]
     expected = np.array([
@@ -95,6 +93,7 @@ def test_random_select_verify_trigger():
 
 def test_random_select_slice_shorter_than_retrigger():
     sample_rate = 44100
+    pg.set_sample_rate(sample_rate)
 
     slices = [
         pg.SlicePE(pg.IdentityPE(), 10, 5),  # start at 10, end before 15, dur = 5
@@ -112,7 +111,6 @@ def test_random_select_slice_shorter_than_retrigger():
         trigger_mode=pg.TriggerMode.RETRIGGER,
     )
 
-    chooser.configure(sample_rate)
     snippet = chooser.render(0, 20)
     out = snippet.data[:, 0]
     expected = np.array([
@@ -123,6 +121,7 @@ def test_random_select_slice_shorter_than_retrigger():
 
 def test_random_select_slice_longer_than_retrigger():
     sample_rate = 44100
+    pg.set_sample_rate(sample_rate)
 
     slices = [
         pg.SlicePE(pg.IdentityPE(), 10, 15),  # start at 10, end before 25, dur = 15
@@ -140,7 +139,6 @@ def test_random_select_slice_longer_than_retrigger():
         trigger_mode=pg.TriggerMode.RETRIGGER,
     )
 
-    chooser.configure(sample_rate)
     snippet = chooser.render(0, 20)
     out = snippet.data[:, 0]
     expected = np.array([
@@ -151,10 +149,10 @@ def test_random_select_slice_longer_than_retrigger():
 
 def test_random_select_crop():
     sample_rate = 44100
+    pg.set_sample_rate(sample_rate)
 
     cropped = pg.SlicePE(pg.IdentityPE(), 10, 5)  # start at 10, end before 15, dur = 5
 
-    cropped.configure(sample_rate)
     snippet = cropped.render(0, 10)     # render from 0 to 10
     out = snippet.data[:, 0]
     expected = np.array([

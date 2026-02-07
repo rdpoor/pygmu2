@@ -194,9 +194,14 @@ class TestPEErrorHandling:
         """Restore original mode after each test."""
         set_error_mode(self._original_mode)
     
-    def test_sample_rate_before_configure_always_fatal(self):
-        """Sample rate access before configure is always fatal."""
+    def test_missing_sample_rate_always_fatal(self):
+        """Constructing a PE without global sample_rate is always fatal."""
+        import pygmu2.config as cfg
         set_error_mode(ErrorMode.LENIENT)
-        pe = ConstantPE(1.0, channels=1)
-        with pytest.raises(RuntimeError, match="sample_rate accessed before configuration"):
-            _ = pe.sample_rate
+        prev = cfg.get_sample_rate()
+        cfg._SAMPLE_RATE = None  # test-only: clear global sample rate
+        try:
+            with pytest.raises(RuntimeError, match="Global sample_rate is required"):
+                ConstantPE(1.0, channels=1)
+        finally:
+            cfg._SAMPLE_RATE = prev

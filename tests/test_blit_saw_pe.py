@@ -178,11 +178,11 @@ class TestBlitSawPERender:
         
         renderer.stop()
     
-    def test_render_requires_configuration(self):
-        """Test that render fails if not configured."""
+    def test_render_uses_global_sample_rate(self):
+        """Render works with globally configured sample rate."""
         saw = BlitSawPE(frequency=440.0)
-        with pytest.raises(RuntimeError, match="sample_rate accessed before configuration"):
-            saw.render(0, 100)
+        snippet = saw.render(0, 100)
+        assert snippet.duration == 100
     
     def test_render_continuity(self):
         """Test that consecutive renders are continuous."""
@@ -481,6 +481,8 @@ class TestBlitSawPEDifferentSampleRates:
     
     def test_sample_rate_48000(self):
         """Test at 48kHz sample rate."""
+        import pygmu2 as pg
+        pg.set_sample_rate(48000)
         saw = BlitSawPE(frequency=480.0)
         renderer = NullRenderer(sample_rate=48000)
         renderer.set_source(saw)
@@ -501,6 +503,8 @@ class TestBlitSawPEDifferentSampleRates:
     
     def test_sample_rate_22050(self):
         """Test at 22.05kHz sample rate."""
+        import pygmu2 as pg
+        pg.set_sample_rate(22050)
         saw = BlitSawPE(frequency=220.0)
         renderer = NullRenderer(sample_rate=22050)
         renderer.set_source(saw)

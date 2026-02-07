@@ -47,13 +47,8 @@ class TestLoopPEBasics:
     
     def test_negative_crossfade_clamped(self):
         source = PiecewisePE([(0, 0.0), (100, 1.0)])
-        loop = LoopPE(source, crossfade_seconds=-0.1)
-        
-        # Negative times are invalid; error is raised when the graph is configured.
-        assert loop.crossfade_seconds == -0.1
-        renderer = NullRenderer(sample_rate=44100)
         with pytest.raises(ValueError):
-            renderer.set_source(loop)
+            LoopPE(source, crossfade_seconds=-0.1)
     
     def test_inputs(self):
         source = PiecewisePE([(0, 0.0), (100, 1.0)])
@@ -70,7 +65,7 @@ class TestLoopPEBasics:
     
     def test_channel_count_passthrough(self):
         source = ConstantPE(1.0, channels=2)
-        loop = LoopPE(source)
+        loop = LoopPE(source, loop_end=100)
         
         assert loop.channel_count() == 2
     
@@ -275,6 +270,8 @@ class TestLoopPECrossfade:
     """Test crossfade behavior."""
     
     def setup_method(self):
+        import pygmu2 as pg
+        pg.set_sample_rate(1000)
         self.renderer = NullRenderer(sample_rate=1000)  # 1kHz for easy math
     
     def test_crossfade_smooths_transition(self):
@@ -361,23 +358,21 @@ class TestLoopPEErrors:
     """Test error handling."""
     
     def setup_method(self):
+        import pygmu2 as pg
+        pg.set_sample_rate(44100)
         self.renderer = NullRenderer(sample_rate=44100)
     
     def test_invalid_loop_length(self):
         """Should raise error if loop_end <= loop_start."""
         source = PiecewisePE([(0, 0.0), (100, 1.0)])
-        loop = LoopPE(source, loop_start=50, loop_end=50)
-        
         with pytest.raises(ValueError, match="positive"):
-            self.renderer.set_source(loop)
+            LoopPE(source, loop_start=50, loop_end=50)
     
     def test_infinite_source_without_end(self):
         """Should raise error if source is infinite without explicit loop_end."""
         source = ConstantPE(1.0)  # Infinite extent
-        loop = LoopPE(source)
-        
         with pytest.raises(ValueError, match="infinite"):
-            self.renderer.set_source(loop)
+            LoopPE(source)
     
     def test_infinite_source_with_explicit_end_ok(self):
         """Infinite source should work with explicit loop_end."""

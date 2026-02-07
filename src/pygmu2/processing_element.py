@@ -96,21 +96,6 @@ class ProcessingElement(ABC):
 
         return inferred
     
-    def configure(self, sample_rate: int) -> None:
-        """
-        Configure this PE and all its inputs with the sample rate.
-        
-        Called automatically by Renderer.set_source(). Propagates
-        configuration through the entire graph.
-        
-        Args:
-            sample_rate: The sample rate in Hz
-        """
-        self._sample_rate = sample_rate
-        self._last_rendered_end = None  # Reset for impure contiguous-request enforcement
-        for input_pe in self.inputs():
-            input_pe.configure(sample_rate)
-    
     def render(self, start: int, duration: int) -> Snippet:
         """
         Generate audio samples for the given range.

@@ -20,16 +20,18 @@ class TestAdsrPEBasics:
     """Test basic AdsrPE creation and properties."""
     
     def setup_method(self):
+        import pygmu2 as pg
+        pg.set_sample_rate(1000)
         self.renderer = NullRenderer(sample_rate=1000)  # 1kHz for easy math
     
     def test_create_default(self):
         """Test creation with default parameters."""
         gate = ConstantPE(1.0)
         adsr = AdsrPE(gate)
-        self.renderer.set_source(adsr)  # configure at known sample rate
+        self.renderer.set_source(adsr)
         
         assert adsr.gate is gate
-        # Defaults are specified in seconds and resolved at configure time.
+        # Defaults are specified in seconds and resolved at construction time.
         assert adsr.attack == 10    # 10ms at 1kHz
         assert adsr.decay == 100    # 100ms at 1kHz
         assert adsr.sustain_level == 0.7
@@ -45,7 +47,7 @@ class TestAdsrPEBasics:
             sustain_level=0.5,
             release_samples=300,
         )
-        self.renderer.set_source(adsr)  # configure at known sample rate
+        self.renderer.set_source(adsr)
         
         assert adsr.attack == 50
         assert adsr.decay == 200
@@ -89,6 +91,8 @@ class TestAdsrPERender:
     """Test AdsrPE rendering behavior."""
     
     def setup_method(self):
+        import pygmu2 as pg
+        pg.set_sample_rate(1000)
         self.renderer = NullRenderer(sample_rate=1000)  # 1kHz for easy math
     
     def test_complete_adsr_cycle(self):
