@@ -653,11 +653,18 @@ class SpatialPE(ProcessingElement):
         """
         # Render source
         source_snippet = self._source.render(start, duration)
+        sample_rate = self._source.sample_rate
+        if sample_rate is None:
+            handle_error(
+                "SpatialPE: sample_rate is unknown; proceeding without a configured rate.",
+                fatal=False,
+            )
+            sample_rate = 0
         output_data = self._method.render(
             source_snippet,
             start,
             duration,
-            self._source.sample_rate,
+            sample_rate,
         )
         return Snippet(start, output_data)
     

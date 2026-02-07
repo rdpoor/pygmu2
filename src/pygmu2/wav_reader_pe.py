@@ -66,6 +66,17 @@ class WavReaderPE(SourcePE):
         """Sample rate of the WAV file (reads file metadata if needed)."""
         self._ensure_file_info()
         return self._file_sample_rate
+
+    @property
+    def sample_rate(self) -> Optional[int]:
+        """
+        The sample rate in Hz, if known.
+
+        For WavReaderPE, this is the file's sample rate, even before configuration.
+        """
+        if self._sample_rate is not None:
+            return self._sample_rate
+        return self.file_sample_rate
     
     def _ensure_file_info(self) -> None:
         """Read file metadata if not already loaded."""

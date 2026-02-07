@@ -50,22 +50,32 @@ class ProcessingElement(ABC):
     _last_rendered_end: Optional[int] = None
 
     @property
-    def sample_rate(self) -> int:
+    def sample_rate(self) -> Optional[int]:
         """
-        The sample rate in Hz.
-        
-        Available after the graph is configured via Renderer.set_source().
-        
-        Raises:
-            RuntimeError: If accessed before configuration (always fatal)
+        The sample rate in Hz, if known.
+
+        Returns None if the rate has not been configured and cannot be inferred
+        from inputs.
         """
-        if self._sample_rate is None:
-            handle_error(
-                f"{self.__class__.__name__}.sample_rate accessed before configuration. "
-                f"Call Renderer.set_source() first.",
-                fatal=True
-            )
-        return self._sample_rate
+        if self._sample_rate is not None:
+            return self._sample_rate
+
+        inferred = None
+        for input_pe in self.inputs():
+            rate = input_pe.sample_rate
+            if rate is None:
+                continue
+            if inferred is None:
+                inferred = rate
+            elif inferred != rate:
+                handle_error(
+                    f"{self.__class__.__name__}.sample_rate inferred conflicting input rates: "
+                    f"{inferred} vs {rate}. Using {inferred}.",
+                    fatal=False,
+                )
+                break
+
+        return inferred
     
     def configure(self, sample_rate: int) -> None:
         """
