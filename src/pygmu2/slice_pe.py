@@ -7,7 +7,7 @@ SlicePE is a convenience PE for the common workflow:
 - optionally apply a short fade-in and/or fade-out to avoid clicks
 
 Conceptually, SlicePE is equivalent to (in samples):
-    CropPE(source, Extent(start, start + duration)) -> DelayPE(..., -start) -> GainPE(..., envelope)
+    CropPE(source, start, duration) -> DelayPE(..., -start) -> GainPE(..., envelope)
 
 where the envelope is 1.0 in the middle and ramps at the edges.
 
@@ -66,7 +66,7 @@ class SlicePE(ProcessingElement):
         if self._duration < 0:
             raise ValueError(f"duration must be >= 0, got {duration}")
 
-        crop = CropPE(self._source, Extent(self._start, self._start + self._duration))
+        crop = CropPE(self._source, self._start, self._duration)
         self._base = DelayPE(crop, delay=-self._start)
 
         # Resolve fades (None/None -> 0 handled by _time_to_samples).

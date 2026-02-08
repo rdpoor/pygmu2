@@ -37,7 +37,7 @@ class AudioRenderer(Renderer):
     Example:
         # Play a 1-second sine wave
         sine = SinePE(frequency=440.0)
-        cropped = CropPE(sine, Extent(0, 44100))
+        cropped = CropPE(sine, 0, (44100) - (0))
         
         renderer = AudioRenderer(sample_rate=44100)
         renderer.set_source(cropped)

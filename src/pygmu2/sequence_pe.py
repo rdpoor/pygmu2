@@ -98,7 +98,7 @@ class SequencePE(ProcessingElement):
 
             if self._mode == SequenceMode.NON_OVERLAP and idx + 1 < len(self._pairs):
                 next_start = self._pairs[idx + 1][1]
-                cropped = CropPE(delayed, Extent(start, next_start))
+                cropped = CropPE(delayed, start, (next_start) - (start))
                 scheduled.append(cropped)
             else:
                 scheduled.append(delayed)

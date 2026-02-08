@@ -55,7 +55,7 @@ def _make_note(
         )
 
 def _play(pe, duration_samples: int, start: int = 0) -> None:
-    out = CropPE(pe, Extent(start, start + duration_samples))
+    out = CropPE(pe, start, (start + duration_samples) - (start))
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(out)
     with renderer:

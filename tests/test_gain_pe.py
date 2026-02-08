@@ -117,7 +117,7 @@ class TestGainPEExtent:
 
     def test_extent_pe_gain_no_overlap(self):
         source = PiecewisePE([(0, 0.0), (100, 1.0)])  # Extent (0, 100)
-        gain_pe = CropPE(ConstantPE(0.5), Extent(200, 300))  # Extent (200, 300)
+        gain_pe = CropPE(ConstantPE(0.5), 200, (300) - (200))  # Extent (200, 300)
         gain = GainPE(source, gain=gain_pe)
 
         # No intersection -> empty extent at boundary
@@ -377,7 +377,7 @@ class TestGainPEUseCases:
     def test_simple_echo(self):
         """Create a simple echo by mixing original with delayed+gained copy."""
         source = ConstantPE(1.0)
-        cropped = CropPE(source, Extent(0, 100))
+        cropped = CropPE(source, 0, (100) - (0))
 
         delayed = DelayPE(cropped, delay=50)
         quieter = GainPE(delayed, gain=0.5)

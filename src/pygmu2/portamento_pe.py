@@ -269,14 +269,14 @@ class PortamentoPE(SourcePE):
                 # No start crop - needs to hold first note's pitch before ramp starts
                 # Use HOLD_FIRST to hold the ramp's start value (first note's pitch) before crop window
                 crop_duration = next_ramp_start - curr_start
-                cropped_ramp = CropPE(ramp, Extent(None, crop_duration), extend_mode=ExtendMode.HOLD_FIRST)
+                cropped_ramp = CropPE(ramp, 0, crop_duration, extend_mode=ExtendMode.HOLD_FIRST)
             elif i == len(self._notes) - 2:
                 # Last ramp: crop start (to time 0), no end crop (infinite extent)
-                cropped_ramp = CropPE(ramp, Extent(0, None), extend_mode=ExtendMode.ZERO)
+                cropped_ramp = CropPE(ramp, 0, None, extend_mode=ExtendMode.ZERO)
             else:
                 # Middle ramps: crop start (to time 0) and end (to next note's start)
                 crop_duration = next_ramp_start - curr_start
-                cropped_ramp = CropPE(ramp, Extent(0, crop_duration), extend_mode=ExtendMode.ZERO)
+                cropped_ramp = CropPE(ramp, 0, (crop_duration) - (0), extend_mode=ExtendMode.ZERO)
             
             # Ramp starts at current note's start time
             sequence_items.append((cropped_ramp, curr_start))

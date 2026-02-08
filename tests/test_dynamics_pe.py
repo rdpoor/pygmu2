@@ -109,8 +109,8 @@ class TestDynamicsPEBasics:
         Regression: if source/envelope extents do not overlap, extent() should be
         a well-defined empty extent (start == end), not an exception.
         """
-        source = CropPE(ConstantPE(1.0), Extent(0, 10))
-        envelope = CropPE(ConstantPE(0.5), Extent(20, 30))  # disjoint
+        source = CropPE(ConstantPE(1.0), 0, (10) - (0))
+        envelope = CropPE(ConstantPE(0.5), 20, (30) - (20))  # disjoint
         dynamics = DynamicsPE(source, envelope)
 
         extent = dynamics.extent()

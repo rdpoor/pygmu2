@@ -62,7 +62,7 @@ class TestAudioRendererLifecycle:
     def test_set_source(self):
         renderer = AudioRenderer()
         sine = SinePE(frequency=440.0)
-        cropped = CropPE(sine, Extent(0, 44100))
+        cropped = CropPE(sine, 0, (44100) - (0))
 
         renderer.set_source(cropped)
         assert renderer.source is cropped
@@ -70,7 +70,7 @@ class TestAudioRendererLifecycle:
     def test_start_stop(self):
         renderer = AudioRenderer()
         sine = SinePE(frequency=440.0)
-        cropped = CropPE(sine, Extent(0, 44100))
+        cropped = CropPE(sine, 0, (44100) - (0))
 
         renderer.set_source(cropped)
         renderer.start()
@@ -81,7 +81,7 @@ class TestAudioRendererLifecycle:
 
     def test_context_manager(self):
         sine = SinePE(frequency=440.0)
-        cropped = CropPE(sine, Extent(0, 44100))
+        cropped = CropPE(sine, 0, (44100) - (0))
 
         with AudioRenderer() as renderer:
             renderer.set_source(cropped)
@@ -107,7 +107,7 @@ class TestAudioRendererPlayback:
 
         renderer = AudioRenderer()
         source = ConstantPE(0.5)
-        cropped = CropPE(source, Extent(0, 1000))
+        cropped = CropPE(source, 0, (1000) - (0))
 
         renderer.set_source(cropped)
         renderer.start()
@@ -134,7 +134,7 @@ class TestAudioRendererPlayback:
 
         renderer = AudioRenderer()
         source = ConstantPE(0.5)
-        cropped = CropPE(source, Extent(0, 1000))
+        cropped = CropPE(source, 0, (1000) - (0))
 
         renderer.set_source(cropped)
         renderer.start()
@@ -151,7 +151,7 @@ class TestAudioRendererPlayback:
 
         renderer = AudioRenderer()
         source = ConstantPE(0.5)
-        cropped = CropPE(source, Extent(0, 1000))
+        cropped = CropPE(source, 0, (1000) - (0))
 
         renderer.set_source(cropped)
         renderer.start()
@@ -191,7 +191,7 @@ class TestAudioRendererStreaming:
 
         renderer = AudioRenderer()
         source = ConstantPE(0.5)
-        cropped = CropPE(source, Extent(0, 44100))
+        cropped = CropPE(source, 0, (44100) - (0))
 
         renderer.set_source(cropped)
         renderer.start()
@@ -222,7 +222,7 @@ class TestAudioRendererStreaming:
 
         renderer = AudioRenderer()
         source = ConstantPE(0.5)
-        cropped = CropPE(source, Extent(0, 44100))
+        cropped = CropPE(source, 0, (44100) - (0))
 
         renderer.set_source(cropped)
         renderer.start()
@@ -271,7 +271,7 @@ class TestAudioRendererIntegration:
         mock_output_stream.return_value.__exit__ = MagicMock(return_value=False)
 
         sine = SinePE(frequency=440.0, amplitude=0.5)
-        one_second = CropPE(sine, Extent(0, 44100))
+        one_second = CropPE(sine, 0, (44100) - (0))
 
         with AudioRenderer(sample_rate=44100) as renderer:
             renderer.set_source(one_second)
@@ -289,7 +289,7 @@ class TestAudioRendererIntegration:
         mock_output_stream.return_value.__exit__ = MagicMock(return_value=False)
 
         source = ConstantPE(0.5, channels=2)
-        cropped = CropPE(source, Extent(0, 1000))
+        cropped = CropPE(source, 0, (1000) - (0))
 
         renderer = AudioRenderer()
         renderer.set_source(cropped)
@@ -313,7 +313,7 @@ class TestAudioRendererIntegration:
 
         source = ConstantPE(1.0)
         gained = GainPE(source, gain=0.5)
-        cropped = CropPE(gained, Extent(0, 1000))
+        cropped = CropPE(gained, 0, (1000) - (0))
 
         renderer = AudioRenderer()
         renderer.set_source(cropped)

@@ -46,7 +46,7 @@ def demo_two():
     print("--------")
     sample_rate = 44100
     source = pg.SinePE(frequency=440.0, amplitude=0.3)
-    source = pg.CropPE(source, pg.Extent(0, int(2.0 * sample_rate)))
+    source = pg.CropPE(source, 0, int(2.0 * sample_rate))
     _play(source, sample_rate)
 
 DEMOS = {

@@ -4,7 +4,7 @@ import pygmu2 as pg
 
 
 def _seg(val: float, dur: int) -> pg.ProcessingElement:
-    return pg.CropPE(pg.ConstantPE(val), pg.Extent(0, dur))
+    return pg.CropPE(pg.ConstantPE(val), 0, dur)
 
 
 def test_sequence_overlap_mix():

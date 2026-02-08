@@ -41,7 +41,7 @@ duration_samples = int(DURATION_SECONDS * sample_rate)
 # --- Part 1: Original sound (dry) ---
 print(f"\nPart 1: Original sound (dry) - {DURATION_SECONDS}s", flush=True)
 
-output1_stream = CropPE(source_stream, Extent(0, duration_samples))
+output1_stream = CropPE(source_stream, 0, (duration_samples) - (0))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
 renderer.set_source(output1_stream)
@@ -71,7 +71,7 @@ dry_chorus_stream = GainPE(source_stream, gain=0.6)
 wet_chorus_stream = GainPE(delayed_chorus_stream, gain=0.4)
 chorused_stream = MixPE(dry_chorus_stream, wet_chorus_stream)
 
-output2_stream = CropPE(chorused_stream, Extent(0, duration_samples))
+output2_stream = CropPE(chorused_stream, 0, (duration_samples) - (0))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
 renderer.set_source(output2_stream)
@@ -109,7 +109,7 @@ dry_flange_stream = GainPE(source_stream, gain=0.5)
 wet_flange_stream = GainPE(delayed_flange_stream, gain=0.5)
 flanged_stream = MixPE(dry_flange_stream, wet_flange_stream)
 
-output3_stream = CropPE(flanged_stream, Extent(0, duration_samples))
+output3_stream = CropPE(flanged_stream, 0, (duration_samples) - (0))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
 renderer.set_source(output3_stream)

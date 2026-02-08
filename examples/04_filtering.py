@@ -53,7 +53,7 @@ filtered_up_stream = BiquadPE(
     q=Q,
     mode=BiquadMode.LOWPASS
 )
-output_up_stream = CropPE(filtered_up_stream, Extent(0, duration_samples))
+output_up_stream = CropPE(filtered_up_stream, 0, (duration_samples) - (0))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
 renderer.set_source(output_up_stream)
@@ -75,7 +75,7 @@ filtered_down_stream = BiquadPE(
     q=Q,
     mode=BiquadMode.LOWPASS
 )
-output_down_stream = CropPE(filtered_down_stream, Extent(0, duration_samples))
+output_down_stream = CropPE(filtered_down_stream, 0, (duration_samples) - (0))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
 renderer.set_source(output_down_stream)
@@ -95,7 +95,7 @@ filtered_bp_stream = BiquadPE(
     q=5.0,  # Resonant
     mode=BiquadMode.BANDPASS
 )
-output_bp_stream = CropPE(filtered_bp_stream, Extent(0, duration_samples))
+output_bp_stream = CropPE(filtered_bp_stream, 0, (duration_samples) - (0))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
 renderer.set_source(output_bp_stream)

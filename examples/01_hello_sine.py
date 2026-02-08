@@ -50,7 +50,7 @@ mixed_stream = MixPE(sine_c_stream, sine_e_stream, sine_g_stream)
 gained_stream = GainPE(mixed_stream, gain=0.5)
 
 # Crop to desired duration
-output_stream = CropPE(gained_stream, Extent(0, DURATION_SAMPLES))
+output_stream = CropPE(gained_stream, 0, (DURATION_SAMPLES) - (0))
 
 # Create audio renderer and play
 print(f"Playing for {DURATION_SECONDS} seconds...", flush=True)

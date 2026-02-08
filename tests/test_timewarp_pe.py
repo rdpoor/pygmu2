@@ -99,7 +99,7 @@ class TestTimeWarpPEBasics:
         assert ext == Extent(0, 5)
 
     def test_extent_dynamic_rate_matches_rate_extent(self):
-        rate = CropPE(ConstantPE(1.0), Extent(0, 7))
+        rate = CropPE(ConstantPE(1.0), 0, (7) - (0))
         tw = TimeWarpPE(IdentityPE(), rate=rate)
         ext = tw.extent()
         assert ext == Extent(0, 7)

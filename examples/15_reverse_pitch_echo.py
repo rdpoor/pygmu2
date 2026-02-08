@@ -35,7 +35,7 @@ duration_samples = int(DURATION_SECONDS * sample_rate)
 
 # --- Part 1: Dry ---
 print(f"\nPart 1: Dry signal - {DURATION_SECONDS}s", flush=True)
-dry_stream = CropPE(source_stream, Extent(0, duration_samples))
+dry_stream = CropPE(source_stream, 0, (duration_samples) - (0))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
 renderer.set_source(dry_stream)
@@ -54,7 +54,7 @@ wet_stream = ReversePitchEchoPE(
     alternate_direction=1.0,
 )
 wet_stream = GainPE(wet_stream, gain=0.8)
-wet_out_stream = CropPE(wet_stream, Extent(0, duration_samples))
+wet_out_stream = CropPE(wet_stream, 0, (duration_samples) - (0))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
 renderer.set_source(wet_out_stream)
@@ -73,7 +73,7 @@ wet_mix_stream = ReversePitchEchoPE(
     alternate_direction=1.0,
 )
 mixed_stream = MixPE(GainPE(source_stream, gain=0.5), GainPE(wet_mix_stream, gain=0.5))
-mixed_out_stream = CropPE(mixed_stream, Extent(0, duration_samples))
+mixed_out_stream = CropPE(mixed_stream, 0, (duration_samples) - (0))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
 renderer.set_source(mixed_out_stream)

@@ -77,7 +77,7 @@ def demo_drum_pattern():
         kick_duration + djembe_duration + drums_duration +
         int(sample_rate * 0.5)  # Extra space at end
     )
-    output_stream = CropPE(output_stream, Extent(0, total_duration))
+    output_stream = CropPE(output_stream, 0, total_duration)
     
     renderer = AudioRenderer(sample_rate=sample_rate)
     renderer.set_source(output_stream)
@@ -121,7 +121,7 @@ def demo_layered_entry():
     
     # Play for about 8 seconds total
     total_duration = int(sample_rate * 8.0)
-    output_stream = CropPE(output_stream, Extent(0, total_duration))
+    output_stream = CropPE(output_stream, 0, total_duration)
     
     renderer = AudioRenderer(sample_rate=sample_rate)
     renderer.set_source(output_stream)
@@ -152,10 +152,10 @@ def demo_arpeggio():
     
     # Create sequence of notes, cropping each to finite duration
     # This ensures each note plays for exactly note_duration samples
-    c_note_stream = CropPE(BlitSawPE(frequency=pitch_to_freq(C4), amplitude=0.3), Extent(0, None))
-    e_note_stream = CropPE(BlitSawPE(frequency=pitch_to_freq(E4), amplitude=0.3), Extent(0, None))
-    g_note_stream = CropPE(BlitSawPE(frequency=pitch_to_freq(G4), amplitude=0.3), Extent(0, None))
-    c5_note_stream = CropPE(BlitSawPE(frequency=pitch_to_freq(C5), amplitude=0.3), Extent(0, None))
+    c_note_stream = CropPE(BlitSawPE(frequency=pitch_to_freq(C4), amplitude=0.3), 0, None)
+    e_note_stream = CropPE(BlitSawPE(frequency=pitch_to_freq(E4), amplitude=0.3), 0, None)
+    g_note_stream = CropPE(BlitSawPE(frequency=pitch_to_freq(G4), amplitude=0.3), 0, None)
+    c5_note_stream = CropPE(BlitSawPE(frequency=pitch_to_freq(C5), amplitude=0.3), 0, None)
     
     sequence = [
         (c_note_stream, 0),
@@ -172,7 +172,7 @@ def demo_arpeggio():
     
     # Play for duration of all notes
     total_duration = note_duration * 4
-    output_stream = CropPE(output_stream, Extent(0, total_duration))
+    output_stream = CropPE(output_stream, 0, total_duration)
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(output_stream)
@@ -217,9 +217,9 @@ def demo_chord_progression():
     
     # Crop each chord to finite duration (starting at time 0)
     # This ensures each chord plays for exactly chord_duration samples
-    c_chord_cropped_stream = CropPE(c_chord_stream, Extent(0, None))
-    f_chord_cropped_stream = CropPE(f_chord_stream, Extent(0, None))
-    g_chord_cropped_stream = CropPE(g_chord_stream, Extent(0, None))
+    c_chord_cropped_stream = CropPE(c_chord_stream, 0, None)
+    f_chord_cropped_stream = CropPE(f_chord_stream, 0, None)
+    g_chord_cropped_stream = CropPE(g_chord_stream, 0, None)
     
     # Verify extents are finite (for debugging)
     print(f"  C chord extent: {c_chord_cropped_stream.extent()}")
@@ -240,7 +240,7 @@ def demo_chord_progression():
     
     # Play for duration of all chords
     total_duration = chord_duration * 3
-    output_stream = CropPE(output_stream, Extent(0, total_duration))
+    output_stream = CropPE(output_stream, 0, total_duration)
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(output_stream)

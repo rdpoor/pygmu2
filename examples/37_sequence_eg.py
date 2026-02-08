@@ -32,7 +32,7 @@ def _build_sources():
 
 def _play(source, sample_rate):
     renderer = pg.AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(pg.CropPE(source, pg.Extent(0, int(3.5 * sample_rate))))
+    renderer.set_source(pg.CropPE(source, 0, int(3.5 * sample_rate)))
     with renderer:
         renderer.start()
         renderer.play_extent()

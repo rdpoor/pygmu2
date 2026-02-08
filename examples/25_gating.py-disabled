@@ -224,7 +224,7 @@ def demo_gating_01():
 
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     # Optional: Crop mix to a finite extent so we can stream it chunk-by-chunk. 
-    renderer.set_source(CropPE(mix_stream, Extent(0, bs(next_start))))
+    renderer.set_source(CropPE(mix_stream, 0, bs(next_start)))
 
     with renderer:
         renderer.start()
@@ -258,7 +258,7 @@ def demo_gating_02():
     mix_stream = GainPE(synth_stream, 0.5)
 
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(CropPE(mix_stream, Extent(0, bs(next_start))))
+    renderer.set_source(CropPE(mix_stream, 0, bs(next_start)))
 
     # For debugging: print out PE tree
     # print_pe_tree(renderer.source)
@@ -300,7 +300,7 @@ def demo_gating_03():
         # duration = duration in beats (until the next note)  
         if pitch != pRest:
             gate_duration = bs(duration * 0.9)
-            gate_pe = CropPE(ConstantPE(1.0), Extent(0, gate_duration))
+            gate_pe = CropPE(ConstantPE(1.0), 0, gate_duration)
             gates.append((gate_pe, bs(next_start)))
         # bump note_start to the next start time
         next_start += duration
@@ -319,7 +319,7 @@ def demo_gating_03():
     mix_stream = GainPE(mix_stream, 0.5)
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(CropPE(mix_stream, Extent(0, bs(next_start))))
+    renderer.set_source(CropPE(mix_stream, 0, bs(next_start)))
 
     with renderer:
         renderer.start()
@@ -363,7 +363,7 @@ def demo_gating_04():
         #   << 1.0 = staccato
         if pitch != pRest:
             gate_duration = bs(duration * articulation)
-            gate_pe = CropPE(ConstantPE(1.0), Extent(0, gate_duration))
+            gate_pe = CropPE(ConstantPE(1.0), 0, gate_duration)
             gates.append((gate_pe, bs(next_start)))
         # bump note_start to the next start time
         next_start += duration
@@ -382,7 +382,7 @@ def demo_gating_04():
     mix_stream = GainPE(mix_stream, 0.5)
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(CropPE(mix_stream, Extent(0, bs(next_start))))
+    renderer.set_source(CropPE(mix_stream, 0, bs(next_start)))
 
     with renderer:
         renderer.start()
@@ -429,7 +429,7 @@ def demo_gating_05():
         #   << 1.0 = staccato
         if pitch != pRest:
             gate_duration = bs(duration * articulation)
-            gate_pe = CropPE(ConstantPE(1.0), Extent(0, gate_duration))
+            gate_pe = CropPE(ConstantPE(1.0), 0, gate_duration)
             gates.append((gate_pe, bs(next_start)))
         # bump note_start to the next start time
         next_start += duration
@@ -448,7 +448,7 @@ def demo_gating_05():
     mix_stream = GainPE(mix_stream, 0.5)
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(CropPE(mix_stream, Extent(0, bs(next_start))))
+    renderer.set_source(CropPE(mix_stream, 0, bs(next_start)))
 
     with renderer:
         renderer.start()
@@ -495,7 +495,7 @@ def demo_gating_06():
         #   << 1.0 = staccato
         if pitch != pRest:
             gate_duration = bs(duration * articulation)
-            gate_pe = CropPE(ConstantPE(1.0), Extent(0, gate_duration))
+            gate_pe = CropPE(ConstantPE(1.0), 0, gate_duration)
             gates.append((gate_pe, bs(next_start)))
         # bump note_start to the next start time
         next_start += duration
@@ -520,7 +520,7 @@ def demo_gating_06():
     mix_stream = GainPE(mix_stream, 0.5)
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(CropPE(mix_stream, Extent(0, bs(next_start))))
+    renderer.set_source(CropPE(mix_stream, 0, bs(next_start)))
 
     with renderer:
         renderer.start()

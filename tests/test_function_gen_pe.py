@@ -37,8 +37,8 @@ class TestFunctionGenPEBasics:
         assert pe.inputs() == []
 
     def test_extent_with_disjoint_pe_inputs_is_empty(self):
-        freq = CropPE(ConstantPE(100.0), Extent(0, 10))
-        duty = CropPE(ConstantPE(0.5), Extent(20, 30))
+        freq = CropPE(ConstantPE(100.0), 0, (10) - (0))
+        duty = CropPE(ConstantPE(0.5), 20, (30) - (20))
         pe = FunctionGenPE(frequency=freq, duty_cycle=duty)
         assert pe.extent().is_empty()
 

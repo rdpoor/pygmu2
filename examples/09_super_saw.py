@@ -86,7 +86,7 @@ if HAS_BIQUAD:
     output_stream = BiquadPE(output_stream, mode=BiquadMode.LOWPASS, frequency=3000.0, q=0.7)
 
 # Crop to desired duration
-output_stream = CropPE(output_stream, Extent(0, DURATION_SAMPLES))
+output_stream = CropPE(output_stream, 0, (DURATION_SAMPLES) - (0))
 
 # Play
 print(f"Playing for {DURATION_SECONDS} seconds...", flush=True)
@@ -121,7 +121,7 @@ for detune in detune_amounts:
         saw = BiquadPE(saw, mode=BiquadMode.LOWPASS, frequency=2500.0, q=0.7)
     
     output = GainPE(saw, gain=0.5)
-    output = CropPE(output, Extent(0, short_duration))
+    output = CropPE(output, 0, (short_duration) - (0))
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(output_stream)
@@ -153,7 +153,7 @@ for mode in mix_modes:
         saw = BiquadPE(saw, mode=BiquadMode.LOWPASS, frequency=4000.0, q=0.5)
     
     output = GainPE(saw, gain=0.5)
-    output = CropPE(output, Extent(0, short_duration))
+    output = CropPE(output, 0, (short_duration) - (0))
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(output_stream)

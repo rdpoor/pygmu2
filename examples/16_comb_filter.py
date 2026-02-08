@@ -34,7 +34,7 @@ duration_samples = int(DURATION_SECONDS * sample_rate)
 
 # --- Part 1: Dry ---
 print(f"\nPart 1: Dry signal - {DURATION_SECONDS}s", flush=True)
-dry_stream = CropPE(source_stream, Extent(0, duration_samples))
+dry_stream = CropPE(source_stream, 0, (duration_samples) - (0))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
 renderer.set_source(dry_stream)
@@ -47,7 +47,7 @@ with renderer:
 print("\nPart 2: Comb filter (220 Hz, feedback 0.7)", flush=True)
 comb_220_stream = CombPE(source_stream, frequency=220.0, feedback=0.7)
 comb_220_stream = GainPE(comb_220_stream, gain=0.7)
-comb_220_out_stream = CropPE(comb_220_stream, Extent(0, duration_samples))
+comb_220_out_stream = CropPE(comb_220_stream, 0, (duration_samples) - (0))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
 renderer.set_source(comb_220_out_stream)
@@ -60,7 +60,7 @@ with renderer:
 print("\nPart 3: Comb filter (440 Hz, feedback 0.9)", flush=True)
 comb_440_stream = CombPE(source_stream, frequency=440.0, feedback=0.9)
 comb_440_stream = GainPE(comb_440_stream, gain=0.7)
-comb_440_out_stream = CropPE(comb_440_stream, Extent(0, duration_samples))
+comb_440_out_stream = CropPE(comb_440_stream, 0, (duration_samples) - (0))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
 renderer.set_source(comb_440_out_stream)

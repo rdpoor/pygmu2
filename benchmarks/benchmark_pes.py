@@ -295,7 +295,7 @@ def setup_fallback_configs():
     ])
     
     register_fallback("CropPE", [
-        BenchmarkConfig("CropPE", lambda: CropPE(SinePE(frequency=440.0), Extent(0, 44100)), "transform"),
+        BenchmarkConfig("CropPE", lambda: CropPE(SinePE(frequency=440.0), 0, 44100), "transform"),
     ])
     
     register_fallback("MixPE", [
@@ -307,7 +307,7 @@ def setup_fallback_configs():
     ])
     
     register_fallback("LoopPE", [
-        BenchmarkConfig("LoopPE", lambda: LoopPE(CropPE(SinePE(frequency=440.0), Extent(0, 4410))), "transform"),
+        BenchmarkConfig("LoopPE", lambda: LoopPE(CropPE(SinePE(frequency=440.0), 0, 4410)), "transform"),
     ])
     
     # === Dynamics PEs ===

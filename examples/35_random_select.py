@@ -45,7 +45,7 @@ def demo_weighted_pitch():
     duration_seconds = 10
     renderer = pg.AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(
-        pg.CropPE(chooser, pg.Extent(0, duration_seconds*SAMPLE_RATE)))    
+        pg.CropPE(chooser, 0, int(duration_seconds * SAMPLE_RATE)))    
     with renderer:
         renderer.start()
         renderer.play_extent()
@@ -91,7 +91,7 @@ def demo_weighted_pitch_one_osc():
     duration_seconds = 10
     renderer = pg.AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(
-        pg.CropPE(osc, pg.Extent(0, duration_seconds * SAMPLE_RATE)))
+        pg.CropPE(osc, 0, int(duration_seconds * SAMPLE_RATE)))
     with renderer:
         renderer.start()
         renderer.play_extent()
@@ -136,10 +136,11 @@ def demo_bongo_fury():
         trigger_mode=pg.TriggerMode.RETRIGGER,
     )
     duration_seconds = 10
-    extent = pg.Extent(0, duration_seconds * sample_rate)
+    duration_samples = int(duration_seconds * sample_rate)
+    extent = pg.Extent(0, duration_samples)
     logger.info(f"extent = {extent}")
     renderer = pg.AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(pg.CropPE(chooser, extent))    
+    renderer.set_source(pg.CropPE(chooser, 0, duration_samples))
     with renderer:
         renderer.start()
         renderer.play_extent()

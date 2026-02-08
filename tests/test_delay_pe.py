@@ -427,7 +427,7 @@ class TestDelayPEVariableOutOfBounds:
     
     def test_out_of_bounds_past(self):
         """Accessing before source extent returns zero."""
-        source = CropPE(IdentityPE(), Extent(100, 200))
+        source = CropPE(IdentityPE(), 100, (200) - (100))
         delay_pe = ConstantPE(200.0)
         
         delay = DelayPE(source, delay=delay_pe)
@@ -444,7 +444,7 @@ class TestDelayPEVariableOutOfBounds:
     
     def test_out_of_bounds_future(self):
         """Accessing past source extent returns zero."""
-        source = CropPE(IdentityPE(), Extent(0, 100))
+        source = CropPE(IdentityPE(), 0, (100) - (0))
         delay_pe = ConstantPE(-50.0)
         
         delay = DelayPE(source, delay=delay_pe)

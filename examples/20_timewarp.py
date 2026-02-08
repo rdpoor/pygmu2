@@ -100,7 +100,7 @@ def demo_accelerating_loop():
 
     warped_stream = TimeWarpPE(looped_stream, rate=rate_stream)
     output_stream = GainPE(warped_stream, gain=0.8)
-    output_stream = CropPE(output_stream, Extent(0, dur_samples))
+    output_stream = CropPE(output_stream, 0, (dur_samples) - (0))
 
     renderer = AudioRenderer(sample_rate=sample_rate)
     renderer.set_source(output_stream)
@@ -127,7 +127,7 @@ def demo_jog_shuttle():
 
     warped_stream = TimeWarpPE(LoopPE(drums_stream), rate=rate_stream)
     output_stream = GainPE(warped_stream, gain=0.8)
-    output_stream = CropPE(output_stream, Extent(0, demo_length))
+    output_stream = CropPE(output_stream, 0, (demo_length) - (0))
 
     renderer = AudioRenderer(sample_rate=sample_rate)
     renderer.set_source(output_stream)

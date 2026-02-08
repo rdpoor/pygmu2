@@ -87,7 +87,7 @@ class KarplusStrongPE(SourcePE):
 
     Example:
         pluck = KarplusStrongPE(frequency=440.0, rho=0.996)
-        one_sec = CropPE(pluck, Extent(0, 44100))
+        one_sec = CropPE(pluck, 0, (44100) - (0))
         # Sustain 1 sec then fade faster:
         pluck2 = KarplusStrongPE(440.0, rho=0.996, duration=44100, rho_damping=0.95)
     """

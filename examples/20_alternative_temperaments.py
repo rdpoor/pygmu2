@@ -177,7 +177,7 @@ def play_chord(notes, temperament_name, temperament, start_time, duration=CHORD_
     start_sample = int(start_time * SAMPLE_RATE)
     duration_samples = int(duration * SAMPLE_RATE)
     
-    return CropPE(chord, Extent(start_sample, start_sample + duration_samples))
+    return CropPE(chord, start_sample, (start_sample + duration_samples) - (start_sample))
 
 
 def print_chord_info(chord_name, notes, temperaments):

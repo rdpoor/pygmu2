@@ -51,7 +51,7 @@ source = MixPE(*sines)
 print(f"\nPart 1: Clean signal (no clipping) - {DURATION_SECONDS}s", flush=True)
 
 clean = GainPE(source, gain=0.5)
-clean_out = CropPE(clean, Extent(0, DURATION_SAMPLES))
+clean_out = CropPE(clean, 0, (DURATION_SAMPLES) - (0))
 
 renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
 renderer.set_source(clean_out)
@@ -68,7 +68,7 @@ driven_light = GainPE(source, gain=1.5)
 saturated_light = TransformPE(driven_light, func=np.tanh, name="tanh")
 # Compensate for level reduction
 output_light = GainPE(saturated_light, gain=0.6)
-output_light = CropPE(output_light, Extent(0, DURATION_SAMPLES))
+output_light = CropPE(output_light, 0, (DURATION_SAMPLES) - (0))
 
 renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
 renderer.set_source(output_light)
@@ -83,7 +83,7 @@ print(f"\nPart 3: Heavy saturation (4x drive into tanh) - {DURATION_SECONDS}s", 
 driven_heavy = GainPE(source, gain=4.0)
 saturated_heavy = TransformPE(driven_heavy, func=np.tanh, name="tanh")
 output_heavy = GainPE(saturated_heavy, gain=0.5)
-output_heavy = CropPE(output_heavy, Extent(0, DURATION_SAMPLES))
+output_heavy = CropPE(output_heavy, 0, (DURATION_SAMPLES) - (0))
 
 renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
 renderer.set_source(output_heavy)
@@ -108,7 +108,7 @@ def asymmetric_clip(x):
 driven_asym = GainPE(source, gain=3.0)
 saturated_asym = TransformPE(driven_asym, func=asymmetric_clip, name="asymmetric")
 output_asym = GainPE(saturated_asym, gain=0.6)
-output_asym = CropPE(output_asym, Extent(0, DURATION_SAMPLES))
+output_asym = CropPE(output_asym, 0, (DURATION_SAMPLES) - (0))
 
 renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
 renderer.set_source(output_asym)

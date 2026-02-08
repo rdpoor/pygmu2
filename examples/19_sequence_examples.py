@@ -73,7 +73,7 @@ def _make_plucked_note(midi: int, sustain_seconds: float, amplitude: float = 1.0
 
 def _play(pe, duration_samples: int, start: int = 0) -> None:
     """Play pe for duration_samples. If start != 0, crop from start to start + duration_samples (e.g. start=-N for lead-in)."""
-    out = CropPE(pe, Extent(start, start + duration_samples))
+    out = CropPE(pe, start, (start + duration_samples) - (start))
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(out)
     with renderer:
@@ -101,7 +101,7 @@ def demo_gapless_c_major():
     for i, midi_pitch in enumerate(C_MAJOR):
         note = _make_note(midi_pitch)
         delayed = DelayPE(
-            CropPE(note, Extent(0, note_duration)),
+            CropPE(note, 0, (note_duration) - (0)),
             delay=note_duration * i,
         )
         notes.append(delayed)
@@ -127,7 +127,7 @@ def demo_staccato_c_major():
     for i, midi_pitch in enumerate(C_MAJOR):
         note = _make_note(midi_pitch)
         delayed = DelayPE(
-            CropPE(note, Extent(0, note_len)),
+            CropPE(note, 0, (note_len) - (0)),
             delay=slot * i,
         )
         notes.append(delayed)
@@ -152,7 +152,7 @@ def demo_legato_c_major():
     for i, midi_pitch in enumerate(C_MAJOR):
         note = _make_note(midi_pitch)
         delayed = DelayPE(
-            CropPE(note, Extent(0, note_duration)),
+            CropPE(note, 0, (note_duration) - (0)),
             delay=onset_interval * i,
         )
         notes.append(delayed)
@@ -182,14 +182,13 @@ def _ramped_c_major(transition_type: TransitionType, title: str):
     notes = []
     for i, midi_pitch in enumerate(C_MAJOR):
         note = _make_note(midi_pitch)
-        cropped = CropPE(note, Extent(0, note_duration + xfade))
+        cropped = CropPE(note, 0, (note_duration + xfade) - (0))
         delayed = DelayPE(cropped, delay=i * d - xfade_half)
 
         gain = MixPE(
             DelayPE(PiecewisePE([(0, 0.0), (xfade, 1.0)], transition_type=transition_type), i * d - xfade_half),
             CropPE(
-                ConstantPE(1.0),
-                Extent(i * d + xfade_half, (i + 1) * d - xfade_half),
+                ConstantPE(1.0), i * d + xfade_half, ((i + 1) - (i * d + xfade_half) * d - xfade_half),
             ),
             DelayPE(PiecewisePE([(0, 1.0), (xfade, 0.0)], transition_type=transition_type), (i + 1) * d - xfade_half),
         )
@@ -371,7 +370,7 @@ def demo_moz_connected():
             notes.append(
                 # make the tone, crop to duration, delay it to next start
                 DelayPE(
-                    CropPE(_make_note(pitch), Extent(0, _b2s(duration))),
+                    CropPE(_make_note(pitch), 0, (_b2s(duration) - (0))),
                     _b2s(next_start)))
         # bump next_start to next start time (in beats)
         next_start += duration

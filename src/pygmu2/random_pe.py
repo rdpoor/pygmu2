@@ -9,6 +9,11 @@ from enum import Enum
 from typing import Optional, Union
 import numpy as np
 
+try:
+    from numba import njit
+except Exception:  # pragma: no cover - numba optional at runtime
+    njit = None
+
 from pygmu2.processing_element import ProcessingElement, SourcePE
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
@@ -21,6 +26,48 @@ class RandomMode(Enum):
     LINEAR = "linear"            # Linear ramp between random values
     SMOOTH = "smooth"            # Smooth (cosine) interpolation
     WALK = "walk"                # Random walk with bounded drift
+
+
+if njit is not None:
+
+    @njit(cache=True)
+    def _apply_walk_steps(
+        steps: np.ndarray,
+        start_value: float,
+        min_value: float,
+        max_value: float,
+    ):
+        n = steps.shape[0]
+        out = np.empty(n, dtype=np.float32)
+        val = start_value
+        for i in range(n):
+            val = val + steps[i]
+            if val < min_value:
+                val = min_value
+            elif val > max_value:
+                val = max_value
+            out[i] = val
+        return out, val
+
+else:
+
+    def _apply_walk_steps(
+        steps: np.ndarray,
+        start_value: float,
+        min_value: float,
+        max_value: float,
+    ):
+        n = steps.shape[0]
+        out = np.empty(n, dtype=np.float32)
+        val = start_value
+        for i in range(n):
+            val = val + steps[i]
+            if val < min_value:
+                val = min_value
+            elif val > max_value:
+                val = max_value
+            out[i] = val
+        return out, val
 
 
 class RandomPE(SourcePE):
@@ -220,7 +267,7 @@ class RandomPE(SourcePE):
     def _render(self, start: int, duration: int) -> Snippet:
         """Generate random values."""
         
-        output = np.zeros((duration, 1), dtype=np.float64)
+        output = np.zeros((duration, 1), dtype=np.float32)
         
         # Get trigger signal if provided
         trigger_data = None
@@ -230,17 +277,25 @@ class RandomPE(SourcePE):
         
         if self._mode == RandomMode.WALK:
             # Walk mode: each sample takes a random step
-            for i in range(duration):
-                # Check for trigger
-                if trigger_data is not None:
+            if trigger_data is not None:
+                for i in range(duration):
                     current_trigger = trigger_data[i]
                     if current_trigger > 0 and self._last_trigger <= 0:
                         # Rising edge - reset to new random value
                         self._current_value = self._random_value()
                     self._last_trigger = current_trigger
                     output[i, 0] = self._current_value
-                else:
-                    output[i, 0] = self._walk_step()
+            else:
+                range_size = self._max_value - self._min_value
+                max_step = range_size * self._slew
+                steps = self._rng.uniform(-max_step, max_step, size=duration).astype(
+                    np.float32, copy=False
+                )
+                out, last = _apply_walk_steps(
+                    steps, self._current_value, self._min_value, self._max_value
+                )
+                output[:, 0] = out
+                self._current_value = float(last)
         else:
             # Other modes: interpolate between random values
             for i in range(duration):
@@ -265,7 +320,7 @@ class RandomPE(SourcePE):
                     if self._sample_counter >= self._samples_per_period:
                         self._advance_to_next()
         
-        return Snippet(start, output.astype(np.float32))
+        return Snippet(start, output)
     
     def __repr__(self) -> str:
         trigger_str = ", triggered" if self._trigger else f", rate={self._rate}"

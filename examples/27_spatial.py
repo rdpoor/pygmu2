@@ -219,7 +219,7 @@ def demo_multiple_sources_panned():
     extent1 = source1.extent()
     extent2 = source2.extent()
     min_duration = min(extent1.end - extent1.start, extent2.end - extent2.start)
-    cropped_stream = CropPE(mixed_stream, Extent(0, min_duration))
+    cropped_stream = CropPE(mixed_stream, 0, (min_duration) - (0))
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(cropped_stream)

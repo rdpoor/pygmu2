@@ -36,7 +36,7 @@ print(f"  Original duration: {loop_length / sample_rate:.2f}s ({loop_length} sam
 print(f"\nPart 1: Basic loop (no crossfade) - {DURATION_SECONDS}s", flush=True)
 
 looped_basic_stream = LoopPE(source_stream)
-output_basic_stream = CropPE(looped_basic_stream, Extent(0, duration_samples))
+output_basic_stream = CropPE(looped_basic_stream, 0, (duration_samples) - (0))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
 renderer.set_source(output_basic_stream)
@@ -52,7 +52,7 @@ print(f"  Elapsed: {t1 - t0:.2f}s (expected ~{DURATION_SECONDS}s)", flush=True)
 print(f"\nPart 2: Smooth loop (20ms crossfade) - {DURATION_SECONDS}s", flush=True)
 
 looped_smooth_stream = LoopPE(source_stream, crossfade_seconds=0.02)  # 20ms crossfade
-output_smooth_stream = CropPE(looped_smooth_stream, Extent(0, duration_samples))
+output_smooth_stream = CropPE(looped_smooth_stream, 0, (duration_samples) - (0))
 
 renderer = AudioRenderer(sample_rate=sample_rate)
 renderer.set_source(output_smooth_stream)

@@ -336,7 +336,7 @@ class TestLoopPEStereo:
         source = ConstantPE(0.5, channels=2)
         # Need a finite source for looping
         from pygmu2 import CropPE, Extent
-        cropped = CropPE(source, Extent(0, 100))
+        cropped = CropPE(source, 0, (100) - (0))
         loop = LoopPE(cropped)
         
         self.renderer.set_source(loop)

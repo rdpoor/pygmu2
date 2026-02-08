@@ -16,21 +16,20 @@ from pygmu2.snippet import Snippet
 
 class CropPE(ProcessingElement):
     """
-    A ProcessingElement that limits its input to a specified extent.
-    
-    Samples inside the crop extent are passed through from the source.
+    A ProcessingElement that limits its input to a specified range.
+
+    Samples inside the crop range are passed through from the source.
     Behavior outside this extent is controlled by extend_mode.
-    
-    The crop extent can have None for either bound:
-    - start=None: No lower bound (pass through from beginning)
-    - end=None: No upper bound (pass through to end)
-    - Both None: Pass through everything (identity operation)
-    
-    The output extent is the intersection of the crop extent and source extent.
+
+    The crop range can be open-ended by passing duration=None:
+    - duration=None: No upper bound (pass through to end)
+
+    The output extent is the intersection of the crop range and source extent.
     
     Args:
         source: Input ProcessingElement
-        extent: The extent to crop to (supports None for open bounds)
+        start: First sample to include (inclusive)
+        duration: Number of samples to include. If None, no upper bound.
         extend_mode: Behavior outside crop extent (default: ZERO)
                      - ZERO: Output zeros outside crop
                      - HOLD_FIRST: Hold first sample value before crop
@@ -40,28 +39,35 @@ class CropPE(ProcessingElement):
     Example:
         # Crop to samples 44100-88200 (second 1-2 at 44.1kHz)
         reader_stream = WavReaderPE("audio.wav")
-        cropped_stream = CropPE(reader_stream, Extent(44100, 88200))
+        cropped_stream = CropPE(reader_stream, 44100, 44100)
         
         # Sustain last value after crop ends
         from pygmu2 import ExtendMode
-        sustained = CropPE(source, Extent(0, 1000), extend_mode=ExtendMode.HOLD_LAST)
+        sustained = CropPE(source, 0, 1000, extend_mode=ExtendMode.HOLD_LAST)
         
         # Trim the beginning (start at sample 1000)
-        trimmed_stream = CropPE(source_stream, Extent(1000, None))
+        trimmed_stream = CropPE(source_stream, 1000, None)
         
         # Extract a window from an infinite source
         sine = SinePE(frequency=440.0)
-        burst = CropPE(sine, Extent(0, 44100))  # 1 second burst
+        burst = CropPE(sine, 0, 44100)  # 1 second burst
     """
     
     def __init__(
         self,
         source: ProcessingElement,
-        extent: Extent,
+        start: int,
+        duration: Optional[int],
         extend_mode: ExtendMode = ExtendMode.ZERO,
     ):
+        if duration is not None and duration < 0:
+            raise ValueError(f"duration must be >= 0, got {duration}")
+
         self._source = source
-        self._extent = extent
+        self._start = int(start)
+        self._duration = int(duration) if duration is not None else None
+        end = None if self._duration is None else self._start + self._duration
+        self._extent = Extent(self._start, end)
         self._extend_mode = extend_mode
         # Cache first/last values when needed
         self._first_value: Optional[np.ndarray] = None
@@ -78,9 +84,14 @@ class CropPE(ProcessingElement):
         return self._extent
     
     @property
-    def start(self) -> Optional[int]:
-        """First sample to include (inclusive), or None for no lower bound."""
-        return self._extent.start
+    def start(self) -> int:
+        """First sample to include (inclusive)."""
+        return self._start
+
+    @property
+    def duration(self) -> Optional[int]:
+        """Number of samples to include, or None for no upper bound."""
+        return self._duration
     
     @property
     def end(self) -> Optional[int]:
@@ -160,16 +171,6 @@ class CropPE(ProcessingElement):
             if channels is None:
                 channels = 1  # Default fallback
         
-        # Special case: if crop_start is None, crop extends infinitely backward
-        # So requests starting before crop_end should pass through source values
-        if crop_start is None and crop_end is not None and start < crop_end:
-            # Request starts before crop_end - pass through source values
-            # If request is entirely before crop_end, pass through completely
-            if end <= crop_end:
-                source_snippet = self._source.render(start, duration)
-                return source_snippet
-            # Otherwise, let the normal path handle it (it will get the overlapping part)
-        
         # Check for no overlap: request is entirely before or after crop window
         # This happens when:
         # 1. overlap_start >= overlap_end (standard case - no overlap)
@@ -245,7 +246,9 @@ class CropPE(ProcessingElement):
         return self._source.channel_count()
     
     def __repr__(self) -> str:
-        start_str = str(self._extent.start) if self._extent.start is not None else "None"
         end_str = str(self._extent.end) if self._extent.end is not None else "None"
         extend_str = f", extend_mode={self._extend_mode.value}" if self._extend_mode != ExtendMode.ZERO else ""
-        return f"CropPE(source={self._source.__class__.__name__}, extent=Extent({start_str}, {end_str}){extend_str})"
+        return (
+            f"CropPE(source={self._source.__class__.__name__}, "
+            f"start={self._start}, end={end_str}{extend_str})"
+        )

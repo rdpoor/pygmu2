@@ -88,8 +88,8 @@ class TestSuperSawPEBasics:
         Regression: if PE inputs have disjoint extents, extent() should be
         a well-defined empty extent (start == end), not an exception.
         """
-        freq = CropPE(ConstantPE(440.0), Extent(0, 10))
-        amp = CropPE(ConstantPE(1.0), Extent(20, 30))  # disjoint from freq
+        freq = CropPE(ConstantPE(440.0), 0, (10) - (0))
+        amp = CropPE(ConstantPE(1.0), 20, (30) - (20))  # disjoint from freq
         saw = SuperSawPE(frequency=freq, amplitude=amp)
 
         extent = saw.extent()

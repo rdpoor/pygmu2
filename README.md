@@ -92,7 +92,7 @@ An **Extent** defines the temporal bounds of a PE's output:
 
 ```python
 # Finite extent (e.g., a WAV file)
-crop_stream = CropPE(source_stream, Extent(0, 44100))  # First second only
+crop_stream = CropPE(source_stream, 0, 44100)  # First second only
 
 # Infinite extent (e.g., oscillators)
 sine_stream = SinePE(frequency=440.0)  # Extent(None, None) - plays forever
@@ -140,7 +140,7 @@ renderer = NullRenderer(sample_rate=44100)
 | `GainPE(source, gain)` | Apply gain (supports automation) |
 | `MixPE(*sources)` | Sum multiple sources |
 | `DelayPE(source, delay)` | Delay by N samples |
-| `CropPE(source, extent)` | Limit to temporal range |
+| `CropPE(source, start, duration)` | Limit to temporal range |
 | `LoopPE(source, loop_start=None, loop_end=None, count=None, crossfade_seconds=None, crossfade_samples=None)` | Loop a finite source (optional crossfade in seconds or samples) |
 | `SlicePE(source, start, duration, fade_in_samples=None, fade_in_seconds=None, fade_out_samples=None, fade_out_seconds=None)` | Extract a region and shift to time 0 (optional fades) |
 | `ConvolvePE(src, filter, fft_size=None)` | FFT-based streaming convolution with a finite FIR filter |

@@ -47,7 +47,7 @@ def make_gate(duration: float):
     """
     Create a PE that goes high for a specified number of seconds.
     """
-    return CropPE(ConstantPE(1.0), Extent(0, stos(duration)))
+    return CropPE(ConstantPE(1.0), 0, stos(duration))
 
 
 def demo_basic_envelope():
@@ -173,7 +173,7 @@ def demo_axel_f():
         gate_len = max(1, _samp(dur * legato))
 
         # Create a gate signal is 1.0 for the duration gate_len
-        gate_stream = CropPE(ConstantPE(1.0), Extent(0, gate_len))
+        gate_stream = CropPE(ConstantPE(1.0), 0, gate_len)
 
         # Apply the gate to the ADSR to generate the envelope signal
         envelope_stream = AdsrPE(
@@ -208,7 +208,7 @@ def demo_axel_f():
     # Optional: Crop mix to a finite extent so we can stream it chunk-by-chunk. 
     # It works without this, but that would compute the entire piece before it 
     # starts to play, leading to a long lag before you hear anything.
-    renderer.set_source(CropPE(mix_stream, Extent(0, int(start))))
+    renderer.set_source(CropPE(mix_stream, 0, int(start)))
 
     with renderer:
         renderer.start()

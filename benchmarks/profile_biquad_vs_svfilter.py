@@ -74,7 +74,7 @@ def make_svfilter_graph():
 
 def run_profiled(renderer: NullRenderer, root_pe, duration_samples: int) -> None:
     """Render the full extent in blocks with profiling enabled."""
-    cropped = CropPE(root_pe, Extent(0, duration_samples))
+    cropped = CropPE(root_pe, 0, duration_samples)
     renderer.set_source(cropped)
     renderer.start()
     num_blocks = (duration_samples + BLOCK_SIZE - 1) // BLOCK_SIZE

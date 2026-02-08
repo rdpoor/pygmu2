@@ -85,7 +85,7 @@ def create_pingpong_ir_pe(sample_rate: int, beats_per_minute: float = 92):
         beat_2_impulse, method=SpatialLinear(azimuth=90.0)
     )
     mix_stream = MixPE(beat_1_impulse, beat_2_impulse)
-    pe = CropPE(mix_stream, Extent(0, delay_2_beats+1))
+    pe = CropPE(mix_stream, 0, (delay_2_beats+1) - (0))
     ext = pe.extent()
     logger.debug(
         "create_pingpong_ir_pe: channels=%s, extent=(%s, %s)",

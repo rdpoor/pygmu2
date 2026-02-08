@@ -47,8 +47,8 @@ class TestAnalogOscPEBasics:
         Regression: disjoint input extents should yield an empty extent,
         not a crash.
         """
-        freq = CropPE(ConstantPE(100.0), Extent(0, 10))
-        duty = CropPE(ConstantPE(0.5), Extent(20, 30))  # disjoint from freq
+        freq = CropPE(ConstantPE(100.0), 0, (10) - (0))
+        duty = CropPE(ConstantPE(0.5), 20, (30) - (20))  # disjoint from freq
         osc = AnalogOscPE(frequency=freq, duty_cycle=duty, waveform="rectangle")
         extent = osc.extent()
         assert extent.is_empty()

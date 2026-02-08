@@ -49,7 +49,7 @@ def demo_pwm_rectangle():
 
     osc = AnalogOscPE(frequency=110.0, duty_cycle=duty, waveform="rectangle")
     out = GainPE(osc, gain=0.25)
-    out = CropPE(out, Extent(0, dur_samples))
+    out = CropPE(out, 0, (dur_samples) - (0))
 
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(out)
@@ -72,7 +72,7 @@ def demo_morphing_saw_triangle():
 
     osc = AnalogOscPE(frequency=220.0, duty_cycle=duty, waveform="sawtooth")
     out = GainPE(osc, gain=0.35)
-    out = CropPE(out, Extent(0, dur_samples))
+    out = CropPE(out, 0, (dur_samples) - (0))
 
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(out)
@@ -109,7 +109,7 @@ def demo_subtractive_patch():
     )
 
     out = GainPE(filtered, gain=0.25)
-    out = CropPE(out, Extent(0, dur_samples))
+    out = CropPE(out, 0, (dur_samples) - (0))
 
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(out)

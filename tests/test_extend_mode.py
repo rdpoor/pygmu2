@@ -123,7 +123,7 @@ class TestCropExtendMode:
         # extend_mode = ZERO
         # sample index:    -2 -1   0   1   2   3  4  5
         # values:           0, 0,  0, 11, 12, 0, 0, 0
-        cropped = CropPE(source, Extent(1, 3), extend_mode=ExtendMode.ZERO)
+        cropped = CropPE(source, 1, (3) - (1), extend_mode=ExtendMode.ZERO)
 
         self.renderer.set_source(cropped)
         snippet = cropped.render(-2, 8)
@@ -133,7 +133,7 @@ class TestCropExtendMode:
         # extend_mode = HOLD_FIRST
         # sample index:     -2  -1   0   1   2   3  4  5
         # values:           11, 11, 11, 11, 12, 0, 0, 0
-        cropped = CropPE(source, Extent(1, 3), extend_mode=ExtendMode.HOLD_FIRST)
+        cropped = CropPE(source, 1, (3) - (1), extend_mode=ExtendMode.HOLD_FIRST)
 
         self.renderer.set_source(cropped)
         snippet = cropped.render(-2, 8)
@@ -143,7 +143,7 @@ class TestCropExtendMode:
         # extend_mode = HOLD_LAST
         # sample index:     -2 -1   0   1   2   3   4   5
         # values:            0, 0,  0, 11, 12, 12, 12, 12
-        cropped = CropPE(source, Extent(1, 3), extend_mode=ExtendMode.HOLD_LAST)
+        cropped = CropPE(source, 1, (3) - (1), extend_mode=ExtendMode.HOLD_LAST)
 
         self.renderer.set_source(cropped)
         snippet = cropped.render(-2, 8)
@@ -153,7 +153,7 @@ class TestCropExtendMode:
         # extend_mode = HOLD_BOTH
         # sample index:     -2  -1   0   1   2   3   4   5
         # values:           11, 11, 11, 11, 12, 12, 12, 12
-        cropped = CropPE(source, Extent(1, 3), extend_mode=ExtendMode.HOLD_BOTH)
+        cropped = CropPE(source, 1, (3) - (1), extend_mode=ExtendMode.HOLD_BOTH)
 
         self.renderer.set_source(cropped)
         snippet = cropped.render(-2, 8)

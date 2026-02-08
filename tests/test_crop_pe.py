@@ -27,7 +27,7 @@ class TestCropPEBasics:
 
     def test_create_crop_pe(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(100, 200))
+        crop = CropPE(source, 100, (200) - (100))
         assert crop.source is source
         assert crop.start == 100
         assert crop.end == 200
@@ -36,45 +36,45 @@ class TestCropPEBasics:
 
     def test_create_with_zero_start(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(0, 1000))
+        crop = CropPE(source, 0, (1000) - (0))
         assert crop.start == 0
 
     def test_create_with_none_start(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(None, 1000))
-        assert crop.start is None
+        crop = CropPE(source, 0, 1000)
+        assert crop.start == 0
         assert crop.end == 1000
 
     def test_create_with_none_end(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(100, None))
+        crop = CropPE(source, 100, None)
         assert crop.start == 100
         assert crop.end is None
 
     def test_create_with_both_none(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(None, None))
-        assert crop.start is None
+        crop = CropPE(source, 0, None)
+        assert crop.start == 0
         assert crop.end is None
 
     def test_inputs(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(0, 100))
+        crop = CropPE(source, 0, (100) - (0))
         assert crop.inputs() == [source]
 
     def test_is_pure(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(0, 100))
+        crop = CropPE(source, 0, (100) - (0))
         assert crop.is_pure() is True
 
     def test_channel_count_passthrough(self):
         source = ConstantPE(1.0, channels=2)
-        crop = CropPE(source, Extent(0, 100))
+        crop = CropPE(source, 0, (100) - (0))
         assert crop.channel_count() == 2
 
     def test_repr(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(100, 200))
+        crop = CropPE(source, 100, (200) - (100))
         repr_str = repr(crop)
         assert "CropPE" in repr_str
         assert "ConstantPE" in repr_str
@@ -83,10 +83,10 @@ class TestCropPEBasics:
 
     def test_repr_with_none(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(None, 200))
+        crop = CropPE(source, 0, None)
         repr_str = repr(crop)
         assert "None" in repr_str
-        assert "200" in repr_str
+        assert "0" in repr_str
 
 
 class TestCropPEExtent:
@@ -94,7 +94,7 @@ class TestCropPEExtent:
 
     def test_extent_infinite_source(self):
         source = ConstantPE(1.0)  # Infinite extent
-        crop = CropPE(source, Extent(100, 200))
+        crop = CropPE(source, 100, (200) - (100))
 
         extent = crop.extent()
         assert extent.start == 100
@@ -102,7 +102,7 @@ class TestCropPEExtent:
 
     def test_extent_finite_source_fully_contains_crop(self):
         source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent (0, 1000)
-        crop = CropPE(source, Extent(100, 200))
+        crop = CropPE(source, 100, (200) - (100))
 
         extent = crop.extent()
         assert extent.start == 100
@@ -110,7 +110,7 @@ class TestCropPEExtent:
 
     def test_extent_finite_source_crop_extends_before(self):
         source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent (0, 1000)
-        crop = CropPE(source, Extent(-100, 200))
+        crop = CropPE(source, -100, (200) - (-100))
 
         # Intersection of (-100, 200) and (0, 1000) is (0, 200)
         extent = crop.extent()
@@ -119,7 +119,7 @@ class TestCropPEExtent:
 
     def test_extent_finite_source_crop_extends_after(self):
         source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent (0, 1000)
-        crop = CropPE(source, Extent(800, 1200))
+        crop = CropPE(source, 800, (1200) - (800))
 
         # Intersection of (800, 1200) and (0, 1000) is (800, 1000)
         extent = crop.extent()
@@ -128,7 +128,7 @@ class TestCropPEExtent:
 
     def test_extent_no_overlap(self):
         source = PiecewisePE([(0, 0.0), (100, 1.0)])  # Extent (0, 100)
-        crop = CropPE(source, Extent(200, 300))
+        crop = CropPE(source, 200, (300) - (200))
 
         # No intersection -> empty extent at boundary
         extent = crop.extent()
@@ -137,16 +137,16 @@ class TestCropPEExtent:
 
     def test_extent_none_start_finite_source(self):
         source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent (0, 1000)
-        crop = CropPE(source, Extent(None, 500))
+        crop = CropPE(source, 0, 500)
 
-        # Intersection of (None, 500) and (0, 1000) is (0, 500)
+        # Intersection of (0, 500) and (0, 1000) is (0, 500)
         extent = crop.extent()
         assert extent.start == 0
         assert extent.end == 500
 
     def test_extent_none_end_finite_source(self):
         source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent (0, 1000)
-        crop = CropPE(source, Extent(500, None))
+        crop = CropPE(source, 500, None)
 
         # Intersection of (500, None) and (0, 1000) is (500, 1000)
         extent = crop.extent()
@@ -155,25 +155,25 @@ class TestCropPEExtent:
 
     def test_extent_both_none_finite_source(self):
         source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent (0, 1000)
-        crop = CropPE(source, Extent(None, None))
+        crop = CropPE(source, 0, None)
 
-        # No constraint - returns source extent
+        # Open-ended duration - returns source extent
         extent = crop.extent()
         assert extent.start == 0
         assert extent.end == 1000
 
     def test_extent_none_start_infinite_source(self):
         source = ConstantPE(1.0)  # Infinite extent
-        crop = CropPE(source, Extent(None, 500))
+        crop = CropPE(source, 0, 500)
 
         # Crop end only
         extent = crop.extent()
-        assert extent.start is None
+        assert extent.start == 0
         assert extent.end == 500
 
     def test_extent_none_end_infinite_source(self):
         source = ConstantPE(1.0)  # Infinite extent
-        crop = CropPE(source, Extent(500, None))
+        crop = CropPE(source, 500, None)
 
         # Crop start only
         extent = crop.extent()
@@ -186,7 +186,7 @@ class TestCropPERender:
 
     def test_render_fully_inside_crop(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(100, 200))
+        crop = CropPE(source, 100, (200) - (100))
 
         renderer = NullRenderer(sample_rate=44100)
         renderer.set_source(crop)
@@ -201,7 +201,7 @@ class TestCropPERender:
 
     def test_render_fully_before_crop(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(100, 200))
+        crop = CropPE(source, 100, (200) - (100))
 
         renderer = NullRenderer(sample_rate=44100)
         renderer.set_source(crop)
@@ -216,7 +216,7 @@ class TestCropPERender:
 
     def test_render_fully_after_crop(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(100, 200))
+        crop = CropPE(source, 100, (200) - (100))
 
         renderer = NullRenderer(sample_rate=44100)
         renderer.set_source(crop)
@@ -231,7 +231,7 @@ class TestCropPERender:
 
     def test_render_spanning_crop_start(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(100, 200))
+        crop = CropPE(source, 100, (200) - (100))
 
         renderer = NullRenderer(sample_rate=44100)
         renderer.set_source(crop)
@@ -247,7 +247,7 @@ class TestCropPERender:
 
     def test_render_spanning_crop_end(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(100, 200))
+        crop = CropPE(source, 100, (200) - (100))
 
         renderer = NullRenderer(sample_rate=44100)
         renderer.set_source(crop)
@@ -263,7 +263,7 @@ class TestCropPERender:
 
     def test_render_spanning_entire_crop(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(100, 200))
+        crop = CropPE(source, 100, (200) - (100))
 
         renderer = NullRenderer(sample_rate=44100)
         renderer.set_source(crop)
@@ -279,7 +279,7 @@ class TestCropPERender:
 
     def test_render_with_identity_source(self):
         source = IdentityPE()
-        crop = CropPE(source, Extent(100, 110))
+        crop = CropPE(source, 100, (110) - (100))
 
         renderer = NullRenderer(sample_rate=44100)
         renderer.set_source(crop)
@@ -293,7 +293,7 @@ class TestCropPERender:
 
     def test_render_stereo(self):
         source = ConstantPE(0.5, channels=2)
-        crop = CropPE(source, Extent(0, 100))
+        crop = CropPE(source, 0, (100) - (0))
 
         renderer = NullRenderer(sample_rate=44100)
         renderer.set_source(crop)
@@ -308,12 +308,12 @@ class TestCropPERender:
         renderer.stop()
 
 
-class TestCropPENoneBounds:
-    """Test CropPE with None bounds (open-ended crops)."""
+class TestCropPEOpenEnded:
+    """Test CropPE with open-ended duration."""
 
-    def test_render_none_start(self):
+    def test_render_finite_with_start_zero(self):
         source = IdentityPE()
-        crop = CropPE(source, Extent(None, 100))
+        crop = CropPE(source, 0, 100)
 
         renderer = NullRenderer(sample_rate=44100)
         renderer.set_source(crop)
@@ -330,16 +330,16 @@ class TestCropPENoneBounds:
         expected[:10, :] = np.arange(90, 100, dtype=np.float32).reshape(-1, 1)
         np.testing.assert_array_equal(snippet.data, expected)
 
-        # Negative indices - still passes through (no lower bound)
+        # Negative indices - before crop, should be zeros
         snippet = crop.render(-50, 25)
-        expected = np.arange(-50, -25, dtype=np.float32).reshape(-1, 1)
+        expected = np.zeros((25, 1), dtype=np.float32)
         np.testing.assert_array_equal(snippet.data, expected)
 
         renderer.stop()
 
     def test_render_none_end(self):
         source = IdentityPE()
-        crop = CropPE(source, Extent(100, None))
+        crop = CropPE(source, 100, None)
 
         renderer = NullRenderer(sample_rate=44100)
         renderer.set_source(crop)
@@ -363,17 +363,18 @@ class TestCropPENoneBounds:
 
         renderer.stop()
 
-    def test_render_both_none(self):
+    def test_render_open_end(self):
         source = IdentityPE()
-        crop = CropPE(source, Extent(None, None))
+        crop = CropPE(source, 0, None)
 
         renderer = NullRenderer(sample_rate=44100)
         renderer.set_source(crop)
         renderer.start()
 
-        # Any range should pass through
+        # Ranges after start should pass through
         snippet = crop.render(-100, 200)
-        expected = np.arange(-100, 100, dtype=np.float32).reshape(-1, 1)
+        expected = np.zeros((200, 1), dtype=np.float32)
+        expected[100:, :] = np.arange(0, 100, dtype=np.float32).reshape(-1, 1)
         np.testing.assert_array_equal(snippet.data, expected)
 
         renderer.stop()
@@ -384,7 +385,7 @@ class TestCropPEWithOtherPEs:
 
     def test_crop_then_delay(self):
         source = IdentityPE()
-        cropped = CropPE(source, Extent(0, 10))
+        cropped = CropPE(source, 0, (10) - (0))
         delayed = DelayPE(cropped, delay=100)
 
         renderer = NullRenderer(sample_rate=44100)
@@ -402,14 +403,14 @@ class TestCropPEWithOtherPEs:
 
     def test_crop_infinite_sine(self):
         sine = SinePE(frequency=440.0)
-        burst = CropPE(sine, Extent(0, 1000))
+        burst = CropPE(sine, 0, (1000) - (0))
 
         assert burst.extent().start == 0
         assert burst.extent().end == 1000
 
     def test_crop_ramp(self):
         ramp = PiecewisePE([(0, 0.0), (100, 100.0)])
-        cropped = CropPE(ramp, Extent(25, 75))
+        cropped = CropPE(ramp, 25, (75) - (25))
 
         renderer = NullRenderer(sample_rate=44100)
         renderer.set_source(cropped)
@@ -425,8 +426,8 @@ class TestCropPEWithOtherPEs:
         source1 = ConstantPE(1.0)
         source2 = ConstantPE(2.0)
 
-        crop1 = CropPE(source1, Extent(0, 100))
-        crop2 = CropPE(source2, Extent(50, 150))
+        crop1 = CropPE(source1, 0, (100) - (0))
+        crop2 = CropPE(source2, 50, (150) - (50))
 
         mixed = MixPE(crop1, crop2)
 
@@ -455,7 +456,12 @@ class TestCropPEWithOtherPEs:
         reference = PiecewisePE([(0, 0.0), (500, 1.0)])
         source = ConstantPE(1.0)
 
-        cropped = CropPE(source, reference.extent())
+        ref_extent = reference.extent()
+        ref_start = 0 if ref_extent.start is None else ref_extent.start
+        ref_duration = None
+        if ref_extent.end is not None:
+            ref_duration = ref_extent.end - ref_start
+        cropped = CropPE(source, ref_start, ref_duration)
 
         assert cropped.extent().start == 0
         assert cropped.extent().end == 500
@@ -466,7 +472,7 @@ class TestCropPEIntegration:
 
     def test_full_render_cycle(self):
         source = ConstantPE(1.0)
-        crop = CropPE(source, Extent(0, 100))
+        crop = CropPE(source, 0, (100) - (0))
 
         renderer = NullRenderer(sample_rate=44100)
         renderer.set_source(crop)
@@ -478,23 +484,23 @@ class TestCropPEIntegration:
 
     def test_crop_chain(self):
         source = IdentityPE()
-        crop1 = CropPE(source, Extent(0, 1000))
-        crop2 = CropPE(crop1, Extent(100, 900))
-        crop3 = CropPE(crop2, Extent(200, 800))
+        crop1 = CropPE(source, 0, (1000) - (0))
+        crop2 = CropPE(crop1, 100, (900) - (100))
+        crop3 = CropPE(crop2, 200, (800) - (200))
 
         assert crop3.extent().start == 200
         assert crop3.extent().end == 800
 
     def test_trim_start_of_finite_source(self):
         source = PiecewisePE([(0, 0.0), (1000, 1.0)])
-        trimmed = CropPE(source, Extent(100, None))
+        trimmed = CropPE(source, 100, None)
 
         assert trimmed.extent().start == 100
         assert trimmed.extent().end == 1000
 
     def test_trim_end_of_finite_source(self):
         source = PiecewisePE([(0, 0.0), (1000, 1.0)])
-        trimmed = CropPE(source, Extent(None, 800))
+        trimmed = CropPE(source, 0, 800)
 
         assert trimmed.extent().start == 0
         assert trimmed.extent().end == 800
@@ -521,7 +527,7 @@ class TestCropPERegression:
         assert ramp.extent().end is None
         
         # Crop to finite window
-        cropped = CropPE(ramp, Extent(0, 200))
+        cropped = CropPE(ramp, 0, (200) - (0))
         
         self.renderer.set_source(cropped)
         
@@ -547,7 +553,7 @@ class TestCropPERegression:
         cropped to start before the ramp.
         """
         ramp = PiecewisePE([(0, 5.0), (100, 10.0)], extend_mode=ExtendMode.HOLD_BOTH)
-        cropped = CropPE(ramp, Extent(-50, 50))
+        cropped = CropPE(ramp, -50, (50) - (-50))
         
         self.renderer.set_source(cropped)
         
@@ -569,7 +575,7 @@ class TestCropPERegression:
         cropped to end after the ramp completes.
         """
         ramp = PiecewisePE([(0, 10.0), (100, 20.0)], extend_mode=ExtendMode.HOLD_BOTH)
-        cropped = CropPE(ramp, Extent(0, 150))
+        cropped = CropPE(ramp, 0, (150) - (0))
         
         self.renderer.set_source(cropped)
         
@@ -599,44 +605,36 @@ class TestCropPERegression:
         ramp = PiecewisePE([(0, 10.0), (100, 20.0)], extend_mode=ExtendMode.HOLD_BOTH)
         
         # Crop with finite bounds
-        cropped1 = CropPE(ramp, Extent(0, 200))
+        cropped1 = CropPE(ramp, 0, (200) - (0))
         assert cropped1.extent().start == 0
         assert cropped1.extent().end == 200
         
-        # Crop with None start
-        cropped2 = CropPE(ramp, Extent(None, 200))
-        assert cropped2.extent().start is None
+        # Crop with finite start
+        cropped2 = CropPE(ramp, 0, 200)
+        assert cropped2.extent().start == 0
         assert cropped2.extent().end == 200
         
         # Crop with None end
-        cropped3 = CropPE(ramp, Extent(0, None))
+        cropped3 = CropPE(ramp, 0, None)
         assert cropped3.extent().start == 0
         assert cropped3.extent().end is None
     
-    def test_crop_extent_none_start_request_before_crop_end(self):
+    def test_crop_extent_before_start_returns_hold_first(self):
         """
-        Regression test: CropPE with Extent(None, end) should pass through source
-        values when request is entirely before crop_end.
-        
-        This fixes the bug where PortamentoPE's first ramp was being cut off
-        because CropPE returned zeros instead of passing through source values
-        when crop_start=None and request was entirely before crop_end.
+        Regression test: before crop start with HOLD_FIRST returns the first value.
         """
         # IdentityPE outputs the sample index as the value
         source = IdentityPE()
         
-        # Crop with Extent(None, end) - extends infinitely backward
-        # This simulates the first ramp in PortamentoPE
-        crop = CropPE(source, Extent(None, 10000), extend_mode=ExtendMode.HOLD_FIRST)
+        # Crop to a finite window, hold first value before start.
+        crop = CropPE(source, 0, 10000, extend_mode=ExtendMode.HOLD_FIRST)
         
         self.renderer.set_source(crop)
         
-        # Render entirely before crop_end (request ends at -20000 + 1000 = -19000, which is < 10000)
-        # Should pass through IdentityPE's values, not return zeros
+        # Render before crop start - should hold first value (0.0)
         snippet = crop.render(-20000, 1000)
         
-        # Should get IdentityPE's values (sample indices), not zeros
-        expected = np.arange(-20000, -19000, dtype=np.float32).reshape(-1, 1)
+        expected = np.zeros((1000, 1), dtype=np.float32)
         np.testing.assert_array_equal(snippet.data, expected)
         
         # Also test rendering at positive time but still before crop_end

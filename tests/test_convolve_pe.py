@@ -29,7 +29,7 @@ class TestConvolvePEBasics:
 
     def test_filter_must_start_at_zero(self):
         src = ArrayPE([1, 2, 3, 4])
-        filt = CropPE(ArrayPE([1, 0, 0]), Extent(1, 3))  # start != 0
+        filt = CropPE(ArrayPE([1, 0, 0]), 1, (3) - (1))  # start != 0
         pe = ConvolvePE(src, filt)
         with pytest.raises(ValueError):
             pe.extent()

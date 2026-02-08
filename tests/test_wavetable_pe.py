@@ -316,7 +316,7 @@ class TestWavetablePEOutOfBounds:
         wavetable = IdentityPE()
         # Create a wavetable PE that limits to 10 samples
         from pygmu2 import CropPE
-        cropped_wavetable = CropPE(wavetable, Extent(0, 10))
+        cropped_wavetable = CropPE(wavetable, 0, (10) - (0))
         
         indexer = ConstantPE(12.0)  # Should wrap to 12 % 10 = 2
         
@@ -339,7 +339,7 @@ class TestWavetablePEOutOfBounds:
         """WRAP mode: handle negative indices."""
         from pygmu2 import CropPE
         wavetable = IdentityPE()
-        cropped_wavetable = CropPE(wavetable, Extent(0, 10))
+        cropped_wavetable = CropPE(wavetable, 0, (10) - (0))
         
         indexer = ConstantPE(-2.0)  # Should wrap to (-2 % 10) = 8
         
@@ -372,7 +372,7 @@ class TestWavetablePEArbitraryExtent:
         # Create wavetable starting at sample 100
         base = IdentityPE()  # Values = sample index
         delayed = DelayPE(base, delay=100)  # Now extent is (100, None)
-        wavetable = CropPE(delayed, Extent(100, 200))  # Extent: (100, 200)
+        wavetable = CropPE(delayed, 100, (200) - (100))  # Extent: (100, 200)
         
         # Index into the middle: 150
         indexer = ConstantPE(150.0)
@@ -415,7 +415,7 @@ class TestWavetablePEEdgeCases:
         """Test interpolation right at boundary of wavetable."""
         from pygmu2 import CropPE
         
-        wavetable = CropPE(IdentityPE(), Extent(0, 10))  # [0, 1, ..., 9]
+        wavetable = CropPE(IdentityPE(), 0, (10) - (0))  # [0, 1, ..., 9]
         indexer = ConstantPE(8.5)  # Between 8 and 9
         
         wt_pe = WavetablePE(wavetable, indexer)

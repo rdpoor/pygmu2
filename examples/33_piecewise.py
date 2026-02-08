@@ -44,7 +44,7 @@ DURATION_SAMPLES = SR * 8
 
 
 def _play(pe, duration: int = DURATION_SAMPLES) -> None:
-    out = CropPE(pe, Extent(0, duration))
+    out = CropPE(pe, 0, (duration) - (0))
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(out)
     with renderer:

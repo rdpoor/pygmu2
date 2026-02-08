@@ -71,7 +71,7 @@ def demo_explicit_durations():
     
     # Calculate total duration
     total_duration = quarter_note * 3
-    output = CropPE(output, Extent(0, total_duration))
+    output = CropPE(output, 0, total_duration)
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(output)
@@ -122,7 +122,7 @@ def demo_mixed_format():
     
     # Play for 1.5 seconds
     total_duration = half_second * 3
-    output = CropPE(output, Extent(0, total_duration))
+    output = CropPE(output, 0, total_duration)
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(output)
@@ -167,7 +167,7 @@ def demo_staccato_pattern():
     
     # Play full sequence
     total_duration = beat * len(notes)
-    output = CropPE(output, Extent(0, total_duration))
+    output = CropPE(output, 0, total_duration)
     
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(output)

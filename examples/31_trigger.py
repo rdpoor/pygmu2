@@ -39,7 +39,7 @@ def _make_trigger_sweep(sample_rate: int, duration_samples: int):
 
 
 def _play(pe, duration_samples: int, sample_rate: int) -> None:
-    out = CropPE(pe, Extent(0, duration_samples))
+    out = CropPE(pe, 0, (duration_samples) - (0))
     renderer = AudioRenderer(sample_rate=sample_rate)
     renderer.set_source(out)
     with renderer:

@@ -52,7 +52,7 @@ def demo_pwm_rectangle_naive():
 
     osc_stream = FunctionGenPE(frequency=110.0, duty_cycle=duty_stream, waveform="rectangle")
     out_stream = GainPE(osc_stream, gain=0.25)
-    out_stream = CropPE(out_stream, Extent(0, dur))
+    out_stream = CropPE(out_stream, 0, (dur) - (0))
 
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(out_stream)
@@ -74,7 +74,7 @@ def demo_morph_naive():
 
     osc_stream = FunctionGenPE(frequency=220.0, duty_cycle=duty_stream, waveform="sawtooth")
     out_stream = GainPE(osc_stream, gain=0.35)
-    out_stream = CropPE(out_stream, Extent(0, dur))
+    out_stream = CropPE(out_stream, 0, (dur) - (0))
 
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(out_stream)
@@ -109,7 +109,7 @@ def demo_ab_high_pitch():
     right_stream = TransformPE(aa_stream, func=lambda x: np.column_stack([np.zeros_like(x[:, 0]), x[:, 0]]), name="pan_right")
 
     stereo_stream = GainPE(MixPE(left_stream, right_stream), gain=0.2)
-    stereo_stream = CropPE(stereo_stream, Extent(0, dur))
+    stereo_stream = CropPE(stereo_stream, 0, (dur) - (0))
 
     renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
     renderer.set_source(stereo_stream)
