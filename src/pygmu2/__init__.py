@@ -28,6 +28,7 @@ from pygmu2.blit_saw_pe import BlitSawPE
 from pygmu2.compressor_pe import CompressorPE, LimiterPE, GatePE
 from pygmu2.constant_pe import ConstantPE
 from pygmu2.crop_pe import CropPE
+from pygmu2.set_extent_pe import SetExtentPE
 from pygmu2.delay_pe import DelayPE
 from pygmu2.dirac_pe import DiracPE
 from pygmu2.dynamics_pe import DynamicsPE, DynamicsMode
@@ -40,6 +41,7 @@ from pygmu2.loop_pe import LoopPE
 from pygmu2.meltysynth_pe import MeltysynthPE
 from pygmu2.midi_in_pe import MidiInPE
 from pygmu2.random_pe import RandomPE, RandomMode
+from pygmu2.noise_pe import NoisePE, NoiseMode
 from pygmu2.random_select_pe import RandomSelectPE
 from pygmu2.reset_pe import ResetPE
 from pygmu2.sine_pe import SinePE
@@ -150,6 +152,7 @@ __all__ = [
     "CompressorPE",
     "ConstantPE",
     "CropPE",
+    "SetExtentPE",
     "DelayPE",
     "DiracPE",
     "DynamicsPE",
@@ -174,6 +177,7 @@ __all__ = [
     "GoogleDriveAssetLoader",
     "GithubUserContentAssetLoader",
     "RandomPE",
+    "NoisePE",
     "RandomSelectPE",
     "ResetPE",
     "SlicePE",
@@ -204,6 +208,7 @@ __all__ = [
     "InterpolationMode",
     "OutOfBoundsMode",
     "RandomMode",
+    "NoiseMode",
     "TriggerMode",
     "SequenceMode",
     "WindowMode",

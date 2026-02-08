@@ -12,6 +12,8 @@ from pygmu2 import (
     AdsrPE,
     ArrayPE,
     ConstantPE,
+    CropPE,
+    Extent,
     NullRenderer,
 )
 
@@ -65,6 +67,20 @@ class TestAdsrPEBasics:
         gate = ConstantPE(1.0)
         adsr = AdsrPE(gate)
         assert adsr.channel_count() == 1
+
+    def test_extent_finite_gate_includes_release(self):
+        gate = CropPE(ConstantPE(1.0), 0, 100)
+        adsr = AdsrPE(gate, release_samples=20)
+        extent = adsr.extent()
+        assert extent.start == 0
+        assert extent.end == 120
+
+    def test_extent_infinite_gate_is_infinite(self):
+        gate = ConstantPE(1.0)
+        adsr = AdsrPE(gate, release_samples=20)
+        extent = adsr.extent()
+        assert extent.start is None
+        assert extent.end is None
     
     def test_state_reset_on_start(self):
         """Test that state resets on on_start()."""

@@ -176,8 +176,17 @@ class AdsrPE(ProcessingElement):
         return 1  # Default to mono
     
     def _compute_extent(self) -> Extent:
-        """Return infinite extent (gate-driven, no fixed duration)."""
-        return Extent(None, None)
+        """
+        Return ADSR extent based on gate.
+
+        If the gate extent is finite, extend its end by the release time so the
+        tail is included. If the gate extent is infinite or unknown, return an
+        infinite extent.
+        """
+        gate_extent = self._gate.extent()
+        if gate_extent.start is None or gate_extent.end is None:
+            return Extent(None, None)
+        return Extent(gate_extent.start, gate_extent.end + self._release)
     
     def _reset_state(self) -> None:
         """Reset ADSR state machine."""

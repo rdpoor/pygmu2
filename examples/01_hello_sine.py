@@ -47,10 +47,10 @@ sine_g_stream = SinePE(frequency=pitch_to_freq(G4), amplitude=0.3)
 mixed_stream = MixPE(sine_c_stream, sine_e_stream, sine_g_stream)
 
 # Apply overall gain (reduce to avoid clipping)
-gained_stream = GainPE(mixed_stream, gain=0.5)
+gained_stream = GainPE(mixed_stream, gain=0.3)
 
 # Crop to desired duration
-output_stream = CropPE(gained_stream, 0, (DURATION_SAMPLES) - (0))
+output_stream = CropPE(gained_stream, 0, DURATION_SAMPLES)
 
 # Create audio renderer and play
 print(f"Playing for {DURATION_SECONDS} seconds...", flush=True)
