@@ -30,7 +30,8 @@ class RandomSelectPE(ProcessingElement):
 
     Args:
         trigger: Control PE (trigger signal, mono channel 0).
-        inputs: List of candidate input PEs to choose from.
+        inputs: List of candidate input PEs to choose from. You may also pass
+            inputs as positional arguments: RandomSelectPE(trigger, pe1, pe2, ...).
         weights: Optional list of weights (same length as inputs), using
             random.choices semantics.
         seed: Optional seed for deterministic selection.
@@ -40,18 +41,33 @@ class RandomSelectPE(ProcessingElement):
     def __init__(
         self,
         trigger: ProcessingElement,
-        inputs: List[ProcessingElement],
+        inputs: List[ProcessingElement] | ProcessingElement | None = None,
+        *more_inputs: ProcessingElement,
         weights: Optional[Sequence[float]] = None,
         seed: Optional[int] = None,
         trigger_mode: TriggerMode = TriggerMode.RETRIGGER,
     ):
-        if not inputs:
+        if more_inputs:
+            if inputs is None or isinstance(inputs, (list, tuple)):
+                raise ValueError(
+                    "RandomSelectPE: pass either a single inputs list/tuple or positional inputs"
+                )
+            inputs_list = [inputs, *more_inputs]
+        else:
+            if inputs is None:
+                inputs_list = []
+            elif isinstance(inputs, (list, tuple)):
+                inputs_list = list(inputs)
+            else:
+                inputs_list = [inputs]
+
+        if not inputs_list:
             raise ValueError("RandomSelectPE requires at least one input")
-        if weights is not None and len(weights) != len(inputs):
+        if weights is not None and len(weights) != len(inputs_list):
             raise ValueError("weights must have the same length as inputs")
 
         self._trigger = trigger
-        self._inputs = list(inputs)
+        self._inputs = list(inputs_list)
         self._weights = list(weights) if weights is not None else None
         self._rng = random.Random(seed)
         self._trigger_mode = trigger_mode

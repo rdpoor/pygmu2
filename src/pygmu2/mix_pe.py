@@ -32,7 +32,8 @@ class MixPE(ProcessingElement):
     - The union of all input extents (covers the full range of all inputs)
     
     Args:
-        *inputs: Two or more ProcessingElements to mix together
+        *inputs: Two or more ProcessingElements to mix together. You may also
+            pass a single list/tuple of inputs.
     
     Raises:
         ValueError: If fewer than 2 inputs provided
@@ -48,9 +49,12 @@ class MixPE(ProcessingElement):
     """
     
     def __init__(self, *inputs: ProcessingElement):
+        if len(inputs) == 1 and isinstance(inputs[0], (list, tuple)):
+            inputs = tuple(inputs[0])
+
         if len(inputs) < 2:
             raise ValueError("MixPE requires at least 2 inputs")
-        
+
         self._inputs = list(inputs)
     
     def inputs(self) -> list[ProcessingElement]:

@@ -8,7 +8,9 @@ MIT License
 
 import numpy as np
 import pytest
+from typing import Optional
 
+import pygmu2 as pg
 from pygmu2 import (
     ArrayPE,
     ConvolvePE,
@@ -16,6 +18,8 @@ from pygmu2 import (
     CropPE,
     Extent,
     NullRenderer,
+    ProcessingElement,
+    Snippet,
 )
 
 
@@ -180,3 +184,38 @@ class TestConvolvePEIrEnergyNorm:
         filt = ArrayPE(h)
         assert ConvolvePE.ir_energy_norm(filt) == pytest.approx(2.0, rel=1e-5)
 
+
+class _CountingPE(ProcessingElement):
+    def __init__(self, source: ProcessingElement):
+        self._source = source
+        self.render_calls = 0
+
+    def inputs(self) -> list[ProcessingElement]:
+        return [self._source]
+
+    def is_pure(self) -> bool:
+        return False
+
+    def channel_count(self) -> Optional[int]:
+        return self._source.channel_count()
+
+    def _compute_extent(self) -> Extent:
+        return self._source.extent()
+
+    def _render(self, start: int, duration: int) -> Snippet:
+        self.render_calls += 1
+        return self._source.render(start, duration)
+
+
+class TestReverbPECaching:
+    def setup_method(self):
+        self.renderer = NullRenderer(sample_rate=10_000)
+
+    def test_reverb_uses_single_source_pull(self):
+        src = _CountingPE(ArrayPE([1.0, 2.0, 3.0, 4.0]))
+        ir = ArrayPE([1.0])
+        pe = pg.ReverbPE(src, ir, mix=0.5, normalize_ir=False)
+        self.renderer.set_source(pe)
+
+        _ = pe.render(0, 4)
+        assert src.render_calls == 1

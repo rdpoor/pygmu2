@@ -118,6 +118,25 @@ render(start, duration) called on root PE
 
 Each `render()` call returns a `Snippet` containing exactly `duration` samples.
 
+## API Conventions
+
+### Variable-Input PEs
+
+For PEs that take a variable number of inputs (e.g., `MixPE`, `SequencePE`,
+`RandomSelectPE`), we standardize on:
+
+- Preferred usage: pass inputs as positional arguments (`*args`).
+  - `MixPE(a, b, c)`
+  - `SequencePE((pe1, 0), (pe2, 44100))`
+  - `RandomSelectPE(trigger, pe1, pe2, weights=[...])`
+- Also supported: pass a single list/tuple of inputs.
+  - `MixPE([a, b, c])`
+  - `SequencePE([(pe1, 0), (pe2, 44100)])`
+  - `RandomSelectPE(trigger, inputs=[pe1, pe2])`
+
+When both forms could apply, constructors should reject ambiguous mixes
+(e.g., providing both a list and positional inputs).
+
 ## Immutability Contract
 
 Processing elements must treat input `Snippet` buffers as immutable.

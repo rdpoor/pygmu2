@@ -17,6 +17,7 @@ from typing import Optional, Union
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.convolve_pe import ConvolvePE
+from pygmu2.cache_pe import CachePE
 from pygmu2.gain_pe import GainPE
 from pygmu2.mix_pe import MixPE
 from pygmu2.constant_pe import ConstantPE
@@ -57,7 +58,8 @@ class ReverbPE(ProcessingElement):
         normalize_ir: bool = True,
         fft_size: Optional[int] = None,
     ):
-        self._source = source
+        # Cache the source to avoid double-pull in dry/wet paths
+        self._source = CachePE(source)
         self._ir = ir
         self._mix = mix
         self._normalize_ir = bool(normalize_ir)

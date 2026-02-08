@@ -45,7 +45,13 @@ class SequencePE(ProcessingElement):
         *input_start_pairs: Tuple[ProcessingElement, int],
         mode: SequenceMode | str = SequenceMode.OVERLAP,
     ):
-        if len(input_start_pairs) == 1 and isinstance(input_start_pairs[0], (list, tuple)):
+        if len(input_start_pairs) == 2 and isinstance(
+            input_start_pairs[0], ProcessingElement
+        ):
+            # Allow SequencePE(pe, start) as a single pair.
+            pairs = [(input_start_pairs[0], input_start_pairs[1])]
+        elif len(input_start_pairs) == 1 and isinstance(input_start_pairs[0], (list, tuple)):
+            # Allow SequencePE([(pe, start), ...]) or SequencePE((pe, start))
             pairs = list(input_start_pairs[0])
         else:
             pairs = list(input_start_pairs)

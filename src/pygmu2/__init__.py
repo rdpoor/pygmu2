@@ -48,6 +48,7 @@ from pygmu2.mix_pe import MixPE
 from pygmu2.comb_pe import CombPE
 from pygmu2.convolve_pe import ConvolvePE
 from pygmu2.reverb_pe import ReverbPE
+from pygmu2.cache_pe import CachePE
 from pygmu2.audio_library import AudioLibrary
 from pygmu2.asset_manager import (
     AssetManager,
@@ -167,6 +168,7 @@ __all__ = [
     "CombPE",
     "ConvolvePE",
     "ReverbPE",
+    "CachePE",
     "AudioLibrary",
     "AssetManager",
     "GoogleDriveAssetLoader",
