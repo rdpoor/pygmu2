@@ -63,7 +63,7 @@ class SinePE(ProcessingElement):
         # Phase accumulator for non-pure operation (FM synthesis)
         # Stores the accumulated phase at the END of the last rendered chunk
         self._accumulated_phase: float = 0.0
-        self._last_render_end: Optional[int] = None
+        self._phase_initialized: bool = False
     
     @property
     def frequency(self) -> Union[float, ProcessingElement]:
@@ -109,12 +109,12 @@ class SinePE(ProcessingElement):
     def _on_start(self) -> None:
         """Reset phase accumulator on start."""
         self._accumulated_phase = 0.0
-        self._last_render_end = None
+        self._phase_initialized = False
 
     def _on_stop(self) -> None:
         """Reset phase accumulator on stop."""
         self._accumulated_phase = 0.0
-        self._last_render_end = None
+        self._phase_initialized = False
     
     def _render(self, start: int, duration: int) -> Snippet:
         """
@@ -201,15 +201,14 @@ class SinePE(ProcessingElement):
         phase_increment = 2.0 * np.pi * frequency / self.sample_rate
         
         # Determine starting phase
-        if self._last_render_end is None or start != self._last_render_end:
-            # First render or non-contiguous: start from initial phase
-            # For non-contiguous, we could try to compute correct phase,
-            # but that would require rendering all previous frequency values.
-            # Instead, we accept a potential discontinuity (user's responsibility).
+        # The base class enforces contiguous rendering for non-pure PEs,
+        # so we only need to detect the first render to set initial phase.
+        if not self._phase_initialized:
             if isinstance(self._phase, (int, float)):
                 initial_phase = float(self._phase)
             else:
                 initial_phase = 0.0
+            self._phase_initialized = True
         else:
             # Contiguous render: continue from accumulated phase
             initial_phase = self._accumulated_phase
@@ -227,9 +226,8 @@ class SinePE(ProcessingElement):
             # but for stateful case with PE freq, we add it here if it's a constant)
             pass  # Already handled in initial_phase
         
-        # Update state for next render
+        # Update accumulated phase for next render
         self._accumulated_phase = float(cumulative_phase[-1, 0])
-        self._last_render_end = start + duration
         
         return cumulative_phase
     

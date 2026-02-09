@@ -308,25 +308,7 @@ class PortamentoPE(SourcePE):
     def _render(self, start: int, duration: int) -> Snippet:
         """Render portamento pitch values."""
         if self._sequence_pe is not None:
-            snippet = self._sequence_pe.render(start, duration)
-            # Debug: log sample values at key points
-            if duration > 0:
-                import numpy as np
-                # Log first, middle, and last sample
-                first_pitch = snippet.data[0, 0] if snippet.data.shape[0] > 0 else 0
-                mid_idx = duration // 2
-                mid_pitch = snippet.data[mid_idx, 0] if mid_idx < snippet.data.shape[0] else 0
-                last_pitch = snippet.data[-1, 0] if snippet.data.shape[0] > 0 else 0
-                
-                from pygmu2.conversions import pitch_to_freq
-                logger.debug(
-                    f"PortamentoPE._render: start={start}, duration={duration}, "
-                    f"first_pitch={first_pitch:.2f} (freq={pitch_to_freq(first_pitch):.2f} Hz), "
-                    f"mid_pitch={mid_pitch:.2f} (freq={pitch_to_freq(mid_pitch):.2f} Hz), "
-                    f"last_pitch={last_pitch:.2f} (freq={pitch_to_freq(last_pitch):.2f} Hz), "
-                    f"data_shape={snippet.data.shape}"
-                )
-            return snippet
+            return self._sequence_pe.render(start, duration)
         return Snippet.from_zeros(start, duration, self._channels)
     
     def __repr__(self) -> str:

@@ -50,8 +50,7 @@ class WavReaderPE(SourcePE):
     def __init__(self, path: str):
         self._path = path
         
-        # File info (populated on first access or on_start)
-        self._file: Optional[sf.SoundFile] = None
+        # File info (populated lazily on first access)
         self._frame_count: Optional[int] = None
         self._channels: Optional[int] = None
         self._file_sample_rate: Optional[int] = None
@@ -87,22 +86,16 @@ class WavReaderPE(SourcePE):
                 self._file_sample_rate = f.samplerate
     
     def _on_start(self) -> None:
-        """Open the WAV file for reading."""
-        self._file = sf.SoundFile(self._path, mode='r')
-        self._frame_count = self._file.frames
-        self._channels = self._file.channels
-        self._file_sample_rate = self._file.samplerate
+        """Ensure file metadata is loaded at start."""
+        self._ensure_file_info()
         logger.info(
             f"Opened {self._path}: {self._frame_count} frames, "
             f"{self._channels} channels, {self._file_sample_rate} Hz"
         )
     
     def _on_stop(self) -> None:
-        """Close the WAV file."""
-        if self._file is not None:
-            self._file.close()
-            self._file = None
-            logger.info(f"Closed {self._path}")
+        """Log file close (no file handle to release)."""
+        logger.info(f"Stopped reading {self._path}")
     
     def _render(self, start: int, duration: int) -> Snippet:
         """
@@ -127,22 +120,17 @@ class WavReaderPE(SourcePE):
         overlap_end = min(start + duration, self._frame_count)
         
         if overlap_start < overlap_end:
-            # There is data to read
-            read_count = overlap_end - overlap_start
-            
-            # Seek to position and read
-            if self._file is not None:
-                # File is open (between on_start/on_stop)
-                self._file.seek(overlap_start)
-                file_data = self._file.read(read_count, dtype='float32')
-            else:
-                # File not open - read directly (less efficient)
-                file_data, _ = sf.read(
-                    self._path,
-                    start=overlap_start,
-                    stop=overlap_end,
-                    dtype='float32'
-                )
+            # Always use the stateless sf.read() with explicit start/stop.
+            # WavReaderPE is pure (multiple sinks allowed), so interleaved
+            # render() calls from different consumers must not interfere.
+            # The seek+read pattern on a shared SoundFile handle is NOT safe
+            # for this because seek() mutates the file position.
+            file_data, _ = sf.read(
+                self._path,
+                start=overlap_start,
+                stop=overlap_end,
+                dtype='float32',
+            )
             
             # Handle mono files (soundfile returns 1D for mono)
             if file_data.ndim == 1:

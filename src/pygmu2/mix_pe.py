@@ -12,9 +12,6 @@ from typing import Optional
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
-from pygmu2.logger import get_logger
-
-logger = get_logger(__name__)
 
 
 class MixPE(ProcessingElement):
@@ -92,33 +89,10 @@ class MixPE(ProcessingElement):
             channels = self.channel_count() or 1
             return Snippet.from_zeros(start, duration, channels)
 
-        # Debug: log what each input is contributing
-        if len(rendered) > 1 and duration > 0:
-            for i, (inp, snippet) in enumerate(rendered):
-                first_val = snippet.data[0, 0] if snippet.data.shape[0] > 0 else 0
-                mid_idx = duration // 2
-                mid_val = snippet.data[mid_idx, 0] if mid_idx < snippet.data.shape[0] else 0
-                last_val = snippet.data[-1, 0] if snippet.data.shape[0] > 0 else 0
-                logger.debug(
-                    f"MixPE: Input {i} ({inp.__class__.__name__}) at start={start}: "
-                    f"first={first_val:.2f}, mid={mid_val:.2f}, last={last_val:.2f}"
-                )
-        
         # Sum all data arrays
         result = rendered[0][1].data.copy()
         for _, snippet in rendered[1:]:
             result += snippet.data
-        
-        # Debug: log the result
-        if len(rendered) > 1 and duration > 0:
-            first_result = result[0, 0] if result.shape[0] > 0 else 0
-            mid_idx = duration // 2
-            mid_result = result[mid_idx, 0] if mid_idx < result.shape[0] else 0
-            last_result = result[-1, 0] if result.shape[0] > 0 else 0
-            logger.debug(
-                f"MixPE: Result at start={start}: "
-                f"first={first_result:.2f}, mid={mid_result:.2f}, last={last_result:.2f}"
-            )
         
         return Snippet(start, result)
     
