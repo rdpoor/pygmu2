@@ -15,8 +15,6 @@ from pygmu2 import (
     GainPE,
     TransformPE,
     CropPE,
-    AudioRenderer,
-    Extent,
     pitch_to_freq,
 )
 import pygmu2 as pg
@@ -53,12 +51,7 @@ print(f"\nPart 1: Clean signal (no clipping) - {DURATION_SECONDS}s", flush=True)
 clean = GainPE(source, gain=0.5)
 clean_out = CropPE(clean, 0, (DURATION_SAMPLES) - (0))
 
-renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-renderer.set_source(clean_out)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(clean_out, SAMPLE_RATE)
 
 # --- Part 2: Light saturation ---
 print(f"\nPart 2: Light saturation (1.5x drive into tanh) - {DURATION_SECONDS}s", flush=True)
@@ -70,12 +63,7 @@ saturated_light = TransformPE(driven_light, func=np.tanh, name="tanh")
 output_light = GainPE(saturated_light, gain=0.6)
 output_light = CropPE(output_light, 0, (DURATION_SAMPLES) - (0))
 
-renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-renderer.set_source(output_light)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(output_light, SAMPLE_RATE)
 
 # --- Part 3: Heavy saturation ---
 print(f"\nPart 3: Heavy saturation (4x drive into tanh) - {DURATION_SECONDS}s", flush=True)
@@ -85,12 +73,7 @@ saturated_heavy = TransformPE(driven_heavy, func=np.tanh, name="tanh")
 output_heavy = GainPE(saturated_heavy, gain=0.5)
 output_heavy = CropPE(output_heavy, 0, (DURATION_SAMPLES) - (0))
 
-renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-renderer.set_source(output_heavy)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(output_heavy, SAMPLE_RATE)
 
 # --- Part 4: Asymmetric clipping (more "character") ---
 print(f"\nPart 4: Asymmetric clipping - {DURATION_SECONDS}s", flush=True)
@@ -110,11 +93,6 @@ saturated_asym = TransformPE(driven_asym, func=asymmetric_clip, name="asymmetric
 output_asym = GainPE(saturated_asym, gain=0.6)
 output_asym = CropPE(output_asym, 0, (DURATION_SAMPLES) - (0))
 
-renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-renderer.set_source(output_asym)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(output_asym, SAMPLE_RATE)
 
 print("\nDone!", flush=True)

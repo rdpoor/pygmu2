@@ -30,12 +30,6 @@ def _build_sources():
 
     return choir, choir_down, choir_up, sample_rate
 
-def _play(source, sample_rate):
-    renderer = pg.AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(pg.CropPE(source, 0, int(3.5 * sample_rate)))
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
 
 def demo_overlap():
     print("SequencePE with mode=OVERLAP")
@@ -48,7 +42,7 @@ def demo_overlap():
         (choir_up, int(2.0 * sample_rate)),
         mode=pg.SequenceMode.OVERLAP,
     )
-    _play(seq, sample_rate)
+    pg.play(pg.CropPE(seq, 0, int(3.5 * sample_rate)), sample_rate)
 
 
 def demo_non_overlap():
@@ -62,7 +56,7 @@ def demo_non_overlap():
         (choir_up, int(2.0 * sample_rate)),
         mode=pg.SequenceMode.NON_OVERLAP,
     )
-    _play(seq, sample_rate)
+    pg.play(pg.CropPE(seq, 0, int(3.5 * sample_rate)), sample_rate)
 
 
 if __name__ == "__main__":

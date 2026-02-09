@@ -11,7 +11,6 @@ MIT License
 """
 
 from pygmu2 import (
-    AudioRenderer,
     CropPE,
     Extent,
     ExtendMode,
@@ -43,15 +42,6 @@ SEGMENTS = [
 DURATION_SAMPLES = SR * 8
 
 
-def _play(pe, duration: int = DURATION_SAMPLES) -> None:
-    out = CropPE(pe, 0, (duration) - (0))
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(out)
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
-
 def _make_triad(transition_type: TransitionType):
     """Piecewise MIDI pitch -> frequency -> sawtooth; gain down for comfort."""
     pitch_pe = PiecewisePE(
@@ -67,31 +57,31 @@ def _make_triad(transition_type: TransitionType):
 def demo_step():
     """Step: instant pitch changes (no glide)."""
     print("=== Piecewise 33: STEP (instant pitch changes) ===")
-    _play(_make_triad(TransitionType.STEP))
+    pg.play(CropPE(_make_triad(TransitionType.STEP), 0, DURATION_SAMPLES), SAMPLE_RATE)
 
 
 def demo_linear():
     """Linear: constant-rate glide between notes."""
     print("=== Piecewise 33: LINEAR (constant glide between notes) ===")
-    _play(_make_triad(TransitionType.LINEAR))
+    pg.play(CropPE(_make_triad(TransitionType.LINEAR), 0, DURATION_SAMPLES), SAMPLE_RATE)
 
 
 def demo_exponential():
     """Exponential: pitch glides with exponential curve."""
     print("=== Piecewise 33: EXPONENTIAL (exponential pitch glide) ===")
-    _play(_make_triad(TransitionType.EXPONENTIAL))
+    pg.play(CropPE(_make_triad(TransitionType.EXPONENTIAL), 0, DURATION_SAMPLES), SAMPLE_RATE)
 
 
 def demo_sigmoid():
     """Sigmoid: S-curve glide (slow at note boundaries)."""
     print("=== Piecewise 33: SIGMOID (S-curve glide) ===")
-    _play(_make_triad(TransitionType.SIGMOID))
+    pg.play(CropPE(_make_triad(TransitionType.SIGMOID), 0, DURATION_SAMPLES), SAMPLE_RATE)
 
 
 def demo_constant_power():
     """Constant-power: sin/cos-style curve between notes."""
     print("=== Piecewise 33: CONSTANT_POWER (sin/cos-style glide) ===")
-    _play(_make_triad(TransitionType.CONSTANT_POWER))
+    pg.play(CropPE(_make_triad(TransitionType.CONSTANT_POWER), 0, DURATION_SAMPLES), SAMPLE_RATE)
 
 
 def demo_all():

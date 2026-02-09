@@ -15,11 +15,9 @@ MIT License
 """
 
 from pygmu2 import (
-    AudioRenderer,
     SinePE,
     MixPE,
     CropPE,
-    Extent,
     pitch_to_freq,
     EqualTemperament,
     JustIntonation,
@@ -251,11 +249,7 @@ def play_chord_comparison(chord_name, notes):
     print("Listen for the differences in consonance and beating.")
     print(f"{'='*60}\n")
     
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(mixed)
-    renderer.start()
-    renderer.play_extent()
-    renderer.stop()
+    pg.play(mixed, sample_rate=SAMPLE_RATE)
     
     print("\n✅ Playback complete!\n")
 
@@ -336,11 +330,7 @@ def demo_reference_frequency():
         print(f"\nPlaying {total_duration:.1f} seconds...")
         print("Listen for the subtle pitch difference.\n")
         
-        renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-        renderer.set_source(mixed)
-        renderer.start()
-        renderer.play_extent()
-        renderer.stop()
+        pg.play(mixed, sample_rate=SAMPLE_RATE)
         
         print("\n✅ Playback complete!\n")
     

@@ -37,6 +37,14 @@ def test_set_extent_open_start():
     assert extent.end == 5
 
 
+def test_set_extent_extends_beyond_source():
+    source = ConstantPE(1.0)
+    pe = SetExtentPE(source, 0, 10)
+    extent = pe.extent()
+    assert extent.start == 0
+    assert extent.end == 10
+
+
 def test_set_extent_render_open_start_passthrough():
     source = IdentityPE()
     pe = SetExtentPE(source, None, 5)
@@ -68,4 +76,3 @@ def test_set_extent_hold_first_before_start():
     np.testing.assert_array_equal(snippet.data, expected)
 
     r.stop()
-

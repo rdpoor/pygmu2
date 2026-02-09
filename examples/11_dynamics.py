@@ -19,7 +19,6 @@ sys.path.insert(0, 'src')
 from pathlib import Path
 
 from pygmu2 import (
-    AudioRenderer,
     BlitSawPE,
     ConstantPE,
     CropPE,
@@ -91,10 +90,11 @@ def demo_sidechain_ducking():
     print("Listen for the 'pumping' effect on the bass.")
     print()
     
-    with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(mix_stream)
-        renderer.start()
-        renderer.play_range(0, bass_stream.extent().end)
+    extent = bass_stream.extent()
+    pg.play(
+        CropPE(mix_stream, extent.start or 0, extent.end - (extent.start or 0)),
+        sample_rate=sample_rate,
+    )
     print()
 
 
@@ -139,10 +139,7 @@ def demo_sidechain_ducking_voice():
     print("Music ducks during voice portions.")
     print()
     
-    with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(mix_stream)
-        renderer.start()
-        renderer.play_extent()
+    pg.play(mix_stream, sample_rate)
     print()
 
 
@@ -176,10 +173,7 @@ def demo_expander():
     print("Quiet parts become even quieter.")
     print()
     
-    with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(expanded_stream)
-        renderer.start()
-        renderer.play_extent()
+    pg.play(expanded_stream, sample_rate)
     print()
 
 
@@ -220,10 +214,7 @@ def demo_custom_envelope():
     print("Creates rhythmic 'breathing' effect")
     print()
     
-    with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(rhythmic_stream)
-        renderer.start()
-        renderer.play_extent()
+    pg.play(rhythmic_stream, sample_rate)
     print()
 
 

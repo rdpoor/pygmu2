@@ -12,7 +12,6 @@ MIT License
 from pathlib import Path
 
 from pygmu2 import (
-    AudioRenderer,
     CropPE,
     DelayPE,
     Extent,
@@ -50,17 +49,11 @@ def demo_channel_conversion():
     # Convert mono to stereo
     stereo_output = SpatialPE(mono_source, method=SpatialAdapter(channels=2))
     
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(stereo_output)
-    
     extent = stereo_output.extent()
     duration_samples = extent.end - extent.start
     duration_seconds = duration_samples / SAMPLE_RATE
     print(f"Playing {duration_seconds:.2f} seconds of mono→stereo conversion...", flush=True)
-    
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
+    pg.play(stereo_output, sample_rate=SAMPLE_RATE)
     
     print("Done!\n", flush=True)
 
@@ -86,17 +79,11 @@ def demo_linear_panning():
         DelayPE(right_panned, delay=2 * delay_samples),
     )
     
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(mixed_stream)
-    
     extent = mixed_stream.extent()
     duration_samples = extent.end - extent.start
     duration_seconds = duration_samples / SAMPLE_RATE
     print(f"Playing {duration_seconds:.2f} seconds: Left → Center → Right...", flush=True)
-    
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
+    pg.play(mixed_stream, sample_rate=SAMPLE_RATE)
     
     print("Done!\n", flush=True)
 
@@ -122,17 +109,11 @@ def demo_constant_power_panning():
         DelayPE(right_panned, delay=2 * delay_samples),
     )
     
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(mixed_stream)
-    
     extent = mixed_stream.extent()
     duration_samples = extent.end - extent.start
     duration_seconds = duration_samples / SAMPLE_RATE
     print(f"Playing {duration_seconds:.2f} seconds: Left → Center → Right (constant-power)...", flush=True)
-    
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
+    pg.play(mixed_stream, sample_rate=SAMPLE_RATE)
     
     print("Done!\n", flush=True)
 
@@ -155,15 +136,9 @@ def demo_dynamic_panning():
     # Apply constant-power panning with dynamic azimuth
     panned_stream = SpatialPE(mono_source, method=SpatialConstantPower(azimuth=pan_control))
     
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(panned_stream)
-    
     duration_seconds = duration_samples / SAMPLE_RATE
     print(f"Playing {duration_seconds:.2f} seconds with panning sweep...", flush=True)
-    
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
+    pg.play(panned_stream, sample_rate=SAMPLE_RATE)
     
     print("Done!\n", flush=True)
 
@@ -185,17 +160,11 @@ def demo_stereo_to_mono():
     # Convert stereo to mono
     mono_output = SpatialPE(stereo_source, method=SpatialAdapter(channels=1))
     
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(mono_output)
-    
     extent = mono_output.extent()
     duration_samples = extent.end - extent.start
     duration_seconds = duration_samples / SAMPLE_RATE
     print(f"Playing {duration_seconds:.2f} seconds of stereo→mono conversion...", flush=True)
-    
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
+    pg.play(mono_output, sample_rate=SAMPLE_RATE)
     
     print("Done!\n", flush=True)
 
@@ -221,15 +190,9 @@ def demo_multiple_sources_panned():
     min_duration = min(extent1.end - extent1.start, extent2.end - extent2.start)
     cropped_stream = CropPE(mixed_stream, 0, (min_duration) - (0))
     
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(cropped_stream)
-    
     duration_seconds = min_duration / SAMPLE_RATE
     print(f"Playing {duration_seconds:.2f} seconds of two sources panned left and right...", flush=True)
-    
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
+    pg.play(cropped_stream, sample_rate=SAMPLE_RATE)
     
     print("Done!\n", flush=True)
 
@@ -270,9 +233,6 @@ def demo_hrtf_spatialization():
 
     mixed_stream = MixPE(*panned_streams)
 
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(mixed_stream)
-
     extent = mixed_stream.extent()
     duration_seconds = (extent.end - extent.start) / SAMPLE_RATE
     print(
@@ -280,9 +240,7 @@ def demo_hrtf_spatialization():
         flush=True,
     )
 
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
+    pg.play(mixed_stream, sample_rate=SAMPLE_RATE)
 
     print("Done!\n", flush=True)
 

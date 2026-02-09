@@ -17,8 +17,6 @@ from pygmu2 import (
     GainPE,
     CropPE,
     ConstantPE,
-    AudioRenderer,
-    Extent,
 )
 import pygmu2 as pg
 pg.set_sample_rate(44100)
@@ -43,12 +41,7 @@ print(f"\nPart 1: Original sound (dry) - {DURATION_SECONDS}s", flush=True)
 
 output1_stream = CropPE(source_stream, 0, (duration_samples) - (0))
 
-renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output1_stream)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(output1_stream, sample_rate)
 
 # --- Part 2: Subtle chorus effect ---
 print(f"\nPart 2: Chorus effect (0.25Hz, 20-25ms delay) - {DURATION_SECONDS}s", flush=True)
@@ -73,12 +66,7 @@ chorused_stream = MixPE(dry_chorus_stream, wet_chorus_stream)
 
 output2_stream = CropPE(chorused_stream, 0, (duration_samples) - (0))
 
-renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output2_stream)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(output2_stream, sample_rate)
 
 # --- Part 3: Classic flanging ---
 print(f"\nPart 3: Classic flanging (0.5Hz, 0-10ms delay) - {DURATION_SECONDS}s", flush=True)
@@ -111,11 +99,6 @@ flanged_stream = MixPE(dry_flange_stream, wet_flange_stream)
 
 output3_stream = CropPE(flanged_stream, 0, (duration_samples) - (0))
 
-renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output3_stream)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(output3_stream, sample_rate)
 
 print("\nDone!", flush=True)

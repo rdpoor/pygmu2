@@ -23,7 +23,6 @@ from pygmu2 import (
     GainPE,
     CropPE,
     LoopPE,
-    AudioRenderer,
     Extent,
 )
 import pygmu2 as pg
@@ -37,15 +36,6 @@ WAV_FILE = AUDIO_DIR / "djembe.wav"
 DURATION_SECONDS = 8
 
 
-def _play(pe, sample_rate: int, duration_samples: int, start: int = 0) -> None:
-    out = CropPE(pe, start, (start + duration_samples) - (start))
-    renderer = AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(out)
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
-
 def demo_original():
     """Part 1: Original signal (looped djembe)."""
     print(f"Part 1: Original signal (looped djembe) - {DURATION_SECONDS}s", flush=True)
@@ -53,7 +43,7 @@ def demo_original():
     sample_rate = source_stream.file_sample_rate
     duration_samples = int(DURATION_SECONDS * sample_rate)
     looped_stream = LoopPE(source_stream, crossfade_seconds=0.01)
-    _play(looped_stream, sample_rate, duration_samples)
+    pg.play(CropPE(looped_stream, 0, duration_samples), sample_rate)
 
 
 def demo_autowah():
@@ -90,7 +80,7 @@ def demo_autowah():
         mode=BiquadMode.LOWPASS
     )
     output_stream = GainPE(filtered_stream, gain=1.0)
-    _play(output_stream, sample_rate, duration_samples)
+    pg.play(CropPE(output_stream, 0, duration_samples), sample_rate)
 
 
 def demo_svfilter_autowah():
@@ -127,7 +117,7 @@ def demo_svfilter_autowah():
         mode=BiquadMode.LOWPASS
     )
     output_stream = GainPE(filtered_stream, gain=1.0)
-    _play(output_stream, sample_rate, duration_samples)
+    pg.play(CropPE(output_stream, 0, duration_samples), sample_rate)
 
 
 def demo_all():

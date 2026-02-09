@@ -1,7 +1,7 @@
 """
 00_template_eg.py
 
-Template example with a _play() helper and command-line demo selection.
+Template example with pg.play() and command-line demo selection.
 
 Usage:
   python examples/00_template_eg.py
@@ -15,18 +15,6 @@ from pathlib import Path
 import pygmu2 as pg
 pg.set_sample_rate(44100)
 
-
-
-def _play(source, sample_rate):
-    """
-    Render a source to its full extent using AudioRenderer.
-    """
-    renderer = pg.AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(source)
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 # write your demos here, list demo names and demo functions in DEMOS
@@ -38,7 +26,7 @@ def demo_one():
     wav_path = audio_dir / "choir.wav"
     source = pg.WavReaderPE(str(wav_path))
     sample_rate = source.file_sample_rate or 44100
-    _play(source, sample_rate)
+    pg.play(source, sample_rate)
 
 
 def demo_two():
@@ -47,7 +35,7 @@ def demo_two():
     sample_rate = 44100
     source = pg.SinePE(frequency=440.0, amplitude=0.3)
     source = pg.CropPE(source, 0, int(2.0 * sample_rate))
-    _play(source, sample_rate)
+    pg.play(source, sample_rate)
 
 DEMOS = {
     "Demo one": demo_one,

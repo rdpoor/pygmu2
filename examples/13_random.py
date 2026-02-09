@@ -9,9 +9,9 @@ MIT License
 """
 
 from pygmu2 import (
-    AudioRenderer,
     BlitSawPE,
     ConstantPE,
+    CropPE,
     GainPE,
     MixPE,
     RandomPE,
@@ -79,11 +79,11 @@ def demo_sample_hold_notes():
     # Adjust the gain
     output_stream = GainPE(synth_stream, gain=0.5)
     
-    with AudioRenderer(sample_rate=SAMPLE_RATE) as renderer:
-        renderer.set_source(output_stream)
-        renderer.start()
-        print("Playing for 4 seconds...")
-        renderer.play_range(0, int(4.0 * SAMPLE_RATE))
+    print("Playing for 4 seconds...")
+    pg.play(
+        CropPE(output_stream, 0, int(4.0 * SAMPLE_RATE)),
+        sample_rate=SAMPLE_RATE,
+    )
     print()
 
 
@@ -133,11 +133,11 @@ def demo_smooth_modulation():
     
     output_stream = GainPE(synth_stream, gain=trem_lfo_stream)
     
-    with AudioRenderer(sample_rate=SAMPLE_RATE) as renderer:
-        renderer.set_source(output_stream)
-        renderer.start()
-        print("Playing for 5 seconds...")
-        renderer.play_range(0, int(5.0 * SAMPLE_RATE))
+    print("Playing for 5 seconds...")
+    pg.play(
+        CropPE(output_stream, 0, int(5.0 * SAMPLE_RATE)),
+        sample_rate=SAMPLE_RATE,
+    )
     print()
 
 
@@ -163,11 +163,11 @@ def demo_random_walk():
     
     synth_stream = SinePE(frequency=frequency_stream, amplitude=0.4)
     
-    with AudioRenderer(sample_rate=SAMPLE_RATE) as renderer:
-        renderer.set_source(synth_stream)
-        renderer.start()
-        print("Playing for 5 seconds...")
-        renderer.play_range(0, int(5.0 * SAMPLE_RATE))
+    print("Playing for 5 seconds...")
+    pg.play(
+        CropPE(synth_stream, 0, int(5.0 * SAMPLE_RATE)),
+        sample_rate=SAMPLE_RATE,
+    )
     print()
 
 

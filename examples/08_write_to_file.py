@@ -17,7 +17,6 @@ from pygmu2 import (
     WavWriterPE,
     WavReaderPE,
     NullRenderer,
-    AudioRenderer,
     Extent,
     pitch_to_freq,
 )
@@ -76,12 +75,7 @@ print(f"  Size: {OUTPUT_FILE.stat().st_size:,} bytes", flush=True)
 print(f"\nPlaying back: {OUTPUT_FILE}", flush=True)
 
 playback_stream = WavReaderPE(str(OUTPUT_FILE))
-playback_renderer = AudioRenderer(sample_rate=playback_stream.file_sample_rate)
-playback_renderer.set_source(playback_stream)
-
-with playback_renderer:
-    playback_renderer.start()
-    playback_renderer.play_extent()
+pg.play(playback_stream, sample_rate=playback_stream.file_sample_rate)
 
 # Clean up: delete the temporary output file
 OUTPUT_FILE.unlink()

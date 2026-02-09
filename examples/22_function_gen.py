@@ -19,9 +19,7 @@ import numpy as np
 
 from pygmu2 import (
     AnalogOscPE,
-    AudioRenderer,
     CropPE,
-    Extent,
     FunctionGenPE,
     GainPE,
     MixPE,
@@ -54,13 +52,7 @@ def demo_pwm_rectangle_naive():
     out_stream = GainPE(osc_stream, gain=0.25)
     out_stream = CropPE(out_stream, 0, (dur) - (0))
 
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(out_stream)
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
-
+    pg.play(out_stream, SAMPLE_RATE)
 def demo_morph_naive():
     """
     Naive duty-controlled morph:
@@ -76,13 +68,7 @@ def demo_morph_naive():
     out_stream = GainPE(osc_stream, gain=0.35)
     out_stream = CropPE(out_stream, 0, (dur) - (0))
 
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(out_stream)
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
-
+    pg.play(out_stream, SAMPLE_RATE)
 def demo_ab_high_pitch():
     """
     A/B comparison at high pitch to highlight aliasing:
@@ -111,13 +97,7 @@ def demo_ab_high_pitch():
     stereo_stream = GainPE(MixPE(left_stream, right_stream), gain=0.2)
     stereo_stream = CropPE(stereo_stream, 0, (dur) - (0))
 
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(stereo_stream)
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
-
+    pg.play(stereo_stream, SAMPLE_RATE)
 if __name__ == "__main__":
     import sys
 

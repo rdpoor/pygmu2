@@ -15,8 +15,6 @@ from pygmu2 import (
     SinePE,
     GainPE,
     CropPE,
-    AudioRenderer,
-    Extent,
     pitch_to_freq,
 )
 import pygmu2 as pg
@@ -90,12 +88,7 @@ output_stream = CropPE(output_stream, 0, (DURATION_SAMPLES) - (0))
 
 # Play
 print(f"Playing for {DURATION_SECONDS} seconds...", flush=True)
-renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-renderer.set_source(output_stream)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(output_stream, SAMPLE_RATE)
 
 print(flush=True)
 
@@ -123,13 +116,7 @@ for detune in detune_amounts:
     output = GainPE(saw, gain=0.5)
     output = CropPE(output, 0, (short_duration) - (0))
     
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(output_stream)
-    
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
+    pg.play(output_stream, SAMPLE_RATE)
 print(flush=True)
 
 # --- Demo 3: Mix modes comparison ---
@@ -155,13 +142,7 @@ for mode in mix_modes:
     output = GainPE(saw, gain=0.5)
     output = CropPE(output, 0, (short_duration) - (0))
     
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(output_stream)
-    
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
+    pg.play(output_stream, SAMPLE_RATE)
 print()
 print("Done!", flush=True)
 print()

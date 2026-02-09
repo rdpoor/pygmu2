@@ -18,8 +18,6 @@ from pygmu2 import (
     BiquadMode,
     PiecewisePE,
     CropPE,
-    AudioRenderer,
-    Extent,
 )
 
 # Path to audio file
@@ -55,12 +53,7 @@ filtered_up_stream = BiquadPE(
 )
 output_up_stream = CropPE(filtered_up_stream, 0, (duration_samples) - (0))
 
-renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output_up_stream)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(output_up_stream, sample_rate)
 
 # --- Part 2: Lowpass filter sweep (high to low) ---
 print(f"\nPart 2: Lowpass sweep {HI_FREQUENCY}Hz -> {LO_FREQUENCY}Hz - {DURATION_SECONDS}s, Q={Q}", flush=True)
@@ -77,12 +70,7 @@ filtered_down_stream = BiquadPE(
 )
 output_down_stream = CropPE(filtered_down_stream, 0, (duration_samples) - (0))
 
-renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output_down_stream)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(output_down_stream, sample_rate)
 
 # --- Part 3: Resonant bandpass sweep ---
 print(f"\nPart 3: Resonant bandpass sweep 300Hz -> 3000Hz (Q=5) - {DURATION_SECONDS}s", flush=True)
@@ -97,11 +85,6 @@ filtered_bp_stream = BiquadPE(
 )
 output_bp_stream = CropPE(filtered_bp_stream, 0, (duration_samples) - (0))
 
-renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output_bp_stream)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(output_bp_stream, sample_rate)
 
 print("\nDone!", flush=True)

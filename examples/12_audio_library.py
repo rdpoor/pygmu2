@@ -8,7 +8,7 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-from pygmu2 import AudioLibrary, WavReaderPE, AudioRenderer, LoopPE, MixPE, DelayPE
+from pygmu2 import AudioLibrary, WavReaderPE, LoopPE, MixPE, DelayPE
 import pygmu2 as pg
 pg.set_sample_rate(44100)
 
@@ -36,15 +36,11 @@ mixed_stream = MixPE(
     DelayPE(source_stream, delay=3 * loop_source_stream.extent().end), 
     looped_stream)
 file_sr = source_stream.file_sample_rate
-renderer = AudioRenderer(sample_rate=file_sr)
-renderer.set_source(mixed_stream)
 
 extent = mixed_stream.extent()
 duration_samples = extent.end - extent.start
 duration_seconds = duration_samples / file_sr
 print(f"Playing {duration_seconds:.2f} seconds...", flush=True)
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(mixed_stream, sample_rate=file_sr)
 
 print("Done!", flush=True)

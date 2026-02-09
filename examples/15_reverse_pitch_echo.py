@@ -9,9 +9,7 @@ MIT License
 
 from pathlib import Path
 from pygmu2 import (
-    AudioRenderer,
     CropPE,
-    Extent,
     GainPE,
     MixPE,
     ReversePitchEchoPE,
@@ -37,12 +35,7 @@ duration_samples = int(DURATION_SECONDS * sample_rate)
 print(f"\nPart 1: Dry signal - {DURATION_SECONDS}s", flush=True)
 dry_stream = CropPE(source_stream, 0, (duration_samples) - (0))
 
-renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(dry_stream)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(dry_stream, sample_rate)
 
 # --- Part 2: Wet only ---
 print("\nPart 2: Reverse pitch echo (wet only)", flush=True)
@@ -56,12 +49,7 @@ wet_stream = ReversePitchEchoPE(
 wet_stream = GainPE(wet_stream, gain=0.8)
 wet_out_stream = CropPE(wet_stream, 0, (duration_samples) - (0))
 
-renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(wet_out_stream)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(wet_out_stream, sample_rate)
 
 # --- Part 3: Dry + wet mix ---
 print("\nPart 3: Reverse pitch echo mixed with dry", flush=True)
@@ -75,11 +63,6 @@ wet_mix_stream = ReversePitchEchoPE(
 mixed_stream = MixPE(GainPE(source_stream, gain=0.5), GainPE(wet_mix_stream, gain=0.5))
 mixed_out_stream = CropPE(mixed_stream, 0, (duration_samples) - (0))
 
-renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(mixed_out_stream)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(mixed_out_stream, sample_rate)
 
 print("\nDone!", flush=True)

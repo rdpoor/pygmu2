@@ -102,6 +102,7 @@ from pygmu2.temperament import (
 )
 from pygmu2.logger import setup_logging, get_logger
 from pygmu2.debug_utils import print_pe_tree
+from pygmu2.utils import play, play_offline, render_to_file
 
 __version__ = "0.1.0"
 

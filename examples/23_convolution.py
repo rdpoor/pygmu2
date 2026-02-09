@@ -24,7 +24,6 @@ import logging
 from pathlib import Path
 
 from pygmu2 import (
-    AudioRenderer,
     ConvolvePE,
     CropPE,
     DelayPE,
@@ -114,14 +113,6 @@ def _assert_sample_rate_match(source: WavReaderPE, ir: WavReaderPE) -> None:
         )
 
 
-def _play(source_pe, sample_rate: int) -> None:
-    renderer = AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(source_pe)
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
-
 def _demo_dry(source_path: Path, *, gain: float = 0.8) -> None:
     source_stream = _load_wav(source_path)
     sample_rate = int(source_stream.file_sample_rate)
@@ -131,7 +122,7 @@ def _demo_dry(source_path: Path, *, gain: float = 0.8) -> None:
     print("IR:     (dry)")
     print()
 
-    _play(out_stream, sample_rate)
+    pg.play(out_stream, sample_rate)
 
 
 def _demo_wet(
@@ -188,7 +179,7 @@ def _demo_wet(
     print(f"Wet gain: {wet_gain:.2f} (effective: {wet_gain / ir_energy:.4f})")
     print()
 
-    _play(out_stream, sample_rate)
+    pg.play(out_stream, sample_rate)
 
 def demo_spoken_dry():
     print("=== Demo: spoken voice (dry) ===")
@@ -287,4 +278,3 @@ if __name__ == "__main__":
         print(f"  - {LONG_IR_PATH.name}")
     except Exception as e:
         print(f"Error: {e}")
-

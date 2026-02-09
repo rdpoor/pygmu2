@@ -16,7 +16,6 @@ from pygmu2 import (
     MixPE,
     GainPE,
     CropPE,
-    AudioRenderer,
     Extent,
     pitch_to_freq,
 )
@@ -54,11 +53,6 @@ output_stream = CropPE(gained_stream, 0, DURATION_SAMPLES)
 
 # Create audio renderer and play
 print(f"Playing for {DURATION_SECONDS} seconds...", flush=True)
-renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-renderer.set_source(output_stream)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(output_stream, SAMPLE_RATE)
 
 print("Done!", flush=True)

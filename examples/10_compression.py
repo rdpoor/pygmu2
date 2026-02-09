@@ -17,9 +17,7 @@ pg.set_sample_rate(44100)
 sys.path.insert(0, 'src')
 
 from pygmu2 import (
-    AudioRenderer,
     CompressorPE,
-    Extent,
     GainPE,
     GatePE,
     LimiterPE,
@@ -57,16 +55,10 @@ def demo_basic_compression():
     )
     
     print("Playing DRY signal...")
-    with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(looped_drums)
-        renderer.start()
-        renderer.play_extent()
+    pg.play(looped_drums, sample_rate)
     
     print("Playing COMPRESSED signal...")
-    with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(compressed)
-        renderer.start()
-        renderer.play_extent()
+    pg.play(compressed, sample_rate)
     
     print()
 
@@ -97,10 +89,7 @@ def demo_limiter():
     print(f"Ceiling: -6dB, Release: 50ms, Lookahead: 5ms")
     print()
     
-    with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(limited_stream)
-        renderer.start()
-        renderer.play_extent()
+    pg.play(limited_stream, sample_rate)
     print()
 
 
@@ -130,10 +119,7 @@ def demo_noise_gate():
     print("You should hear the signal cut out during quiet portions.")
     print()
     
-    with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(gated_stream)
-        renderer.start()
-        renderer.play_extent()
+    pg.play(gated_stream, sample_rate)
     print()
 
 
@@ -171,10 +157,7 @@ def demo_parallel_compression():
     print("Result: Punchy transients from dry + sustained body from compressed")
     print()
     
-    with AudioRenderer(sample_rate=sample_rate) as renderer:
-        renderer.set_source(parallel_stream)
-        renderer.start()
-        renderer.play_extent()
+    pg.play(parallel_stream, sample_rate)
     print()
 
 if __name__ == "__main__":

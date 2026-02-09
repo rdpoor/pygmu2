@@ -27,10 +27,12 @@ from pygmu2 import (
     SpatialAdapter,
     get_logger,
     setup_logging,
+    set_sample_rate,
 )
 logger = get_logger("meltysynth_midi_demo")
 
 SAMPLE_RATE = 44100
+set_sample_rate(SAMPLE_RATE)
 BLOCK_SIZE = 256
 
 AUDIO_DIR = Path(__file__).parent.parent / "examples" / "audio"
@@ -82,6 +84,7 @@ def make_meltysynth_midi_demo(soundfont_path: str, program: int | None = None):
         elif midi_message.type == "control_change":
             # Hack: use knob K8 to select program
             if midi_message.control == 77:
+                print_preset_name(synth, midi_message.value)
                 synth.process_midi_message(0, 0xC0, midi_message.value, 0)
             else:
                 synth.process_midi_message(
@@ -91,6 +94,21 @@ def make_meltysynth_midi_demo(soundfont_path: str, program: int | None = None):
     midi_in_pe = MidiInPE(callback=_callback)
     midi_2ch = SpatialPE(midi_in_pe, method=SpatialAdapter(channels=2))
     return MixPE(midi_2ch, synth_pe)
+
+def print_preset_name(synth, patch):
+    # channel 0 in your example
+    ch = 0
+    bank = synth._channels[ch].bank_number
+
+    preset_id = (bank << 16) | patch
+    preset = synth._preset_lookup.get(preset_id)
+
+    # fallback logic (same as Synthesizer.note_on)
+    if preset is None:
+        gm_preset_id = patch if bank < 128 else (128 << 16)
+        preset = synth._preset_lookup.get(gm_preset_id, synth._default_preset)
+
+    print(f"Program change -> bank={bank} patch={patch}: {preset.name}")
 
 
 def main():

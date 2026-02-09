@@ -14,7 +14,6 @@ MIT License
 """
 
 from pygmu2 import (
-    AudioRenderer,
     CropPE,
     DelayPE,
     Extent,
@@ -45,22 +44,15 @@ def _make_note(
     rho=rho_for_decay_db(duration_seconds, frequency, SAMPLE_RATE, db=-30)
     print(f'duration={duration_seconds} => rho={rho}')
     return CropPE(
-            KarplusStrongPE(
-                frequency=frequency,
-                rho=rho,
-                amplitude=amplitude,
-                seed=1,
-            ),
-            Extent(0, s2s(duration_seconds))
-        )
-
-def _play(pe, duration_samples: int, start: int = 0) -> None:
-    out = CropPE(pe, start, (start + duration_samples) - (start))
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(out)
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
+        KarplusStrongPE(
+            frequency=frequency,
+            rho=rho,
+            amplitude=amplitude,
+            seed=1,
+        ),
+        0,
+        s2s(duration_seconds),
+    )
 
 
 def demo_single_pluck():
@@ -73,7 +65,7 @@ def demo_single_pluck():
         amplitude=0.35,
         seed=42,
     )
-    _play(ks, s2s(duration_seconds))
+    pg.play(CropPE(ks, 0, s2s(duration_seconds)), SAMPLE_RATE)
 
 
 def demo_two_phase_decay():
@@ -91,7 +83,7 @@ def demo_two_phase_decay():
         amplitude=0.35,
         seed=42,
     )
-    _play(ks, total_samp, 0)
+    pg.play(CropPE(ks, 0, total_samp), SAMPLE_RATE)
 
 
 def demo_high_rho_vs_low_rho():
@@ -124,7 +116,7 @@ def demo_high_rho_vs_low_rho():
     t += duration_seconds
 
     mix = MixPE(*plucks)
-    _play(mix, s2s(t))
+    pg.play(CropPE(mix, 0, s2s(t)), SAMPLE_RATE)
 
 
 def demo_c_major_arpeggio():
@@ -145,7 +137,7 @@ def demo_c_major_arpeggio():
         t += duration_seconds
 
     mix = MixPE(*plucks)
-    _play(mix, s2s(t))
+    pg.play(CropPE(mix, 0, s2s(t)), SAMPLE_RATE)
 
 
 def demo_all():

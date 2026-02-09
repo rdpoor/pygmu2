@@ -17,16 +17,6 @@ import pygmu2 as pg
 pg.set_sample_rate(44100)
 
 
-
-def _play(source, sample_rate):
-    """Render a source to its full extent using AudioRenderer."""
-    renderer = pg.AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(source)
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
-
 def _load_sources():
     audio_dir = Path(__file__).parent / "audio"
     wav_path = audio_dir / "djembe44.wav"
@@ -50,7 +40,7 @@ def demo_dry_only():
     print("Demo: dry only")
     print("--------------")
     source, _ir, sample_rate = _load_sources()
-    _play(source, sample_rate)
+    pg.play(source, sample_rate)
 
 
 def demo_fixed_mix():
@@ -59,7 +49,7 @@ def demo_fixed_mix():
     source, ir, sample_rate = _load_sources()
 
     reverb = pg.ReverbPE(source, ir, mix=0.4, normalize_ir=True)
-    _play(reverb, sample_rate)
+    pg.play(reverb, sample_rate)
 
 
 def demo_ramp_mix():
@@ -78,7 +68,7 @@ def demo_ramp_mix():
         extend_mode=pg.ExtendMode.HOLD_LAST,
     )
     reverb = pg.ReverbPE(source, ir, mix=mix_ramp, normalize_ir=True)
-    _play(reverb, sample_rate)
+    pg.play(reverb, sample_rate)
 
 
 DEMOS = {

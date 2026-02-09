@@ -13,7 +13,6 @@ MIT License
 from pathlib import Path
 
 from pygmu2 import (
-    AudioRenderer,
     CropPE,
     Extent,
     PiecewisePE,
@@ -38,22 +37,13 @@ def _make_trigger_sweep(sample_rate: int, duration_samples: int):
     return SinePE(frequency=freq_ramp, amplitude=1.0)
 
 
-def _play(pe, duration_samples: int, sample_rate: int) -> None:
-    out = CropPE(pe, 0, (duration_samples) - (0))
-    renderer = AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(out)
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
-
 def demo_original():
     """Play choir without trigger (original signal)."""
     print("=== Trigger Example 31: Original (ungated choir) ===")
     source = WavReaderPE(str(WAV_FILE))
     sample_rate = source.file_sample_rate or 44100
     duration_samples = int(DURATION_SECONDS * sample_rate)
-    _play(source, duration_samples, sample_rate)
+    pg.play(CropPE(source, 0, duration_samples), sample_rate)
 
 
 def demo_one_shot():
@@ -64,7 +54,7 @@ def demo_one_shot():
     duration_samples = int(DURATION_SECONDS * sample_rate)
     trigger = _make_trigger_sweep(sample_rate, duration_samples)
     triggered = TriggerPE(source, trigger, trigger_mode=TriggerMode.ONE_SHOT)
-    _play(triggered, duration_samples, sample_rate)
+    pg.play(CropPE(triggered, 0, duration_samples), sample_rate)
 
 
 def demo_gated():
@@ -75,7 +65,7 @@ def demo_gated():
     duration_samples = int(DURATION_SECONDS * sample_rate)
     trigger = _make_trigger_sweep(sample_rate, duration_samples)
     triggered = TriggerPE(source, trigger, trigger_mode=TriggerMode.GATED)
-    _play(triggered, duration_samples, sample_rate)
+    pg.play(CropPE(triggered, 0, duration_samples), sample_rate)
 
 
 def demo_retrigger():
@@ -86,7 +76,7 @@ def demo_retrigger():
     duration_samples = int(DURATION_SECONDS * sample_rate)
     trigger = _make_trigger_sweep(sample_rate, duration_samples)
     triggered = TriggerPE(source, trigger, trigger_mode=TriggerMode.RETRIGGER)
-    _play(triggered, duration_samples, sample_rate)
+    pg.play(CropPE(triggered, 0, duration_samples), sample_rate)
 
 
 def demo_all():

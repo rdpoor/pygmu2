@@ -9,7 +9,8 @@ MIT License
 
 import time
 from pathlib import Path
-from pygmu2 import WavReaderPE, LoopPE, CropPE, AudioRenderer, Extent
+
+from pygmu2 import WavReaderPE, LoopPE, CropPE, Extent
 import pygmu2 as pg
 pg.set_sample_rate(44100)
 
@@ -38,13 +39,8 @@ print(f"\nPart 1: Basic loop (no crossfade) - {DURATION_SECONDS}s", flush=True)
 looped_basic_stream = LoopPE(source_stream)
 output_basic_stream = CropPE(looped_basic_stream, 0, (duration_samples) - (0))
 
-renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output_basic_stream)
-
 t0 = time.perf_counter()
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(output_basic_stream, sample_rate=sample_rate)
 t1 = time.perf_counter()
 print(f"  Elapsed: {t1 - t0:.2f}s (expected ~{DURATION_SECONDS}s)", flush=True)
 
@@ -54,13 +50,8 @@ print(f"\nPart 2: Smooth loop (20ms crossfade) - {DURATION_SECONDS}s", flush=Tru
 looped_smooth_stream = LoopPE(source_stream, crossfade_seconds=0.02)  # 20ms crossfade
 output_smooth_stream = CropPE(looped_smooth_stream, 0, (duration_samples) - (0))
 
-renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(output_smooth_stream)
-
 t0 = time.perf_counter()
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(output_smooth_stream, sample_rate=sample_rate)
 t1 = time.perf_counter()
 print(f"  Elapsed: {t1 - t0:.2f}s (expected ~{DURATION_SECONDS}s)", flush=True)
 

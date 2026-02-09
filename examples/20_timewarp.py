@@ -16,9 +16,7 @@ MIT License
 from pathlib import Path
 
 from pygmu2 import (
-    AudioRenderer,
     CropPE,
-    Extent,
     GainPE,
     LoopPE,
     PiecewisePE,
@@ -49,14 +47,7 @@ def demo_original():
 
     output_stream = GainPE(spoken_stream, gain=0.8)
 
-    renderer = AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(output_stream)
-
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
-
+    pg.play(output_stream, sample_rate)
 def demo_fixed_rate():
     """
     Play a spoken sample at a fixed rate (1.5x).
@@ -71,14 +62,7 @@ def demo_fixed_rate():
     warped_stream = TimeWarpPE(spoken_stream, rate=1.5)
     output_stream = GainPE(warped_stream, gain=0.8)
 
-    renderer = AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(output_stream)
-
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
-
+    pg.play(output_stream, sample_rate)
 def demo_accelerating_loop():
     """
     Loop the spoken sample and accelerate from 0.5x to 5.0x over 10 seconds.
@@ -102,14 +86,7 @@ def demo_accelerating_loop():
     output_stream = GainPE(warped_stream, gain=0.8)
     output_stream = CropPE(output_stream, 0, (dur_samples) - (0))
 
-    renderer = AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(output_stream)
-
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
-
+    pg.play(output_stream, sample_rate)
 def demo_jog_shuttle():
     """
     Play at decreasing speeds, eventually going negative.
@@ -129,13 +106,7 @@ def demo_jog_shuttle():
     output_stream = GainPE(warped_stream, gain=0.8)
     output_stream = CropPE(output_stream, 0, (demo_length) - (0))
 
-    renderer = AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(output_stream)
-
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
+    pg.play(output_stream, sample_rate)
 if __name__ == "__main__":
     import sys
 
@@ -169,4 +140,3 @@ if __name__ == "__main__":
                 break
         else:
             print("Invalid choice.")
-

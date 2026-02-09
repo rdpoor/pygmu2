@@ -9,9 +9,7 @@ MIT License
 
 from pathlib import Path
 from pygmu2 import (
-    AudioRenderer,
     CropPE,
-    Extent,
     GainPE,
     LadderPE,
     LadderMode,
@@ -38,12 +36,7 @@ duration_samples = int(DURATION_SECONDS * sample_rate)
 print(f"\nPart 1: Dry signal - {DURATION_SECONDS}s", flush=True)
 dry_stream = CropPE(source_stream, 0, (duration_samples) - (0))
 
-renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(dry_stream)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(dry_stream, sample_rate)
 
 # --- Part 2: Resonant lowpass ---
 print("\nPart 2: Ladder lowpass (800 Hz, resonance 0.6)", flush=True)
@@ -51,12 +44,7 @@ lowpass_stream = LadderPE(source_stream, frequency=800.0, resonance=0.6, mode=La
 lowpass_stream = GainPE(lowpass_stream, gain=0.8)
 lowpass_out_stream = CropPE(lowpass_stream, 0, (duration_samples) - (0))
 
-renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(lowpass_out_stream)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(lowpass_out_stream, sample_rate)
 
 # --- Part 3: Cutoff sweep ---
 print("\nPart 3: Ladder sweep (200 Hz -> 4 kHz)", flush=True)
@@ -65,11 +53,6 @@ sweep_stream = LadderPE(source_stream, frequency=cutoff_sweep_stream, resonance=
 sweep_stream = GainPE(sweep_stream, gain=0.8)
 sweep_out_stream = CropPE(sweep_stream, 0, (duration_samples) - (0))
 
-renderer = AudioRenderer(sample_rate=sample_rate)
-renderer.set_source(sweep_out_stream)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(sweep_out_stream, sample_rate)
 
 print("\nDone!", flush=True)

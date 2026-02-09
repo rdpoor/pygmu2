@@ -14,9 +14,7 @@ MIT License
 
 from pygmu2 import (
     AnalogOscPE,
-    AudioRenderer,
     CropPE,
-    Extent,
     GainPE,
     LadderMode,
     LadderPE,
@@ -51,13 +49,7 @@ def demo_pwm_rectangle():
     out = GainPE(osc, gain=0.25)
     out = CropPE(out, 0, (dur_samples) - (0))
 
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(out)
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
-
+    pg.play(out, SAMPLE_RATE)
 def demo_morphing_saw_triangle():
     """
     Duty-controlled saw/triangle morph:
@@ -74,13 +66,7 @@ def demo_morphing_saw_triangle():
     out = GainPE(osc, gain=0.35)
     out = CropPE(out, 0, (dur_samples) - (0))
 
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(out)
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
-
+    pg.play(out, SAMPLE_RATE)
 def demo_subtractive_patch():
     """
     A simple subtractive synth patch: oscillator -> ladder lowpass.
@@ -111,13 +97,7 @@ def demo_subtractive_patch():
     out = GainPE(filtered, gain=0.25)
     out = CropPE(out, 0, (dur_samples) - (0))
 
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(out)
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
-
-
+    pg.play(out, SAMPLE_RATE)
 if __name__ == "__main__":
     import sys
 
@@ -150,4 +130,3 @@ if __name__ == "__main__":
                 break
         else:
             print("Invalid choice.")
-

@@ -1,25 +1,25 @@
 import numpy as np
 
 from pygmu2 import (
-    AudioRenderer,
+    ArrayPE,
+    CropPE,
     DiracPE,
     DelayPE,
+    Extent,
+    GainPE,
+    InterpolationMode,
+    LoopPE,
     MixPE,
+    OutOfBoundsMode,
     PiecewisePE,
     SinePE,
     TriggerPE,
     TriggerMode,
     WavReaderPE,
     WavetablePE,
-    InterpolationMode,
-    OutOfBoundsMode,
     WindowPE,
-    LoopPE,
     WindowMode,
     seconds_to_samples,
-    GainPE,
-    Extent,
-    ArrayPE
 )
 import pygmu2 as pg
 pg.set_sample_rate(44100)
@@ -59,12 +59,10 @@ def demo_one_shot_trigger():
     # Actually, TriggerPE output is 0 until trigger time. So we just mix them.
     mix_stream = MixPE(bass_stream, triggered_drums_stream)
     
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(mix_stream)
-    
-    with renderer:
-        renderer.start()
-        renderer.play_range(0, seconds_to_samples(4.0, SAMPLE_RATE).astype(int))
+    pg.play(
+        CropPE(mix_stream, 0, int(seconds_to_samples(4.0, SAMPLE_RATE))),
+        sample_rate=SAMPLE_RATE,
+    )
 
 
 def demo_gated_retrigger():
@@ -87,11 +85,10 @@ def demo_gated_retrigger():
     trigger_lfo = SinePE(frequency=lfo_freq)
     stutter_stream = TriggerPE(sample_stream, trigger_lfo, trigger_mode=TriggerMode.GATED)
 
-    renderer = AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(stutter_stream)
-    with renderer:
-        renderer.start()
-        renderer.play_range(0, dur)
+    pg.play(
+        CropPE(stutter_stream, 0, dur),
+        sample_rate=sample_rate,
+    )
 
 def demo_gated_rhythm():
     """
@@ -134,12 +131,10 @@ def demo_gated_rhythm():
     
     gated_pad_stream = TriggerPE(choir_stream, sequencer_stream, trigger_mode=TriggerMode.RETRIGGER)
     
-    renderer = AudioRenderer(sample_rate=sample_rate)
-    renderer.set_source(gated_pad_stream)
-    
-    with renderer:
-        renderer.start()
-        renderer.play_range(0, seconds_to_samples(4.0, sample_rate).astype(int))
+    pg.play(
+        CropPE(gated_pad_stream, 0, int(seconds_to_samples(4.0, sample_rate))),
+        sample_rate=sample_rate,
+    )
 
 if __name__ == "__main__":
     try:

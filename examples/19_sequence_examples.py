@@ -16,7 +16,6 @@ MIT License
 """
 
 from pygmu2 import (
-    AudioRenderer,
     BlitSawPE,
     ConstantPE,
     CropPE,
@@ -59,26 +58,17 @@ def _make_plucked_note(midi: int, sustain_seconds: float, amplitude: float = 1.0
     rho_damping = rho_for_decay_db(decay_seconds, frequency, SAMPLE_RATE, db=-10)
     total_seconds = sustain_seconds + decay_seconds
     return CropPE(
-            KarplusStrongPE(
-                frequency=frequency,
-                rho=rho,
-                duration=_s2s(sustain_seconds),
-                rho_damping=rho_damping,
-                amplitude=amplitude,
-                seed=1,
-            ),
-            Extent(0, _s2s(total_seconds))
-        )
-
-
-def _play(pe, duration_samples: int, start: int = 0) -> None:
-    """Play pe for duration_samples. If start != 0, crop from start to start + duration_samples (e.g. start=-N for lead-in)."""
-    out = CropPE(pe, start, (start + duration_samples) - (start))
-    renderer = AudioRenderer(sample_rate=SAMPLE_RATE)
-    renderer.set_source(out)
-    with renderer:
-        renderer.start()
-        renderer.play_extent()
+        KarplusStrongPE(
+            frequency=frequency,
+            rho=rho,
+            duration=_s2s(sustain_seconds),
+            rho_damping=rho_damping,
+            amplitude=amplitude,
+            seed=1,
+        ),
+        0,
+        _s2s(total_seconds),
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -107,7 +97,7 @@ def demo_gapless_c_major():
         notes.append(delayed)
 
     mix = MixPE(*notes)
-    _play(mix, total)
+    pg.play(CropPE(mix, 0, total), SAMPLE_RATE)
 
 
 def demo_staccato_c_major():
@@ -133,7 +123,7 @@ def demo_staccato_c_major():
         notes.append(delayed)
 
     mix = MixPE(*notes)
-    _play(mix, total)
+    pg.play(CropPE(mix, 0, total), SAMPLE_RATE)
 
 
 def demo_legato_c_major():
@@ -160,7 +150,8 @@ def demo_legato_c_major():
     mix = MixPE(*notes)
     # Reduce gain when overlapping to avoid clipping
     mix = GainPE(mix, gain=0.5)
-    _play(mix, mix.extent().duration)
+    ext = mix.extent()
+    pg.play(CropPE(mix, ext.start, ext.duration), SAMPLE_RATE)
 
 
 def _ramped_c_major(transition_type: TransitionType, title: str):
@@ -197,7 +188,7 @@ def _ramped_c_major(transition_type: TransitionType, title: str):
 
     mix = MixPE(*notes)
     ext = mix.extent()
-    _play(mix, ext.duration, start=ext.start)
+    pg.play(CropPE(mix, ext.start, ext.duration), SAMPLE_RATE)
 
 
 def demo_sigmoid_ramp():
@@ -377,7 +368,7 @@ def demo_moz_connected():
 
     # Here, notes[] is a list of ProcessingElements, ready to mix
     mix_stream = GainPE(MixPE(*notes), 0.33)
-    _play(mix_stream, _b2s(next_start))
+    pg.play(CropPE(mix_stream, 0, _b2s(next_start)), SAMPLE_RATE)
 
 def demo_moz_articulated():
     next_start = 0
@@ -399,7 +390,7 @@ def demo_moz_articulated():
 
     # Here, notes[] is a list of ProcessingElements, ready to mix
     mix_stream = GainPE(MixPE(*notes), 0.33)
-    _play(mix_stream, _b2s(next_start))
+    pg.play(CropPE(mix_stream, 0, _b2s(next_start)), SAMPLE_RATE)
 
 def demo_moz_plucked():
     next_start = 0
@@ -423,7 +414,7 @@ def demo_moz_plucked():
 
     # Here, notes[] is a list of ProcessingElements, ready to mix
     mix_stream = GainPE(MixPE(*notes), 0.7)
-    _play(mix_stream, _b2s(next_start))
+    pg.play(CropPE(mix_stream, 0, _b2s(next_start)), SAMPLE_RATE)
 
 # -----------------------------------------------------------------------------
 # Main

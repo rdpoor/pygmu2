@@ -8,7 +8,8 @@ MIT License
 """
 
 from pathlib import Path
-from pygmu2 import WavReaderPE, AudioRenderer
+
+from pygmu2 import WavReaderPE
 import pygmu2 as pg
 pg.set_sample_rate(44100)
 
@@ -28,10 +29,6 @@ file_sr = source_stream.file_sample_rate
 print(f"  Channels: {source_stream.channel_count()}", flush=True)
 print(f"  Sample rate: {file_sr} Hz", flush=True)
 
-# Create renderer matching the file's sample rate
-renderer = AudioRenderer(sample_rate=file_sr)
-renderer.set_source(source_stream)
-
 # Now we can get extent (sample rate is set globally before construction)
 extent = source_stream.extent()
 duration_samples = extent.end - extent.start
@@ -39,9 +36,6 @@ duration_seconds = duration_samples / file_sr
 print(f"  Duration: {duration_seconds:.2f} seconds ({duration_samples} samples)", flush=True)
 
 print(f"Playing...", flush=True)
-
-with renderer:
-    renderer.start()
-    renderer.play_extent()
+pg.play(source_stream, sample_rate=file_sr)
 
 print("Done!", flush=True)
