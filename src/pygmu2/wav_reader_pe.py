@@ -138,6 +138,7 @@ class WavReaderPE(SourcePE):
             
             # Copy into output buffer
             output_start = overlap_start - start
+            read_count = file_data.shape[0]
             output_end = output_start + read_count
             data[output_start:output_end, :] = file_data
         

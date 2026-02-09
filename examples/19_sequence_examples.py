@@ -179,7 +179,7 @@ def _ramped_c_major(transition_type: TransitionType, title: str):
         gain = MixPE(
             DelayPE(PiecewisePE([(0, 0.0), (xfade, 1.0)], transition_type=transition_type), i * d - xfade_half),
             CropPE(
-                ConstantPE(1.0), i * d + xfade_half, ((i + 1) - (i * d + xfade_half) * d - xfade_half),
+                ConstantPE(1.0), i * d + xfade_half, d - xfade,
             ),
             DelayPE(PiecewisePE([(0, 1.0), (xfade, 0.0)], transition_type=transition_type), (i + 1) * d - xfade_half),
         )
