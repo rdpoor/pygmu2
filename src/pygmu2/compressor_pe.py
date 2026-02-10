@@ -13,6 +13,7 @@ from typing import Optional, Union
 import numpy as np
 
 from pygmu2.processing_element import ProcessingElement
+from pygmu2.cache_pe import CachePE
 from pygmu2.envelope_pe import EnvelopePE, DetectionMode
 from pygmu2.dynamics_pe import DynamicsPE, DynamicsMode
 from pygmu2.extent import Extent
@@ -93,7 +94,8 @@ class CompressorPE(ProcessingElement):
         detection: DetectionMode = DetectionMode.RMS,
         stereo_link: bool = True,
     ):
-        self._source = source
+        # Cache the source to avoid double-pull (envelope + dynamics both read it)
+        self._source = CachePE(source)
         self._threshold = threshold
         self._ratio = ratio
         self._attack = attack
@@ -103,19 +105,18 @@ class CompressorPE(ProcessingElement):
         self._lookahead = lookahead
         self._detection = detection
         self._stereo_link = stereo_link
-        
-        # Create internal envelope follower
+
+        # Build internal graph: source -> EnvelopePE -> DynamicsPE
         self._envelope_pe = EnvelopePE(
-            source,
+            self._source,
             attack=attack,
             release=release,
             lookahead=lookahead,
             mode=detection,
         )
-        
-        # Create internal dynamics processor
+
         self._dynamics_pe = DynamicsPE(
-            source,
+            self._source,
             self._envelope_pe,
             threshold=threshold,
             ratio=ratio,
@@ -171,48 +172,20 @@ class CompressorPE(ProcessingElement):
         return self._stereo_link
     
     def inputs(self) -> list[ProcessingElement]:
-        """Return input PEs (just the source, internal PEs are hidden)."""
-        return [self._source]
-    
-    def is_pure(self) -> bool:
-        """
-        CompressorPE is NOT pure due to envelope state.
-        """
-        return False
-    
-    def channel_count(self) -> Optional[int]:
-        """Pass through channel count from source."""
-        return self._source.channel_count()
-    
-    def _compute_extent(self) -> Extent:
-        """Return extent from source."""
-        return self._source.extent()
-    
-    def _on_start(self) -> None:
-        """Start internal PEs."""
-        self._envelope_pe.on_start()
-        # DynamicsPE is pure, no on_start needed
+        """Expose the internal graph so the Renderer manages all lifecycle."""
+        return [self._dynamics_pe]
 
-    def _on_stop(self) -> None:
-        """Stop internal PEs."""
-        self._envelope_pe.on_stop()
-    
-    def _reset_state(self) -> None:
-        """Reset internal envelope state."""
-        self._envelope_pe.reset_state()
-    
+    def is_pure(self) -> bool:
+        """CompressorPE is NOT pure due to envelope state."""
+        return False
+
+    def channel_count(self) -> Optional[int]:
+        return self._dynamics_pe.channel_count()
+
+    def _compute_extent(self) -> Extent:
+        return self._dynamics_pe.extent()
+
     def _render(self, start: int, duration: int) -> Snippet:
-        """
-        Render compressed audio.
-        
-        Args:
-            start: Starting sample index
-            duration: Number of samples to render (> 0)
-        
-        Returns:
-            Snippet containing compressed audio
-        """
-        # Just delegate to the internal dynamics PE
         return self._dynamics_pe.render(start, duration)
     
     def __repr__(self) -> str:
@@ -319,25 +292,25 @@ class GatePE(ProcessingElement):
         knee: float = 0.0,
         stereo_link: bool = True,
     ):
-        self._source = source
+        # Cache the source to avoid double-pull (envelope + dynamics both read it)
+        self._source = CachePE(source)
         self._threshold = threshold
         self._attack = attack
         self._release = release
         self._range = gate_range
         self._knee = knee
         self._stereo_link = stereo_link
-        
-        # Create internal envelope follower
+
+        # Build internal graph: source -> EnvelopePE -> DynamicsPE
         self._envelope_pe = EnvelopePE(
-            source,
+            self._source,
             attack=attack,
             release=release,
             mode=DetectionMode.PEAK,
         )
-        
-        # Create internal dynamics processor in GATE mode
+
         self._dynamics_pe = DynamicsPE(
-            source,
+            self._source,
             self._envelope_pe,
             threshold=threshold,
             ratio=1.0,  # Not used in gate mode
@@ -369,35 +342,20 @@ class GatePE(ProcessingElement):
         return self._range
     
     def inputs(self) -> list[ProcessingElement]:
-        """Return input PEs."""
-        return [self._source]
-    
+        """Expose the internal graph so the Renderer manages all lifecycle."""
+        return [self._dynamics_pe]
+
     def is_pure(self) -> bool:
         """GatePE is NOT pure due to envelope state."""
         return False
-    
-    def channel_count(self) -> Optional[int]:
-        """Pass through channel count from source."""
-        return self._source.channel_count()
-    
-    def _compute_extent(self) -> Extent:
-        """Return extent from source."""
-        return self._source.extent()
-    
-    def _on_start(self) -> None:
-        """Start internal PEs."""
-        self._envelope_pe.on_start()
 
-    def _on_stop(self) -> None:
-        """Stop internal PEs."""
-        self._envelope_pe.on_stop()
-    
-    def _reset_state(self) -> None:
-        """Reset internal envelope state."""
-        self._envelope_pe.reset_state()
-    
+    def channel_count(self) -> Optional[int]:
+        return self._dynamics_pe.channel_count()
+
+    def _compute_extent(self) -> Extent:
+        return self._dynamics_pe.extent()
+
     def _render(self, start: int, duration: int) -> Snippet:
-        """Render gated audio."""
         return self._dynamics_pe.render(start, duration)
     
     def __repr__(self) -> str:

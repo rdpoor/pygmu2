@@ -185,6 +185,77 @@ and easier to reason about now that sample rate is globally available.
 
 The Renderer validates that stateful PEs have only one downstream consumer.
 
+### The `inputs()` Contract
+
+`inputs()` must return **every PE that this PE calls `render()` on**. The
+Renderer uses `inputs()` to walk the entire graph for:
+
+- **Validation** — checking purity constraints and channel compatibility
+- **Lifecycle** — calling `on_start()` / `on_stop()` on every reachable PE
+- **Profiling** — collecting all PEs for timing
+
+If a PE is rendered but not reachable via `inputs()`, it will never receive
+lifecycle calls and the Renderer cannot validate it.
+
+### Composite PEs (Internal Graphs)
+
+Some PEs build an internal graph of sub-PEs (e.g., CompressorPE combines
+EnvelopePE + DynamicsPE; ReverbPE combines ConvolvePE + GainPE + MixPE).
+These **must expose the internal graph** through `inputs()` so the Renderer
+can manage it.
+
+Follow this pattern (used by ReverbPE, CompressorPE, GatePE):
+
+1. **Wrap the source in `CachePE`** if it feeds multiple internal PEs.
+   Without this, the source would be rendered multiple times per frame
+   (wasteful for pure sources, incorrect for impure ones), and the Renderer
+   would reject non-pure sources with multiple sinks.
+
+2. **Return `[self._out]` from `inputs()`**, where `_out` is the final node
+   of the internal graph. The Renderer will recursively walk `_out.inputs()`
+   to discover all internal PEs.
+
+3. **Delegate `channel_count()`, `_compute_extent()`, and `_render()`** to
+   `self._out`. No manual `_on_start()` / `_on_stop()` / `_reset_state()`
+   needed — the Renderer handles lifecycle for the entire reachable graph.
+
+```python
+from pygmu2.cache_pe import CachePE
+
+class MyCompositePE(ProcessingElement):
+    def __init__(self, source, ...):
+        # Cache source to avoid double-pull
+        self._source = CachePE(source)
+
+        # Build internal graph
+        self._internal_a = SomePE(self._source, ...)
+        self._internal_b = OtherPE(self._source, self._internal_a, ...)
+        self._out = self._internal_b
+
+    def inputs(self) -> list[ProcessingElement]:
+        return [self._out]  # Expose full internal graph to Renderer
+
+    def channel_count(self):
+        return self._out.channel_count()
+
+    def _compute_extent(self):
+        return self._out.extent()
+
+    def _render(self, start, duration):
+        return self._out.render(start, duration)
+```
+
+**Anti-pattern — do NOT hide internal PEs:**
+
+```python
+# BAD: internal PEs are invisible to the Renderer
+def inputs(self):
+    return [self._source]  # hides self._internal_a, self._internal_b
+
+def _on_start(self):
+    self._internal_a.on_start()  # fragile manual lifecycle
+```
+
 ## Creating a New Processing Element
 
 ### Template
@@ -255,11 +326,11 @@ class MyNewPE(ProcessingElement):
         """Compute and return this PE's temporal bounds."""
         return self._source.extent()
     
-    def on_start(self) -> None:
+    def _on_start(self) -> None:
         """Initialize state when rendering begins."""
         self._state = 0.0
-    
-    def on_stop(self) -> None:
+
+    def _on_stop(self) -> None:
         """Clean up when rendering ends."""
         self._state = None
     

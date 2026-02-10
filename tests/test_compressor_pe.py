@@ -17,6 +17,7 @@ from pygmu2 import (
     GainPE,
     NullRenderer,
     DetectionMode,
+    DynamicsPE,
 )
 
 
@@ -64,13 +65,13 @@ class TestCompressorPEBasics:
         assert comp.stereo_link is False
     
     def test_inputs(self):
-        """Test that inputs() returns only source (internal PEs hidden)."""
+        """Test that inputs() exposes the internal graph (DynamicsPE)."""
         source = SinePE(frequency=440.0)
         comp = CompressorPE(source)
-        
+
         inputs = comp.inputs()
         assert len(inputs) == 1
-        assert source in inputs
+        assert isinstance(inputs[0], DynamicsPE)
     
     def test_is_not_pure(self):
         """CompressorPE is not pure due to envelope state."""
@@ -384,3 +385,103 @@ class TestCompressorPEWithSine:
         # Check latter half after envelope settles
         latter_half = snippet.data[4410:, 0]
         assert np.max(np.abs(latter_half)) < 0.85
+
+
+class TestCompositeGraphLifecycle:
+    """Regression: CompressorPE/GatePE expose their internal graph via inputs().
+
+    The Renderer must be able to walk through the internal EnvelopePE and
+    DynamicsPE so it can manage their lifecycle (on_start/on_stop) without
+    manual forwarding.
+    """
+
+    @pytest.fixture
+    def renderer(self):
+        return NullRenderer(sample_rate=44100)
+
+    def test_compressor_renderer_reaches_envelope(self, renderer):
+        """Renderer.set_source() should reach the internal EnvelopePE."""
+        from pygmu2 import CachePE
+        from pygmu2.envelope_pe import EnvelopePE
+
+        source = SinePE(frequency=440.0, amplitude=0.8)
+        comp = CompressorPE(source, threshold=-6, ratio=4, makeup_gain=0)
+
+        renderer.set_source(comp)
+
+        # Collect all PEs the Renderer discovered
+        all_pes = renderer._pe_list
+        pe_types = {type(pe) for pe in all_pes}
+
+        assert EnvelopePE in pe_types, "Renderer should discover the internal EnvelopePE"
+        assert DynamicsPE in pe_types, "Renderer should discover the internal DynamicsPE"
+        assert CachePE in pe_types, "Source should be wrapped in CachePE"
+
+    def test_gate_renderer_reaches_envelope(self, renderer):
+        """Renderer.set_source() should reach the GatePE's internal EnvelopePE."""
+        from pygmu2 import CachePE
+        from pygmu2.envelope_pe import EnvelopePE
+
+        source = SinePE(frequency=440.0, amplitude=0.8)
+        gate = GatePE(source, threshold=-40)
+
+        renderer.set_source(gate)
+
+        all_pes = renderer._pe_list
+        pe_types = {type(pe) for pe in all_pes}
+
+        assert EnvelopePE in pe_types, "Renderer should discover the internal EnvelopePE"
+        assert DynamicsPE in pe_types, "Renderer should discover the internal DynamicsPE"
+        assert CachePE in pe_types, "Source should be wrapped in CachePE"
+
+    def test_compressor_no_manual_lifecycle(self, renderer):
+        """CompressorPE should not need _on_start/_on_stop/_reset_state."""
+        source = SinePE(frequency=440.0, amplitude=0.8)
+        comp = CompressorPE(source, threshold=-6, ratio=4, makeup_gain=0)
+
+        # These methods should not exist on CompressorPE anymore
+        assert not hasattr(comp, '_on_start'), "Manual _on_start should be removed"
+        assert not hasattr(comp, '_on_stop'), "Manual _on_stop should be removed"
+        assert not hasattr(comp, '_reset_state'), "Manual _reset_state should be removed"
+
+    def test_compressor_renders_after_renderer_lifecycle(self, renderer):
+        """CompressorPE should produce valid output when Renderer manages lifecycle."""
+        source = SinePE(frequency=100.0, amplitude=0.8)
+        comp = CompressorPE(source, threshold=-6, ratio=4, makeup_gain=0)
+
+        renderer.set_source(comp)
+        renderer.start()
+
+        snippet = comp.render(0, 4410)
+        assert snippet.data.shape == (4410, 1)
+        assert not np.all(snippet.data == 0), "Output should not be all zeros"
+
+        renderer.stop()
+
+    def test_gate_renders_after_renderer_lifecycle(self, renderer):
+        """GatePE should produce valid output when Renderer manages lifecycle."""
+        source = SinePE(frequency=100.0, amplitude=0.8)
+        gate = GatePE(source, threshold=-40)
+
+        renderer.set_source(gate)
+        renderer.start()
+
+        snippet = gate.render(0, 4410)
+        assert snippet.data.shape == (4410, 1)
+        assert not np.all(snippet.data == 0), "Output should not be all zeros"
+
+        renderer.stop()
+
+    def test_limiter_renders_after_renderer_lifecycle(self, renderer):
+        """LimiterPE (subclass of CompressorPE) should also work correctly."""
+        source = SinePE(frequency=100.0, amplitude=1.0)
+        limiter = LimiterPE(source, ceiling=-3.0)
+
+        renderer.set_source(limiter)
+        renderer.start()
+
+        snippet = limiter.render(0, 4410)
+        assert snippet.data.shape == (4410, 1)
+        assert not np.all(snippet.data == 0), "Output should not be all zeros"
+
+        renderer.stop()
