@@ -442,3 +442,34 @@ class TestGainPEIntegration:
         )
 
         renderer.stop()
+
+
+class TestGainPEDtype:
+    """Regression: GainPE output must remain float32, not upcast to float64."""
+
+    def test_constant_gain_preserves_float32(self):
+        source = ConstantPE(1.0)
+        gain = GainPE(source, gain=0.5)
+
+        renderer = NullRenderer(sample_rate=44100)
+        renderer.set_source(gain)
+        renderer.start()
+
+        snippet = gain.render(0, 100)
+        assert snippet.data.dtype == np.float32
+
+        renderer.stop()
+
+    def test_pe_gain_preserves_float32(self):
+        source = ConstantPE(1.0)
+        gain_pe = ConstantPE(0.5)
+        gain = GainPE(source, gain=gain_pe)
+
+        renderer = NullRenderer(sample_rate=44100)
+        renderer.set_source(gain)
+        renderer.start()
+
+        snippet = gain.render(0, 100)
+        assert snippet.data.dtype == np.float32
+
+        renderer.stop()

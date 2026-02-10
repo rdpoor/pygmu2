@@ -310,13 +310,36 @@ class TestDelayPEVariableBasics:
     def test_extent_from_delay_pe(self):
         source = PiecewisePE([(0, 0.0), (1000, 1.0)])  # Extent: (0, 1000)
         delay_pe = PiecewisePE([(0, 0.0), (500, 100.0)])  # Extent: (0, 500)
-        
+
         delay = DelayPE(source, delay=delay_pe)
         extent = delay.extent()
-        
-        # Extent should match delay PE, not source
+
+        # Extent is the intersection of source and delay PE extents
         assert extent.start == 0
         assert extent.end == 500
+
+    def test_extent_pe_delay_uses_source_extent(self):
+        """Regression: PE delay extent must include the source extent, not just the delay PE."""
+        source = CropPE(ConstantPE(1.0), start=100, duration=200)  # Extent: (100, 300)
+        delay_pe = ConstantPE(10.0)  # Infinite extent
+
+        delay = DelayPE(source, delay=delay_pe)
+        extent = delay.extent()
+
+        # Source is the limiting factor here; delay PE is infinite
+        assert extent.start == 100
+        assert extent.end == 300
+
+    def test_extent_pe_delay_intersection(self):
+        """Regression: when both source and delay PE are finite, extent is their intersection."""
+        source = PiecewisePE([(0, 0.0), (1000, 1.0)])      # Extent: (0, 1000)
+        delay_pe = PiecewisePE([(200, 0.0), (800, 100.0)])  # Extent: (200, 800)
+
+        delay = DelayPE(source, delay=delay_pe)
+        extent = delay.extent()
+
+        assert extent.start == 200
+        assert extent.end == 800
     
     def test_repr_pe(self):
         source = IdentityPE()
