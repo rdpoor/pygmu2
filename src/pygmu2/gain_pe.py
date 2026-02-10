@@ -122,10 +122,10 @@ class GainPE(ProcessingElement):
             # Apply gain
             result = source_snippet.data * gain_data
         else:
-            # Constant gain
-            result = source_snippet.data * self._gain
-        
-        return Snippet(start, result.astype(np.float32))
+            # Constant gain (cast to float32 to avoid upcasting to float64)
+            result = source_snippet.data * np.float32(self._gain)
+
+        return Snippet(start, result)
     
     def _compute_extent(self) -> Extent:
         """

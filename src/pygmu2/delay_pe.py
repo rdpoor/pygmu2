@@ -116,8 +116,8 @@ class DelayPE(ProcessingElement):
         For PE delays: extent matches the delay PE's extent.
         """
         if self._mode == "pe":
-            # Variable delay: extent comes from delay PE
-            return self._delay.extent()
+            # Variable delay: output exists where both source and delay control exist
+            return self._source.extent().intersection(self._delay.extent())
         else:
             # Fixed delay: shift source extent
             source_extent = self._source.extent()

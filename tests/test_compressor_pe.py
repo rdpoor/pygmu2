@@ -290,22 +290,22 @@ class TestGatePE:
         assert gate.threshold == -40.0
         assert gate.attack == 0.001
         assert gate.release == 0.05
-        assert gate.range == -80.0
-    
+        assert gate.gate_range == -80.0
+
     def test_create_with_params(self):
         """Test creating GatePE with custom params."""
         source = SinePE(frequency=440.0)
-        gate = GatePE(source, threshold=-30.0, attack=0.0005, release=0.1, range=-60.0)
-        
+        gate = GatePE(source, threshold=-30.0, attack=0.0005, release=0.1, gate_range=-60.0)
+
         assert gate.threshold == -30.0
         assert gate.attack == 0.0005
         assert gate.release == 0.1
-        assert gate.range == -60.0
+        assert gate.gate_range == -60.0
     
     def test_gate_silences_quiet_signal(self, renderer):
         """Gate should silence signal below threshold."""
         source = ConstantPE(0.001)  # -60dB, below -40dB threshold
-        gate = GatePE(source, threshold=-40, range=-80)
+        gate = GatePE(source, threshold=-40, gate_range=-80)
         
         renderer.set_source(gate)
         renderer.start()

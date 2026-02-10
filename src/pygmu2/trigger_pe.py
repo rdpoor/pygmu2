@@ -7,7 +7,7 @@ MIT License
 """
 
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 
@@ -92,7 +92,7 @@ class TriggerPE(ProcessingElement):
         """The trigger mode (same as trigger_mode)."""
         return self._mode
 
-    def inputs(self) -> List[ProcessingElement]:
+    def inputs(self) -> list[ProcessingElement]:
         return [self._source, self._trigger]
 
     def is_pure(self) -> bool:

@@ -56,7 +56,7 @@ class DynamicsPE(ProcessingElement):
                      (default: "auto")
         mode: Processing mode (default: COMPRESS)
         stereo_link: If True, use max envelope across channels (default: True)
-        range: For GATE mode, attenuation in dB when gated (default: -80.0)
+        gate_range: For GATE mode, attenuation in dB when gated (default: -80.0)
     
     Example:
         # Basic compression with EnvelopePE
@@ -89,7 +89,7 @@ class DynamicsPE(ProcessingElement):
         makeup_gain: Union[float, str] = "auto",
         mode: DynamicsMode = DynamicsMode.COMPRESS,
         stereo_link: bool = True,
-        range: float = -80.0,
+        gate_range: float = -80.0,
     ):
         self._source = source
         self._envelope = envelope
@@ -99,7 +99,7 @@ class DynamicsPE(ProcessingElement):
         self._makeup_gain = makeup_gain
         self._mode = mode
         self._stereo_link = stereo_link
-        self._range = range  # For gate mode
+        self._range = gate_range  # For gate mode
         
         # Compute auto makeup gain if requested
         if makeup_gain == self.AUTO:

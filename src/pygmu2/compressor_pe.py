@@ -272,6 +272,7 @@ class LimiterPE(CompressorPE):
             stereo_link=stereo_link,
         )
         self._ceiling = ceiling
+
     @property
     def ceiling(self) -> float:
         """Ceiling level in dB."""
@@ -296,7 +297,7 @@ class GatePE(ProcessingElement):
         attack: Envelope attack time in seconds (default: 0.001)
         release: Envelope release time in seconds (default: 0.05)
         hold: Hold time before release begins (default: 0.01) [NOT YET IMPLEMENTED]
-        range: Attenuation in dB when gated (default: -80.0)
+        gate_range: Attenuation in dB when gated (default: -80.0)
         knee: Soft knee width in dB (default: 0.0)
         stereo_link: If True, use max envelope across channels (default: True)
     
@@ -314,7 +315,7 @@ class GatePE(ProcessingElement):
         threshold: float = -40.0,
         attack: float = 0.001,
         release: float = 0.05,
-        range: float = -80.0,
+        gate_range: float = -80.0,
         knee: float = 0.0,
         stereo_link: bool = True,
     ):
@@ -322,7 +323,7 @@ class GatePE(ProcessingElement):
         self._threshold = threshold
         self._attack = attack
         self._release = release
-        self._range = range
+        self._range = gate_range
         self._knee = knee
         self._stereo_link = stereo_link
         
@@ -344,7 +345,7 @@ class GatePE(ProcessingElement):
             makeup_gain=0.0,
             mode=DynamicsMode.GATE,
             stereo_link=stereo_link,
-            range=range,
+            gate_range=gate_range,
         )
     
     @property
@@ -363,7 +364,7 @@ class GatePE(ProcessingElement):
         return self._release
     
     @property
-    def range(self) -> float:
+    def gate_range(self) -> float:
         """Gate attenuation in dB."""
         return self._range
     

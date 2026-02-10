@@ -52,13 +52,11 @@ class PEProfile:
             return 0.0
         return self.total_samples / (self.total_time_ns / 1_000_000_000)
     
-    @property
-    def realtime_ratio(self) -> float:
+    def realtime_ratio(self, sample_rate: int = 44100) -> float:
         """Ratio of realtime to render time (>1 means faster than realtime)."""
         if self.total_time_ns == 0:
             return 0.0
-        # Assuming 44100 Hz sample rate for this calculation
-        realtime_ns = (self.total_samples / 44100) * 1_000_000_000
+        realtime_ns = (self.total_samples / sample_rate) * 1_000_000_000
         return realtime_ns / self.total_time_ns
 
 
@@ -412,10 +410,7 @@ class Renderer(ABC):
                     f"{pe.__class__.__name__} has no inputs but "
                     f"channel_count() is None"
                 )
-            if hasattr(pe, 'resolve_channel_count'):
-                output = pe.resolve_channel_count(input_channel_counts)
-            else:
-                output = input_channel_counts[0]  # Default: match first input
+            output = pe.resolve_channel_count(input_channel_counts)
         
         # Cache and return
         seen[pe_id] = output

@@ -249,7 +249,7 @@ class TestDynamicsPEGate:
             source, envelope,
             threshold=-40,
             mode=DynamicsMode.GATE,
-            range=-80,  # Attenuate by 80dB when gated
+            gate_range=-80,  # Attenuate by 80dB when gated
             makeup_gain=0,
         )
         

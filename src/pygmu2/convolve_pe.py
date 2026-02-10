@@ -45,7 +45,7 @@ class ConvolvePE(ProcessingElement):
 
     Args:
         src: Source audio PE
-        filter: FIR filter PE (must be finite and start at 0)
+        fir: FIR filter PE (must be finite and start at 0)
         fft_size: Optional FFT size for overlap-save. Must be >= filter_len.
                   If None, a default is chosen based on filter length.
     """
@@ -53,16 +53,16 @@ class ConvolvePE(ProcessingElement):
     def __init__(
         self,
         src: ProcessingElement,
-        filter: ProcessingElement,
+        fir: ProcessingElement,
         *,
         fft_size: Optional[int] = None,
     ):
         self._src = src
-        self._filter = filter
+        self._fir = fir
         self._fft_size = int(fft_size) if fft_size is not None else None
 
         # Cached filter/FFT state (prepared on start / first render)
-        self._filter_len: Optional[int] = None
+        self._fir_len: Optional[int] = None
         self._H: Optional[np.ndarray] = None  # shape (bins,) or (bins, channels)
 
         # Streaming history
@@ -74,15 +74,15 @@ class ConvolvePE(ProcessingElement):
         return self._src
 
     @property
-    def filter(self) -> ProcessingElement:
-        return self._filter
+    def fir(self) -> ProcessingElement:
+        return self._fir
 
     @property
     def fft_size(self) -> Optional[int]:
         return self._fft_size
 
     def inputs(self) -> list[ProcessingElement]:
-        return [self._src, self._filter]
+        return [self._src, self._fir]
 
     @staticmethod
     def ir_energy_norm(filter_pe: ProcessingElement) -> float:
@@ -122,7 +122,7 @@ class ConvolvePE(ProcessingElement):
         - mono src + multi-channel filter: out_ch == filter channels
         """
         src_ch = self._src.channel_count()
-        filt_ch = self._filter.channel_count()
+        filt_ch = self._fir.channel_count()
 
         if src_ch is None and filt_ch is None:
             return None
@@ -161,7 +161,7 @@ class ConvolvePE(ProcessingElement):
         - end: if src finite, src.end + (filter_len - 1)
         """
         src_ext = self._src.extent()
-        filt_ext = self._filter.extent()
+        filt_ext = self._fir.extent()
 
         # Validate filter extent contract (without rendering)
         if filt_ext.start is not None and filt_ext.start != 0:
@@ -184,10 +184,10 @@ class ConvolvePE(ProcessingElement):
         return Extent(start, int(src_ext.end + (filt_len - 1)))
 
     def _ensure_filter_prepared(self) -> None:
-        if self._H is not None and self._filter_len is not None:
+        if self._H is not None and self._fir_len is not None:
             return
 
-        filt_ext = self._filter.extent()
+        filt_ext = self._fir.extent()
         if filt_ext.start != 0 or filt_ext.end is None:
             raise ValueError(f"ConvolvePE filter must have extent Extent(0, N), got {filt_ext}")
 
@@ -196,7 +196,7 @@ class ConvolvePE(ProcessingElement):
             raise ValueError("ConvolvePE filter must be non-empty")
 
         # Render the FIR once
-        h = self._filter.render(0, filt_len).data.astype(np.float64, copy=False)
+        h = self._fir.render(0, filt_len).data.astype(np.float64, copy=False)
         if h.ndim != 2 or h.shape[0] != filt_len:
             raise ValueError(f"ConvolvePE filter returned invalid shape {getattr(h, 'shape', None)}")
 
@@ -239,7 +239,7 @@ class ConvolvePE(ProcessingElement):
         else:
             H = np.fft.rfft(h, n=nfft, axis=0)  # shape (bins, channels)
 
-        self._filter_len = filt_len
+        self._fir_len = filt_len
         self._H = H
 
         # Initialize tail to zeros
@@ -250,14 +250,14 @@ class ConvolvePE(ProcessingElement):
 
     def _render(self, start: int, duration: int) -> Snippet:
         self._ensure_filter_prepared()
-        assert self._filter_len is not None and self._H is not None and self._tail is not None
+        assert self._fir_len is not None and self._H is not None and self._tail is not None
 
         # Handle non-contiguous render: clear history
         if self._last_render_end is None or start != self._last_render_end:
             self._tail[:] = 0.0
 
         nfft = int(self._fft_size)  # type: ignore[arg-type]
-        filt_len = int(self._filter_len)
+        filt_len = int(self._fir_len)
         tail_len = filt_len - 1
         hop = nfft - tail_len
         if hop < 1:
@@ -345,6 +345,6 @@ class ConvolvePE(ProcessingElement):
     def __repr__(self) -> str:
         return (
             f"ConvolvePE(src={self._src.__class__.__name__}, "
-            f"filter={self._filter.__class__.__name__}, fft_size={self._fft_size})"
+            f"fir={self._fir.__class__.__name__}, fft_size={self._fft_size})"
         )
 
