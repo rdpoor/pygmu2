@@ -77,15 +77,17 @@ class JogShuttleApp:
     # Shuttle limits
     SHUTTLE_MIN = -8.0
     SHUTTLE_MAX = 8.0
-    SHUTTLE_REST = 1.0
+    SHUTTLE_REST = 0.0
     SHUTTLE_RES = 0.1
+    SHUTTLE_SNAP_ZERO = 0.3  # snap to 0 when within this range
+    SHUTTLE_CURVE = 2.0      # power curve exponent (1.0 = linear)
 
     # Polling intervals (ms)
     PLAYHEAD_POLL_MS = 33  # ~30 Hz
     SPRING_BACK_MS = 16    # ~60 fps
 
     # Spring-back dynamics
-    SPRING_FACTOR = 0.15   # exponential ease factor per tick
+    SPRING_FACTOR = 0.30   # exponential ease factor per tick
 
     def __init__(self, root: tk.Tk, initial_path: str | None = None):
         self.root = root
@@ -105,12 +107,13 @@ class JogShuttleApp:
         self._rate_control: ControlPE | None = None
         self._renderer: AudioRenderer | None = None
 
-        # Transport state
+        # Transport state — rate == 0 means paused, _set_rate() is sole authority
         self._playing = False
+        self._rate: float = 0.0
         self._resume_from: int = 0
         self._spring_back_id: str | None = None
         self._poll_id: str | None = None
-        self._shuttle_grabbed = False
+        self._scrubbing = False
 
         # Build UI
         self._build_ui()
@@ -143,6 +146,8 @@ class JogShuttleApp:
                                  highlightthickness=0)
         self._canvas.pack(fill=tk.BOTH, expand=True, padx=8, pady=4)
         self._canvas.bind("<Button-1>", self._on_canvas_click)
+        self._canvas.bind("<B1-Motion>", self._on_canvas_drag)
+        self._canvas.bind("<ButtonRelease-1>", self._on_canvas_release)
         self._canvas.bind("<Configure>", self._on_canvas_resize)
 
         # --- Transport buttons ---
@@ -268,97 +273,54 @@ class JogShuttleApp:
         self._playing = False
 
     # ------------------------------------------------------------------
-    # Transport controls
+    # Transport — _set_rate() is the single point of control
     # ------------------------------------------------------------------
 
-    def _on_play(self) -> None:
-        tw_pos = self._timewarp._pos if self._timewarp else "?"
-        rate = self._shuttle_var.get()
-        logger.debug(
-            "PLAY pressed: playing=%s, resume_from=%s, rate=%.2f, tw._pos=%s, renderer=%s",
-            self._playing, self._resume_from, rate, tw_pos,
-            "ok" if self._renderer else "None",
-        )
+    def _set_rate(self, rate: float) -> None:
+        """Set playback rate; start/stop audio stream as needed."""
         if self._renderer is None:
             return
-        if not self._playing:
-            if self._rate_control is not None:
-                self._rate_control.set_value(rate)
-            # Resume from where we left off (preserves impure PE contiguity)
+        self._rate = rate
+        if rate != 0.0:
+            self._cancel_spring_back()
+        if self._rate_control is not None:
+            self._rate_control.set_value(rate)
+        if rate != 0.0 and not self._playing:
             self._renderer.stream_start(start=self._resume_from)
             self._playing = True
-            logger.debug("PLAY: streaming started at %s", self._resume_from)
+            logger.debug("STREAM_START: rate=%.2f, resume_from=%s", rate, self._resume_from)
+        elif rate == 0.0 and self._playing:
+            self._renderer.stream_stop()
+            self._resume_from = self._renderer.stream_position
+            self._playing = False
+            logger.debug("STREAM_STOP: resume_from=%s", self._resume_from)
+
+    def _on_play(self) -> None:
+        self._set_rate(1.0)
 
     def _on_pause(self) -> None:
-        tw_pos = self._timewarp._pos if self._timewarp else "?"
-        logger.debug(
-            "PAUSE pressed: playing=%s, tw._pos=%s, renderer=%s",
-            self._playing, tw_pos,
-            "ok" if self._renderer else "None",
-        )
-        if self._renderer is None:
-            return
-        if self._playing:
-            # Save position before stopping the stream
-            self._resume_from = self._renderer.stream_position
-            self._renderer.stream_stop()
-            self._playing = False
-            logger.debug("PAUSE: stopped, resume_from=%s", self._resume_from)
+        self._set_rate(0.0)
 
     def _on_stop(self) -> None:
-        tw_pos = self._timewarp._pos if self._timewarp else "?"
-        logger.debug(
-            "STOP pressed: playing=%s, tw._pos=%s, renderer=%s",
-            self._playing, tw_pos,
-            "ok" if self._renderer else "None",
-        )
         if self._renderer is None:
             return
-        if self._playing:
-            self._renderer.stream_stop()
-            self._playing = False
-        # Full stop: reset TimeWarpPE._pos to 0
+        self._set_rate(0.0)
+        # Full reset: clear all PE state and position
         self._renderer.stop()
         self._renderer.start()
-        # After full stop/start, PE contiguity is reset — start from 0
         self._resume_from = 0
-        logger.debug("STOP: graph reset, resume_from=0, tw._pos=%s",
-                      self._timewarp._pos if self._timewarp else "?")
-        # Reset shuttle to 1x
         self._cancel_spring_back()
         self._shuttle_var.set(self.SHUTTLE_REST)
-        if self._rate_control is not None:
-            self._rate_control.set_value(self.SHUTTLE_REST)
 
     def _on_beginning(self) -> None:
-        logger.debug("BEGINNING pressed: playing=%s", self._playing)
-        self._seek_to(0)
+        if self._timewarp is not None:
+            self._timewarp._pos = 0.0
 
     def _on_end(self) -> None:
-        logger.debug("END pressed: playing=%s", self._playing)
-        if self._total_frames > 0:
-            self._seek_to(self._total_frames)
-
-    def _seek_to(self, frame: int) -> None:
-        if self._timewarp is None:
-            return
-        was_playing = self._playing
-        old_pos = self._timewarp._pos
-        if self._playing:
-            self._resume_from = self._renderer.stream_position
-            self._renderer.stream_stop()
-            self._playing = False
-        self._timewarp._pos = float(frame)
-        logger.debug(
-            "SEEK: %s -> %s, was_playing=%s, resume_from=%s",
-            old_pos, frame, was_playing, self._resume_from,
-        )
-        if was_playing:
-            self._renderer.stream_start(start=self._resume_from)
-            self._playing = True
+        if self._timewarp is not None and self._total_frames > 0:
+            self._timewarp._pos = float(self._total_frames)
 
     def _toggle_play_pause(self) -> None:
-        logger.debug("TOGGLE: playing=%s", self._playing)
         if self._playing:
             self._on_pause()
         else:
@@ -368,21 +330,36 @@ class JogShuttleApp:
     # Shuttle slider
     # ------------------------------------------------------------------
 
+    def _slider_to_rate(self, val: float) -> float:
+        """Map slider position to playback rate via power curve.
+
+        With SHUTTLE_CURVE=2 and SHUTTLE_MAX=8:
+          slider ±1 → rate ±0.125    (fine scrub)
+          slider ±2 → rate ±0.5
+          slider ±4 → rate ±2.0
+          slider ±8 → rate ±8.0
+        """
+        if val == 0.0:
+            return 0.0
+        sign = 1.0 if val > 0 else -1.0
+        normalized = abs(val) / self.SHUTTLE_MAX
+        return sign * (normalized ** self.SHUTTLE_CURVE) * self.SHUTTLE_MAX
+
     def _on_shuttle_change(self, val_str: str) -> None:
         val = float(val_str)
-        logger.debug("SHUTTLE: %.2f", val)
-        if self._rate_control is not None:
-            self._rate_control.set_value(val)
+        if abs(val) < self.SHUTTLE_SNAP_ZERO:
+            val = 0.0
+            self._shuttle_var.set(val)
+        self._set_rate(self._slider_to_rate(val))
 
     def _on_shuttle_press(self, event: tk.Event) -> None:
-        logger.debug("SHUTTLE_PRESS")
-        self._shuttle_grabbed = True
         self._cancel_spring_back()
+        # Snap slider to click position (default binding then starts drag from there)
+        value = float(self._shuttle.tk.call(self._shuttle, 'get', event.x, event.y))
+        self._shuttle.set(value)
 
     def _on_shuttle_release(self, event: tk.Event) -> None:
-        logger.debug("SHUTTLE_RELEASE: starting spring-back from %.2f",
-                      self._shuttle_var.get())
-        self._shuttle_grabbed = False
+        self._set_rate(0.0)
         self._start_spring_back()
 
     def _start_spring_back(self) -> None:
@@ -395,20 +372,14 @@ class JogShuttleApp:
             self._spring_back_id = None
 
     def _spring_back_tick(self) -> None:
-        if self._shuttle_grabbed:
-            return
         current = self._shuttle_var.get()
         diff = self.SHUTTLE_REST - current
         if abs(diff) < 0.05:
             self._shuttle_var.set(self.SHUTTLE_REST)
-            if self._rate_control is not None:
-                self._rate_control.set_value(self.SHUTTLE_REST)
             self._spring_back_id = None
             return
         new_val = current + diff * self.SPRING_FACTOR
         self._shuttle_var.set(new_val)
-        if self._rate_control is not None:
-            self._rate_control.set_value(new_val)
         self._spring_back_id = self.root.after(
             self.SPRING_BACK_MS, self._spring_back_tick
         )
@@ -464,16 +435,32 @@ class JogShuttleApp:
                                  tags="playhead")
 
     def _on_canvas_click(self, event: tk.Event) -> None:
-        if self._total_frames == 0:
+        if self._total_frames == 0 or self._timewarp is None:
             return
         w = self._canvas.winfo_width()
         if w <= 0:
             return
-        frac = event.x / w
-        frac = max(0.0, min(1.0, frac))
+        frac = max(0.0, min(1.0, event.x / w))
         target = int(frac * self._total_frames)
-        logger.debug("CANVAS_CLICK: x=%d, frac=%.3f, target=%d", event.x, frac, target)
-        self._seek_to(target)
+        # If paused, start stream for scrub (release will pause again)
+        if not self._playing:
+            self._scrubbing = True
+            self._set_rate(1.0)
+        self._timewarp._pos = float(target)
+
+    def _on_canvas_drag(self, event: tk.Event) -> None:
+        if self._timewarp is None or self._total_frames == 0:
+            return
+        w = self._canvas.winfo_width()
+        if w <= 0:
+            return
+        frac = max(0.0, min(1.0, event.x / w))
+        self._timewarp._pos = float(int(frac * self._total_frames))
+
+    def _on_canvas_release(self, event: tk.Event) -> None:
+        if self._scrubbing:
+            self._scrubbing = False
+            self._set_rate(0.0)
 
     def _on_canvas_resize(self, event: tk.Event) -> None:
         # Recompute peaks at new width and redraw
@@ -493,18 +480,26 @@ class JogShuttleApp:
     def _poll_tick(self) -> None:
         if self._timewarp is not None and self._total_frames > 0:
             pos = self._timewarp._pos
-            # Auto-stop at EOF or before-beginning
-            if self._playing and (pos >= self._total_frames or pos < 0):
-                logger.debug("AUTO-STOP: pos=%.1f, total=%d", pos, self._total_frames)
-                self._on_pause()
-            # Update playhead
+            # Clamp position to valid range
+            if pos < 0:
+                self._timewarp._pos = 0.0
+                pos = 0.0
+            elif pos > self._total_frames:
+                self._timewarp._pos = float(self._total_frames)
+                pos = float(self._total_frames)
+            # Auto-pause at boundaries (direction-aware)
+            if self._playing and not self._scrubbing:
+                at_end = pos >= self._total_frames and self._rate > 0
+                at_start = pos <= 0 and self._rate < 0
+                if at_end or at_start:
+                    logger.debug("AUTO-STOP: pos=%.1f, rate=%.2f", pos, self._rate)
+                    self._set_rate(0.0)
+            # Update playhead and position label
             self._draw_playhead()
-            # Update position label
             pos_str = self._format_time(max(0, pos))
             dur_str = self._format_time(self._total_frames)
-            rate = self._shuttle_var.get()
             self._pos_label.config(
-                text=f"Position: {pos_str} / {dur_str}   Rate: {rate:.1f}x"
+                text=f"Position: {pos_str} / {dur_str}   Rate: {self._rate:.1f}x"
             )
         self._poll_id = self.root.after(self.PLAYHEAD_POLL_MS, self._poll_tick)
 
@@ -541,10 +536,12 @@ def main() -> None:
                         help="Enable DEBUG logging to stderr")
     args = parser.parse_args()
 
+    level = logging.DEBUG if args.debug else logging.WARNING
     logging.basicConfig(
-        level=logging.DEBUG if args.debug else logging.WARNING,
+        level=level,
         format="%(asctime)s %(name)s %(message)s",
         datefmt="%H:%M:%S",
+        force=True,
     )
 
     # Need a default sample rate for PE construction before any file is loaded

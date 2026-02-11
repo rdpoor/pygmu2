@@ -35,11 +35,10 @@ from urllib.parse import urlparse
 import soundfile as sf
 
 from pygmu2.config import handle_error
-from pygmu2.logger import setup_logging, get_logger
+from pygmu2.logger import get_logger
 from pygmu2.wav_reader_pe import WavReaderPE
 
 logger = get_logger(__name__)
-setup_logging(level="INFO")
 
 def _create_ssl_context() -> ssl.SSLContext:
     """
