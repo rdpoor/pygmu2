@@ -27,6 +27,7 @@ from pygmu2.function_gen_pe import FunctionGenPE
 from pygmu2.blit_saw_pe import BlitSawPE
 from pygmu2.compressor_pe import CompressorPE, LimiterPE, GatePE
 from pygmu2.constant_pe import ConstantPE
+from pygmu2.control_pe import ControlPE
 from pygmu2.crop_pe import CropPE
 from pygmu2.set_extent_pe import SetExtentPE
 from pygmu2.delay_pe import DelayPE
@@ -152,6 +153,7 @@ __all__ = [
     "BlitSawPE",
     "CompressorPE",
     "ConstantPE",
+    "ControlPE",
     "CropPE",
     "SetExtentPE",
     "DelayPE",
