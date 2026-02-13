@@ -44,6 +44,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSlider,
     QStyle,
+    QStyleOptionSlider,
     QVBoxLayout,
     QWidget,
 )
@@ -206,6 +207,51 @@ class WaveformWidget(QWidget):
 # Shuttle slider with float mapping
 # ---------------------------------------------------------------------------
 
+class RateSlider(QSlider):
+    """QSlider with an oversized handle that displays the playback rate."""
+
+    HANDLE_W = 48
+    HANDLE_H = 22
+
+    def __init__(self, orientation, parent=None):
+        super().__init__(orientation, parent)
+        self._rate_text: str = "0.0x"
+        # Style the handle large enough to hold text
+        self.setStyleSheet(f"""
+            QSlider::groove:horizontal {{
+                height: 6px;
+                background: #3a3a4e;
+                border-radius: 3px;
+            }}
+            QSlider::handle:horizontal {{
+                width: {self.HANDLE_W}px;
+                height: {self.HANDLE_H}px;
+                margin: -{(self.HANDLE_H - 6) // 2}px 0;
+                background: #5a5a7e;
+                border: 1px solid #7a7a9e;
+                border-radius: 4px;
+            }}
+        """)
+
+    def set_rate_text(self, text: str) -> None:
+        if text != self._rate_text:
+            self._rate_text = text
+            self.update()
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        # Locate the handle and draw rate text centred inside it
+        opt = QStyleOptionSlider()
+        self.initStyleOption(opt)
+        handle = self.style().subControlRect(
+            QStyle.CC_Slider, opt, QStyle.SC_SliderHandle, self
+        )
+        p = QPainter(self)
+        p.setPen(QColor("#e0e0e0"))
+        p.drawText(handle, Qt.AlignCenter, self._rate_text)
+        p.end()
+
+
 class ShuttleSlider(QWidget):
     """QSlider wrapper mapping integer ticks to float shuttle values."""
 
@@ -226,7 +272,7 @@ class ShuttleSlider(QWidget):
         self._label_min = QLabel("-8x")
         self._label_max = QLabel("8x")
 
-        self._slider = QSlider(Qt.Horizontal)
+        self._slider = RateSlider(Qt.Horizontal)
         self._jump_style = JumpSliderStyle()   # prevent GC; no-arg uses app style
         self._slider.setStyle(self._jump_style)
         self._slider.setMinimum(self.INT_MIN)
@@ -247,6 +293,9 @@ class ShuttleSlider(QWidget):
 
     def value(self) -> float:
         return self._slider.value() / self.SCALE
+
+    def set_rate_display(self, rate: float) -> None:
+        self._slider.set_rate_text(f"{rate:.1f}x")
 
     def set_value(self, val: float) -> None:
         self._slider.blockSignals(True)
@@ -611,11 +660,10 @@ class JogShuttleApp(QMainWindow):
                     logger.debug("AUTO-STOP: pos=%.1f, rate=%.2f", pos, self._rate)
                     self._set_rate(0.0)
             self._waveform.set_playhead(pos / self._total_frames)
+            self._shuttle.set_rate_display(self._rate)
             pos_str = self._format_time(max(0, pos))
             dur_str = self._format_time(self._total_frames)
-            self._pos_label.setText(
-                f"Position: {pos_str} / {dur_str}   Rate: {self._rate:.1f}x"
-            )
+            self._pos_label.setText(f"Position: {pos_str} / {dur_str}")
 
     # ------------------------------------------------------------------
     # Utilities
