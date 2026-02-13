@@ -29,6 +29,8 @@ from PySide6.QtCore import QTimer, Qt, Signal
 from PySide6.QtGui import (
     QCloseEvent,
     QColor,
+    QFont,
+    QFontDatabase,
     QKeySequence,
     QMouseEvent,
     QPainter,
@@ -260,10 +262,10 @@ class ShuttleSlider(QWidget):
     pressed = Signal()
     released = Signal()
 
-    # Integer range: -80..80 maps to float -8.0..8.0
-    INT_MIN = -80
-    INT_MAX = 80
-    SCALE = 10.0
+    # Integer range: -800..800 maps to float -8.0..8.0
+    INT_MIN = -800
+    INT_MAX = 800
+    SCALE = 100.0
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -296,7 +298,7 @@ class ShuttleSlider(QWidget):
         return self._slider.value() / self.SCALE
 
     def set_rate_display(self, rate: float) -> None:
-        self._slider.set_rate_text(f"{rate:.1f}x")
+        self._slider.set_rate_text(f"{rate:.2f}x")
 
     def set_value(self, val: float) -> None:
         self._slider.blockSignals(True)
@@ -314,7 +316,6 @@ class JogShuttleApp(QMainWindow):
     # Shuttle limits
     SHUTTLE_MIN = -8.0
     SHUTTLE_MAX = 8.0
-    SHUTTLE_REST = 0.0
     SHUTTLE_SNAP_ZERO = 0.3
     SHUTTLE_CURVE = 2.0
 
@@ -348,6 +349,7 @@ class JogShuttleApp(QMainWindow):
         self._rate: float = 0.0
         self._resume_from: int = 0
         self._scrubbing = False
+        self._shuttle_rest: float = 0.0
 
         # Build UI
         self._build_ui()
@@ -423,7 +425,9 @@ class JogShuttleApp(QMainWindow):
         layout.addWidget(self._shuttle)
 
         # --- Position label ---
-        self._pos_label = QLabel("Position: --:-- / --:--")
+        self._pos_label = QLabel("Position: --:--.--- (0 samples)")
+        self._pos_label.setFont(QFontDatabase.systemFont(QFontDatabase.FixedFont))
+        self._pos_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         layout.addWidget(self._pos_label)
 
     def _bind_keys(self) -> None:
@@ -478,7 +482,7 @@ class JogShuttleApp(QMainWindow):
         self._file_label.setText(f"File: {name}  ({dur_str})")
 
     def _build_graph(self, path: str) -> None:
-        self._rate_control = ControlPE(initial_value=self.SHUTTLE_REST)
+        self._rate_control = ControlPE(initial_value=self._shuttle_rest)
         self._wav_pe = WavReaderPE(path)
         self._timewarp = TimeWarpPE(self._wav_pe, rate=self._rate_control)
         output = GainPE(self._timewarp, gain=0.8)
@@ -532,16 +536,22 @@ class JogShuttleApp(QMainWindow):
 
     def _on_play(self) -> None:
         logger.debug("PLAY: playing=%s, rate=%.2f", self._playing, self._rate)
+        self._shuttle_rest = 1.0
+        self._shuttle.set_value(self._rate_to_slider(1.0))
         self._set_rate(1.0)
 
     def _on_pause(self) -> None:
         logger.debug("PAUSE: playing=%s, rate=%.2f", self._playing, self._rate)
+        self._shuttle_rest = 0.0
+        self._shuttle.set_value(0.0)
         self._set_rate(0.0)
 
     def _on_stop(self) -> None:
         logger.debug("STOP: playing=%s, rate=%.2f", self._playing, self._rate)
         if self._renderer is None:
             return
+        self._shuttle_rest = 0.0
+        self._shuttle.set_value(0.0)
         self._set_rate(0.0)
         self._renderer.stop()
         self._renderer.start()
@@ -549,7 +559,6 @@ class JogShuttleApp(QMainWindow):
         if self._timewarp is not None:
             self._timewarp._pos = 0.0
         self._spring_timer.stop()
-        self._shuttle.set_value(self.SHUTTLE_REST)
 
     def _on_beginning(self) -> None:
         logger.debug("BEGINNING: playing=%s", self._playing)
@@ -580,6 +589,14 @@ class JogShuttleApp(QMainWindow):
         normalized = abs(val) / self.SHUTTLE_MAX
         return sign * (normalized ** self.SHUTTLE_CURVE) * self.SHUTTLE_MAX
 
+    def _rate_to_slider(self, rate: float) -> float:
+        """Map playback rate to slider position (inverse of _slider_to_rate)."""
+        if rate == 0.0:
+            return 0.0
+        sign = 1.0 if rate > 0 else -1.0
+        normalized = abs(rate) / self.SHUTTLE_MAX
+        return sign * (normalized ** (1.0 / self.SHUTTLE_CURVE)) * self.SHUTTLE_MAX
+
     def _on_shuttle_change(self, val: float) -> None:
         if abs(val) < self.SHUTTLE_SNAP_ZERO:
             val = 0.0
@@ -590,14 +607,15 @@ class JogShuttleApp(QMainWindow):
         self._spring_timer.stop()
 
     def _on_shuttle_release(self) -> None:
-        self._set_rate(0.0)
+        self._set_rate(self._shuttle_rest)
         self._spring_timer.start()
 
     def _spring_back_tick(self) -> None:
+        target = self._rate_to_slider(self._shuttle_rest)
         current = self._shuttle.value()
-        diff = self.SHUTTLE_REST - current
+        diff = target - current
         if abs(diff) < 0.05:
-            self._shuttle.set_value(self.SHUTTLE_REST)
+            self._shuttle.set_value(target)
             self._spring_timer.stop()
             return
         new_val = current + diff * self.SPRING_FACTOR
@@ -664,8 +682,10 @@ class JogShuttleApp(QMainWindow):
             self._waveform.set_playhead(pos / self._total_frames)
             self._shuttle.set_rate_display(self._rate)
             pos_str = self._format_time(max(0, pos))
-            dur_str = self._format_time(self._total_frames)
-            self._pos_label.setText(f"Position: {pos_str} / {dur_str}")
+            samples = int(max(0, pos))
+            self._pos_label.setText(
+                f"Position: {pos_str} ({samples} samples)"
+            )
 
     # ------------------------------------------------------------------
     # Utilities
