@@ -6,7 +6,7 @@ A Qt-based audio player with variable-speed playback (jog/shuttle)
 using the pygmu2 PE graph infrastructure.
 
 Usage:
-    uv run python examples/jogshuttle_qt.py [path/to/file.wav]
+    uv run python scripts/jogshuttle.py [path/to/file.wav]
 
 Requires the 'gui' optional dependency:
     uv add --optional gui PySide6
@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -61,7 +62,7 @@ from pygmu2 import (
 
 logger = logging.getLogger("jogshuttle")
 
-AUDIO_DIR = Path(__file__).parent / "audio"
+AUDIO_DIR = Path(__file__).resolve().parent.parent / "examples" / "audio"
 
 
 # ---------------------------------------------------------------------------
@@ -324,13 +325,14 @@ class JogShuttleApp(QMainWindow):
     # Spring-back dynamics
     SPRING_FACTOR = 0.30
 
-    def __init__(self, initial_path: str | None = None):
+    def __init__(self, initial_path: str | None = None, delete_on_close: bool = False):
         super().__init__()
         self.setWindowTitle("pygmu2 Jog/Shuttle Player")
         self.setMinimumSize(640, 400)
 
         # Audio state
         self._wav_path: str | None = None
+        self._delete_on_close: bool = delete_on_close
         self._sample_rate: int = 44100
         self._total_frames: int = 0
         self._channels: int = 1
@@ -682,6 +684,11 @@ class JogShuttleApp(QMainWindow):
         self._spring_timer.stop()
         self._resize_timer.stop()
         self._teardown_graph()
+        if self._delete_on_close and self._wav_path is not None:
+            try:
+                os.remove(self._wav_path)
+            except OSError:
+                pass
         event.accept()
 
 
@@ -695,6 +702,8 @@ def main() -> None:
                         help="Path to a WAV file to open on startup")
     parser.add_argument("--debug", action="store_true",
                         help="Enable DEBUG logging to stderr")
+    parser.add_argument("--delete-on-close", action="store_true",
+                        help="Delete the WAV file when the player closes")
     args = parser.parse_args()
 
     level = logging.DEBUG if args.debug else logging.WARNING
@@ -708,7 +717,8 @@ def main() -> None:
     pg.set_sample_rate(44100)
 
     app = QApplication(sys.argv)
-    window = JogShuttleApp(initial_path=args.file)
+    window = JogShuttleApp(initial_path=args.file,
+                           delete_on_close=args.delete_on_close)
     window.show()
     sys.exit(app.exec())
 

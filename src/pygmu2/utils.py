@@ -7,7 +7,9 @@ from __future__ import annotations
 from typing import Optional
 
 import os
+import subprocess
 import tempfile
+from pathlib import Path
 
 from pygmu2.config import get_sample_rate
 from pygmu2.processing_element import ProcessingElement
@@ -99,3 +101,47 @@ def play_offline(
         render_to_file(source, path, sample_rate=sr, extent=extent)
         if omit_playback != True:
             play(WavReaderPE(path), sample_rate=sr)
+
+
+def browse(
+    source: ProcessingElement,
+    sample_rate: Optional[int] = None,
+    path: Optional[str] = None,
+) -> None:
+    """
+    Render a PE to a WAV file, then open it in the jog/shuttle player.
+
+    The jogshuttle player runs as a separate process and this function
+    returns immediately.
+
+    Args:
+        source: PE to render (must have finite extent).
+        sample_rate: Optional sample rate override (uses global if None).
+        path: Path to write WAV file.  If None, a temporary file is created
+              and automatically deleted when the player closes.
+    """
+    sr = _resolve_sample_rate(sample_rate)
+    extent = source.extent()
+    if extent.start is None or extent.end is None:
+        raise RuntimeError("Cannot browse: source has infinite extent.")
+
+    delete_on_close = path is None
+    if path is None:
+        fd, path = tempfile.mkstemp(suffix=".wav")
+        os.close(fd)
+
+    path = str(Path(path).resolve())
+    render_to_file(source, path, sample_rate=sr, extent=extent)
+
+    project_root = Path(__file__).resolve().parents[2]
+    script_path = project_root / "scripts" / "jogshuttle.py"
+    if not script_path.exists():
+        raise FileNotFoundError(
+            "scripts/jogshuttle.py not found — run from the pygmu2 source tree"
+        )
+    cmd = ["uv", "run", "--directory", str(project_root), "python",
+           str(script_path), path]
+    if delete_on_close:
+        cmd.append("--delete-on-close")
+    env = {k: v for k, v in os.environ.items() if k != "VIRTUAL_ENV"}
+    subprocess.Popen(cmd, env=env)
