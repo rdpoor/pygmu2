@@ -53,6 +53,10 @@ dev = [
 ssl = [
     "certifi>=2023.0.0",
 ]
+# PySide6 (Qt 6) GUI for examples like jogshuttle_qt.py
+gui = [
+    "pyside6>=6.5.0",
+]
 # Google Drive OAuth support
 gdrive = [
     "google-auth>=2.0.0",
