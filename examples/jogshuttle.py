@@ -29,7 +29,6 @@ from pygmu2 import (
     AudioRenderer,
     ControlPE,
     GainPE,
-    LoopPE,
     TimeWarpPE,
     WavReaderPE,
 )
@@ -113,11 +112,13 @@ class JogShuttleApp:
         self._resume_from: int = 0
         self._spring_back_id: str | None = None
         self._poll_id: str | None = None
+        self._resize_id: str | None = None
         self._scrubbing = False
 
         # Build UI
         self._build_ui()
         self._bind_keys()
+        self.root.focus_force()
 
         # Start playhead polling
         self._schedule_poll()
@@ -157,13 +158,19 @@ class JogShuttleApp:
         for text, cmd in [
             ("|<", self._on_beginning),
             ("Play", self._on_play),
-            ("Pause", self._on_pause),
+            ("Pause", self._toggle_play_pause),
             ("Stop", self._on_stop),
             (">|", self._on_end),
         ]:
-            tk.Button(transport, text=text, width=7, command=cmd).pack(
-                side=tk.LEFT, padx=2
-            )
+            lbl = tk.Label(transport, text=text, width=7, relief="raised",
+                           bd=2, padx=4, pady=2)
+            lbl.bind("<ButtonPress-1>",
+                     lambda e, c=cmd, w=lbl: (
+                         w.config(relief="sunken"), c(),
+                         self.root.focus_force()))
+            lbl.bind("<ButtonRelease-1>",
+                     lambda e, w=lbl: w.config(relief="raised"))
+            lbl.pack(side=tk.LEFT, padx=2)
 
         # --- Shuttle slider ---
         shuttle_frame = tk.Frame(self.root)
@@ -178,7 +185,7 @@ class JogShuttleApp:
             resolution=self.SHUTTLE_RES,
             orient=tk.HORIZONTAL,
             variable=self._shuttle_var,
-            showvalue=True,
+            showvalue=False,
             command=self._on_shuttle_change,
         )
         self._shuttle.pack(side=tk.LEFT, fill=tk.X, expand=True)
@@ -194,6 +201,7 @@ class JogShuttleApp:
         self._pos_label.pack(fill=tk.X, padx=8, pady=(0, 8))
 
     def _bind_keys(self) -> None:
+        self.root.bind("<Key>", lambda e: logger.debug("KEY: keysym=%s", e.keysym))
         self.root.bind("<space>", lambda e: self._toggle_play_pause())
         self.root.bind("<Home>", lambda e: self._on_beginning())
         self.root.bind("<End>", lambda e: self._on_end())
@@ -244,8 +252,7 @@ class JogShuttleApp:
     def _build_graph(self, path: str) -> None:
         self._rate_control = ControlPE(initial_value=self.SHUTTLE_REST)
         self._wav_pe = WavReaderPE(path)
-        loop_pe = LoopPE(self._wav_pe, crossfade_seconds=0.005)
-        self._timewarp = TimeWarpPE(loop_pe, rate=self._rate_control)
+        self._timewarp = TimeWarpPE(self._wav_pe, rate=self._rate_control)
         output = GainPE(self._timewarp, gain=0.8)
 
         self._renderer = AudioRenderer(
@@ -296,12 +303,15 @@ class JogShuttleApp:
             logger.debug("STREAM_STOP: resume_from=%s", self._resume_from)
 
     def _on_play(self) -> None:
+        logger.debug("PLAY: playing=%s, rate=%.2f", self._playing, self._rate)
         self._set_rate(1.0)
 
     def _on_pause(self) -> None:
+        logger.debug("PAUSE: playing=%s, rate=%.2f", self._playing, self._rate)
         self._set_rate(0.0)
 
     def _on_stop(self) -> None:
+        logger.debug("STOP: playing=%s, rate=%.2f", self._playing, self._rate)
         if self._renderer is None:
             return
         self._set_rate(0.0)
@@ -309,18 +319,23 @@ class JogShuttleApp:
         self._renderer.stop()
         self._renderer.start()
         self._resume_from = 0
+        if self._timewarp is not None:
+            self._timewarp._pos = 0.0
         self._cancel_spring_back()
         self._shuttle_var.set(self.SHUTTLE_REST)
 
     def _on_beginning(self) -> None:
+        logger.debug("BEGINNING: playing=%s", self._playing)
         if self._timewarp is not None:
             self._timewarp._pos = 0.0
 
     def _on_end(self) -> None:
+        logger.debug("END: playing=%s", self._playing)
         if self._timewarp is not None and self._total_frames > 0:
             self._timewarp._pos = float(self._total_frames)
 
     def _toggle_play_pause(self) -> None:
+        logger.debug("TOGGLE: playing=%s, rate=%.2f", self._playing, self._rate)
         if self._playing:
             self._on_pause()
         else:
@@ -463,9 +478,15 @@ class JogShuttleApp:
             self._set_rate(0.0)
 
     def _on_canvas_resize(self, event: tk.Event) -> None:
-        # Recompute peaks at new width and redraw
+        # Debounce: recompute peaks only after resizing settles (200ms)
+        if self._resize_id is not None:
+            self.root.after_cancel(self._resize_id)
+        self._resize_id = self.root.after(200, self._do_resize)
+
+    def _do_resize(self) -> None:
+        self._resize_id = None
         if self._wav_path is not None:
-            new_width = event.width
+            new_width = self._canvas.winfo_width()
             if new_width > 10:
                 self._peaks = compute_peaks(self._wav_path, target_width=new_width)
         self._draw_waveform()
@@ -520,6 +541,8 @@ class JogShuttleApp:
         self._cancel_spring_back()
         if self._poll_id is not None:
             self.root.after_cancel(self._poll_id)
+        if self._resize_id is not None:
+            self.root.after_cancel(self._resize_id)
         self._teardown_graph()
         self.root.destroy()
 
