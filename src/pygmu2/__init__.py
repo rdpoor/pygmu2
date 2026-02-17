@@ -76,6 +76,7 @@ from pygmu2.wavetable_pe import WavetablePE, InterpolationMode, OutOfBoundsMode
 from pygmu2.window_pe import WindowPE, WindowMode
 from pygmu2.reverse_pitch_echo_pe import ReversePitchEchoPE
 from pygmu2.timewarp_pe import TimeWarpPE
+from pygmu2.tralfam_pe import TralfamPE
 from pygmu2.piecewise_pe import PiecewisePE, TransitionType
 from pygmu2.conversions import (
     pitch_to_freq,
@@ -200,6 +201,7 @@ __all__ = [
     "WavWriterPE",
     "WavetablePE",
     "TimeWarpPE",
+    "TralfamPE",
     "WindowPE",
     "ReversePitchEchoPE",
     # Enums
