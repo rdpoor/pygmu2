@@ -38,15 +38,22 @@ class TralfamPE(ProcessingElement):
     Args:
         source: Input PE with finite extent.
         seed: Optional RNG seed for reproducible random phases (default: None).
+        normalize_peak: Optional linear amplitude (e.g. 0.5) to scale peak to; None = no normalization.
     """
 
     def __init__(
         self,
         source: ProcessingElement,
         seed: Optional[int] = None,
+        normalize_peak: Optional[float] = None,
     ):
         self._source = source
         self._seed = seed
+        if normalize_peak is not None and (normalize_peak <= 0 or not np.isfinite(normalize_peak)):
+            raise ValueError(
+                f"normalize_peak must be a positive finite number, got {normalize_peak!r}"
+            )
+        self._normalize_peak = normalize_peak
         self._mogrified: Optional[np.ndarray] = None  # (samples, channels), float32
 
     def inputs(self) -> list[ProcessingElement]:
@@ -92,6 +99,10 @@ class TralfamPE(ProcessingElement):
         self._mogrified = np.real(np.fft.ifft(mangled_analysis, axis=0)).astype(
             np.float32
         )
+        if self._normalize_peak is not None:
+            peak = np.max(np.abs(self._mogrified))
+            if peak > 0:
+                self._mogrified *= (self._normalize_peak / peak)
         return self._mogrified
 
     def _render(self, start: int, duration: int) -> Snippet:
@@ -130,5 +141,9 @@ class TralfamPE(ProcessingElement):
         return Snippet(start, out)
 
     def __repr__(self) -> str:
-        seed_str = f", seed={self._seed}" if self._seed is not None else ""
-        return f"TralfamPE(source={self._source.__class__.__name__}{seed_str})"
+        parts = [f"source={self._source.__class__.__name__}"]
+        if self._seed is not None:
+            parts.append(f"seed={self._seed}")
+        if self._normalize_peak is not None:
+            parts.append(f"normalize_peak={self._normalize_peak}")
+        return f"TralfamPE({', '.join(parts)})"
