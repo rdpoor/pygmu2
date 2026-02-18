@@ -1,186 +1,166 @@
-"""
-RandomSelectPE - choose one input at start and render it on trigger.
-
-Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
-
-MIT License
-"""
+# src/pygmu2/random_select_pe.py
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence
 import random
+from typing import Optional, Sequence, List
+
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
-from pygmu2.logger import get_logger
-from pygmu2.trigger_pe import TriggerPE, TriggerMode
-
-logger = get_logger(__name__)
-
-
-class RandomSelectPE(ProcessingElement):
-    """
-    Randomly select one input at start and render it on trigger.
-
-    Each time rendering starts, a single input is chosen using weighted
-    probabilities (if provided). The chosen input is then wrapped in a TriggerPE
-    and rendered from its t=0 when the trigger goes positive.
-
-    Args:
-        trigger: Control PE (trigger signal, mono channel 0).
-        inputs: List of candidate input PEs to choose from. You may also pass
-            inputs as positional arguments: RandomSelectPE(trigger, pe1, pe2, ...).
-        weights: Optional list of weights (same length as inputs), using
-            random.choices semantics.
-        seed: Optional seed for deterministic selection.
-        trigger_mode: Trigger behavior (default: RETRIGGER).
-    """
-
-    def __init__(
-        self,
-        trigger: ProcessingElement,
-        inputs: List[ProcessingElement] | ProcessingElement | None = None,
-        *more_inputs: ProcessingElement,
-        weights: Optional[Sequence[float]] = None,
-        seed: Optional[int] = None,
-        trigger_mode: TriggerMode = TriggerMode.RETRIGGER,
-    ):
-        if more_inputs:
-            if inputs is None or isinstance(inputs, (list, tuple)):
-                raise ValueError(
-                    "RandomSelectPE: pass either a single inputs list/tuple or positional inputs"
-                )
-            inputs_list = [inputs, *more_inputs]
-        else:
-            if inputs is None:
-                inputs_list = []
-            elif isinstance(inputs, (list, tuple)):
-                inputs_list = list(inputs)
-            else:
-                inputs_list = [inputs]
-
-        if not inputs_list:
-            raise ValueError("RandomSelectPE requires at least one input")
-        if weights is not None and len(weights) != len(inputs_list):
-            raise ValueError("weights must have the same length as inputs")
-
-        self._trigger = trigger
-        self._inputs = list(inputs_list)
-        self._weights = list(weights) if weights is not None else None
-        self._rng = random.Random(seed)
-        self._trigger_mode = trigger_mode
-
-        self._selector = _RandomSelectSourcePE(
-            inputs=self._inputs,
-            weights=self._weights,
-            rng=self._rng,
-        )
-        self._trigger_pe = TriggerPE(
-            self._selector,
-            self._trigger,
-            trigger_mode=self._trigger_mode,
-        )
-
-    def inputs(self) -> list[ProcessingElement]:
-        return [self._trigger] + self._inputs
-
-    def is_pure(self) -> bool:
-        # Selection is stateful and triggered rendering is stateful.
-        return False
-
-    def channel_count(self) -> Optional[int]:
-        return self._inputs[0].channel_count()
-
-    def _compute_extent(self) -> Extent:
-        # Extent determined by trigger source.
-        return self._trigger.extent()
-
-    def required_input_channels(self) -> Optional[int]:
-        return None
-
-    def resolve_channel_count(self, input_channel_counts: list[int]) -> int:
-        if not input_channel_counts:
-            raise ValueError("RandomSelectPE has no inputs")
-        # input_channel_counts includes trigger; inputs start at index 1
-        input_counts = input_channel_counts[1:]
-        first = input_counts[0]
-        for i, count in enumerate(input_counts[1:], start=2):
-            if count != first:
-                raise ValueError(
-                    f"RandomSelectPE input channel mismatch: input 1 has {first} channels, "
-                    f"input {i} has {count} channels"
-                )
-        return first
-
-    def _reset_state(self) -> None:
-        self._selector.reset_state()
-        self._trigger_pe.reset_state()
-
-    def _on_start(self) -> None:
-        # Reroll selection on trigger by resetting selector state.
-        self._reset_state()
-
-    def _on_stop(self) -> None:
-        self._reset_state()
-
-    def _render(self, start: int, duration: int) -> Snippet:
-        return self._trigger_pe.render(start, duration)
+from pygmu2.trigger_signal import TriggerSignal
+from pygmu2.trigger_restart_pe import TriggerRestartPE
 
 
 class _RandomSelectSourcePE(ProcessingElement):
     """
-    Selects one input on reset_state() and renders only that input.
+    A stateful source-wrapper that randomly selects one of N input PEs whenever
+    it is reset. Rendering is delegated to the currently-selected input.
+
+    Intended use: wrap this in TriggerRestartPE(trigger, _RandomSelectSourcePE(...))
+    so that each positive trigger causes TriggerRestartPE to call reset_state(),
+    which rerolls the selection.
     """
 
     def __init__(
         self,
-        inputs: List[ProcessingElement],
-        weights: Optional[Sequence[float]],
-        rng: random.Random,
+        inputs: Sequence[ProcessingElement],
+        weights: Optional[Sequence[float]] = None,
+        seed: Optional[int] = None,
     ):
-        self._inputs = list(inputs)
+        if not inputs:
+            raise ValueError("_RandomSelectSourcePE requires at least one input")
+
+        if weights is not None and len(weights) != len(inputs):
+            raise ValueError("weights must have the same length as inputs")
+
+        self._inputs: List[ProcessingElement] = list(inputs)
         self._weights = list(weights) if weights is not None else None
-        self._rng = rng
-        self._selected_index: Optional[int] = None
-        self._selected_source: Optional[ProcessingElement] = None
+        self._rng = random.Random(seed)
+
+        self._active: ProcessingElement | None = None
 
     def inputs(self) -> list[ProcessingElement]:
-        return self._inputs
+        # This wrapper depends on all sources.
+        return list(self._inputs)
 
     def is_pure(self) -> bool:
+        # Randomness + internal selection state
         return False
 
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         return self._inputs[0].channel_count()
 
+    def resolve_channel_count(self, input_channel_counts: list[int]) -> int:
+        # Require all candidate sources to have same channel count.
+        if not input_channel_counts:
+            raise ValueError("_RandomSelectSourcePE has no inputs")
+        cc0 = input_channel_counts[0]
+        for i, cc in enumerate(input_channel_counts[1:], start=1):
+            if cc != cc0:
+                raise ValueError(
+                    f"_RandomSelectSourcePE channel mismatch: input 0 has {cc0}, "
+                    f"input {i} has {cc}"
+                )
+        return cc0
+
     def _compute_extent(self) -> Extent:
-        # Union of inputs (conservative).
-        result = self._inputs[0].extent()
-        for inp in self._inputs[1:]:
-            result = result.union(inp.extent())
-        return result
+        # Conservative: any source could be chosen at any time; union would be ideal
+        # but expensive. Treat as infinite.
+        return Extent(None, None)
 
     def _reset_state(self) -> None:
-        indices = list(range(len(self._inputs)))
-        self._selected_index = self._rng.choices(indices, weights=self._weights, k=1)[0]
-        self._selected_source = self._inputs[self._selected_index]
-        logger.debug(
-            "RandomSelectPE selected input %d (%s)",
-            self._selected_index,
-            self._selected_source.__class__.__name__,
-        )
-        self._selected_source.reset_state()
+        # Reroll on reset.
+        idxs = list(range(len(self._inputs)))
+        idx = self._rng.choices(idxs, weights=self._weights, k=1)[0]
+        self._active = self._inputs[idx]
 
     def _on_start(self) -> None:
         self._reset_state()
 
     def _on_stop(self) -> None:
-        self._selected_index = None
-        self._selected_source = None
+        self._active = None
 
     def _render(self, start: int, duration: int) -> Snippet:
-        if self._selected_source is None:
+        if self._active is None:
+            # No selection yet; choose deterministically now.
             self._reset_state()
-        return self._selected_source.render(start, duration)
+        return self._active.render(start, duration)
+
+
+class RandomSelectPE(ProcessingElement):
+    """
+    On each positive trigger event, randomly selects one of N input PEs, then
+    restarts and renders that selection from local time 0.
+
+    Implemented as:
+        TriggerRestartPE(trigger, _RandomSelectSourcePE(inputs, ...))
+
+    Args:
+        trigger: TriggerSignal; trigger > 0 indicates a (rising-edge) event.
+        inputs: candidate audio sources (must match channel_count).
+        weights: optional selection weights (random.choices semantics).
+        seed: optional RNG seed for deterministic selection.
+    """
+
+    def __init__(
+        self,
+        trigger: TriggerSignal,
+        inputs: Sequence[ProcessingElement],
+        weights: Optional[Sequence[float]] = None,
+        seed: Optional[int] = None,
+    ):
+        if not inputs:
+            raise ValueError("RandomSelectPE requires at least one input")
+
+        self._trigger = trigger
+        self._sources = list(inputs)
+
+        self._selector = _RandomSelectSourcePE(self._sources, weights=weights, seed=seed)
+        self._impl = TriggerRestartPE(self._trigger, self._selector)
+
+    def inputs(self) -> list[ProcessingElement]:
+        # Expose the true dependency set for graph validation/traversal.
+        return [self._trigger] + self._sources
+
+    def is_pure(self) -> bool:
+        return False  # selection + trigger restart are stateful
+
+    def channel_count(self) -> int | None:
+        return self._selector.channel_count()
+
+    def resolve_channel_count(self, input_channel_counts: list[int]) -> int:
+        # input_channel_counts includes trigger at index 0
+        if len(input_channel_counts) < 2:
+            raise ValueError("RandomSelectPE has no audio inputs")
+        audio_counts = input_channel_counts[1:]
+        cc0 = audio_counts[0]
+        for i, cc in enumerate(audio_counts[1:], start=2):
+            if cc != cc0:
+                raise ValueError(
+                    f"RandomSelectPE channel mismatch: input 1 has {cc0}, input {i} has {cc}"
+                )
+        return cc0
+
+    def _compute_extent(self) -> Extent:
+        # Trigger-driven: silence until first event; after that depends on sources.
+        # Conservative choice is trigger extent.
+        return self._trigger.extent()
+
+    def _reset_state(self) -> None:
+        # Reset both layers.
+        self._selector.reset_state()
+        self._impl.reset_state()
+
+    def _on_start(self) -> None:
+        self._selector.on_start()
+        self._impl.on_start()
+
+    def _on_stop(self) -> None:
+        self._impl.on_stop()
+        self._selector.on_stop()
+
+    def _render(self, start: int, duration: int) -> Snippet:
+        # Delegate to the composed implementation.
+        return self._impl.render(start, duration)
