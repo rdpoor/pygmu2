@@ -1,4 +1,4 @@
-# src/pygmu2/periodic_signal.py
+# src/pygmu2/periodic_trigger.py
 #
 # A TriggerSignal that generates periodic trigger impulses
 

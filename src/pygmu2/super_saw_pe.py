@@ -17,6 +17,7 @@ from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 from pygmu2.blit_saw_pe import BlitSawPE
 from pygmu2.gain_pe import GainPE
+from pygmu2.cache_pe import CachePE
 
 
 class SuperSawPE(ProcessingElement):
@@ -41,6 +42,8 @@ class SuperSawPE(ProcessingElement):
             - 'center_heavy': Center voice louder, outer voices quieter
             - 'linear': Linear falloff from center to edges
         channels: Number of output channels (default: 1)
+        randomize_phase: If true, randomize phase on each call to on_start
+        seed: Seed to feed to random number generator
     
     Example:
         # Classic supersaw lead
@@ -78,6 +81,8 @@ class SuperSawPE(ProcessingElement):
         detune_cents: float = 20.0,
         mix_mode: str = 'center_heavy',
         channels: int = 1,
+        randomize_phase: bool = True,
+        seed: Optional[int] = None,
     ):
         if voices < 1:
             voices = 1
@@ -88,6 +93,8 @@ class SuperSawPE(ProcessingElement):
         self._detune_cents = detune_cents
         self._mix_mode = mix_mode
         self._channels = channels
+        self._randomize_phase = bool(randomize_phase)
+        self._rng = np.random.default_rng(seed)
         
         # Compute detune ratios and mix gains for each voice
         self._detune_ratios = self._compute_detune_ratios()
@@ -131,13 +138,10 @@ class SuperSawPE(ProcessingElement):
         if self._voices == 1 or self._detune_cents == 0:
             return np.array([1.0])
         
-        # Convert cents to ratio: ratio = 2^(cents/1200)
-        max_ratio = 2.0 ** (self._detune_cents / 1200.0)
-        min_ratio = 2.0 ** (-self._detune_cents / 1200.0)
-        
-        # Spread voices evenly from min_ratio to max_ratio
-        ratios = np.linspace(min_ratio, max_ratio, self._voices)
-        
+        # Spread voices evenly from -detune_cents to detune_cents
+        cents = np.linspace(-self._detune_cents, self._detune_cents, self._voices)
+        ratios = 2 ** (cents / 1200.0)
+
         return ratios
     
     def _compute_mix_gains(self) -> np.ndarray:
@@ -183,6 +187,12 @@ class SuperSawPE(ProcessingElement):
         """Create the internal BlitSawPE oscillators."""
         oscillators = []
         
+        # Wrap shared frequency PE in CachePE so it renders once per block
+        if isinstance(self._frequency, ProcessingElement):
+            freq_src: Union[float, ProcessingElement] = CachePE(self._frequency)
+        else:
+            freq_src = self._frequency
+
         for i, ratio in enumerate(self._detune_ratios):
             gain = self._mix_gains[i]
             
@@ -224,8 +234,7 @@ class SuperSawPE(ProcessingElement):
     
     def _on_start(self) -> None:
         """Start all internal oscillators."""
-        for osc in self._oscillators:
-            osc.on_start()
+        self._reset_state()
 
     def _on_stop(self) -> None:
         """Stop all internal oscillators."""
@@ -235,6 +244,7 @@ class SuperSawPE(ProcessingElement):
     def _reset_state(self) -> None:
         """Reset state of all internal oscillators."""
         for osc in self._oscillators:
+            osc.initial_phase = self._rng.random(1) if self._randomize_phase else 0.0
             osc.reset_state()
     
     def _render(self, start: int, duration: int) -> Snippet:

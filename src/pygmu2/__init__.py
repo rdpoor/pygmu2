@@ -7,6 +7,10 @@ MIT License
 """
 
 # from pygmu2.adsr_pe import AdsrPE
+from pygmu2.adsr_signal import (
+    AdsrGateSignal,
+    AdsrTriggerSignal,
+)
 from pygmu2.analog_osc_pe import AnalogOscPE
 from pygmu2.array_pe import ArrayPE
 from pygmu2.asset_manager import (
@@ -61,6 +65,7 @@ from pygmu2.midi_in_pe import MidiInPE
 from pygmu2.mix_pe import MixPE
 from pygmu2.noise_pe import NoisePE, NoiseMode
 from pygmu2.null_renderer import NullRenderer
+from pygmu2.periodic_gate import PeriodicGate
 from pygmu2.periodic_trigger import PeriodicTrigger
 from pygmu2.piecewise_pe import PiecewisePE, TransitionType
 from pygmu2.processing_element import ProcessingElement, SourcePE

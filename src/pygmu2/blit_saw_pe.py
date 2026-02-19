@@ -33,6 +33,7 @@ class BlitSawPE(ProcessingElement):
     Args:
         frequency: Frequency in Hz, or PE providing frequency values
         amplitude: Peak amplitude, or PE providing amplitude values (default: 1.0)
+        initial_phase: Initial phase (0 .. 1.0]
         m: Number of harmonics. If None (default), automatically computed
            to keep all harmonics below Nyquist. Can be int or PE for
            fixed/modulated harmonic content.
@@ -65,18 +66,20 @@ class BlitSawPE(ProcessingElement):
         self,
         frequency: Union[float, ProcessingElement],
         amplitude: Union[float, ProcessingElement] = 1.0,
+        initial_phase: float = 0.0,
         m: Optional[Union[int, ProcessingElement]] = None,
         leak: float = 0.999,
         channels: int = 1,
     ):
         self._frequency = frequency
         self._amplitude = amplitude
+        self._initial_phase = initial_phase % 1.0
         self._m = m
         self._leak = leak
         self._channels = channels
         
         # State for non-pure operation
-        self._phase: float = 0.0  # Phase accumulator (0 to 1)
+        self._phase: float = self._initial_phase
         self._integrator: float = 0.0  # Leaky integrator state
         self._last_render_end: Optional[int] = None
     
@@ -100,6 +103,15 @@ class BlitSawPE(ProcessingElement):
         """Leaky integrator coefficient."""
         return self._leak
     
+    @property
+    def initial_phase(self) -> float:
+        return self._initial_phase
+
+    @initial_phase.setter
+    def initial_phase(self, value:float) -> None:
+        """takes effect on the next call to _reset_state()"""
+        self._initial_phase = value % 1.0
+
     def inputs(self) -> list[ProcessingElement]:
         """Return list of PE inputs."""
         result = []
@@ -123,7 +135,7 @@ class BlitSawPE(ProcessingElement):
     
     def _reset_state(self) -> None:
         """Reset oscillator state (phase and integrator)."""
-        self._phase = 0.0
+        self._phase = self._initial_phase
         self._integrator = 0.0
         self._last_render_end = None
     
