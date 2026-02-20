@@ -6,10 +6,9 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-# from pygmu2.adsr_pe import AdsrPE
-from pygmu2.adsr_signal import (
-    AdsrGateSignal,
-    AdsrTriggerSignal,
+from pygmu2.adsr_pe import (
+    AdsrGatedPE,
+    AdsrTriggeredPE,
 )
 from pygmu2.analog_osc_pe import AnalogOscPE
 from pygmu2.array_pe import ArrayPE

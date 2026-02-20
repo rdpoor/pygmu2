@@ -45,6 +45,16 @@ def lin_map(lo: float, hi: float) -> Callable[[np.ndarray], np.ndarray]:
 # Demos
 # ------------------------------------------------------------------------------
 
+REPEAT_HZ = 1.0
+ATTACK_SEC = 0.01
+DECAY_SEC = 0.15
+HOLD_SEC = 0.5
+SUSTAIN_LEVEL = 0.6
+RELEASE_SEC = 0.25
+
+REPEAT_SEC = 1.0 / REPEAT_HZ
+GATE_SEC = ATTACK_SEC + DECAY_SEC + HOLD_SEC
+
 def demo_gate_adsr_vca():
     """
     PeriodicGate -> AdsrGateSignal -> GainPE(SuperSaw)
@@ -54,29 +64,91 @@ def demo_gate_adsr_vca():
 
     duration_s = 8.0
 
-    # A slow gate to simulate a held note pattern
+    if GATE_SEC + RELEASE_SEC > REPEAT_SEC:
+        print(f'warning: REPEAT_HZ is too high for ADSR to complete')
+
+    # An on-off gate to simulate a note repeating every 1/REPEAT_HZ seconds,
+    # held for GATE_SEC each time.
+    # Note: duty_cycle = gate_sec / repeat_sec = gate_sec * repeat_hz
     gate = pg.PeriodicGate(
-        frequency=2.0,       # 2 hits/sec
-        duty_cycle=0.25,     # gate held for 25% of the cycle
-        phase=0.0,
+        frequency=REPEAT_HZ,
+        duty_cycle=GATE_SEC / REPEAT_SEC,
     )
 
-    env = pg.AdsrGateSignal(
+    # When the gate signal goes high, the ADSR sequences through Attack => 
+    # Decay before settling on the Sustain level.  It holds Sustain as long
+    # as the gate signal is high.  When the gate signal drops, the ADSR starts
+    # the Release phase.
+    env = pg.AdsrGatedPE(
         gate=gate,
-        attack=0.01,
-        decay=0.15,
-        sustain=0.6,
-        release=0.25,
+        attack_time=ATTACK_SEC,
+        decay_time=DECAY_SEC,
+        sustain_level=SUSTAIN_LEVEL,
+        release_time=RELEASE_SEC,
     )
 
-    src = pg.SuperSawPE(
+    # We want the SuperSaw to restart at the same time as the ADSR.  For this,
+    # we need a trigger rather than a gate.  
+    # 
+    # TODO: Implement EdgeSignal that converts a gate signal into a trigger
+    # signal.  But for now, use a PeriodicTrigger running at the same speed as
+    # the PeriodicGate.
+    trigger = pg.PeriodicTrigger(
+        hz=REPEAT_HZ,
+    )
+
+    # SuperSaw makes a nice fat synth sound.
+    saw = pg.SuperSawPE(
         frequency=110.0,     # A2
         voices=7,
         detune_cents=12.0,
     )
+    retriggered_saw = pg.TriggerRestartPE(trigger=trigger, src=saw)
 
-    # Apply envelope as time-varying gain (tremolo/VCA)
-    vca = pg.GainPE(src, gain=env)
+    # Apply ADSR envelope as time-varying gain (tremolo/VCA)
+    vca = pg.GainPE(retriggered_saw, gain=env)
+
+    # Keep levels sane
+    out = pg.GainPE(vca, gain=0.25)
+
+    out = pg.CropPE(out, 0, seconds(duration_s))
+    pg.play(out, SR)
+
+
+def demo_trigger_adsr_vca():
+    """
+    PeriodicTrigger -> AdsrTriggerSignal -> GainPE(SuperSaw)
+    """
+    print("Trigger ADSR: VCA on SuperSaw")
+    print("--------------------------")
+
+    duration_s = 8.0
+
+    if GATE_SEC + RELEASE_SEC > REPEAT_SEC:
+        print(f'warning: REPEAT_HZ is too high for ADSR to complete')
+
+    trigger = pg.PeriodicTrigger(
+        hz=REPEAT_HZ,
+    )
+
+    env = pg.AdsrTriggeredPE(
+        trigger=trigger,
+        attack_time=ATTACK_SEC,
+        decay_time=DECAY_SEC,
+        sustain_level=SUSTAIN_LEVEL,
+        sustain_time=HOLD_SEC,
+        release_time=RELEASE_SEC,
+    )
+
+    saw = pg.SuperSawPE(
+        frequency=110.0,     # A2
+        voices=7,
+        detune_cents=12.0,
+    )
+    retriggered_saw = pg.TriggerRestartPE(trigger=trigger, src=saw)
+
+    # Apply ADSR envelope as time-varying gain (tremolo/VCA)
+    vca = pg.GainPE(retriggered_saw, gain=env)
 
     # Keep levels sane
     out = pg.GainPE(vca, gain=0.25)
@@ -95,16 +167,16 @@ def demo_trigger_adsr_filter_sweep():
     duration_s = 10.0
 
     # A periodic trigger to launch one-shot envelopes
-    trig = pg.PeriodicTrigger(hz=0.5, phase=0.0, amplitude=1)
+    trigger = pg.PeriodicTrigger(hz=0.5, phase=0.0, amplitude=1)
 
     # One-shot envelope (A, D, sustain hold, R)
-    sweep_env = pg.AdsrTriggerSignal(
-        trigger=trig,
-        attack=0.02,
-        decay=0.20,
-        sustain=1.0,
-        hold=0.10,
-        release=0.60,
+    sweep_env = pg.AdsrTriggeredPE(
+        trigger=trigger,
+        attack_time=0.4,
+        decay_time=0.4,
+        sustain_level=1.0,
+        sustain_time=0.30,
+        release_time=0.60,
     )
 
     # Map envelope [0..1] -> cutoff range (Hz)
@@ -146,24 +218,24 @@ def demo_dual_adsr_vca_and_filter():
         phase=0.0,
     )
 
-    amp_env = pg.AdsrGateSignal(
+    amp_env = pg.AdsrGatedPE(
         gate=gate,
-        attack=0.005,
-        decay=0.10,
-        sustain=0.5,
-        release=0.20,
+        attack_time=0.005,
+        decay_time=0.10,
+        sustain_level=0.5,
+        release_time=0.20,
     )
 
     # Trigger pattern: independent "wah" sweeps
     trig = pg.PeriodicTrigger(hz=0.5, phase=0.0, amplitude=1)
 
-    filt_env = pg.AdsrTriggerSignal(
+    filt_env = pg.AdsrTriggeredPE(
         trigger=trig,
-        attack=0.01,
-        decay=0.18,
-        sustain=1.0,
-        hold=0.08,
-        release=0.55,
+        attack_time=0.01,
+        decay_time=0.18,
+        sustain_level=1.0,
+        sustain_time=0.08,
+        release_time=0.55,
     )
 
     cutoff = pg.TransformPE(filt_env, lin_map(250.0, 8000.0))
@@ -179,7 +251,7 @@ def demo_dual_adsr_vca_and_filter():
 
     # Resonant low-pass sweep using BiquadPE
     flt = pg.BiquadPE(
-        src,                    # or vca in the dual-ADSR demo
+        vca,                    # or vca in the dual-ADSR demo
         frequency=cutoff,       # modulated cutoff (PE)
         q=8.0,                  # resonance; tweak 2..12
     )
@@ -191,6 +263,7 @@ def demo_dual_adsr_vca_and_filter():
 
 DEMOS = {
     "Gate ADSR: VCA on SuperSaw": demo_gate_adsr_vca,
+    "Trigger ADSR: VCA on SuperSaw": demo_trigger_adsr_vca,
     "Trigger ADSR: resonant cutoff sweep": demo_trigger_adsr_filter_sweep,
     "Dual ADSR: VCA + filter sweep": demo_dual_adsr_vca_and_filter,
 }
