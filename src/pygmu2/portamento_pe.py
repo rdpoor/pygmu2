@@ -88,13 +88,11 @@ class PortamentoPE(SourcePE):
                         e.g., 69.0 for A4, 73.0 for C#5, 76.0 for E5
                - sample_index: When this note starts (in samples)
                - duration: Duration of this note (in samples)
-        max_ramp_samples: Maximum ramp time in samples (optional)
-        max_ramp_seconds: Maximum ramp time in seconds (optional, default: 0.1)
-                          Specify either max_ramp_samples or max_ramp_seconds, not both.
+        max_ramp_seconds: Maximum ramp time in seconds (default: 0.1)
         ramp_fraction: Fraction of note duration to use for ramp if note is short
                       (default: 0.3, meaning ramp uses up to 30% of note duration)
         channels: Number of output channels (default: 1)
-    
+
     Example:
         # Portamento between three MIDI notes (A4, C#5, E5)
         notes = [
@@ -102,12 +100,8 @@ class PortamentoPE(SourcePE):
             (73.0, 1000, 1000),   # C#5 (MIDI 73) at t=1000, duration 1000 samples
             (76.0, 2000, 1000),   # E5 (MIDI 76) at t=2000, duration 1000 samples
         ]
-        # Using seconds (resolved at construction time)
         pitch_stream = PortamentoPE(notes, max_ramp_seconds=0.05)
-        
-        # Or using samples directly
-        pitch_stream = PortamentoPE(notes, max_ramp_samples=2205)  # ~0.05s at 44.1kHz
-        
+
         # Convert MIDI pitches to frequencies for use with oscillators
         from pygmu2 import pitch_to_freq
         freq_stream = TransformPE(pitch_stream, pitch_to_freq)
@@ -117,40 +111,24 @@ class PortamentoPE(SourcePE):
     def __init__(
         self,
         notes: list[tuple[float, int, int]],
-        max_ramp_samples: Optional[int] = None,
-        max_ramp_seconds: Optional[float] = None,
+        max_ramp_seconds: float = 0.1,
         ramp_fraction: float = 0.3,
         channels: int = 1,
     ):
         if not notes:
             raise ValueError("PortamentoPE: notes list cannot be empty")
-        
-        # Resolve max_ramp: exactly one of samples or seconds must be provided
-        if max_ramp_samples is None and max_ramp_seconds is None:
-            # Default to seconds if neither provided
-            max_ramp_seconds = 0.1
-        
-        if max_ramp_samples is not None and max_ramp_seconds is not None:
-            raise ValueError(
-                "PortamentoPE: specify either max_ramp_samples or max_ramp_seconds, not both "
-                f"(got max_ramp_samples={max_ramp_samples}, max_ramp_seconds={max_ramp_seconds})"
-            )
-        
-        if max_ramp_samples is not None and max_ramp_samples < 0:
-            raise ValueError(f"PortamentoPE: max_ramp_samples must be non-negative (got {max_ramp_samples})")
-        
-        if max_ramp_seconds is not None and max_ramp_seconds < 0:
+
+        if max_ramp_seconds < 0:
             raise ValueError(f"PortamentoPE: max_ramp_seconds must be non-negative (got {max_ramp_seconds})")
-        
+
         if not (0.0 <= ramp_fraction <= 1.0):
             raise ValueError(f"PortamentoPE: ramp_fraction must be between 0 and 1 (got {ramp_fraction})")
-        
+
         if channels < 1:
             raise ValueError(f"PortamentoPE: channels must be >= 1 (got {channels})")
-        
+
         self._notes = sorted(notes, key=lambda x: x[1])  # Sort by sample_index
-        self._max_ramp_samples = int(max_ramp_samples) if max_ramp_samples is not None else None
-        self._max_ramp_seconds = float(max_ramp_seconds) if max_ramp_seconds is not None else None
+        self._max_ramp_seconds = float(max_ramp_seconds)
         self._ramp_fraction = float(ramp_fraction)
         self._channels = int(channels)
         
@@ -164,13 +142,8 @@ class PortamentoPE(SourcePE):
         return self._notes.copy()
     
     @property
-    def max_ramp_samples(self) -> Optional[int]:
-        """Maximum ramp time in samples (if specified)."""
-        return self._max_ramp_samples
-    
-    @property
-    def max_ramp_seconds(self) -> Optional[float]:
-        """Maximum ramp time in seconds (if specified)."""
+    def max_ramp_seconds(self) -> float:
+        """Maximum ramp time in seconds."""
         return self._max_ramp_seconds
     
     @property
@@ -195,14 +168,7 @@ class PortamentoPE(SourcePE):
             return
         
         # N notes (N >= 2): create N-1 ramps with HOLD_BOTH
-        # Resolve max_ramp_samples using _time_to_samples pattern
-        max_ramp_samples_resolved = self._time_to_samples(
-            samples=self._max_ramp_samples,
-            seconds=self._max_ramp_seconds,
-            name="max_ramp",
-        )
-        # Ensure at least 1 sample
-        max_ramp_samples_resolved = max(1, max_ramp_samples_resolved)
+        max_ramp_samples_resolved = max(1, int(round(self._max_ramp_seconds * self.sample_rate)))
         
         sequence_items = []
         
@@ -313,11 +279,7 @@ class PortamentoPE(SourcePE):
     
     def __repr__(self) -> str:
         count = len(self._notes)
-        if self._max_ramp_samples is not None:
-            ramp_str = f"max_ramp_samples={self._max_ramp_samples}"
-        else:
-            ramp_str = f"max_ramp_seconds={self._max_ramp_seconds}"
         return (
-            f"PortamentoPE({count} notes, {ramp_str}, "
+            f"PortamentoPE({count} notes, max_ramp_seconds={self._max_ramp_seconds}, "
             f"ramp_fraction={self._ramp_fraction}, channels={self._channels})"
         )

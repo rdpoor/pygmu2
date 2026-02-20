@@ -461,17 +461,17 @@ class TestBlitSawPEStateManagement:
         
         self.renderer.stop()
     
-    def test_discontinuous_render_raises(self):
-        """Non-contiguous render raises for impure PE."""
+    def test_discontinuous_render_resets_state(self):
+        """Non-contiguous render on BlitSawPE resets state instead of raising."""
         saw = BlitSawPE(frequency=440.0)
         self.renderer.set_source(saw)
         self.renderer.start()
 
         saw.render(0, 1000)
 
-        # Impure PEs require contiguous requests; skip-ahead is not allowed
-        with pytest.raises(ValueError):
-            saw.render(5000, 1000)
+        # Skip ahead: BlitSawPE resets its internal state and continues
+        snippet = saw.render(5000, 1000)
+        assert snippet.duration == 1000
 
         self.renderer.stop()
 

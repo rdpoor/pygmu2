@@ -122,13 +122,14 @@ class TestSourcePE:
         source = ConstantPE(1.0, 100)
         assert source.is_pure() is True
 
-    def test_impure_pe_requires_contiguous_requests(self):
-        """Test that impure PEs raise when given non-contiguous render requests."""
+    def test_impure_pe_allows_non_contiguous_requests(self):
+        """Non-contiguous renders on impure PEs are allowed; the PE handles state internally."""
         source = ConstantPE(1.0, 100)
         stateful = StatefulPE(source)  # StatefulPE is impure
-        stateful.render(0, 10)  # First request: ok
-        with pytest.raises(ValueError, match="contiguous"):
-            stateful.render(20, 10)  # Non-contiguous: expected start=10, got start=20
+        stateful.render(0, 10)  # First request
+        # Non-contiguous: base class no longer enforces contiguity; PE manages its own state
+        snippet = stateful.render(20, 10)
+        assert snippet.duration == 10
 
     def test_source_must_declare_channels(self):
         """Test that source channel_count returns int."""

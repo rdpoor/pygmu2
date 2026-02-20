@@ -37,7 +37,8 @@ class TestSlicePEBasics:
 
     def test_slice_applies_fade_in_out(self):
         src = ArrayPE(np.arange(10, dtype=np.float32))
-        sl = SlicePE(src, start=2, duration=5, fade_in_samples=2, fade_out_samples=2)
+        # 2 samples at 48 kHz
+        sl = SlicePE(src, start=2, duration=5, fade_in_seconds=2/48_000, fade_out_seconds=2/48_000)
         self.renderer.set_source(sl)
 
         y = sl.render(0, 5).data[:, 0]

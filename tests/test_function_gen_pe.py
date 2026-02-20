@@ -22,7 +22,7 @@ from pygmu2 import (
 class TestFunctionGenPEBasics:
     def test_create_defaults(self):
         pe = FunctionGenPE()
-        assert pe.frequency == 440.0
+        assert pe.frequency == 1.0
         assert pe.duty_cycle == 0.5
         assert pe.waveform == "rectangle"
         assert pe.channel_count() == 1

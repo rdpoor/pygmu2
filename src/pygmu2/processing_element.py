@@ -49,9 +49,6 @@ class ProcessingElement(ABC):
     # Cached extent (computed lazily on first access)
     _cached_extent: Optional[Extent] = None
 
-    # For impure PEs: end of last render request; used to enforce contiguous requests
-    _last_rendered_end: Optional[int] = None
-
     def __new__(cls, *args, **kwargs):
         """
         Enforce global sample rate requirement before any PE is constructed.
@@ -127,16 +124,7 @@ class ProcessingElement(ABC):
                 # A 0-length snippet is semantically empty; don't overthink it.
                 # Default to mono when channel count is dynamic/unknown.
                 channels = 1
-
             return Snippet.from_zeros(start, 0, int(channels))
-
-        # Impure PEs require contiguous requests (state precludes arbitrary render times)
-        if not self.is_pure():
-            if self._last_rendered_end is not None and start != self._last_rendered_end:
-                raise ValueError(
-                    f"{self.__class__.__name__} is not pure; render requests must be contiguous. "
-                    f"Expected start={self._last_rendered_end}, got start={start}."
-                )
 
         if is_enabled() and timing_enabled():
             t0 = time.perf_counter_ns()
@@ -144,9 +132,6 @@ class ProcessingElement(ABC):
             record_timing(self, time.perf_counter_ns() - t0)
         else:
             result = self._render(start, duration)
-
-        if not self.is_pure():
-            self._last_rendered_end = start + duration
 
         return result
 
@@ -273,12 +258,9 @@ class ProcessingElement(ABC):
         Called once before first render, after configure().
         
         Called by Renderer.start() in bottom-up order (inputs first).
-        Performs framework work (e.g. reset contiguous-request watermark for
-        impure PEs), then calls _on_start() if the subclass implements it.
+        Calls _on_start() if the subclass implements it.
         Subclasses should override _on_start() (not this method).
         """
-        if not self.is_pure():
-            self._last_rendered_end = None
         if hasattr(self, '_on_start'):
             self._on_start()
 
@@ -308,52 +290,9 @@ class ProcessingElement(ABC):
         - Re-initializing stateful PEs during rendering
         
         Default implementation calls _reset_state() if it exists.
-        For impure PEs, also resets the contiguous-request watermark so the
-        next render() may use any start (new stream).
         """
-        if not self.is_pure():
-            self._last_rendered_end = None
         if hasattr(self, '_reset_state'):
             self._reset_state()
-
-    def _time_to_samples(
-        self,
-        *,
-        samples: Optional[int] = None,
-        seconds: Optional[float] = None,
-        name: str = "time",
-    ) -> int:
-        """
-        Resolve a time parameter specified in either samples or seconds.
-
-        Conventions:
-        - At most one of `samples` or `seconds` may be provided.
-        - If neither is provided, resolve to 0 samples (useful for optional times).
-        - Values must be non-negative.
-        - Seconds are converted using the configured sample rate and rounded to
-          the nearest sample.
-        """
-        if samples is None and seconds is None:
-            return 0
-
-        if samples is not None and seconds is not None:
-            raise ValueError(
-                f"{name}: specify either {name}_samples or {name}_seconds, not both "
-                f"(got {name}_samples={samples}, {name}_seconds={seconds})"
-            )
-
-        if samples is not None:
-            s = int(samples)
-            if s < 0:
-                raise ValueError(f"{name}_samples must be non-negative (got {samples})")
-            return s
-
-        from pygmu2.conversions import seconds_to_samples
-
-        sec = float(seconds)
-        if sec < 0.0:
-            raise ValueError(f"{name}_seconds must be non-negative (got {seconds})")
-        return int(round(float(seconds_to_samples(sec, self.sample_rate))))
 
     def _scalar_or_pe_values(
         self,

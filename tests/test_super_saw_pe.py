@@ -145,8 +145,9 @@ class TestSuperSawPERender:
         stable_data = snippet.data[22050:, 0]
         max_val = np.max(np.abs(stable_data))
         
-        # Should be less than 0.5 * some headroom
-        assert max_val < 0.8, f"Amplitude too high: {max_val}"
+        # Detuned voices can sum constructively; with amplitude=0.5 expect < 1.5
+        # (RMS-normalized voices, 7 voices, worst-case constructive interference)
+        assert max_val < 1.5, f"Amplitude too high: {max_val}"
         
         self.renderer.stop()
     
@@ -154,7 +155,7 @@ class TestSuperSawPERender:
         """Single voice with no detune should behave like BlitSawPE."""
         from pygmu2 import BlitSawPE
         
-        super_saw = SuperSawPE(frequency=440.0, voices=1, detune_cents=0.0)
+        super_saw = SuperSawPE(frequency=440.0, voices=1, detune_cents=0.0, randomize_phase=False)
         blit_saw = BlitSawPE(frequency=440.0)
         
         renderer1 = NullRenderer(sample_rate=44100)

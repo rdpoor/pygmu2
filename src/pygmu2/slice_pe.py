@@ -38,9 +38,7 @@ class SlicePE(ProcessingElement):
         source: input audio PE
         start: start time (in samples) within source to extract (inclusive)
         duration: number of samples to extract
-        fade_in_samples: fade-in length in samples (optional)
         fade_in_seconds: fade-in length in seconds (optional)
-        fade_out_samples: fade-out length in samples (optional)
         fade_out_seconds: fade-out length in seconds (optional)
     """
 
@@ -50,17 +48,13 @@ class SlicePE(ProcessingElement):
         start: int,
         duration: int,
         *,
-        fade_in_samples: Optional[int] = None,
         fade_in_seconds: Optional[float] = None,
-        fade_out_samples: Optional[int] = None,
         fade_out_seconds: Optional[float] = None,
     ):
         self._source = source
         self._start = int(start)
         self._duration = int(duration)
-        self._fade_in_samples = fade_in_samples
         self._fade_in_seconds = fade_in_seconds
-        self._fade_out_samples = fade_out_samples
         self._fade_out_seconds = fade_out_seconds
 
         if self._duration < 0:
@@ -69,17 +63,8 @@ class SlicePE(ProcessingElement):
         crop = CropPE(self._source, self._start, self._duration)
         self._base = DelayPE(crop, delay=-self._start)
 
-        # Resolve fades (None/None -> 0 handled by _time_to_samples).
-        self._fade_in = self._time_to_samples(
-            samples=self._fade_in_samples,
-            seconds=self._fade_in_seconds,
-            name="fade_in",
-        )
-        self._fade_out = self._time_to_samples(
-            samples=self._fade_out_samples,
-            seconds=self._fade_out_seconds,
-            name="fade_out",
-        )
+        self._fade_in = int(round(self._fade_in_seconds * self.sample_rate)) if self._fade_in_seconds is not None else 0
+        self._fade_out = int(round(self._fade_out_seconds * self.sample_rate)) if self._fade_out_seconds is not None else 0
 
         # Build envelope if needed
         if self._duration > 0 and (self._fade_in > 0 or self._fade_out > 0):
@@ -144,5 +129,5 @@ class SlicePE(ProcessingElement):
         return (
             f"SlicePE(source={self._source.__class__.__name__}, "
             f"start={self._start}, duration={self._duration}, "
-            f"fade_in_samples={self._fade_in}, fade_out_samples={self._fade_out})"
+            f"fade_in_seconds={self._fade_in_seconds}, fade_out_seconds={self._fade_out_seconds})"
         )

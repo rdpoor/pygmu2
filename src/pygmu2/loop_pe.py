@@ -28,15 +28,14 @@ class LoopPE(ProcessingElement):
         loop_end: End frame of loop region (default: source extent end)
         count: Number of repetitions, or None for infinite looping
         crossfade_seconds: Duration in seconds for crossfade at loop points (optional)
-        crossfade_samples: Duration in samples for crossfade at loop points (optional)
-    
+
     Example:
         # Loop entire file forever
         looped_stream = LoopPE(WavReaderPE("drum.wav"))
-        
+
         # Loop a specific region 4 times
         looped_stream = LoopPE(source_stream, loop_start=1000, loop_end=5000, count=4)
-        
+
         # Seamless looping with crossfade
         looped_stream = LoopPE(source_stream, crossfade_seconds=0.01)  # 10ms crossfade
     """
@@ -48,14 +47,14 @@ class LoopPE(ProcessingElement):
         loop_end: Optional[int] = None,
         count: Optional[int] = None,
         crossfade_seconds: Optional[float] = None,
-        crossfade_samples: Optional[int] = None,
     ):
+        if crossfade_seconds is not None and crossfade_seconds < 0:
+            raise ValueError(f"crossfade_seconds must be non-negative, got {crossfade_seconds}")
         self._source = source
         self._loop_start = loop_start
         self._loop_end = loop_end
         self._count = count
         self._crossfade_seconds = crossfade_seconds
-        self._crossfade_samples = crossfade_samples
         
         # These will be resolved when configured
         self._resolved_start: Optional[int] = None
@@ -157,14 +156,11 @@ class LoopPE(ProcessingElement):
                 raise ValueError(f"Loop length must be positive, got {self._loop_length}")
 
     def _resolve_crossfade(self) -> None:
-        """
-        Resolve crossfade samples (seconds -> samples if provided).
-        """
-        self._crossfade = self._time_to_samples(
-            samples=self._crossfade_samples,
-            seconds=self._crossfade_seconds,
-            name="crossfade",
-        )
+        """Resolve crossfade seconds -> samples."""
+        if self._crossfade_seconds is not None:
+            self._crossfade = int(round(self._crossfade_seconds * self.sample_rate))
+        else:
+            self._crossfade = 0
         if self._loop_length is not None:
             # Crossfade can't be more than half the loop length
             self._crossfade = min(self._crossfade, self._loop_length // 2)
@@ -249,7 +245,7 @@ class LoopPE(ProcessingElement):
     
     def __repr__(self) -> str:
         count_str = f", count={self._count}" if self._count is not None else ""
-        xfade_str = f", crossfade_samples={self.crossfade_samples}" if self.crossfade_samples > 0 else ""
+        xfade_str = f", crossfade_seconds={self._crossfade_seconds}" if self._crossfade_seconds else ""
         return (
             f"LoopPE(source={self._source.__class__.__name__}, "
             f"loop_start={self._loop_start}, loop_end={self._loop_end}"

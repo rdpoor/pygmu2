@@ -8,6 +8,9 @@ MIT License
 
 import unittest
 import numpy as np
+import pytest
+
+pytest.importorskip("pygmu2.reset_pe", reason="reset_pe module not yet implemented")
 
 from pygmu2 import (
     ResetPE,

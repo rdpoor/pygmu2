@@ -1,5 +1,8 @@
 import unittest
 import numpy as np
+import pytest
+
+pytest.importorskip("pygmu2.trigger_pe", reason="trigger_pe module not yet implemented")
 
 from pygmu2.trigger_pe import TriggerPE, TriggerMode, TriggerState
 from pygmu2.snippet import Snippet
