@@ -235,7 +235,7 @@ def setup_fallback_configs():
         BlitSawPE, SuperSawPE,
         GainPE, DelayPE, CropPE, MixPE, TransformPE,
         EnvelopePE, WindowPE, LoopPE,
-        DynamicsPE, DynamicsMode, CompressorPE, LimiterPE, GatePE,
+        DynamicsPE, DynamicsMode, CompressorPE, LimiterPE, ExpanderPE,
         RandomPE, RandomMode,
         Extent,
     )
@@ -329,8 +329,8 @@ def setup_fallback_configs():
         BenchmarkConfig("LimiterPE", lambda: LimiterPE(SinePE(frequency=440.0)), "dynamics"),
     ])
 
-    register_fallback("GatePE", [
-        BenchmarkConfig("GatePE", lambda: GatePE(SinePE(frequency=440.0)), "dynamics"),
+    register_fallback("ExpanderPE", [
+        BenchmarkConfig("ExpanderPE", lambda: ExpanderPE(SinePE(frequency=440.0)), "dynamics"),
     ])
 
     # === Random PEs ===

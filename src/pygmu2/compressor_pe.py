@@ -1,7 +1,9 @@
 """
-CompressorPE - All-in-one audio compressor with integrated envelope follower.
+CompressorPE, LimiterPE, ExpanderPE — dynamics processors.
 
-Combines EnvelopePE and DynamicsPE into a single, easy-to-use PE.
+All three are built on the shared _DynamicsProcessorPE base which wires
+together a CachePE, EnvelopePE, and DynamicsPE and provides the common
+infrastructure (inputs, is_pure, channel_count, extent, render).
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
@@ -19,14 +21,90 @@ from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 
 
-class CompressorPE(ProcessingElement):
+class _DynamicsProcessorPE(ProcessingElement):
+    """
+    Private base class shared by CompressorPE and ExpanderPE.
+
+    Owns the common internal graph (CachePE → EnvelopePE → DynamicsPE) and
+    delegates all PE infrastructure to the DynamicsPE output.  Subclasses
+    construct the internal PEs and pass them via super().__init__().
+    """
+
+    def __init__(
+        self,
+        cached_source: ProcessingElement,
+        envelope_pe: EnvelopePE,
+        dynamics_pe: DynamicsPE,
+        *,
+        threshold: float,
+        attack: float,
+        release: float,
+        knee: float,
+        stereo_link: bool,
+    ):
+        self._source = cached_source
+        self._envelope_pe = envelope_pe
+        self._dynamics_pe = dynamics_pe
+        self._threshold = threshold
+        self._attack = attack
+        self._release = release
+        self._knee = knee
+        self._stereo_link = stereo_link
+
+    # --- shared properties ---------------------------------------------------
+
+    @property
+    def threshold(self) -> float:
+        """Threshold in dB."""
+        return self._threshold
+
+    @property
+    def attack(self) -> float:
+        """Attack time in seconds."""
+        return self._attack
+
+    @property
+    def release(self) -> float:
+        """Release time in seconds."""
+        return self._release
+
+    @property
+    def knee(self) -> float:
+        """Soft knee width in dB."""
+        return self._knee
+
+    @property
+    def stereo_link(self) -> bool:
+        """Whether stereo channels are linked."""
+        return self._stereo_link
+
+    # --- PE infrastructure ---------------------------------------------------
+
+    def inputs(self) -> list[ProcessingElement]:
+        """Expose the internal graph so the Renderer manages all lifecycle."""
+        return [self._dynamics_pe]
+
+    def is_pure(self) -> bool:
+        return False
+
+    def channel_count(self) -> int | None:
+        return self._dynamics_pe.channel_count()
+
+    def _compute_extent(self) -> Extent:
+        return self._dynamics_pe.extent()
+
+    def _render(self, start: int, duration: int) -> Snippet:
+        return self._dynamics_pe.render(start, duration)
+
+
+class CompressorPE(_DynamicsProcessorPE):
     """
     All-in-one audio compressor with integrated envelope follower.
-    
+
     Provides a convenient interface for common compression tasks without
     needing to manually create and connect EnvelopePE and DynamicsPE.
     For sidechain compression or advanced routing, use DynamicsPE directly.
-    
+
     Args:
         source: Audio input to compress
         threshold: Level in dB where compression begins (default: -20.0)
@@ -39,47 +117,15 @@ class CompressorPE(ProcessingElement):
         knee: Soft knee width in dB (default: 6.0)
         makeup_gain: Output gain in dB, or "auto" (default: "auto")
         lookahead: Lookahead time in seconds (default: 0.0)
-                   Allows envelope to anticipate transients.
         detection: Envelope detection mode (default: DetectionMode.RMS)
         stereo_link: If True, use max envelope across channels (default: True)
-    
+
     Example:
-        # Simple compression
         compressed_stream = CompressorPE(audio_stream, threshold=-20, ratio=4)
-        
-        # Aggressive compression with fast attack
-        compressed_stream = CompressorPE(
-            audio_stream,
-            threshold=-15,
-            ratio=8,
-            attack=0.001,
-            release=0.05,
-        )
-        
-        # Brick-wall limiter
-        limited_stream = CompressorPE(
-            audio_stream,
-            threshold=-1,
-            ratio=100,
-            attack=0.0005,
-            release=0.05,
-            lookahead=0.001,
-        )
-        
-        # Gentle bus compression
-        glue_stream = CompressorPE(
-            mix_bus_stream,
-            threshold=-25,
-            ratio=2,
-            attack=0.03,
-            release=0.3,
-            knee=12,
-        )
     """
-    
-    # Sentinel for auto makeup gain
+
     AUTO = "auto"
-    
+
     def __init__(
         self,
         source: ProcessingElement,
@@ -93,30 +139,17 @@ class CompressorPE(ProcessingElement):
         detection: DetectionMode = DetectionMode.RMS,
         stereo_link: bool = True,
     ):
-        # Cache the source to avoid double-pull (envelope + dynamics both read it)
-        self._source = CachePE(source)
-        self._threshold = threshold
-        self._ratio = ratio
-        self._attack = attack
-        self._release = release
-        self._knee = knee
-        self._makeup_gain = makeup_gain
-        self._lookahead = lookahead
-        self._detection = detection
-        self._stereo_link = stereo_link
-
-        # Build internal graph: source -> EnvelopePE -> DynamicsPE
-        self._envelope_pe = EnvelopePE(
-            self._source,
+        cached = CachePE(source)
+        envelope_pe = EnvelopePE(
+            cached,
             attack=attack,
             release=release,
             lookahead=lookahead,
             mode=detection,
         )
-
-        self._dynamics_pe = DynamicsPE(
-            self._source,
-            self._envelope_pe,
+        dynamics_pe = DynamicsPE(
+            cached,
+            envelope_pe,
             threshold=threshold,
             ratio=ratio,
             knee=knee,
@@ -124,69 +157,39 @@ class CompressorPE(ProcessingElement):
             mode=DynamicsMode.COMPRESS,
             stereo_link=stereo_link,
         )
-    
-    @property
-    def threshold(self) -> float:
-        """Threshold in dB."""
-        return self._threshold
-    
+        super().__init__(
+            cached, envelope_pe, dynamics_pe,
+            threshold=threshold,
+            attack=attack,
+            release=release,
+            knee=knee,
+            stereo_link=stereo_link,
+        )
+        self._ratio = ratio
+        self._makeup_gain = makeup_gain
+        self._lookahead = lookahead
+        self._detection = detection
+
     @property
     def ratio(self) -> float:
         """Compression ratio."""
         return self._ratio
-    
-    @property
-    def attack(self) -> float:
-        """Attack time in seconds."""
-        return self._attack
-    
-    @property
-    def release(self) -> float:
-        """Release time in seconds."""
-        return self._release
-    
-    @property
-    def knee(self) -> float:
-        """Soft knee width in dB."""
-        return self._knee
-    
+
     @property
     def makeup_gain(self) -> float:
         """Makeup gain in dB (actual value, even if auto)."""
         return self._dynamics_pe.makeup_gain
-    
+
     @property
     def lookahead(self) -> float:
         """Lookahead time in seconds."""
         return self._lookahead
-    
+
     @property
     def detection(self) -> DetectionMode:
         """Envelope detection mode."""
         return self._detection
-    
-    @property
-    def stereo_link(self) -> bool:
-        """Whether stereo channels are linked."""
-        return self._stereo_link
-    
-    def inputs(self) -> list[ProcessingElement]:
-        """Expose the internal graph so the Renderer manages all lifecycle."""
-        return [self._dynamics_pe]
 
-    def is_pure(self) -> bool:
-        """CompressorPE is NOT pure due to envelope state."""
-        return False
-
-    def channel_count(self) -> int | None:
-        return self._dynamics_pe.channel_count()
-
-    def _compute_extent(self) -> Extent:
-        return self._dynamics_pe.extent()
-
-    def _render(self, start: int, duration: int) -> Snippet:
-        return self._dynamics_pe.render(start, duration)
-    
     def __repr__(self) -> str:
         makeup_str = "auto" if self._makeup_gain == self.AUTO else f"{self.makeup_gain:.1f}"
         return (
@@ -198,11 +201,11 @@ class CompressorPE(ProcessingElement):
 
 class LimiterPE(CompressorPE):
     """
-    Brick-wall limiter - prevents signal from exceeding ceiling level.
-    
-    A specialized compressor with very high ratio, fast attack,
+    Brick-wall limiter — prevents signal from exceeding a ceiling level.
+
+    A specialised compressor with very high ratio, fast attack,
     and optional lookahead for transparent limiting.
-    
+
     Args:
         source: Audio input to limit
         ceiling: Maximum output level in dB (default: -1.0)
@@ -210,18 +213,11 @@ class LimiterPE(CompressorPE):
         release: Release time in seconds (default: 0.05)
         lookahead: Lookahead time in seconds (default: 0.005)
         stereo_link: If True, use max envelope across channels (default: True)
-    
+
     Example:
-        # Simple limiting at -1dB
-        limited_stream = LimiterPE(audio_stream)
-        
-        # Transparent limiting with lookahead
-        limited_stream = LimiterPE(audio_stream, ceiling=-0.5, lookahead=0.005)
-        
-        # Slower attack for less aggressive limiting
-        limited_stream = LimiterPE(audio_stream, ceiling=-1.0, attack=0.01)
+        limited_stream = LimiterPE(audio_stream, ceiling=-1.0)
     """
-    
+
     def __init__(
         self,
         source: ProcessingElement,
@@ -234,13 +230,13 @@ class LimiterPE(CompressorPE):
         super().__init__(
             source,
             threshold=ceiling,
-            ratio=100.0,  # Very high ratio ≈ limiting
+            ratio=100.0,
             attack=attack,
             release=release,
-            knee=0.0,  # Hard knee for limiting
-            makeup_gain=0.0,  # No makeup for limiter
+            knee=0.0,
+            makeup_gain=0.0,
             lookahead=lookahead,
-            detection=DetectionMode.PEAK,  # Peak detection for limiting
+            detection=DetectionMode.PEAK,
             stereo_link=stereo_link,
         )
         self._ceiling = ceiling
@@ -249,7 +245,7 @@ class LimiterPE(CompressorPE):
     def ceiling(self) -> float:
         """Ceiling level in dB."""
         return self._ceiling
-    
+
     def __repr__(self) -> str:
         return (
             f"LimiterPE(ceiling={self._ceiling}, release={self._release}, "
@@ -257,30 +253,28 @@ class LimiterPE(CompressorPE):
         )
 
 
-class GatePE(ProcessingElement):
+class ExpanderPE(_DynamicsProcessorPE):
     """
-    Noise gate - silences signal below threshold level.
-    
-    Uses EnvelopePE for detection and DynamicsPE in GATE mode.
-    
+    Downward expander / noise gate — attenuates signal below threshold.
+
+    Uses EnvelopePE for level detection and DynamicsPE in GATE mode.
+    Unlike a compressor, an expander reduces the level of quiet signals
+    rather than loud ones.
+
     Args:
-        source: Audio input to gate
-        threshold: Level in dB below which signal is gated (default: -40.0)
+        source: Audio input
+        threshold: Level in dB below which the signal is attenuated (default: -40.0)
         attack: Envelope attack time in seconds (default: 0.001)
         release: Envelope release time in seconds (default: 0.05)
-        hold: Hold time before release begins (default: 0.01) [NOT YET IMPLEMENTED]
-        gate_range: Attenuation in dB when gated (default: -80.0)
+        gate_range: Maximum attenuation in dB when fully closed (default: -80.0)
         knee: Soft knee width in dB (default: 0.0)
         stereo_link: If True, use max envelope across channels (default: True)
-    
+
     Example:
-        # Simple noise gate
-        gated_stream = GatePE(audio_stream, threshold=-40)
-        
-        # Drum gate with fast attack
-        gated_stream = GatePE(drums_stream, threshold=-30, attack=0.0005, release=0.1)
+        gated_stream = ExpanderPE(audio_stream, threshold=-40)
+        drum_gate   = ExpanderPE(drums_stream, threshold=-30, attack=0.0005, release=0.1)
     """
-    
+
     def __init__(
         self,
         source: ProcessingElement,
@@ -291,74 +285,41 @@ class GatePE(ProcessingElement):
         knee: float = 0.0,
         stereo_link: bool = True,
     ):
-        # Cache the source to avoid double-pull (envelope + dynamics both read it)
-        self._source = CachePE(source)
-        self._threshold = threshold
-        self._attack = attack
-        self._release = release
-        self._range = gate_range
-        self._knee = knee
-        self._stereo_link = stereo_link
-
-        # Build internal graph: source -> EnvelopePE -> DynamicsPE
-        self._envelope_pe = EnvelopePE(
-            self._source,
+        cached = CachePE(source)
+        envelope_pe = EnvelopePE(
+            cached,
             attack=attack,
             release=release,
             mode=DetectionMode.PEAK,
         )
-
-        self._dynamics_pe = DynamicsPE(
-            self._source,
-            self._envelope_pe,
+        dynamics_pe = DynamicsPE(
+            cached,
+            envelope_pe,
             threshold=threshold,
-            ratio=1.0,  # Not used in gate mode
+            ratio=1.0,
             knee=knee,
             makeup_gain=0.0,
             mode=DynamicsMode.GATE,
             stereo_link=stereo_link,
             gate_range=gate_range,
         )
-    
-    @property
-    def threshold(self) -> float:
-        """Threshold in dB."""
-        return self._threshold
-    
-    @property
-    def attack(self) -> float:
-        """Attack time in seconds."""
-        return self._attack
-    
-    @property
-    def release(self) -> float:
-        """Release time in seconds."""
-        return self._release
-    
+        super().__init__(
+            cached, envelope_pe, dynamics_pe,
+            threshold=threshold,
+            attack=attack,
+            release=release,
+            knee=knee,
+            stereo_link=stereo_link,
+        )
+        self._range = gate_range
+
     @property
     def gate_range(self) -> float:
         """Gate attenuation in dB."""
         return self._range
-    
-    def inputs(self) -> list[ProcessingElement]:
-        """Expose the internal graph so the Renderer manages all lifecycle."""
-        return [self._dynamics_pe]
 
-    def is_pure(self) -> bool:
-        """GatePE is NOT pure due to envelope state."""
-        return False
-
-    def channel_count(self) -> int | None:
-        return self._dynamics_pe.channel_count()
-
-    def _compute_extent(self) -> Extent:
-        return self._dynamics_pe.extent()
-
-    def _render(self, start: int, duration: int) -> Snippet:
-        return self._dynamics_pe.render(start, duration)
-    
     def __repr__(self) -> str:
         return (
-            f"GatePE(threshold={self._threshold}, attack={self._attack}, "
+            f"ExpanderPE(threshold={self._threshold}, attack={self._attack}, "
             f"release={self._release}, range={self._range})"
         )

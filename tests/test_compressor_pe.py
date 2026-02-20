@@ -1,5 +1,5 @@
 """
-Tests for CompressorPE, LimiterPE, and GatePE.
+Tests for CompressorPE, LimiterPE, and ExpanderPE.
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
@@ -11,7 +11,7 @@ import pytest
 from pygmu2 import (
     CompressorPE,
     LimiterPE,
-    GatePE,
+    ExpanderPE,
     ConstantPE,
     SinePE,
     GainPE,
@@ -276,17 +276,17 @@ class TestLimiterPE:
         assert "ceiling=-3.0" in repr_str
 
 
-class TestGatePE:
-    """Test GatePE convenience class."""
+class TestExpanderPE:
+    """Test ExpanderPE convenience class."""
     
     @pytest.fixture
     def renderer(self):
         return NullRenderer(sample_rate=44100)
     
     def test_create_default(self):
-        """Test creating GatePE with defaults."""
+        """Test creating ExpanderPE with defaults."""
         source = SinePE(frequency=440.0)
-        gate = GatePE(source)
+        gate = ExpanderPE(source)
         
         assert gate.threshold == -40.0
         assert gate.attack == 0.001
@@ -294,9 +294,9 @@ class TestGatePE:
         assert gate.gate_range == -80.0
 
     def test_create_with_params(self):
-        """Test creating GatePE with custom params."""
+        """Test creating ExpanderPE with custom params."""
         source = SinePE(frequency=440.0)
-        gate = GatePE(source, threshold=-30.0, attack=0.0005, release=0.1, gate_range=-60.0)
+        gate = ExpanderPE(source, threshold=-30.0, attack=0.0005, release=0.1, gate_range=-60.0)
 
         assert gate.threshold == -30.0
         assert gate.attack == 0.0005
@@ -306,7 +306,7 @@ class TestGatePE:
     def test_gate_silences_quiet_signal(self, renderer):
         """Gate should silence signal below threshold."""
         source = ConstantPE(0.001)  # -60dB, below -40dB threshold
-        gate = GatePE(source, threshold=-40, gate_range=-80)
+        gate = ExpanderPE(source, threshold=-40, gate_range=-80)
         
         renderer.set_source(gate)
         renderer.start()
@@ -319,7 +319,7 @@ class TestGatePE:
     def test_gate_passes_loud_signal(self, renderer):
         """Gate should pass signal above threshold."""
         source = ConstantPE(0.5)  # -6dB, above -40dB threshold
-        gate = GatePE(source, threshold=-40)
+        gate = ExpanderPE(source, threshold=-40)
         
         renderer.set_source(gate)
         renderer.start()
@@ -330,19 +330,19 @@ class TestGatePE:
         np.testing.assert_allclose(snippet.data, 0.5, rtol=0.1)
     
     def test_is_not_pure(self):
-        """GatePE is not pure due to envelope state."""
+        """ExpanderPE is not pure due to envelope state."""
         source = SinePE(frequency=440.0)
-        gate = GatePE(source)
+        gate = ExpanderPE(source)
         
         assert gate.is_pure() is False
     
     def test_repr(self):
         """Test string representation."""
         source = SinePE(frequency=440.0)
-        gate = GatePE(source, threshold=-30.0)
+        gate = ExpanderPE(source, threshold=-30.0)
         
         repr_str = repr(gate)
-        assert "GatePE" in repr_str
+        assert "ExpanderPE" in repr_str
         assert "threshold=-30.0" in repr_str
 
 
@@ -388,7 +388,7 @@ class TestCompressorPEWithSine:
 
 
 class TestCompositeGraphLifecycle:
-    """Regression: CompressorPE/GatePE expose their internal graph via inputs().
+    """Regression: CompressorPE/ExpanderPE expose their internal graph via inputs().
 
     The Renderer must be able to walk through the internal EnvelopePE and
     DynamicsPE so it can manage their lifecycle (on_start/on_stop) without
@@ -418,12 +418,12 @@ class TestCompositeGraphLifecycle:
         assert CachePE in pe_types, "Source should be wrapped in CachePE"
 
     def test_gate_renderer_reaches_envelope(self, renderer):
-        """Renderer.set_source() should reach the GatePE's internal EnvelopePE."""
+        """Renderer.set_source() should reach the ExpanderPE's internal EnvelopePE."""
         from pygmu2 import CachePE
         from pygmu2.envelope_pe import EnvelopePE
 
         source = SinePE(frequency=440.0, amplitude=0.8)
-        gate = GatePE(source, threshold=-40)
+        gate = ExpanderPE(source, threshold=-40)
 
         renderer.set_source(gate)
 
@@ -459,9 +459,9 @@ class TestCompositeGraphLifecycle:
         renderer.stop()
 
     def test_gate_renders_after_renderer_lifecycle(self, renderer):
-        """GatePE should produce valid output when Renderer manages lifecycle."""
+        """ExpanderPE should produce valid output when Renderer manages lifecycle."""
         source = SinePE(frequency=100.0, amplitude=0.8)
-        gate = GatePE(source, threshold=-40)
+        gate = ExpanderPE(source, threshold=-40)
 
         renderer.set_source(gate)
         renderer.start()

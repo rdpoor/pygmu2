@@ -22,7 +22,7 @@ from pygmu2.audio_renderer import AudioRenderer
 from pygmu2.blit_saw_pe import BlitSawPE
 from pygmu2.cache_pe import CachePE
 from pygmu2.comb_pe import CombPE
-from pygmu2.compressor_pe import CompressorPE, LimiterPE, GatePE
+from pygmu2.compressor_pe import CompressorPE, LimiterPE, ExpanderPE
 from pygmu2.config import (
     ErrorMode,
     set_error_mode,
@@ -171,7 +171,7 @@ __all__ = [
     "DynamicsPE",
     "EnvelopePE",
     "GainPE",
-    "GatePE",
+    "ExpanderPE",
     "IdentityPE",
     "KarplusStrongPE",
     "rho_for_decay_db",

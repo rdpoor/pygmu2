@@ -2,7 +2,7 @@
 """
 Example 10: Compression, Limiting, and Gating
 
-Demonstrates the easy-to-use CompressorPE, LimiterPE, and GatePE
+Demonstrates the easy-to-use CompressorPE, LimiterPE, and ExpanderPE
 for common dynamics processing tasks.
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
@@ -19,7 +19,7 @@ sys.path.insert(0, 'src')
 from pygmu2 import (
     CompressorPE,
     GainPE,
-    GatePE,
+    ExpanderPE,
     LimiterPE,
     LoopPE,
     MixPE,
@@ -106,7 +106,7 @@ def demo_noise_gate():
     looped_drums_stream = LoopPE(source_stream, count=2, crossfade_seconds=0.002)
     
     # Apply gate - quiet parts will be silenced
-    gated_stream = GatePE(
+    gated_stream = ExpanderPE(
         looped_drums_stream,
         threshold=-16,     # Gate threshold
         attack=0.001,      # 1ms attack (fast open)
