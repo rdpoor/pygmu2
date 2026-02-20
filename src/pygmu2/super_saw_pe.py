@@ -10,7 +10,6 @@ MIT License
 """
 
 import numpy as np
-from typing import Union, Optional
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
@@ -19,6 +18,9 @@ from pygmu2.blit_saw_pe import BlitSawPE
 from pygmu2.gain_pe import GainPE
 from pygmu2.cache_pe import CachePE
 
+from pygmu2.logger import get_logger
+logger = get_logger(__name__)
+logger.setLevel("WARN")
 
 class SuperSawPE(ProcessingElement):
     """
@@ -28,9 +30,8 @@ class SuperSawPE(ProcessingElement):
     the center frequency. The result is a thick, chorused sound that's
     a staple of trance, EDM, and modern synth pads.
     
-    The detune spread follows a symmetric pattern: for N voices, one is
-    at the center frequency, and the rest are spread evenly above and
-    below by up to ±detune_cents.
+    The detune spread follows a symmetric pattern: voices are spread evenly 
+    above and below the target frequency by up to ±detune_cents.  
     
     Args:
         frequency: Center frequency in Hz, or PE for modulation
@@ -75,14 +76,14 @@ class SuperSawPE(ProcessingElement):
     
     def __init__(
         self,
-        frequency: Union[float, ProcessingElement],
-        amplitude: Union[float, ProcessingElement] = 1.0,
+        frequency: float | ProcessingElement,
+        amplitude: float | ProcessingElement = 1.0,
         voices: int = 7,
         detune_cents: float = 20.0,
         mix_mode: str = 'center_heavy',
         channels: int = 1,
         randomize_phase: bool = True,
-        seed: Optional[int] = None,
+        seed: int | None = None,
     ):
         if voices < 1:
             voices = 1
@@ -104,12 +105,12 @@ class SuperSawPE(ProcessingElement):
         self._oscillators: list[BlitSawPE] = self._create_oscillators()
     
     @property
-    def frequency(self) -> Union[float, ProcessingElement]:
+    def frequency(self) -> float | ProcessingElement:
         """Center frequency in Hz (constant or PE)."""
         return self._frequency
     
     @property
-    def amplitude(self) -> Union[float, ProcessingElement]:
+    def amplitude(self) -> float | ProcessingElement:
         """Overall amplitude (constant or PE)."""
         return self._amplitude
     
@@ -141,55 +142,91 @@ class SuperSawPE(ProcessingElement):
         # Spread voices evenly from -detune_cents to detune_cents
         cents = np.linspace(-self._detune_cents, self._detune_cents, self._voices)
         ratios = 2 ** (cents / 1200.0)
+        logger.debug(f'Detune cents: {cents}')
+        logger.debug(f'Detune ratios: {ratios}')
 
         return ratios
-    
+
+
     def _compute_mix_gains(self) -> np.ndarray:
         """
-        Compute amplitude gain for each voice based on mix mode.
-        
-        Returns array of gains, normalized so total power is reasonable.
+        Compute per-voice mix gains for SuperSawPE.
+
+        Modes:
+            MIX_EQUAL:
+                All voices equal weight.
+
+            MIX_LINEAR:
+                Linearly taper gain from center toward edges.
+                Center voice (odd N) or center pair (even N) gets max gain.
+                Edge voices get 0.5 gain.
+
+            MIX_CENTER_HEAVY:
+                Center voice (odd N) or center pair (even N) gets gain 1.0.
+                All other voices get gain 0.5.
+
+        Args:
+            n: number of voices (must be >= 1)
+            mode: one of MIX_EQUAL, MIX_LINEAR, MIX_CENTER_HEAVY
+
+        Returns:
+            normalized gains: np.ndarray of shape (n,), dtype float32
         """
         n = self._voices
-        
-        if n == 1:
+        mode = self._mix_mode
+
+        if n <= 0:
+            raise ValueError("n must be >= 1")
+        elif n == 1:
             return np.array([1.0])
-        
-        if self._mix_mode == self.MIX_EQUAL:
-            # Equal amplitude, normalize by sqrt(n) for constant power
-            gains = np.ones(n) / np.sqrt(n)
-        
-        elif self._mix_mode == self.MIX_CENTER_HEAVY:
-            # Center voice at 1.0, outer voices at 0.5, normalize
-            # This mimics the JP-8000 character
-            gains = np.ones(n) * 0.5
-            center_idx = n // 2
-            gains[center_idx] = 1.0
-            # Normalize
-            gains = gains / np.sqrt(np.sum(gains ** 2))
-        
-        elif self._mix_mode == self.MIX_LINEAR:
-            # Linear falloff from center
-            center_idx = n // 2
-            distances = np.abs(np.arange(n) - center_idx)
-            max_dist = np.max(distances) if np.max(distances) > 0 else 1
-            gains = 1.0 - 0.5 * (distances / max_dist)  # 1.0 at center, 0.5 at edges
-            # Normalize
-            gains = gains / np.sqrt(np.sum(gains ** 2))
-        
+
+        gains = np.ones(n, dtype=np.float32)
+
+        if mode == self.MIX_EQUAL:
+            # All equal
+            # N=5: [1. 1. 1. 1. 1.]
+            # N=6: [1. 1. 1. 1. 1. 1.]
+            pass
+
+        elif mode == self.MIX_LINEAR:
+            # Distance from center (works for odd and even n)
+            # N=5: [0.5  0.75 1. 0.75 0.5 ]
+            # N=6: [0.5 0.7 0.9 0.9 0.7 0.5]
+            center = (n - 1) / 2.0
+            d = np.abs(np.arange(n, dtype=np.float32) - center)
+
+            dmax = np.max(d)
+            gains = 0.5 + 0.5 * (1.0 - d / dmax)
+
+        elif mode == self.MIX_CENTER_HEAVY:
+            # All 0.5 except for center(s)
+            # N=5: [0.5 0.5 1.  0.5 0.5]
+            # N=6: [0.5 0.5 1.  1.  0.5 0.5]
+            gains[:] = 0.5
+
+            if n % 2 == 1:
+                # Odd: single center voice = 1.0, others = 0.5
+                gains[n // 2] = 1.0
+            else:
+                # Even: center pair = 1.0, other = 0.5
+                gains[n // 2 - 1] = 1.0
+                gains[n // 2] = 1.0
+
         else:
-            # Default to equal
-            gains = np.ones(n) / np.sqrt(n)
-        
-        return gains
+            raise ValueError(f"Unknown mix mode: {mode}")
+
+        logger.debug(f"n={n}, mode={mode}, gains={gains}")
+
+        normalized_gains = gains / np.sqrt(np.sum(gains ** 2))
+        return normalized_gains
     
     def _create_oscillators(self) -> list[BlitSawPE]:
         """Create the internal BlitSawPE oscillators."""
         oscillators = []
         
-        # Wrap shared frequency PE in CachePE so it renders once per block
         if isinstance(self._frequency, ProcessingElement):
-            freq_src: Union[float, ProcessingElement] = CachePE(self._frequency)
+            # Wrap shared frequency PE in CachePE so it renders once per block
+            freq_src: float | ProcessingElement = CachePE(self._frequency)
         else:
             freq_src = self._frequency
 
@@ -208,6 +245,7 @@ class SuperSawPE(ProcessingElement):
                 frequency=freq,
                 amplitude=gain,  # Individual voice gain
                 channels=1,  # Mix to mono first, then expand
+                initial_phase = self._rng.random(1) if self._randomize_phase else 0.0
             )
             oscillators.append(osc)
         
@@ -244,7 +282,6 @@ class SuperSawPE(ProcessingElement):
     def _reset_state(self) -> None:
         """Reset state of all internal oscillators."""
         for osc in self._oscillators:
-            osc.initial_phase = self._rng.random(1) if self._randomize_phase else 0.0
             osc.reset_state()
     
     def _render(self, start: int, duration: int) -> Snippet:

@@ -11,7 +11,7 @@ import sys
 from typing import Optional
 
 
-def setup_logging(
+def set_global_logging(
     level: str = "INFO",
     format_string: Optional[str] = None,
     log_file: Optional[str] = None,

@@ -7,9 +7,9 @@ from pygmu2.config import get_sample_rate
 from pygmu2.gate_signal import GateSignal
 from pygmu2.trigger_signal import TriggerSignal
 
-from pygmu2.logger import setup_logging, get_logger
-setup_logging(level="INFO")
+from pygmu2.logger import get_logger
 logger = get_logger(__name__)
+logger.setLevel("WARN")
 
 # Envelope states. These are string constants to make logs readable.
 IDLE = "idle"

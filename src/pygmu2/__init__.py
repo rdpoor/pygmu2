@@ -57,7 +57,7 @@ from pygmu2.gate_signal import GateSignal
 from pygmu2.identity_pe import IdentityPE
 from pygmu2.karplus_strong_pe import KarplusStrongPE, rho_for_decay_db
 from pygmu2.ladder_pe import LadderPE, LadderMode
-from pygmu2.logger import setup_logging, get_logger
+from pygmu2.logger import set_global_logging, get_logger
 from pygmu2.loop_pe import LoopPE
 from pygmu2.meltysynth_pe import MeltysynthPE
 from pygmu2.midi_in_pe import MidiInPE
@@ -248,7 +248,7 @@ __all__ = [
     "set_verdi_tuning",
     "set_baroque_pitch",
     # Logging utilities
-    "setup_logging",
+    "set_global_logging",
     "get_logger",
     # Debug utilities
     "print_pe_tree",

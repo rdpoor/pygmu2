@@ -7,14 +7,14 @@ MIT License
 """
 
 import sys
-from pygmu2.logger import setup_logging, get_logger
+from pygmu2.logger import set_global_logging, get_logger
 from pygmu2 import hello, __version__
 
 
 def main():
     """Main entry point"""
     # Set up logging
-    logger = setup_logging(level="INFO")
+    logger = set_global_logging(level="INFO")
     logger.info(f"pygmu2 v{__version__} starting...")
     
     # Example usage

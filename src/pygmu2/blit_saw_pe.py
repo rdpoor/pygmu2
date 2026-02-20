@@ -19,6 +19,9 @@ from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 
+from pygmu2.logger import get_logger
+logger = get_logger(__name__)
+logger.setLevel("DEBUG")
 
 class BlitSawPE(ProcessingElement):
     """
@@ -33,7 +36,7 @@ class BlitSawPE(ProcessingElement):
     Args:
         frequency: Frequency in Hz, or PE providing frequency values
         amplitude: Peak amplitude, or PE providing amplitude values (default: 1.0)
-        initial_phase: Initial phase (0 .. 1.0]
+        initial_phase: Initial phase, internally set to initial_state % 1.0
         m: Number of harmonics. If None (default), automatically computed
            to keep all harmonics below Nyquist. Can be int or PE for
            fixed/modulated harmonic content.
@@ -78,10 +81,7 @@ class BlitSawPE(ProcessingElement):
         self._leak = leak
         self._channels = channels
         
-        # State for non-pure operation
-        self._phase: float = self._initial_phase
-        self._integrator: float = 0.0  # Leaky integrator state
-        self._last_render_end: Optional[int] = None
+        self._reset_state()
     
     @property
     def frequency(self) -> Union[float, ProcessingElement]:
@@ -107,10 +107,10 @@ class BlitSawPE(ProcessingElement):
     def initial_phase(self) -> float:
         return self._initial_phase
 
-    @initial_phase.setter
-    def initial_phase(self, value:float) -> None:
-        """takes effect on the next call to _reset_state()"""
-        self._initial_phase = value % 1.0
+    # @initial_phase.setter
+    # def initial_phase(self, value:float) -> None:
+    #     """takes effect on the next call to _reset_state()"""
+    #     self._initial_phase = value % 1.0
 
     def inputs(self) -> list[ProcessingElement]:
         """Return list of PE inputs."""
@@ -138,6 +138,7 @@ class BlitSawPE(ProcessingElement):
         self._phase = self._initial_phase
         self._integrator = 0.0
         self._last_render_end = None
+        logger.debug(f"_reset_state: initial_phase = {self._initial_phase}")
     
     def _on_start(self) -> None:
         """Reset state on start."""
@@ -180,7 +181,8 @@ class BlitSawPE(ProcessingElement):
         
         # Handle discontinuous rendering
         if self._last_render_end is None or start != self._last_render_end:
-            self._phase = 0.0
+            logger.debug("discontinuous rendering, resetting...")
+            self._phase = self._initial_phase
             self._integrator = 0.0
         
         # Compute phase increment per sample (0 to 1 per period)
