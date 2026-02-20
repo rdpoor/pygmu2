@@ -11,7 +11,6 @@ MIT License
 
 from __future__ import annotations
 
-from typing import Optional, Union
 import numpy as np
 
 # Try to import numba for JIT compilation (optional optimization)
@@ -385,10 +384,10 @@ class ReversePitchEchoPE(ProcessingElement):
     def __init__(
         self,
         source: ProcessingElement,
-        block_seconds: Union[float, ProcessingElement] = 0.25,
-        pitch_ratio: Union[float, ProcessingElement] = 1.0,
-        feedback: Union[float, ProcessingElement] = 0.85,
-        alternate_direction: Union[float, ProcessingElement] = 0.0,
+        block_seconds: float | ProcessingElement = 0.25,
+        pitch_ratio: float | ProcessingElement = 1.0,
+        feedback: float | ProcessingElement = 0.85,
+        alternate_direction: float | ProcessingElement = 0.0,
         smoothing_samples: int = 2400,
     ):
         self._source = source
@@ -403,12 +402,12 @@ class ReversePitchEchoPE(ProcessingElement):
         self._fb_is_pe = isinstance(feedback, ProcessingElement)
         self._alt_is_pe = isinstance(alternate_direction, ProcessingElement)
 
-        self._buffer_a: Optional[np.ndarray] = None
-        self._buffer_b: Optional[np.ndarray] = None
-        self._current_buffer: Optional[np.ndarray] = None
-        self._previous_buffer: Optional[np.ndarray] = None
-        self._pitch_shifter: Optional[_PitchShifter] = None
-        self._pitch_buffer: Optional[np.ndarray] = None
+        self._buffer_a: np.ndarray | None = None
+        self._buffer_b: np.ndarray | None = None
+        self._current_buffer: np.ndarray | None = None
+        self._previous_buffer: np.ndarray | None = None
+        self._pitch_shifter: _PitchShifter | None = None
+        self._pitch_buffer: np.ndarray | None = None
         self._pitch_write_pos: int = 0
         self._pitch_read_pos: float = 0.0
         self._current_is_a: int = 1
@@ -442,7 +441,7 @@ class ReversePitchEchoPE(ProcessingElement):
         """ReversePitchEchoPE maintains state and is not pure."""
         return False
 
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()
 

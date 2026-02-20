@@ -6,7 +6,6 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-from typing import Optional
 
 import numpy as np
 
@@ -43,10 +42,10 @@ class LoopPE(ProcessingElement):
     def __init__(
         self,
         source: ProcessingElement,
-        loop_start: Optional[int] = None,
-        loop_end: Optional[int] = None,
-        count: Optional[int] = None,
-        crossfade_seconds: Optional[float] = None,
+        loop_start: int | None = None,
+        loop_end: int | None = None,
+        count: int | None = None,
+        crossfade_seconds: float | None = None,
     ):
         if crossfade_seconds is not None and crossfade_seconds < 0:
             raise ValueError(f"crossfade_seconds must be non-negative, got {crossfade_seconds}")
@@ -57,9 +56,9 @@ class LoopPE(ProcessingElement):
         self._crossfade_seconds = crossfade_seconds
         
         # These will be resolved when configured
-        self._resolved_start: Optional[int] = None
-        self._resolved_end: Optional[int] = None
-        self._loop_length: Optional[int] = None
+        self._resolved_start: int | None = None
+        self._resolved_end: int | None = None
+        self._loop_length: int | None = None
         self._crossfade: int = 0
 
         # Eager resolution when possible (finite source extent, known sample rate).
@@ -74,17 +73,17 @@ class LoopPE(ProcessingElement):
         return self._source
     
     @property
-    def loop_start(self) -> Optional[int]:
+    def loop_start(self) -> int | None:
         """Start frame of the loop region."""
         return self._loop_start
     
     @property
-    def loop_end(self) -> Optional[int]:
+    def loop_end(self) -> int | None:
         """End frame of the loop region."""
         return self._loop_end
     
     @property
-    def count(self) -> Optional[int]:
+    def count(self) -> int | None:
         """Number of loop repetitions (None = infinite)."""
         return self._count
     
@@ -106,7 +105,7 @@ class LoopPE(ProcessingElement):
         """LoopPE is pure - just index remapping."""
         return True
     
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()
     

@@ -7,7 +7,6 @@ MIT License
 """
 
 from enum import Enum
-from typing import Optional
 
 import numpy as np
 import numba as nb
@@ -69,7 +68,7 @@ class EnvelopePE(ProcessingElement):
         self._mode = mode
         
         # Envelope state (per channel)
-        self._envelope: Optional[np.ndarray] = None
+        self._envelope: np.ndarray | None = None
     
     @property
     def source(self) -> ProcessingElement:
@@ -106,7 +105,7 @@ class EnvelopePE(ProcessingElement):
         """
         return False
     
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()
     

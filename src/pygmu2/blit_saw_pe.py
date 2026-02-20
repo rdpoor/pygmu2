@@ -13,7 +13,6 @@ MIT License
 """
 
 import numpy as np
-from typing import Union, Optional
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
@@ -67,10 +66,10 @@ class BlitSawPE(ProcessingElement):
     
     def __init__(
         self,
-        frequency: Union[float, ProcessingElement],
-        amplitude: Union[float, ProcessingElement] = 1.0,
+        frequency: float | ProcessingElement,
+        amplitude: float | ProcessingElement = 1.0,
         initial_phase: float = 0.0,
-        m: Optional[Union[int, ProcessingElement]] = None,
+        m: int | ProcessingElement | None = None,
         leak: float = 0.999,
         channels: int = 1,
     ):
@@ -84,17 +83,17 @@ class BlitSawPE(ProcessingElement):
         self._reset_state()
     
     @property
-    def frequency(self) -> Union[float, ProcessingElement]:
+    def frequency(self) -> float | ProcessingElement:
         """Frequency in Hz (constant or PE)."""
         return self._frequency
     
     @property
-    def amplitude(self) -> Union[float, ProcessingElement]:
+    def amplitude(self) -> float | ProcessingElement:
         """Peak amplitude (constant or PE)."""
         return self._amplitude
     
     @property
-    def m(self) -> Optional[Union[int, ProcessingElement]]:
+    def m(self) -> int | ProcessingElement | None:
         """Number of harmonics (None for auto, or constant/PE)."""
         return self._m
     

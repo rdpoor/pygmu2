@@ -9,7 +9,6 @@ MIT License
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional
 
 import numpy as np
 
@@ -41,7 +40,7 @@ class NoisePE(SourcePE):
         self,
         min_value: float = -1.0,
         max_value: float = 1.0,
-        seed: Optional[int] = None,
+        seed: int | None = None,
         mode: NoiseMode = NoiseMode.WHITE,
     ):
         if max_value < min_value:
@@ -52,7 +51,7 @@ class NoisePE(SourcePE):
         self._seed = seed
         self._mode = mode
 
-        self._rng: Optional[np.random.Generator] = None
+        self._rng: np.random.Generator | None = None
 
         # Pink noise filter state (Paul Kellet filter)
         self._pink_b = np.zeros(7, dtype=np.float32)
@@ -69,7 +68,7 @@ class NoisePE(SourcePE):
         return self._max_value
 
     @property
-    def seed(self) -> Optional[int]:
+    def seed(self) -> int | None:
         return self._seed
 
     @property

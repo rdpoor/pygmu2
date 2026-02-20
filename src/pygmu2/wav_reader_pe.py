@@ -8,7 +8,6 @@ MIT License
 
 import numpy as np
 import soundfile as sf
-from typing import Optional
 
 from pygmu2.processing_element import SourcePE
 from pygmu2.extent import Extent
@@ -51,9 +50,9 @@ class WavReaderPE(SourcePE):
         self._path = path
         
         # File info (populated lazily on first access)
-        self._frame_count: Optional[int] = None
-        self._channels: Optional[int] = None
-        self._file_sample_rate: Optional[int] = None
+        self._frame_count: int | None = None
+        self._channels: int | None = None
+        self._file_sample_rate: int | None = None
     
     @property
     def path(self) -> str:
@@ -61,13 +60,13 @@ class WavReaderPE(SourcePE):
         return self._path
     
     @property
-    def file_sample_rate(self) -> Optional[int]:
+    def file_sample_rate(self) -> int | None:
         """Sample rate of the WAV file (reads file metadata if needed)."""
         self._ensure_file_info()
         return self._file_sample_rate
 
     @property
-    def sample_rate(self) -> Optional[int]:
+    def sample_rate(self) -> int | None:
         """
         The sample rate in Hz, if known.
 

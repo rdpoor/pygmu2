@@ -8,7 +8,6 @@ MIT License
 
 from __future__ import annotations
 from enum import Enum
-from typing import Optional
 
 
 class ExtendMode(Enum):
@@ -28,7 +27,7 @@ class Extent:
     - end=None: ends indefinitely in the future
     """
     
-    def __init__(self, start: Optional[int] = None, end: Optional[int] = None):
+    def __init__(self, start: int | None = None, end: int | None = None):
         """
         Create an Extent.
         
@@ -46,17 +45,17 @@ class Extent:
         self._end = end
     
     @property
-    def start(self) -> Optional[int]:
+    def start(self) -> int | None:
         """Starting sample index, or None if undefined (infinite past)."""
         return self._start
     
     @property
-    def end(self) -> Optional[int]:
+    def end(self) -> int | None:
         """Ending sample index (exclusive), or None if undefined (infinite future)."""
         return self._end
     
     @property
-    def duration(self) -> Optional[int]:
+    def duration(self) -> int | None:
         """
         Frame count of this extent, or None if either bound is undefined.
         """

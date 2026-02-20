@@ -8,7 +8,6 @@ MIT License
 
 from __future__ import annotations
 
-from typing import Optional
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent, ExtendMode
@@ -41,8 +40,8 @@ class SetExtentPE(_ExtentWindowPE):
     def __init__(
         self,
         source: ProcessingElement,
-        start: Optional[int],
-        duration: Optional[int],
+        start: int | None,
+        duration: int | None,
         extend_mode: ExtendMode = ExtendMode.ZERO,
     ):
         if duration is not None and duration < 0:
@@ -57,15 +56,15 @@ class SetExtentPE(_ExtentWindowPE):
         super().__init__(source, extent, extend_mode)
 
     @property
-    def start(self) -> Optional[int]:
+    def start(self) -> int | None:
         return self._start
 
     @property
-    def duration(self) -> Optional[int]:
+    def duration(self) -> int | None:
         return self._duration
 
     @property
-    def end(self) -> Optional[int]:
+    def end(self) -> int | None:
         return self._extent.end
 
     def _compute_extent(self) -> Extent:

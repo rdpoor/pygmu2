@@ -7,7 +7,6 @@ MIT License
 """
 
 import numpy as np
-from typing import Optional
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
@@ -107,7 +106,7 @@ class MixPE(ProcessingElement):
             result = result.union(inp.extent())
         return result
     
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """
         Return the channel count (same as inputs).
         
@@ -118,7 +117,7 @@ class MixPE(ProcessingElement):
             return self._inputs[0].channel_count()
         return None
     
-    def required_input_channels(self) -> Optional[int]:
+    def required_input_channels(self) -> int | None:
         """
         All inputs must have the same channel count.
         

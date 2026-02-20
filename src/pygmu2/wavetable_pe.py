@@ -7,7 +7,6 @@ MIT License
 """
 
 from enum import Enum
-from typing import Optional
 
 import numpy as np
 
@@ -101,7 +100,7 @@ class WavetablePE(ProcessingElement):
         """WavetablePE is pure - interpolated lookup is stateless."""
         return True
     
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """Output channels match the wavetable's channel count."""
         return self._wavetable.channel_count()
     

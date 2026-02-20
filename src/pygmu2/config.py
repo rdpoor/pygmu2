@@ -7,7 +7,7 @@ MIT License
 """
 
 from enum import Enum
-from typing import Type, Optional
+from typing import Type
 from pygmu2.logger import get_logger
 
 logger = get_logger(__name__)
@@ -24,7 +24,7 @@ def set_sample_rate(rate: int) -> None:
     _SAMPLE_RATE = int(rate)
 
 
-def get_sample_rate() -> Optional[int]:
+def get_sample_rate() -> int | None:
     """Return the global sample rate, if set."""
     return _SAMPLE_RATE
 
@@ -68,7 +68,7 @@ def get_error_mode() -> ErrorMode:
 def handle_error(
     message: str,
     fatal: bool = False,
-    error_mode: Optional[ErrorMode] = None,
+    error_mode: ErrorMode | None = None,
     exception_class: Type[Exception] = RuntimeError,
 ) -> bool:
     """

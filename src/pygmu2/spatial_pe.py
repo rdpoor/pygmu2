@@ -17,7 +17,6 @@ MIT License
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional, Union
 
 import numpy as np
 import soundfile as sf
@@ -165,7 +164,7 @@ class SpatialLinear(SpatialMethod):
                  Can be float or ProcessingElement for dynamic panning
     """
     
-    def __init__(self, azimuth: Union[float, ProcessingElement]):
+    def __init__(self, azimuth: float | ProcessingElement):
         self.azimuth = azimuth
     
     @property
@@ -236,7 +235,7 @@ class SpatialConstantPower(SpatialMethod):
                  Can be float or ProcessingElement for dynamic panning
     """
     
-    def __init__(self, azimuth: Union[float, ProcessingElement]):
+    def __init__(self, azimuth: float | ProcessingElement):
         self.azimuth = azimuth
     
     @property
@@ -426,7 +425,7 @@ class SpatialHRTF(SpatialMethod):
         )
         return filename
 
-    def __init__(self, azimuth: Union[float, int], elevation: Union[float, int] = 0.0):
+    def __init__(self, azimuth: float | int, elevation: float | int = 0.0):
         if isinstance(azimuth, ProcessingElement) or isinstance(elevation, ProcessingElement):
             raise ValueError(
                 "SpatialHRTF: azimuth and elevation must be static (float or int). "
@@ -436,8 +435,8 @@ class SpatialHRTF(SpatialMethod):
         self.elevation = float(elevation)
 
         self._ir_cache: dict[str, tuple[np.ndarray, int]] = {}
-        self._tail: Optional[np.ndarray] = None
-        self._last_render_end: Optional[int] = None
+        self._tail: np.ndarray | None = None
+        self._last_render_end: int | None = None
         self._warned_sr_mismatch: bool = False
     
     @property
@@ -632,7 +631,7 @@ class SpatialPE(ProcessingElement):
         # TODO: Implementation
         return True
     
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """Return output channel count (determined by method)."""
         return self._method.output_channels
     

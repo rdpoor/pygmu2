@@ -21,7 +21,6 @@ the output is forced to 0.0 for those samples.
 
 from __future__ import annotations
 
-from typing import Optional, Union
 
 import numpy as np
 
@@ -46,7 +45,7 @@ class TimeWarpPE(ProcessingElement):
     def __init__(
         self,
         source: ProcessingElement,
-        rate: Union[float, int, ProcessingElement] = 1.0,
+        rate: float | int | ProcessingElement = 1.0,
         interpolation: InterpolationMode = InterpolationMode.LINEAR,
     ):
         self._source = source
@@ -56,14 +55,14 @@ class TimeWarpPE(ProcessingElement):
 
         # Stateful tape head
         self._pos: float = 0.0
-        self._last_render_end: Optional[int] = None
+        self._last_render_end: int | None = None
 
     @property
     def source(self) -> ProcessingElement:
         return self._source
 
     @property
-    def rate(self) -> Union[float, int, ProcessingElement]:
+    def rate(self) -> float | int | ProcessingElement:
         return self._rate
 
     @property
@@ -78,7 +77,7 @@ class TimeWarpPE(ProcessingElement):
     def is_pure(self) -> bool:
         return False
 
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         return self._source.channel_count()
 
     def _compute_extent(self) -> Extent:
@@ -161,7 +160,7 @@ class TimeWarpPE(ProcessingElement):
 
         # Out-of-bounds mask against source extent (force zeros when outside)
         src_extent = self._source.extent()
-        oob_mask: Optional[np.ndarray] = None
+        oob_mask: np.ndarray | None = None
         if src_extent.start is not None or src_extent.end is not None:
             oob = np.zeros((duration,), dtype=bool)
             if src_extent.start is not None:

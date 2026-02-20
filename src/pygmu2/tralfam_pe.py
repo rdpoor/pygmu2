@@ -14,7 +14,6 @@ MIT License
 
 from __future__ import annotations
 
-from typing import Optional
 
 import numpy as np
 
@@ -44,8 +43,8 @@ class TralfamPE(ProcessingElement):
     def __init__(
         self,
         source: ProcessingElement,
-        seed: Optional[int] = None,
-        normalize_peak: Optional[float] = None,
+        seed: int | None = None,
+        normalize_peak: float | None = None,
     ):
         self._source = source
         self._seed = seed
@@ -54,7 +53,7 @@ class TralfamPE(ProcessingElement):
                 f"normalize_peak must be a positive finite number, got {normalize_peak!r}"
             )
         self._normalize_peak = normalize_peak
-        self._mogrified: Optional[np.ndarray] = None  # (samples, channels), float32
+        self._mogrified: np.ndarray | None = None  # (samples, channels), float32
 
     def inputs(self) -> list[ProcessingElement]:
         return [self._source]
@@ -62,7 +61,7 @@ class TralfamPE(ProcessingElement):
     def _compute_extent(self) -> Extent:
         return self._source.extent()
 
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         return self._source.channel_count()
 
     def is_pure(self) -> bool:

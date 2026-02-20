@@ -9,7 +9,6 @@ MIT License
 """
 
 from enum import Enum
-from typing import Optional, Union
 
 import numpy as np
 from scipy import signal
@@ -115,8 +114,8 @@ class BiquadPE(ProcessingElement):
     def __init__(
         self,
         source: ProcessingElement,
-        frequency: Union[float, ProcessingElement],
-        q: Union[float, ProcessingElement],
+        frequency: float | ProcessingElement,
+        q: float | ProcessingElement,
         mode: BiquadMode = BiquadMode.LOWPASS,
         gain_db: float = 0.0,
     ):
@@ -132,9 +131,9 @@ class BiquadPE(ProcessingElement):
         
         # Filter state: [x[n-1], x[n-2], y[n-1], y[n-2]] per channel
         # Initialized in on_start()
-        self._state: Optional[np.ndarray] = None
+        self._state: np.ndarray | None = None
         # State for scipy.signal.lfilter (constant coefficient path)
-        self._lfilter_state: Optional[np.ndarray] = None
+        self._lfilter_state: np.ndarray | None = None
     
     @property
     def source(self) -> ProcessingElement:
@@ -142,12 +141,12 @@ class BiquadPE(ProcessingElement):
         return self._source
     
     @property
-    def frequency(self) -> Union[float, ProcessingElement]:
+    def frequency(self) -> float | ProcessingElement:
         """The cutoff/center frequency."""
         return self._frequency
     
     @property
-    def q(self) -> Union[float, ProcessingElement]:
+    def q(self) -> float | ProcessingElement:
         """The Q (quality factor)."""
         return self._q
     
@@ -176,7 +175,7 @@ class BiquadPE(ProcessingElement):
         """
         return False
     
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()
     

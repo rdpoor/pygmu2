@@ -15,7 +15,6 @@ MIT License
 from __future__ import annotations
 
 import math
-from typing import Optional, Union
 
 import numpy as np
 from scipy import signal
@@ -207,7 +206,7 @@ def _svf_coefficients(
     mode: BiquadMode,
     gain_db: float,
     sample_rate: int,
-    q: Optional[float] = None,
+    q: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Compute state variable filter (A, B, C) for normalized frequency and resonance.
@@ -313,8 +312,8 @@ class SVFilterPE(ProcessingElement):
     def __init__(
         self,
         source: ProcessingElement,
-        frequency: Union[float, ProcessingElement],
-        q: Union[float, ProcessingElement],
+        frequency: float | ProcessingElement,
+        q: float | ProcessingElement,
         mode: BiquadMode = BiquadMode.LOWPASS,
         gain_db: float = 0.0,
     ):
@@ -333,18 +332,18 @@ class SVFilterPE(ProcessingElement):
         self._q_is_pe = isinstance(q, ProcessingElement)
 
         # State: y vector (2, channels). Initialized in on_start().
-        self._state: Optional[np.ndarray] = None
+        self._state: np.ndarray | None = None
 
     @property
     def source(self) -> ProcessingElement:
         return self._source
 
     @property
-    def frequency(self) -> Union[float, ProcessingElement]:
+    def frequency(self) -> float | ProcessingElement:
         return self._frequency
 
     @property
-    def q(self) -> Union[float, ProcessingElement]:
+    def q(self) -> float | ProcessingElement:
         return self._q
 
     @property
@@ -366,7 +365,7 @@ class SVFilterPE(ProcessingElement):
     def is_pure(self) -> bool:
         return False
 
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         return self._source.channel_count()
 
     def _compute_extent(self) -> Extent:

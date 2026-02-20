@@ -25,7 +25,6 @@ MIT License
 
 from __future__ import annotations
 
-from typing import Optional, Union
 
 import numpy as np
 
@@ -69,18 +68,18 @@ class FunctionGenPE(ProcessingElement):
 
         # Stateful path for PE-driven params
         self._phase: float = 0.0  # [0,1)
-        self._last_render_end: Optional[int] = None
+        self._last_render_end: int | None = None
 
     @property
-    def frequency(self) -> Union[float, ProcessingElement]:
+    def frequency(self) -> float | ProcessingElement:
         return self._frequency
 
     @property
-    def duty_cycle(self) -> Union[float, ProcessingElement]:
+    def duty_cycle(self) -> float | ProcessingElement:
         return self._duty_cycle
 
     @property
-    def phase(self) -> Union[float, ProcessingElement]:         # NEW
+    def phase(self) -> float | ProcessingElement:         # NEW
         return self._phase_in
 
     @property

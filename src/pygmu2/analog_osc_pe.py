@@ -23,7 +23,6 @@ MIT License
 
 from __future__ import annotations
 
-from typing import Optional, Union
 
 import numpy as np
 
@@ -48,8 +47,8 @@ class AnalogOscPE(ProcessingElement):
 
     def __init__(
         self,
-        frequency: Union[float, ProcessingElement] = 440.0,
-        duty_cycle: Union[float, ProcessingElement] = 0.5,
+        frequency: float | ProcessingElement = 440.0,
+        duty_cycle: float | ProcessingElement = 0.5,
         waveform: str = "rectangle",
         channels: int = 1,
     ):
@@ -66,14 +65,14 @@ class AnalogOscPE(ProcessingElement):
         # Stateful path: phase + (for saw/triangle morph) current output value
         self._phase: float = 0.0  # [0,1)
         self._saw_value: float = -1.0
-        self._last_render_end: Optional[int] = None
+        self._last_render_end: int | None = None
 
     @property
-    def frequency(self) -> Union[float, ProcessingElement]:
+    def frequency(self) -> float | ProcessingElement:
         return self._frequency
 
     @property
-    def duty_cycle(self) -> Union[float, ProcessingElement]:
+    def duty_cycle(self) -> float | ProcessingElement:
         return self._duty_cycle
 
     @property

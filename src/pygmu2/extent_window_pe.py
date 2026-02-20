@@ -11,7 +11,6 @@ MIT License
 
 from __future__ import annotations
 
-from typing import Optional
 
 import numpy as np
 
@@ -39,8 +38,8 @@ class _ExtentWindowPE(ProcessingElement):
         self._source = source
         self._extent = extent
         self._extend_mode = extend_mode
-        self._first_value: Optional[np.ndarray] = None
-        self._last_value: Optional[np.ndarray] = None
+        self._first_value: np.ndarray | None = None
+        self._last_value: np.ndarray | None = None
 
     @property
     def source(self) -> ProcessingElement:
@@ -60,7 +59,7 @@ class _ExtentWindowPE(ProcessingElement):
     def is_pure(self) -> bool:
         return True
 
-    def _get_first_value(self) -> Optional[np.ndarray]:
+    def _get_first_value(self) -> np.ndarray | None:
         if self._first_value is not None:
             return self._first_value
         crop_start = self._extent.start
@@ -73,7 +72,7 @@ class _ExtentWindowPE(ProcessingElement):
                 return None
         return None
 
-    def _get_last_value(self) -> Optional[np.ndarray]:
+    def _get_last_value(self) -> np.ndarray | None:
         if self._last_value is not None:
             return self._last_value
         crop_end = self._extent.end
@@ -160,5 +159,5 @@ class _ExtentWindowPE(ProcessingElement):
     def _compute_extent(self) -> Extent:
         return self._extent.intersection(self._source.extent())
 
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         return self._source.channel_count()

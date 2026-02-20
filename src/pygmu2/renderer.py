@@ -10,7 +10,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Optional
 import time
 
 from pygmu2.config import handle_error
@@ -152,13 +151,13 @@ class Renderer(ABC):
             sample_rate: Audio sample rate in Hz (default: 44100)
         """
         self._sample_rate = sample_rate
-        self._source: Optional[ProcessingElement] = None
-        self._channel_count: Optional[int] = None
+        self._source: ProcessingElement | None = None
+        self._channel_count: int | None = None
         self._started: bool = False
         
         # Profiling state
         self._profiling: bool = False
-        self._profile_report: Optional[ProfileReport] = None
+        self._profile_report: ProfileReport | None = None
         self._pe_list: list[ProcessingElement] = []  # Flattened list for profiling
     
     @property
@@ -167,12 +166,12 @@ class Renderer(ABC):
         return self._sample_rate
     
     @property
-    def source(self) -> Optional[ProcessingElement]:
+    def source(self) -> ProcessingElement | None:
         """The source ProcessingElement, or None if not set."""
         return self._source
     
     @property
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """
         The output channel count of the source graph.
         
@@ -207,7 +206,7 @@ class Renderer(ABC):
         self._profiling = False
         logger.info("Profiling disabled")
     
-    def get_profile_report(self) -> Optional[ProfileReport]:
+    def get_profile_report(self) -> ProfileReport | None:
         """
         Get the current profile report.
         
@@ -351,7 +350,7 @@ class Renderer(ABC):
     def _validate_graph(
         self,
         pe: ProcessingElement,
-        seen: Optional[dict[int, int]] = None,
+        seen: dict[int, int] | None = None,
     ) -> int:
         """
         Recursively validate the processing graph.
@@ -423,7 +422,7 @@ class Renderer(ABC):
     def _start_graph(
         self,
         pe: ProcessingElement,
-        started: Optional[set[int]] = None,
+        started: set[int] | None = None,
     ) -> None:
         """
         Recursively start all PEs in the graph (bottom-up).
@@ -452,7 +451,7 @@ class Renderer(ABC):
     def _stop_graph(
         self,
         pe: ProcessingElement,
-        stopped: Optional[set[int]] = None,
+        stopped: set[int] | None = None,
     ) -> None:
         """
         Recursively stop all PEs in the graph (top-down).
@@ -481,8 +480,8 @@ class Renderer(ABC):
     def _collect_pes(
         self,
         pe: ProcessingElement,
-        collected: Optional[set[int]] = None,
-        result: Optional[list[ProcessingElement]] = None,
+        collected: set[int] | None = None,
+        result: list[ProcessingElement] | None = None,
     ) -> list[ProcessingElement]:
         """
         Collect all PEs in the graph in bottom-up order.

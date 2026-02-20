@@ -6,7 +6,6 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-from typing import Optional
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent, ExtendMode
@@ -56,7 +55,7 @@ class CropPE(_ExtentWindowPE):
         self,
         source: ProcessingElement,
         start: int,
-        duration: Optional[int],
+        duration: int | None,
         extend_mode: ExtendMode = ExtendMode.ZERO,
     ):
         if duration is not None and duration < 0:
@@ -79,12 +78,12 @@ class CropPE(_ExtentWindowPE):
         return self._start
 
     @property
-    def duration(self) -> Optional[int]:
+    def duration(self) -> int | None:
         """Number of samples to include, or None for no upper bound."""
         return self._duration
     
     @property
-    def end(self) -> Optional[int]:
+    def end(self) -> int | None:
         """First sample to exclude (exclusive), or None for no upper bound."""
         return self._extent.end
     

@@ -6,7 +6,6 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-from typing import Optional
 
 from pygmu2.processing_element import SourcePE, ProcessingElement
 from pygmu2.extent import Extent, ExtendMode
@@ -133,7 +132,7 @@ class PortamentoPE(SourcePE):
         self._channels = int(channels)
         
         # Sequence is built at construction time (sample_rate is globally available).
-        self._sequence_pe: Optional[SequencePE] = None
+        self._sequence_pe: SequencePE | None = None
         self._build_sequence()
     
     @property
@@ -261,7 +260,7 @@ class PortamentoPE(SourcePE):
         """PortamentoPE is pure - it's a stateless composition."""
         return True
     
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """Return channel count."""
         return self._channels
     

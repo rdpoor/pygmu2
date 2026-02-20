@@ -27,7 +27,7 @@ import random
 import re
 import ssl
 from pathlib import Path, PurePosixPath
-from typing import Dict, List, Optional, Union
+from typing import Dict, List
 from urllib import request
 from urllib.error import URLError
 from urllib.parse import urlparse
@@ -96,7 +96,7 @@ def _format_ssl_error_message(url: str, exc: Exception) -> str:
             "   - Fedora/RHEL: sudo dnf install ca-certificates"
         )
 
-SoundValue = Union[str, List[str]]
+SoundValue = str | List[str]
 
 
 class AudioLibrary:
@@ -108,10 +108,10 @@ class AudioLibrary:
         self,
         audio_paths: Dict[str, List[str]],
         base: str,
-        cache_dir: Optional[Path] = None,
+        cache_dir: Path | None = None,
         convert_to_wav: bool = True,
         allow_remote: bool = True,
-        source_dir: Optional[Path] = None,
+        source_dir: Path | None = None,
     ) -> None:
         """
         Initialize an AudioLibrary.
@@ -140,8 +140,8 @@ class AudioLibrary:
     @classmethod
     def from_strudel_json(
         cls,
-        path: Union[str, Path],
-        cache_dir: Optional[Path] = None,
+        path: str | Path,
+        cache_dir: Path | None = None,
         convert_to_wav: bool = True,
         allow_remote: bool = True,
     ) -> "AudioLibrary":
@@ -173,7 +173,7 @@ class AudioLibrary:
     def from_url(
         cls,
         url: str,
-        cache_dir: Optional[Path] = None,
+        cache_dir: Path | None = None,
         convert_to_wav: bool = True,
         allow_remote: bool = True,
     ) -> "AudioLibrary":
@@ -281,11 +281,11 @@ class AudioLibrary:
     def _from_strudel_data(
         cls,
         data: dict,
-        cache_dir: Optional[Path],
+        cache_dir: Path | None,
         convert_to_wav: bool,
         allow_remote: bool,
-        source_dir: Optional[Path],
-        base_override: Optional[str] = None,
+        source_dir: Path | None,
+        base_override: str | None = None,
     ) -> "AudioLibrary":
         """Internal helper to create AudioLibrary from parsed JSON data."""
         if not isinstance(data, dict):

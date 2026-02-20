@@ -6,7 +6,7 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-from typing import Callable, Optional
+from typing import Callable
 
 import numpy as np
 
@@ -54,7 +54,7 @@ class TransformPE(ProcessingElement):
         self,
         source: ProcessingElement,
         func: Callable[[np.ndarray], np.ndarray],
-        name: Optional[str] = None,
+        name: str | None = None,
     ):
         self._source = source
         self._func = func
@@ -85,7 +85,7 @@ class TransformPE(ProcessingElement):
         """
         return True
     
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()
     

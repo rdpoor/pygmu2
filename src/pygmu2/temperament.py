@@ -10,7 +10,6 @@ MIT License
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
 import numpy as np
 from numpy.typing import ArrayLike
 
@@ -206,7 +205,7 @@ class JustIntonation(Temperament):
     
     def __init__(
         self,
-        ratios: Optional[list[float]] = None,
+        ratios: list[float] | None = None,
         reference_pitch: float = 60.0
     ):
         if ratios is None:

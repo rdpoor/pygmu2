@@ -4,7 +4,6 @@ Utility helpers for rendering and playback.
 
 from __future__ import annotations
 
-from typing import Optional
 
 import os
 import subprocess
@@ -19,7 +18,7 @@ from pygmu2.wav_reader_pe import WavReaderPE
 from pygmu2.wav_writer_pe import WavWriterPE
 
 
-def _resolve_sample_rate(sample_rate: Optional[int]) -> int:
+def _resolve_sample_rate(sample_rate: int | None) -> int:
     if sample_rate is not None:
         return int(sample_rate)
     sr = get_sample_rate()
@@ -32,7 +31,7 @@ def render_to_file(
     source: ProcessingElement,
     out_path: str,
     *,
-    sample_rate: Optional[int] = None,
+    sample_rate: int | None = None,
     extent=None,
 ) -> None:
     """
@@ -59,7 +58,7 @@ def render_to_file(
         renderer.render(extent.start, extent.end - extent.start)
 
 
-def play(source: ProcessingElement, sample_rate: Optional[int] = None) -> None:
+def play(source: ProcessingElement, sample_rate: int | None = None) -> None:
     """
     Play a PE in real time using AudioRenderer.
     """
@@ -73,9 +72,9 @@ def play(source: ProcessingElement, sample_rate: Optional[int] = None) -> None:
 
 def play_offline(
     source: ProcessingElement,
-    sample_rate: Optional[int] = None,
-    path: Optional[str] = None,
-    omit_playback: Optional[bool] = None,
+    sample_rate: int | None = None,
+    path: str | None = None,
+    omit_playback: bool | None = None,
 ) -> None:
     """
     Render a PE to a WAV file offline, then play it back.
@@ -105,8 +104,8 @@ def play_offline(
 
 def browse(
     source: ProcessingElement,
-    sample_rate: Optional[int] = None,
-    path: Optional[str] = None,
+    sample_rate: int | None = None,
+    path: str | None = None,
 ) -> None:
     """
     Render a PE to a WAV file, then open it in the jog/shuttle player.

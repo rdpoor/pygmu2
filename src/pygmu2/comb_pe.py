@@ -8,7 +8,6 @@ MIT License
 
 from __future__ import annotations
 
-from typing import Optional, Union
 import numpy as np
 
 # Try to import numba for JIT compilation (optional optimization)
@@ -139,8 +138,8 @@ class CombPE(ProcessingElement):
     def __init__(
         self,
         source: ProcessingElement,
-        frequency: Union[float, ProcessingElement],
-        feedback: Union[float, ProcessingElement] = 0.0,
+        frequency: float | ProcessingElement,
+        feedback: float | ProcessingElement = 0.0,
         min_frequency: float = 20.0,
         smoothing_samples: int = 2400,
     ):
@@ -153,7 +152,7 @@ class CombPE(ProcessingElement):
         self._freq_is_pe = isinstance(frequency, ProcessingElement)
         self._fb_is_pe = isinstance(feedback, ProcessingElement)
 
-        self._buffer: Optional[np.ndarray] = None
+        self._buffer: np.ndarray | None = None
         self._write_pos: int = 0
         self._smoothed_freq: float = -1.0
 
@@ -163,12 +162,12 @@ class CombPE(ProcessingElement):
         return self._source
 
     @property
-    def frequency(self) -> Union[float, ProcessingElement]:
+    def frequency(self) -> float | ProcessingElement:
         """Target frequency in Hz."""
         return self._frequency
 
     @property
-    def feedback(self) -> Union[float, ProcessingElement]:
+    def feedback(self) -> float | ProcessingElement:
         """Feedback amount (-0.995..0.995)."""
         return self._feedback
 
@@ -185,7 +184,7 @@ class CombPE(ProcessingElement):
         """CombPE maintains state and is not pure."""
         return False
 
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()
 

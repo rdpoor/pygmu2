@@ -14,16 +14,15 @@ MIT License
 
 import numpy as np
 from numpy.typing import ArrayLike
-from typing import Optional
 
 from pygmu2.temperament import Temperament, get_temperament, get_reference_frequency
 
 
 def pitch_to_freq(
     pitch: ArrayLike,
-    temperament: Optional[Temperament] = None,
-    reference_pitch: Optional[float] = None,
-    reference_freq: Optional[float] = None
+    temperament: Temperament | None = None,
+    reference_pitch: float | None = None,
+    reference_freq: float | None = None
 ) -> np.ndarray:
     """
     Convert pitch number to frequency in Hz.
@@ -70,9 +69,9 @@ def pitch_to_freq(
 
 def freq_to_pitch(
     freq: ArrayLike,
-    temperament: Optional[Temperament] = None,
-    reference_pitch: Optional[float] = None,
-    reference_freq: Optional[float] = None
+    temperament: Temperament | None = None,
+    reference_pitch: float | None = None,
+    reference_freq: float | None = None
 ) -> np.ndarray:
     """
     Convert frequency in Hz to pitch number.
@@ -168,7 +167,7 @@ def db_to_ratio(db: ArrayLike) -> np.ndarray:
 
 def semitones_to_ratio(
     semitones: ArrayLike,
-    temperament: Optional[Temperament] = None
+    temperament: Temperament | None = None
 ) -> np.ndarray:
     """
     Convert interval (in scale degrees) to frequency ratio.
@@ -205,7 +204,7 @@ def semitones_to_ratio(
 
 def ratio_to_semitones(
     ratio: ArrayLike,
-    temperament: Optional[Temperament] = None
+    temperament: Temperament | None = None
 ) -> np.ndarray:
     """
     Convert frequency ratio to interval (in scale degrees).

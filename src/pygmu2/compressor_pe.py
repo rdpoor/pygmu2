@@ -8,7 +8,6 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-from typing import Optional, Union
 
 import numpy as np
 
@@ -89,7 +88,7 @@ class CompressorPE(ProcessingElement):
         attack: float = 0.01,
         release: float = 0.1,
         knee: float = 6.0,
-        makeup_gain: Union[float, str] = "auto",
+        makeup_gain: float | str = "auto",
         lookahead: float = 0.0,
         detection: DetectionMode = DetectionMode.RMS,
         stereo_link: bool = True,
@@ -179,7 +178,7 @@ class CompressorPE(ProcessingElement):
         """CompressorPE is NOT pure due to envelope state."""
         return False
 
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         return self._dynamics_pe.channel_count()
 
     def _compute_extent(self) -> Extent:
@@ -349,7 +348,7 @@ class GatePE(ProcessingElement):
         """GatePE is NOT pure due to envelope state."""
         return False
 
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         return self._dynamics_pe.channel_count()
 
     def _compute_extent(self) -> Extent:

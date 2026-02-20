@@ -5,7 +5,6 @@ import ssl
 import shutil
 from pathlib import Path
 from abc import ABC, abstractmethod
-from typing import Optional
 from urllib import request
 from urllib.error import URLError
 from urllib.parse import urlencode, quote
@@ -89,7 +88,7 @@ class AssetLoader(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def load_remote_asset(self, wildcard_spec: str, cache_dir: Path) -> Optional[Path]:
+    def load_remote_asset(self, wildcard_spec: str, cache_dir: Path) -> Path | None:
         """
         Download the first matching remote asset into cache_dir.
 
@@ -103,8 +102,8 @@ class AssetManager:
 
     def __init__(
         self,
-        cache_dir: Optional[Path] = None,
-        asset_loader: Optional[AssetLoader] = None,
+        cache_dir: Path | None = None,
+        asset_loader: AssetLoader | None = None,
     ):
         """
         Return a locally cached asset, loading it from a remote site if needed.
@@ -209,7 +208,7 @@ class AssetManager:
             shutil.rmtree(self._cache_dir)
         self._cache_dir.mkdir(parents=True, exist_ok=True)
 
-    def locate_local_asset(self, asset_specification: str) -> Optional[Path]:
+    def locate_local_asset(self, asset_specification: str) -> Path | None:
         """
         Resolve an asset specification against the local cache.
 
@@ -261,10 +260,10 @@ class GoogleDriveAssetLoader(AssetLoader):
     def __init__(
         self,
         folder_id: str,
-        oauth_client_secrets: Optional[Path] = None,
-        token_path: Optional[Path] = None,
-        scopes: Optional[list[str]] = None,
-        api_key_env_var: Optional[str] = None,
+        oauth_client_secrets: Path | None = None,
+        token_path: Path | None = None,
+        scopes: list[str] | None = None,
+        api_key_env_var: str | None = None,
     ):
         """
         Initialize a GoogleDriveAssetLoader.
@@ -312,7 +311,7 @@ class GoogleDriveAssetLoader(AssetLoader):
         )
         return [name for name, _ in assets]
 
-    def load_remote_asset(self, wildcard_spec: str, cache_dir: Path) -> Optional[Path]:
+    def load_remote_asset(self, wildcard_spec: str, cache_dir: Path) -> Path | None:
         logger.debug(
             "Loading Google Drive asset for folder_id=%s spec=%r",
             self._folder_id,
@@ -418,7 +417,7 @@ class GoogleDriveAssetLoader(AssetLoader):
             return "", parts[0]
         return "/".join(parts[:-1]) + "/", parts[-1]
 
-    def _resolve_prefix_folder(self, prefix: str) -> tuple[Optional[str], str]:
+    def _resolve_prefix_folder(self, prefix: str) -> tuple[str | None, str]:
         """
         Resolve a folder prefix like "a/b/" to a Drive folder ID.
 
@@ -438,7 +437,7 @@ class GoogleDriveAssetLoader(AssetLoader):
             current_folder = next_folder
         return current_folder, "/".join(segments) + "/"
 
-    def _find_child_folder(self, parent_folder_id: str, name: str) -> Optional[str]:
+    def _find_child_folder(self, parent_folder_id: str, name: str) -> str | None:
         """
         Find a direct child folder by name under parent_folder_id.
         """
@@ -579,7 +578,7 @@ class GithubUserContentAssetLoader(AssetLoader):
         )
         return [name for name, _ in assets]
 
-    def load_remote_asset(self, wildcard_spec: str, cache_dir: Path) -> Optional[Path]:
+    def load_remote_asset(self, wildcard_spec: str, cache_dir: Path) -> Path | None:
         logger.debug(
             "Loading GitHub asset for %s/%s ref=%s root=%r spec=%r",
             self._owner,

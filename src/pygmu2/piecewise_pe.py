@@ -9,7 +9,7 @@ MIT License
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import List, Sequence, Tuple
 
 import numpy as np
 
@@ -118,7 +118,7 @@ class PiecewisePE(SourcePE):
     def __init__(
         self,
         points: Sequence[Tuple[int, float]],
-        transition_type: Union[TransitionType, str] = TransitionType.LINEAR,
+        transition_type: TransitionType | str = TransitionType.LINEAR,
         extend_mode: ExtendMode = ExtendMode.ZERO,
         channels: int = 1,
     ):

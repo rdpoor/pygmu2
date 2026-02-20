@@ -9,7 +9,7 @@ MIT License
 from __future__ import annotations
 
 from enum import Enum
-from typing import Iterable, List, Optional, Sequence, Tuple
+from typing import Iterable, List, Sequence, Tuple
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
@@ -60,7 +60,7 @@ class SequencePE(ProcessingElement):
             raise ValueError("SequencePE requires at least one (pe, start) pair")
 
         normalized: list[tuple[ProcessingElement, int]] = []
-        prev_end: Optional[int] = None
+        prev_end: int | None = None
         for idx, pair in enumerate(pairs):
             if not isinstance(pair, (list, tuple)) or len(pair) != 2:
                 raise ValueError("Each input must be a (pe, start) pair")
@@ -118,7 +118,7 @@ class SequencePE(ProcessingElement):
     def is_pure(self) -> bool:
         return self._out.is_pure()
 
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         return self._out.channel_count()
 
     def _compute_extent(self) -> Extent:

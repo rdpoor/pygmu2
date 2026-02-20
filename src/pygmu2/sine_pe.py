@@ -7,7 +7,6 @@ MIT License
 """
 
 import numpy as np
-from typing import Union, Optional
 
 from pygmu2.processing_element import ProcessingElement, SourcePE
 from pygmu2.extent import Extent
@@ -50,9 +49,9 @@ class SinePE(ProcessingElement):
     
     def __init__(
         self,
-        frequency: Union[float, ProcessingElement] = 440.0,
-        amplitude: Union[float, ProcessingElement] = 1.0,
-        phase: Union[float, ProcessingElement] = 0.0,
+        frequency: float | ProcessingElement = 440.0,
+        amplitude: float | ProcessingElement = 1.0,
+        phase: float | ProcessingElement = 0.0,
         channels: int = 1,
     ):
         self._frequency = frequency
@@ -66,17 +65,17 @@ class SinePE(ProcessingElement):
         self._phase_initialized: bool = False
     
     @property
-    def frequency(self) -> Union[float, ProcessingElement]:
+    def frequency(self) -> float | ProcessingElement:
         """Frequency in Hz (constant or PE)."""
         return self._frequency
     
     @property
-    def amplitude(self) -> Union[float, ProcessingElement]:
+    def amplitude(self) -> float | ProcessingElement:
         """Peak amplitude (constant or PE)."""
         return self._amplitude
     
     @property
-    def initial_phase(self) -> Union[float, ProcessingElement]:
+    def initial_phase(self) -> float | ProcessingElement:
         """Phase offset/modulation in radians (constant or PE)."""
         return self._phase
     
@@ -158,8 +157,8 @@ class SinePE(ProcessingElement):
     
     def _compute_phase_pure(
         self,
-        frequency: Union[float, np.ndarray],
-        phase_offset: Union[float, np.ndarray],
+        frequency: float | np.ndarray,
+        phase_offset: float | np.ndarray,
         start: int,
         duration: int,
     ) -> np.ndarray:
@@ -176,8 +175,8 @@ class SinePE(ProcessingElement):
     
     def _compute_phase_stateful(
         self,
-        frequency: Union[float, np.ndarray],
-        phase_mod: Union[float, np.ndarray],
+        frequency: float | np.ndarray,
+        phase_mod: float | np.ndarray,
         start: int,
         duration: int,
     ) -> np.ndarray:

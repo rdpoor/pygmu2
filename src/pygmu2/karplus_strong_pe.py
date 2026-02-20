@@ -13,7 +13,6 @@ MIT License
 from __future__ import annotations
 
 import numpy as np
-from typing import Optional
 
 from pygmu2.processing_element import SourcePE
 from pygmu2.extent import Extent
@@ -96,10 +95,10 @@ class KarplusStrongPE(SourcePE):
         self,
         frequency: float,
         rho: float = 0.996,
-        duration: Optional[int] = None,
-        rho_damping: Optional[float] = None,
+        duration: int | None = None,
+        rho_damping: float | None = None,
         amplitude: float = 0.3,
-        seed: Optional[int] = None,
+        seed: int | None = None,
         channels: int = 1,
     ):
         if frequency <= 0:
@@ -116,15 +115,15 @@ class KarplusStrongPE(SourcePE):
 
         self._frequency = float(frequency)
         self._rho = float(rho)
-        self._duration_param: Optional[int] = duration if (duration is not None and rho_damping is not None) else None
-        self._rho_damping: Optional[float] = float(rho_damping) if (duration is not None and rho_damping is not None) else None
+        self._duration_param: int | None = duration if (duration is not None and rho_damping is not None) else None
+        self._rho_damping: float | None = float(rho_damping) if (duration is not None and rho_damping is not None) else None
         self._amplitude = float(amplitude)
         self._seed = seed
         self._channels = channels
 
         # KS state: delay line (one period, circular) + allpass state. No output cache
         # (impure PE receives contiguous requests only, so we stream).
-        self._ks_buf: Optional[np.ndarray] = None
+        self._ks_buf: np.ndarray | None = None
         self._ks_r: int = 0
         self._ks_ap_in_prev: float = 0.0
         self._ks_ap_out_prev: float = 0.0

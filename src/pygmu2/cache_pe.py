@@ -12,7 +12,6 @@ MIT License
 
 from __future__ import annotations
 
-from typing import Optional
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
@@ -34,9 +33,9 @@ class CachePE(ProcessingElement):
 
     def __init__(self, source: ProcessingElement):
         self._source = source
-        self._last_start: Optional[int] = None
-        self._last_duration: Optional[int] = None
-        self._last_snippet: Optional[Snippet] = None
+        self._last_start: int | None = None
+        self._last_duration: int | None = None
+        self._last_snippet: Snippet | None = None
 
     @property
     def source(self) -> ProcessingElement:
@@ -50,7 +49,7 @@ class CachePE(ProcessingElement):
         # It is safe to treat as pure to allow multiple sinks.
         return True
 
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         return self._source.channel_count()
 
     def _compute_extent(self) -> Extent:

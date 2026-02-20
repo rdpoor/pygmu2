@@ -15,7 +15,7 @@ from __future__ import annotations
 import threading
 import time
 from collections import defaultdict
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pygmu2.processing_element import ProcessingElement

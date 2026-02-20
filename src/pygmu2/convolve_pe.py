@@ -23,7 +23,6 @@ MIT License
 
 from __future__ import annotations
 
-from typing import Optional
 
 import numpy as np
 
@@ -55,19 +54,19 @@ class ConvolvePE(ProcessingElement):
         src: ProcessingElement,
         fir: ProcessingElement,
         *,
-        fft_size: Optional[int] = None,
+        fft_size: int | None = None,
     ):
         self._src = src
         self._fir = fir
         self._fft_size = int(fft_size) if fft_size is not None else None
 
         # Cached filter/FFT state (prepared on start / first render)
-        self._fir_len: Optional[int] = None
-        self._H: Optional[np.ndarray] = None  # shape (bins,) or (bins, channels)
+        self._fir_len: int | None = None
+        self._H: np.ndarray | None = None  # shape (bins,) or (bins, channels)
 
         # Streaming history
-        self._tail: Optional[np.ndarray] = None  # shape (filter_len-1, channels)
-        self._last_render_end: Optional[int] = None
+        self._tail: np.ndarray | None = None  # shape (filter_len-1, channels)
+        self._last_render_end: int | None = None
 
     @property
     def src(self) -> ProcessingElement:
@@ -78,7 +77,7 @@ class ConvolvePE(ProcessingElement):
         return self._fir
 
     @property
-    def fft_size(self) -> Optional[int]:
+    def fft_size(self) -> int | None:
         return self._fft_size
 
     def inputs(self) -> list[ProcessingElement]:
@@ -112,7 +111,7 @@ class ConvolvePE(ProcessingElement):
         # Keeps history for streaming overlap-save
         return False
 
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """
         Determine output channel count based on source and filter.
 

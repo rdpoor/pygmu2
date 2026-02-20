@@ -18,7 +18,6 @@ MIT License
 
 from __future__ import annotations
 
-from typing import Optional
 
 import numpy as np
 
@@ -48,8 +47,8 @@ class SlicePE(ProcessingElement):
         start: int,
         duration: int,
         *,
-        fade_in_seconds: Optional[float] = None,
-        fade_out_seconds: Optional[float] = None,
+        fade_in_seconds: float | None = None,
+        fade_out_seconds: float | None = None,
     ):
         self._source = source
         self._start = int(start)

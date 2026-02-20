@@ -8,7 +8,6 @@ MIT License
 
 import numpy as np
 import soundfile as sf
-from typing import Optional
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
@@ -64,7 +63,7 @@ class WavWriterPE(ProcessingElement):
         self,
         source: ProcessingElement,
         path: str,
-        sample_rate: Optional[int] = None,
+        sample_rate: int | None = None,
         subtype: str = 'PCM_16',
     ):
         self._source = source
@@ -73,7 +72,7 @@ class WavWriterPE(ProcessingElement):
         self._subtype = subtype
         
         # File handle (opened on on_start)
-        self._file: Optional[sf.SoundFile] = None
+        self._file: sf.SoundFile | None = None
         self._frames_written: int = 0
     
     @property

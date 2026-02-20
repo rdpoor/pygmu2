@@ -13,7 +13,6 @@ MIT License
 
 from __future__ import annotations
 
-from typing import Optional, Union
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.convolve_pe import ConvolvePE
@@ -53,10 +52,10 @@ class ReverbPE(ProcessingElement):
         self,
         source: ProcessingElement,
         ir: ProcessingElement,
-        mix: Union[float, ProcessingElement] = 0.5,
+        mix: float | ProcessingElement = 0.5,
         *,
         normalize_ir: bool = True,
-        fft_size: Optional[int] = None,
+        fft_size: int | None = None,
     ):
         # Cache the source to avoid double-pull in dry/wet paths
         self._source = CachePE(source)
@@ -104,7 +103,7 @@ class ReverbPE(ProcessingElement):
         return self._ir
 
     @property
-    def mix(self) -> Union[float, ProcessingElement]:
+    def mix(self) -> float | ProcessingElement:
         """Mix parameter (float or mono PE)."""
         return self._mix
 
@@ -121,7 +120,7 @@ class ReverbPE(ProcessingElement):
         # Convolution is stateful; require contiguous renders.
         return False
 
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         return self._out.channel_count()
 
     def _compute_extent(self) -> Extent:

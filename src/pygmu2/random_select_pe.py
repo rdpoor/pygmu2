@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import random
-from typing import Optional, Sequence, List
+from typing import Sequence, List
 
 
 from pygmu2.processing_element import ProcessingElement
@@ -26,8 +26,8 @@ class _RandomSelectSourcePE(ProcessingElement):
     def __init__(
         self,
         inputs: Sequence[ProcessingElement],
-        weights: Optional[Sequence[float]] = None,
-        seed: Optional[int] = None,
+        weights: Sequence[float] | None = None,
+        seed: int | None = None,
     ):
         if not inputs:
             raise ValueError("_RandomSelectSourcePE requires at least one input")
@@ -108,8 +108,8 @@ class RandomSelectPE(ProcessingElement):
         self,
         trigger: TriggerSignal,
         inputs: Sequence[ProcessingElement],
-        weights: Optional[Sequence[float]] = None,
-        seed: Optional[int] = None,
+        weights: Sequence[float] | None = None,
+        seed: int | None = None,
     ):
         if not inputs:
             raise ValueError("RandomSelectPE requires at least one input")

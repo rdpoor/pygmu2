@@ -11,7 +11,6 @@ MIT License
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional, Union
 
 import numpy as np
 
@@ -250,10 +249,10 @@ class LadderPE(ProcessingElement):
     def __init__(
         self,
         source: ProcessingElement,
-        frequency: Union[float, ProcessingElement],
-        resonance: Union[float, ProcessingElement] = 0.0,
+        frequency: float | ProcessingElement,
+        resonance: float | ProcessingElement = 0.0,
         mode: LadderMode = LadderMode.LP24,
-        drive: Union[float, ProcessingElement] = 1.0,
+        drive: float | ProcessingElement = 1.0,
         passband_gain: float = 0.5,
         oversample: int = _DEFAULT_OVERSAMPLE,
     ):
@@ -270,9 +269,9 @@ class LadderPE(ProcessingElement):
         self._res_is_pe = isinstance(resonance, ProcessingElement)
         self._drive_is_pe = isinstance(drive, ProcessingElement)
 
-        self._z0: Optional[np.ndarray] = None  # shape (channels, 4)
-        self._z1: Optional[np.ndarray] = None  # shape (channels, 4)
-        self._old_input: Optional[np.ndarray] = None  # shape (channels,)
+        self._z0: np.ndarray | None = None  # shape (channels, 4)
+        self._z1: np.ndarray | None = None  # shape (channels, 4)
+        self._old_input: np.ndarray | None = None  # shape (channels,)
 
     @property
     def source(self) -> ProcessingElement:
@@ -280,12 +279,12 @@ class LadderPE(ProcessingElement):
         return self._source
 
     @property
-    def frequency(self) -> Union[float, ProcessingElement]:
+    def frequency(self) -> float | ProcessingElement:
         """Cutoff frequency in Hz."""
         return self._frequency
 
     @property
-    def resonance(self) -> Union[float, ProcessingElement]:
+    def resonance(self) -> float | ProcessingElement:
         """Resonance amount (0..1)."""
         return self._resonance
 
@@ -295,7 +294,7 @@ class LadderPE(ProcessingElement):
         return self._mode
 
     @property
-    def drive(self) -> Union[float, ProcessingElement]:
+    def drive(self) -> float | ProcessingElement:
         """Input drive amount."""
         return self._drive
 
@@ -324,7 +323,7 @@ class LadderPE(ProcessingElement):
         """LadderPE maintains internal state and is not pure."""
         return False
 
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()
 
@@ -356,7 +355,7 @@ class LadderPE(ProcessingElement):
         self._z1 = None
         self._old_input = None
 
-    def _reset_state(self, channels: Optional[int] = None) -> None:
+    def _reset_state(self, channels: int | None = None) -> None:
         """Initialize filter state for current channel count."""
         if channels is None:
             channels = self._source.channel_count() or 1

@@ -21,7 +21,7 @@ MIT License
 from __future__ import annotations
 
 import queue
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable
 
 import numpy as np
 
@@ -39,7 +39,7 @@ else:
 
 
 # Type for optional callback: (sample_index: int, message: mido.Message) -> None
-MidiMessageCallback = Optional[Callable[[int, "mido.Message"], None]]
+MidiMessageCallback = Callable[[int, "mido.Message"], None] | None
 
 
 class MidiInPE(SourcePE):
@@ -70,7 +70,7 @@ class MidiInPE(SourcePE):
 
     def __init__(
         self,
-        port_name: Optional[str] = None,
+        port_name: str | None = None,
         callback: MidiMessageCallback = None,
     ):
         if mido is None:
@@ -80,7 +80,7 @@ class MidiInPE(SourcePE):
         self._port_name = port_name
         self._callback = callback
         self._message_queue: queue.Queue = queue.Queue()
-        self._port: Optional["mido.ports.BaseInput"] = None
+        self._port: "mido.ports.BaseInput" | None = None
 
     def _mido_callback(self, msg: "mido.Message") -> None:
         """Called by Mido from its input thread; put message on queue."""

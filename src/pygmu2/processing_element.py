@@ -9,7 +9,6 @@ MIT License
 from __future__ import annotations
 import time
 from abc import ABC, abstractmethod
-from typing import Optional, Union
 
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
@@ -44,10 +43,10 @@ class ProcessingElement(ABC):
     """
     
     # Sample rate is injected by Renderer.set_source() via configure()
-    _sample_rate: Optional[int] = None
+    _sample_rate: int | None = None
     
     # Cached extent (computed lazily on first access)
-    _cached_extent: Optional[Extent] = None
+    _cached_extent: Extent | None = None
 
     def __new__(cls, *args, **kwargs):
         """
@@ -66,7 +65,7 @@ class ProcessingElement(ABC):
         return obj
 
     @property
-    def sample_rate(self) -> Optional[int]:
+    def sample_rate(self) -> int | None:
         """
         The sample rate in Hz, if known.
 
@@ -210,7 +209,7 @@ class ProcessingElement(ABC):
         """
         return False
     
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """
         Number of output channels this PE produces.
         
@@ -222,7 +221,7 @@ class ProcessingElement(ABC):
         """
         return None  # Default: pass-through
     
-    def required_input_channels(self) -> Optional[int]:
+    def required_input_channels(self) -> int | None:
         """
         Number of channels required from input(s).
         
@@ -296,14 +295,14 @@ class ProcessingElement(ABC):
 
     def _scalar_or_pe_values(
         self,
-        param: Union[float, int, "ProcessingElement"],
+        param: float | int | "ProcessingElement",
         start: int,
         duration: int,
         *,
         dtype: "object" = None,
         channel: int = 0,
         allow_multichannel: bool = False,
-        channels: Optional[int] = None,
+        channels: int | None = None,
     ):
         """
         Protected helper for "scalar-or-PE" parameters.
@@ -387,7 +386,7 @@ class SourcePE(ProcessingElement):
         """
         return True
     
-    def required_input_channels(self) -> Optional[int]:
+    def required_input_channels(self) -> int | None:
         """Not applicable for sources."""
         return None
     

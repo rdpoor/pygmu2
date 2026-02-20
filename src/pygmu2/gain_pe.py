@@ -7,7 +7,6 @@ MIT License
 """
 
 import numpy as np
-from typing import Union, Optional
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
@@ -60,7 +59,7 @@ class GainPE(ProcessingElement):
     def __init__(
         self,
         source: ProcessingElement,
-        gain: Union[float, ProcessingElement] = 1.0,
+        gain: float | ProcessingElement = 1.0,
     ):
         self._source = source
         self._gain = gain
@@ -74,7 +73,7 @@ class GainPE(ProcessingElement):
         return self._source
     
     @property
-    def gain(self) -> Union[float, ProcessingElement]:
+    def gain(self) -> float | ProcessingElement:
         """The gain value or PE."""
         return self._gain
     
@@ -144,7 +143,7 @@ class GainPE(ProcessingElement):
         result = source_extent.intersection(gain_extent)
         return result
     
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()
     

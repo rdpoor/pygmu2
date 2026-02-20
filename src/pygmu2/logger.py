@@ -8,13 +8,12 @@ MIT License
 
 import logging
 import sys
-from typing import Optional
 
 
 def set_global_logging(
     level: str = "INFO",
-    format_string: Optional[str] = None,
-    log_file: Optional[str] = None,
+    format_string: str | None = None,
+    log_file: str | None = None,
 ) -> logging.Logger:
     """
     Configure logging for the application.
@@ -53,7 +52,7 @@ def set_global_logging(
     return logger
 
 
-def get_logger(name: Optional[str] = None) -> logging.Logger:
+def get_logger(name: str | None = None) -> logging.Logger:
     """
     Get a logger instance for the given name.
     

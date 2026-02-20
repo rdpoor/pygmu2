@@ -17,7 +17,6 @@ MIT License
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 
@@ -51,7 +50,7 @@ class MeltysynthPE(SourcePE):
         self,
         soundfont_path: str,
         block_size: int = 64,
-        program: Optional[int] = None,
+        program: int | None = None,
     ):
         """
         Args:
@@ -62,10 +61,10 @@ class MeltysynthPE(SourcePE):
         self._soundfont_path = str(Path(soundfont_path).resolve())
         self._block_size = block_size
         self._program = program
-        self._synthesizer: Optional[object] = None
+        self._synthesizer: object | None = None
 
     @property
-    def synthesizer(self) -> Optional[object]:
+    def synthesizer(self) -> object | None:
         """The meltysynth Synthesizer instance (None until after start). Use in MidiInPE callback."""
         return self._synthesizer
 

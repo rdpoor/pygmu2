@@ -8,7 +8,6 @@ MIT License
 
 import numpy as np
 import sounddevice as sd
-from typing import Optional
 
 from pygmu2.renderer import Renderer
 from pygmu2.snippet import Snippet
@@ -63,7 +62,7 @@ class AudioRenderer(Renderer):
     def __init__(
         self,
         sample_rate: int = 44100,
-        device: Optional[int | str] = None,
+        device: int | str | None = None,
         blocksize: int = 1024,
         latency: str | float = 'low',
     ):
@@ -73,14 +72,14 @@ class AudioRenderer(Renderer):
         self._latency = latency
         
         # Streaming state (for stream_start/stream_stop callback mode)
-        self._stream: Optional[sd.OutputStream] = None
+        self._stream: sd.OutputStream | None = None
         self._stream_position: int = 0
-        self._stream_end: Optional[int] = None
+        self._stream_end: int | None = None
         # Single long-lived stream for blocking render() loop (avoids open/close per block)
-        self._blocking_stream: Optional[sd.OutputStream] = None
+        self._blocking_stream: sd.OutputStream | None = None
     
     @property
-    def device(self) -> Optional[int | str]:
+    def device(self) -> int | str | None:
         """The audio output device."""
         return self._device
     
@@ -128,7 +127,7 @@ class AudioRenderer(Renderer):
         """
         self.render(start, duration)
     
-    def play_extent(self, chunk_size: Optional[int] = None) -> None:
+    def play_extent(self, chunk_size: int | None = None) -> None:
         """
         Play the entire extent of the source (blocking).
         
@@ -181,7 +180,7 @@ class AudioRenderer(Renderer):
         
         logger.info(f"Played {extent.end - extent.start} samples")
     
-    def stream_start(self, start: int = 0, end: Optional[int] = None) -> None:
+    def stream_start(self, start: int = 0, end: int | None = None) -> None:
         """
         Start non-blocking audio streaming.
         

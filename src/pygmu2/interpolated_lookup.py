@@ -8,7 +8,7 @@ WavetablePE).
 
 from __future__ import annotations
 
-from typing import Optional, Any
+from typing import Any
 
 import numpy as np
 
@@ -89,7 +89,7 @@ def interpolated_lookup(
     indices: np.ndarray,
     interpolation: Any,
     *,
-    out_of_bounds_mask: Optional[np.ndarray] = None,
+    out_of_bounds_mask: np.ndarray | None = None,
     out_dtype: Any = np.float32,
 ) -> Snippet:
     """

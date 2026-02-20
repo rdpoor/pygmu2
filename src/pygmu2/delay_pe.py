@@ -6,7 +6,6 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-from typing import Optional, Union
 
 import numpy as np
 
@@ -62,7 +61,7 @@ class DelayPE(ProcessingElement):
     def __init__(
         self,
         source: ProcessingElement,
-        delay: Union[int, float, ProcessingElement],
+        delay: int | float | ProcessingElement,
         interpolation: InterpolationMode = InterpolationMode.LINEAR,
     ):
         self._source = source
@@ -85,7 +84,7 @@ class DelayPE(ProcessingElement):
         return self._source
     
     @property
-    def delay(self) -> Union[int, float, ProcessingElement]:
+    def delay(self) -> int | float | ProcessingElement:
         """The delay value or PE."""
         return self._delay
     
@@ -104,7 +103,7 @@ class DelayPE(ProcessingElement):
         """DelayPE is pure - it's a stateless operation."""
         return True
     
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()
     

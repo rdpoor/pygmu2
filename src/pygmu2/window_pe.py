@@ -7,7 +7,6 @@ MIT License
 """
 
 from enum import Enum
-from typing import Optional
 
 import numpy as np
 
@@ -96,7 +95,7 @@ class WindowPE(ProcessingElement):
         """
         return True
     
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()
     

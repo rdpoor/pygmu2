@@ -10,7 +10,6 @@ MIT License
 """
 
 from enum import Enum
-from typing import Optional, Union
 import numpy as np
 
 from pygmu2.processing_element import ProcessingElement
@@ -86,7 +85,7 @@ class DynamicsPE(ProcessingElement):
         threshold: float = -20.0,
         ratio: float = 4.0,
         knee: float = 0.0,
-        makeup_gain: Union[float, str] = "auto",
+        makeup_gain: float | str = "auto",
         mode: DynamicsMode = DynamicsMode.COMPRESS,
         stereo_link: bool = True,
         gate_range: float = -80.0,
@@ -168,7 +167,7 @@ class DynamicsPE(ProcessingElement):
         """
         return True
     
-    def channel_count(self) -> Optional[int]:
+    def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()
     
@@ -178,7 +177,7 @@ class DynamicsPE(ProcessingElement):
         env_extent = self._envelope.extent()
         return source_extent.intersection(env_extent)
     
-    def _compute_gain_db(self, level_db: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+    def _compute_gain_db(self, level_db: float | np.ndarray) -> float | np.ndarray:
         """
         Compute gain adjustment in dB for given input level(s).
         
@@ -212,11 +211,11 @@ class DynamicsPE(ProcessingElement):
     
     def _compute_compression_gain(
         self,
-        level_db: Union[float, np.ndarray],
+        level_db: float | np.ndarray,
         threshold: float,
         ratio: float,
         knee: float,
-    ) -> Union[float, np.ndarray]:
+    ) -> float | np.ndarray:
         """Compute compression gain reduction."""
         level_db = np.asarray(level_db)
         gain_db = np.zeros_like(level_db)
@@ -262,11 +261,11 @@ class DynamicsPE(ProcessingElement):
     
     def _compute_expansion_gain(
         self,
-        level_db: Union[float, np.ndarray],
+        level_db: float | np.ndarray,
         threshold: float,
         ratio: float,
         knee: float,
-    ) -> Union[float, np.ndarray]:
+    ) -> float | np.ndarray:
         """Compute expansion gain reduction (below threshold)."""
         level_db = np.asarray(level_db)
         gain_db = np.zeros_like(level_db)
@@ -298,10 +297,10 @@ class DynamicsPE(ProcessingElement):
     
     def _compute_gate_gain(
         self,
-        level_db: Union[float, np.ndarray],
+        level_db: float | np.ndarray,
         threshold: float,
         knee: float,
-    ) -> Union[float, np.ndarray]:
+    ) -> float | np.ndarray:
         """Compute gate gain (hard cutoff below threshold)."""
         level_db = np.asarray(level_db)
         range_db = self._range  # How much to attenuate when gated
