@@ -4,6 +4,10 @@ Shared interpolated lookup helpers.
 This module centralizes the "render a source window, then interpolate at
 fractional indices" kernel that is used by multiple PEs (e.g., DelayPE and
 WavetablePE).
+
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
+
+MIT License
 """
 
 from __future__ import annotations

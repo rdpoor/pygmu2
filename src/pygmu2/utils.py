@@ -1,5 +1,9 @@
 """
 Utility helpers for rendering and playback.
+
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
+
+MIT License
 """
 
 from __future__ import annotations

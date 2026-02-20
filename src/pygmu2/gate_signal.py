@@ -1,11 +1,15 @@
-# src/pygmu2/gate_signal.py
-#
-# Semantic gate signal base class for pygmu2.
-#
-# GateSignal:  mono signal with values exactly {0, 1}
-#
-# This is a *ProcessingElement* subclass, so it participates in the same
-# purity/contiguity/diagnostics machinery.
+"""
+GateSignal - semantic gate signal base class for pygmu2.
+
+GateSignal: mono signal with values exactly {0, 1}.
+
+This is a ProcessingElement subclass, so it participates in the same
+purity/contiguity/diagnostics machinery.
+
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
+
+MIT License
+"""
 
 from __future__ import annotations
 

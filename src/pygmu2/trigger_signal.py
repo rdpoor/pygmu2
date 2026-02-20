@@ -1,13 +1,17 @@
-# src/pygmu2/trigger_signal.py
-#
-# Semantic trigger signal base class for pygmu2.
-#
-# TriggerSignal: mono signal with values in {..., -2, -1, 0, +1, +2, ...}
-#   where sign encodes edge direction (+ rising, - falling) and magnitude
-#   encodes multiplicity (optional but useful).
-#
-# This is a *ProcessingElement* subclass, so it participates in the same
-# purity/contiguity/diagnostics machinery.
+"""
+TriggerSignal - semantic trigger signal base class for pygmu2.
+
+TriggerSignal: mono signal with values in {..., -2, -1, 0, +1, +2, ...}
+where sign encodes edge direction (+ rising, - falling) and magnitude
+encodes multiplicity (optional but useful).
+
+This is a ProcessingElement subclass, so it participates in the same
+purity/contiguity/diagnostics machinery.
+
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
+
+MIT License
+"""
 
 from __future__ import annotations
 

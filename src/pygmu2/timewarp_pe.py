@@ -17,6 +17,10 @@ and reset to 0.0 on on_start()/on_stop()/reset_state().
 
 Out-of-bounds behavior: when the read head falls outside the source extent,
 the output is forced to 0.0 for those samples.
+
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
+
+MIT License
 """
 
 from __future__ import annotations

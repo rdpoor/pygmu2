@@ -1,4 +1,10 @@
-# src/pygmu2/random_select_pe.py
+"""
+RandomSelectPE - randomly select one of N input PEs on each trigger event.
+
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
+
+MIT License
+"""
 
 from __future__ import annotations
 

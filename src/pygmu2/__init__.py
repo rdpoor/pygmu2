@@ -69,10 +69,8 @@ from pygmu2.periodic_trigger import PeriodicTrigger
 from pygmu2.piecewise_pe import PiecewisePE, TransitionType
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.source_pe import SourcePE
-# from pygmu2.random_pe import RandomPE, RandomMode
 from pygmu2.random_select_pe import RandomSelectPE
 from pygmu2.renderer import Renderer, ProfileReport, PEProfile
-# from pygmu2.reset_pe import ResetPE
 from pygmu2.reverb_pe import ReverbPE
 from pygmu2.reverse_pitch_echo_pe import ReversePitchEchoPE
 from pygmu2.sample_hold_pe import SampleHoldPE
@@ -109,7 +107,6 @@ from pygmu2.timewarp_pe import TimeWarpPE
 from pygmu2.track_hold_pe import TrackHoldPE
 from pygmu2.tralfam_pe import TralfamPE
 from pygmu2.transform_pe import TransformPE
-# from pygmu2.trigger_pe import TriggerPE, TriggerMode
 from pygmu2.trigger_restart_pe import TriggerRestartPE
 from pygmu2.trigger_signal import TriggerSignal
 from pygmu2.utils import browse, play, play_offline, render_to_file
@@ -192,13 +189,11 @@ __all__ = [
     "AssetManager",
     "GoogleDriveAssetLoader",
     "GithubUserContentAssetLoader",
-    "RandomPE",
     "NoisePE",
     "RandomSelectPE",
     "SampleHoldPE",
     "SlewLimiterPE",
     "TrackHoldPE",
-    "ResetPE",
     "SlicePE",
     "SequencePE",
     "SinePE",
@@ -211,7 +206,6 @@ __all__ = [
     "SpatialHRTF",
     "SuperSawPE",
     "TransformPE",
-    "TriggerPE",
     "WavReaderPE",
     "WavWriterPE",
     "WavetablePE",
@@ -227,10 +221,8 @@ __all__ = [
     "LadderMode",
     "InterpolationMode",
     "OutOfBoundsMode",
-    "RandomMode",
     "NoiseMode",
     "SlewMode",
-    "TriggerMode",
     "SequenceMode",
     "WindowMode",
     # Conversion functions

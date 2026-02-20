@@ -1,6 +1,10 @@
-# src/pygmu2/periodic_gate.py
-#
-# A GateSignal that generates a periodic gate using FunctionGenPE(rectangle)
+"""
+PeriodicGate - a GateSignal that generates a periodic gate.
+
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
+
+MIT License
+"""
 
 import numpy as np
 

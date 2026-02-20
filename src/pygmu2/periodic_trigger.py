@@ -1,6 +1,10 @@
-# src/pygmu2/periodic_trigger.py
-#
-# A TriggerSignal that generates periodic trigger impulses
+"""
+PeriodicTrigger - a TriggerSignal that generates periodic trigger impulses.
+
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
+
+MIT License
+"""
 
 import numpy as np
 from pygmu2.extent import Extent

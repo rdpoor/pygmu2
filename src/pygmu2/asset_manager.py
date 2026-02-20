@@ -1,3 +1,11 @@
+"""
+AssetManager - download and cache audio assets from remote sources.
+
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
+
+MIT License
+"""
+
 import fnmatch
 import json
 import os

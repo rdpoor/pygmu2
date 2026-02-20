@@ -1,4 +1,10 @@
-# src/pygmu2/trigger_restart_pe.py
+"""
+TriggerRestartPE - re-render a source from t=0 on each trigger event.
+
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
+
+MIT License
+"""
 
 from __future__ import annotations
 
