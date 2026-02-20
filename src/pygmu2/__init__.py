@@ -143,17 +143,19 @@ __all__ = [
     "get_sample_rate",
     # Core classes
     "Extent",
-    "ExtendMode",
     "Snippet",
     "ProcessingElement",
     "SourcePE",
+    "GateSignal",
+    "TriggerSignal",
     "Renderer",
     "ProfileReport",
     "PEProfile",
     "AudioRenderer",
     "NullRenderer",
     # Processing Elements
-    "AdsrPE",
+    "AdsrGatedPE",
+    "AdsrTriggeredPE",
     "AnalogOscPE",
     "ArrayPE",
     "FunctionGenPE",
@@ -190,10 +192,13 @@ __all__ = [
     "GoogleDriveAssetLoader",
     "GithubUserContentAssetLoader",
     "NoisePE",
+    "PeriodicGate",
+    "PeriodicTrigger",
     "RandomSelectPE",
     "SampleHoldPE",
     "SlewLimiterPE",
     "TrackHoldPE",
+    "TriggerRestartPE",
     "SlicePE",
     "SequencePE",
     "SinePE",
@@ -250,6 +255,11 @@ __all__ = [
     # Logging utilities
     "set_global_logging",
     "get_logger",
+    # Playback utilities
+    "browse",
+    "play",
+    "play_offline",
+    "render_to_file",
     # Debug utilities
     "print_pe_tree",
     # Version
