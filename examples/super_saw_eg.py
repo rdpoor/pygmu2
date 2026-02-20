@@ -23,32 +23,18 @@ import pygmu2 as pg
 SRATE = 44100
 pg.set_sample_rate(SRATE)
 
-FREQUENCY = 110
 RANDOM_SEED = 123
 PLAY_DUR = 4.0
 SILENCE_DUR = 1.0
 
 def crop_and_pad_pe(pe, play_dur, silence_dur):
-    # crop PE to a finite length
+    # crop PE to a finite length, followed by a silence
     cropped_pe = pg.CropPE(
         pe, 0, pg.seconds_to_samples(PLAY_DUR, SRATE))
     # pad with silence
     padded_pe = pg.SetExtentPE(
         cropped_pe, 0, pg.seconds_to_samples(PLAY_DUR + SILENCE_DUR, SRATE))
     return padded_pe
-
-# def __init__(
-#     self,
-#     frequency: float | ProcessingElement,
-#     amplitude: float | ProcessingElement = 1.0,
-#     voices: int = 7,
-#     detune_cents: float = 20.0,
-#     mix_mode: str = 'center_heavy',
-#     channels: int = 1,
-#     randomize_phase: bool = True,
-#     seed: int | None = None,
-# ):
-
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
@@ -59,7 +45,7 @@ def demo_voice_count():
     print("--------")
     for n_voices in range(1, 12):
         ss = pg.SuperSawPE(
-            frequency=FREQUENCY,
+            frequency=pg.pitch_to_freq(45),
             voices=n_voices,
             seed = RANDOM_SEED,
         )
@@ -72,7 +58,7 @@ def demo_mix_mode():
     print("--------")
     for mix_mode in [pg.SuperSawPE.MIX_EQUAL, pg.SuperSawPE.MIX_LINEAR, pg.SuperSawPE.MIX_CENTER_HEAVY]:
         ss = pg.SuperSawPE(
-            frequency=FREQUENCY,
+            frequency=pg.pitch_to_freq(46),
             voices=7,
             mix_mode = mix_mode,
             seed = RANDOM_SEED,
@@ -84,9 +70,9 @@ def demo_mix_mode():
 def demo_detune_amounts():
     print("Demo SuperSawPE with varying degrees of detuning")
     print("--------")
-    for detune_cents in [5, 10, 20, 40]:
+    for detune_cents in [3, 12, 20, 30, 40]:
         ss = pg.SuperSawPE(
-            frequency=FREQUENCY,
+            frequency=pg.pitch_to_freq(47),
             voices=7,
             detune_cents = detune_cents,
             mix_mode = pg.SuperSawPE.MIX_CENTER_HEAVY,
@@ -101,7 +87,7 @@ def demo_randomize_phase():
     print("--------")
     for randomize_phase in [True, False]:
         ss = pg.SuperSawPE(
-            frequency=FREQUENCY,
+            frequency=pg.pitch_to_freq(48),
             voices=7,
             detune_cents = 20,
             mix_mode = pg.SuperSawPE.MIX_CENTER_HEAVY,
