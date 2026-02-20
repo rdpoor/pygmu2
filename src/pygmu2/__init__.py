@@ -75,7 +75,9 @@ from pygmu2.renderer import Renderer, ProfileReport, PEProfile
 # from pygmu2.reset_pe import ResetPE
 from pygmu2.reverb_pe import ReverbPE
 from pygmu2.reverse_pitch_echo_pe import ReversePitchEchoPE
+from pygmu2.sample_hold_pe import SampleHoldPE
 from pygmu2.sequence_pe import SequencePE, SequenceMode
+from pygmu2.slew_limiter_pe import SlewLimiterPE, SlewMode
 from pygmu2.set_extent_pe import SetExtentPE
 from pygmu2.sine_pe import SinePE
 from pygmu2.slice_pe import SlicePE
@@ -104,6 +106,7 @@ from pygmu2.temperament import (
     set_baroque_pitch,
 )
 from pygmu2.timewarp_pe import TimeWarpPE
+from pygmu2.track_hold_pe import TrackHoldPE
 from pygmu2.tralfam_pe import TralfamPE
 from pygmu2.transform_pe import TransformPE
 # from pygmu2.trigger_pe import TriggerPE, TriggerMode
@@ -192,6 +195,9 @@ __all__ = [
     "RandomPE",
     "NoisePE",
     "RandomSelectPE",
+    "SampleHoldPE",
+    "SlewLimiterPE",
+    "TrackHoldPE",
     "ResetPE",
     "SlicePE",
     "SequencePE",
@@ -223,6 +229,7 @@ __all__ = [
     "OutOfBoundsMode",
     "RandomMode",
     "NoiseMode",
+    "SlewMode",
     "TriggerMode",
     "SequenceMode",
     "WindowMode",
