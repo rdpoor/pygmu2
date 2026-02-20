@@ -7,7 +7,8 @@ MIT License
 """
 
 
-from pygmu2.processing_element import SourcePE, ProcessingElement
+from pygmu2.processing_element import ProcessingElement
+from pygmu2.source_pe import SourcePE
 from pygmu2.extent import Extent, ExtendMode
 from pygmu2.snippet import Snippet
 from pygmu2.sequence_pe import SequencePE

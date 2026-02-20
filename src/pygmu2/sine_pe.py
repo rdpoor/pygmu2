@@ -8,7 +8,8 @@ MIT License
 
 import numpy as np
 
-from pygmu2.processing_element import ProcessingElement, SourcePE
+from pygmu2.processing_element import ProcessingElement
+from pygmu2.source_pe import SourcePE
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 

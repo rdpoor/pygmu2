@@ -15,7 +15,8 @@ import time
 from pygmu2.config import handle_error
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
-from pygmu2.processing_element import ProcessingElement, SourcePE
+from pygmu2.processing_element import ProcessingElement
+from pygmu2.source_pe import SourcePE
 from pygmu2.logger import get_logger
 
 logger = get_logger(__name__)

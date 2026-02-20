@@ -14,7 +14,7 @@ from typing import List, Sequence, Tuple
 import numpy as np
 
 from pygmu2.extent import Extent, ExtendMode
-from pygmu2.processing_element import SourcePE
+from pygmu2.source_pe import SourcePE
 from pygmu2.snippet import Snippet
 
 
