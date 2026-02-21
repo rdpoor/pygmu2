@@ -53,6 +53,10 @@ dev = [
 ssl = [
     "certifi>=2023.0.0",
 ]
+# miniaudio: MP3 / FLAC / OGG decoding for Mp3ReaderPE
+audio = [
+    "miniaudio>=1.46",
+]
 # PySide6 (Qt 6) GUI for examples like jogshuttle_qt.py
 gui = [
     "pyside6>=6.5.0",
