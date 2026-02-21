@@ -1,15 +1,14 @@
 """
 SlewLimiterPE - limit the rate of change of a control signal.
 
-The output "chases" the source at no more than `rise_rate` (units/second
-upward) and `fall_rate` (units/second downward).
+The output "chases" the source at no more than `rate` units/second
+(symmetric: same limit for rise and fall).
 
 Two modes are available:
   LINEAR      - output changes at a constant rate toward target
   EXPONENTIAL - output changes proportionally to remaining error (RC-filter
-                style); rise_rate / fall_rate set the per-sample coefficient
-                so that at full error the initial velocity equals the linear
-                mode velocity.
+                style); rate sets the per-sample coefficient so that at full
+                error the initial velocity equals the linear mode velocity.
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
@@ -38,51 +37,49 @@ class SlewLimiterPE(ProcessingElement):
     Slew-rate limiter for control signals.
 
     Args:
-        source:    Mono control PE to limit.
-        rise_rate: Maximum upward velocity in units/second.
-        fall_rate: Maximum downward velocity in units/second.
-                   Defaults to `rise_rate` (symmetric) if None.
-        mode:      SlewMode.LINEAR (default) or SlewMode.EXPONENTIAL.
+        source: Mono control PE to limit.
+        rate:   Maximum slew velocity in units/second (float or ProcessingElement).
+                Applied symmetrically for both rise and fall.
+        mode:   SlewMode.LINEAR (default) or SlewMode.EXPONENTIAL.
 
     Notes:
         - is_pure() is False; the current output value is state.
         - In LINEAR mode the output moves toward the source at a constant rate
-          of at most `rise_rate` or `fall_rate` units/second.
-        - In EXPONENTIAL mode the per-sample coefficients are derived from the
-          rates so that the initial velocity (at maximum error) matches the
-          linear mode.  The output asymptotically approaches the target.
+          of at most `rate` units/second.
+        - In EXPONENTIAL mode the per-sample coefficient is derived from rate
+          so that the initial velocity (at maximum error) matches the linear
+          mode.  The output asymptotically approaches the target.
     """
 
     def __init__(
         self,
         source: ProcessingElement,
-        rise_rate: float,
-        fall_rate: float | None = None,
+        rate: float | ProcessingElement,
         mode: SlewMode = SlewMode.LINEAR,
     ):
-        if rise_rate <= 0:
-            raise ValueError("rise_rate must be > 0")
         self._source = source
-        self._rise_rate = float(rise_rate)
-        self._fall_rate = float(fall_rate) if fall_rate is not None else self._rise_rate
-        if self._fall_rate <= 0:
-            raise ValueError("fall_rate must be > 0")
+        if isinstance(rate, ProcessingElement):
+            self._rate = rate
+            self._rate_is_pe = True
+        else:
+            if rate <= 0:
+                raise ValueError("rate must be > 0")
+            self._rate = float(rate)
+            self._rate_is_pe = False
         self._mode = mode
         self._current: float = 0.0
 
     @property
-    def rise_rate(self) -> float:
-        return self._rise_rate
-
-    @property
-    def fall_rate(self) -> float:
-        return self._fall_rate
+    def rate(self) -> float | ProcessingElement:
+        return self._rate
 
     @property
     def mode(self) -> SlewMode:
         return self._mode
 
     def inputs(self) -> list[ProcessingElement]:
+        if self._rate_is_pe:
+            return [self._source, self._rate]
         return [self._source]
 
     def is_pure(self) -> bool:
@@ -102,33 +99,28 @@ class SlewLimiterPE(ProcessingElement):
 
     def _render(self, start: int, duration: int) -> Snippet:
         src = self._source.render(start, duration).data[:, 0]
+        rate_data = self._scalar_or_pe_values(self._rate, start, duration, dtype=np.float32)
 
         sr = float(self._sample_rate)
-        rise_dt = self._rise_rate / sr  # max upward change per sample
-        fall_dt = self._fall_rate / sr  # max downward change per sample
-        # Exponential coefficients: k = rate / sr, clamped to (0, 1)
-        rise_k = min(rise_dt, 1.0)
-        fall_k = min(fall_dt, 1.0)
-
         out = np.empty(duration, dtype=np.float32)
         current = self._current
 
         if self._mode == SlewMode.LINEAR:
             for i in range(duration):
+                dt = float(rate_data[i]) / sr
                 delta = float(src[i]) - current
-                if delta > rise_dt:
-                    delta = rise_dt
-                elif delta < -fall_dt:
-                    delta = -fall_dt
+                if delta > dt:
+                    delta = dt
+                elif delta < -dt:
+                    delta = -dt
                 current += delta
                 out[i] = current
         else:  # EXPONENTIAL
             for i in range(duration):
+                dt = float(rate_data[i]) / sr
+                k = min(dt, 1.0)
                 error = float(src[i]) - current
-                if error > 0:
-                    current += rise_k * error
-                else:
-                    current += fall_k * error
+                current += k * error
                 out[i] = current
 
         self._current = current
@@ -136,6 +128,5 @@ class SlewLimiterPE(ProcessingElement):
 
     def __repr__(self) -> str:
         return (
-            f"SlewLimiterPE(rise_rate={self._rise_rate}, "
-            f"fall_rate={self._fall_rate}, mode={self._mode.value})"
+            f"SlewLimiterPE(rate={self._rate!r}, mode={self._mode.value})"
         )
