@@ -69,7 +69,11 @@ from pygmu2.periodic_trigger import PeriodicTrigger
 from pygmu2.piecewise_pe import PiecewisePE, TransitionType
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.source_pe import SourcePE
+from pygmu2.random_gate_pe import RandomGatePE
 from pygmu2.random_select_pe import RandomSelectPE
+from pygmu2.random_step_pe import RandomStepPE
+from pygmu2.random_trigger_pe import RandomTriggerPE
+from pygmu2.random_value_pe import RandomValuePE
 from pygmu2.renderer import Renderer, ProfileReport, PEProfile
 from pygmu2.reverb_pe import ReverbPE
 from pygmu2.reverse_pitch_echo_pe import ReversePitchEchoPE
@@ -196,7 +200,11 @@ __all__ = [
     "NoisePE",
     "PeriodicGate",
     "PeriodicTrigger",
+    "RandomGatePE",
     "RandomSelectPE",
+    "RandomStepPE",
+    "RandomTriggerPE",
+    "RandomValuePE",
     "SampleHoldPE",
     "SlewLimiterPE",
     "TrackHoldPE",
