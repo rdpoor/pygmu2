@@ -78,7 +78,6 @@ def play_offline(
     source: ProcessingElement,
     sample_rate: int | None = None,
     path: str | None = None,
-    omit_playback: bool | None = None,
 ) -> None:
     """
     Render a PE to a WAV file offline, then play it back.
@@ -95,6 +94,7 @@ def play_offline(
         os.close(fd)
         try:
             render_to_file(source, tmp_path, sample_rate=sr, extent=extent)
+            play(WavReaderPE(tmp_path), sample_rate=sr)
         finally:
             try:
                 os.remove(tmp_path)
@@ -102,8 +102,7 @@ def play_offline(
                 pass
     else:
         render_to_file(source, path, sample_rate=sr, extent=extent)
-        if omit_playback != True:
-            play(WavReaderPE(path), sample_rate=sr)
+        play(WavReaderPE(path), sample_rate=sr)
 
 
 def browse(
