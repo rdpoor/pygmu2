@@ -47,6 +47,9 @@ class AudioReaderPE(SourcePE):
 
     Args:
         path: Path to the audio file.
+        max_level_db: If given, peak-normalize the decoded audio so the loudest
+            sample equals this level in dBFS (e.g. -1.0 leaves 1 dB of
+            headroom). None (default) leaves the decoded samples unchanged.
 
     Notes:
         - is_pure() is True: the in-memory buffer supports arbitrary
@@ -55,8 +58,9 @@ class AudioReaderPE(SourcePE):
         - To shift playback position in time, use DelayPE.
     """
 
-    def __init__(self, path: str):
+    def __init__(self, path: str, max_level_db: float | None = None):
         self._path = path
+        self._max_level_db = max_level_db
         self._file_info = None          # populated lazily by _ensure_file_info()
         self._data: np.ndarray | None = None  # (frames, channels) float32
 
@@ -107,6 +111,11 @@ class AudioReaderPE(SourcePE):
         )
         samples = np.frombuffer(decoded.samples, dtype=np.float32).copy()
         self._data = samples.reshape(-1, decoded.nchannels)
+        if self._max_level_db is not None:
+            peak = np.max(np.abs(self._data))
+            if peak > 0.0:
+                target = 10.0 ** (self._max_level_db / 20.0)
+                self._data *= target / peak
         logger.info(
             f"Decoded {self._path}: {self._data.shape[0]} frames, "
             f"{self._data.shape[1]} ch, {self._sample_rate} Hz"
@@ -147,4 +156,6 @@ class AudioReaderPE(SourcePE):
             self._file_info = miniaudio.get_file_info(self._path)
 
     def __repr__(self) -> str:
+        if self._max_level_db is not None:
+            return f"AudioReaderPE(path={self._path!r}, max_level_db={self._max_level_db})"
         return f"AudioReaderPE(path={self._path!r})"

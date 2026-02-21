@@ -262,6 +262,62 @@ class TestAudioReaderPELifecycle:
 
 
 # ---------------------------------------------------------------------------
+# Gain / normalization
+# ---------------------------------------------------------------------------
+
+class TestAudioReaderPEGain:
+
+    def test_max_level_db_none_leaves_data_unchanged(self):
+        """Default (max_level_db=None) should not alter the decoded samples."""
+        data = np.full((100, 1), 0.5, dtype=np.float32)
+        sys.modules["miniaudio"] = _make_fake_miniaudio(
+            nchannels=1, num_frames=100, decoded_data=data
+        )
+        pe = pg.AudioReaderPE("song.mp3")
+        snip = pe.render(0, 100)
+        np.testing.assert_allclose(snip.data, data, atol=1e-6)
+
+    def test_max_level_db_zero_normalizes_to_full_scale(self):
+        """max_level_db=0.0 should scale so the peak sample equals 1.0."""
+        data = np.full((100, 1), 0.25, dtype=np.float32)
+        sys.modules["miniaudio"] = _make_fake_miniaudio(
+            nchannels=1, num_frames=100, decoded_data=data
+        )
+        pe = pg.AudioReaderPE("song.mp3", max_level_db=0.0)
+        snip = pe.render(0, 100)
+        np.testing.assert_allclose(np.max(np.abs(snip.data)), 1.0, atol=1e-5)
+
+    def test_max_level_db_negative_sets_headroom(self):
+        """max_level_db=-6.0 should leave ~6 dB of headroom (peak ≈ 0.5)."""
+        data = np.full((100, 1), 0.25, dtype=np.float32)
+        sys.modules["miniaudio"] = _make_fake_miniaudio(
+            nchannels=1, num_frames=100, decoded_data=data
+        )
+        pe = pg.AudioReaderPE("song.mp3", max_level_db=-6.0206)  # -6.0206 dB ≈ 0.5
+        snip = pe.render(0, 100)
+        np.testing.assert_allclose(np.max(np.abs(snip.data)), 0.5, atol=1e-4)
+
+    def test_max_level_db_silence_does_not_raise(self):
+        """All-zero input with max_level_db set should return zeros without error."""
+        data = np.zeros((100, 1), dtype=np.float32)
+        sys.modules["miniaudio"] = _make_fake_miniaudio(
+            nchannels=1, num_frames=100, decoded_data=data
+        )
+        pe = pg.AudioReaderPE("song.mp3", max_level_db=0.0)
+        snip = pe.render(0, 100)
+        np.testing.assert_array_equal(snip.data, 0.0)
+
+    def test_repr_includes_max_level_db_when_set(self):
+        pe = pg.AudioReaderPE("song.mp3", max_level_db=-1.0)
+        assert "max_level_db" in repr(pe)
+        assert "-1.0" in repr(pe)
+
+    def test_repr_omits_max_level_db_when_none(self):
+        pe = pg.AudioReaderPE("song.mp3")
+        assert "max_level_db" not in repr(pe)
+
+
+# ---------------------------------------------------------------------------
 # Missing dependency
 # ---------------------------------------------------------------------------
 
