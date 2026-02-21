@@ -1,18 +1,30 @@
 """
-RandomValuePE - random value generator inspired by the Buchla 266
-"Source of Uncertainty" (Fluctuating Random Voltages section).
+RandomValuePE - continuously wandering random voltage generator inspired by
+the Buchla 266 "Source of Uncertainty" (Fluctuating Random Voltages section).
 
-Implements an Ornstein-Uhlenbeck process:
+Algorithm
+---------
+At each sample a Bernoulli trial with probability p = rate/sr decides whether
+to draw a new target value from Uniform[0, 1].  The output then exponentially
+chases the current target with the same coefficient:
 
-    y[n] = y[n-1] + α * (noise[n] - y[n-1])
+    if rng.random() < p:
+        target = rng.random()          # new Poisson-rate target
+    current += p * (target - current)  # one-pole RC approach
+    out[n] = current
 
-where α = rate / sr.  This is identical to SlewLimiterPE(EXPONENTIAL), so the
-implementation is a pure composition:
+With p = rate/sr the time constant equals the mean jump interval (1/rate s),
+so the output typically reaches ~63 % of each target before the next one
+arrives.  Equilibrium std ≈ 0.20, mean = 0.5; output is bounded in [0, 1].
 
-    NoisePE(0..1, seed) ──► SlewLimiterPE(rate, EXPONENTIAL) ──► output
-
-Output is bounded in [0, 1] because each y[n] is a convex combination of
-y[n-1] ∈ [0,1] and noise[n] ∈ [0,1].
+Why not white-noise + RC filter?
+---------------------------------
+Filtering audio-rate white noise with a very narrow LFO-rate RC filter
+(α = rate/sr ≪ 1) rejects almost all noise power and leaves a near-constant
+output at the noise mean (0.5) with standard deviation ≈ sqrt(α/2) * σ_noise.
+At rate=10, sr=44100 that is std ≈ 0.003 — indistinguishable from silence.
+The Poisson-target approach sidesteps this by sampling the noise source at the
+modulation rate rather than the audio rate.
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
@@ -20,24 +32,26 @@ MIT License
 
 from __future__ import annotations
 
+import numpy as np
+
 from pygmu2.extent import Extent
-from pygmu2.noise_pe import NoisePE
 from pygmu2.processing_element import ProcessingElement
-from pygmu2.slew_limiter_pe import SlewLimiterPE, SlewMode
 from pygmu2.snippet import Snippet
 
 
 class RandomValuePE(ProcessingElement):
     """
-    Random value generator using an Ornstein-Uhlenbeck process.
+    Continuously wandering random voltage in [0, 1].
 
-    Produces a mono control signal in [0.0, 1.0] that wanders continuously.
-    Higher `rate` values mean faster, more erratic variation; lower values
-    produce slow, smooth drift.
+    Jumps to a new random target at Poisson-distributed instants (mean
+    interval = 1/rate seconds) and exponentially approaches each target with
+    the same time constant, giving smooth continuous wandering across the full
+    output range.
 
     Args:
-        rate: O-U coefficient × sr.  Accepts float or ProcessingElement.
-              Default 10.0 gives a ~100 ms time constant at 44100 Hz.
+        rate: Mean jump rate in Hz; also sets the approach time constant
+              (τ = 1/rate seconds).  Accepts ``float`` or ``ProcessingElement``.
+              Default 10.0 → ~100 ms mean hold / approach time.
         seed: Optional RNG seed for reproducible sequences.
     """
 
@@ -48,17 +62,22 @@ class RandomValuePE(ProcessingElement):
     ):
         self._rate = rate
         self._seed = seed
-
-        self._noise = NoisePE(min_value=0.0, max_value=1.0, seed=seed)
-        self._output = SlewLimiterPE(self._noise, rate=rate, mode=SlewMode.EXPONENTIAL)
+        self._rng: np.random.Generator | None = None
+        self._target: float = 0.5
+        self._current: float = 0.5
 
     def inputs(self) -> list[ProcessingElement]:
-        """Expose the tip of the internal chain so the Renderer manages lifecycle."""
-        return [self._output]
+        if isinstance(self._rate, ProcessingElement):
+            return [self._rate]
+        return []
 
     def _on_start(self) -> None:
-        self._noise.on_start()
-        self._output.on_start()
+        self._rng = np.random.default_rng(self._seed)
+        self._target = float(self._rng.random())
+        self._current = self._target   # start at target — no initial transient
+
+    def _on_stop(self) -> None:
+        self._rng = None
 
     def is_pure(self) -> bool:
         return False
@@ -70,7 +89,25 @@ class RandomValuePE(ProcessingElement):
         return Extent(None, None)
 
     def _render(self, start: int, duration: int) -> Snippet:
-        return self._output.render(start, duration)
+        rate_data = self._scalar_or_pe_values(
+            self._rate, start, duration, dtype=np.float64
+        )
+        sr = float(self._sample_rate)
+        out = np.empty(duration, dtype=np.float32)
+        rng = self._rng
+        current = self._current
+        target = self._target
+
+        for i in range(duration):
+            p = min(float(rate_data[i]) / sr, 1.0)
+            if rng.random() < p:               # Poisson jump: pick new target
+                target = float(rng.random())
+            current += p * (target - current)  # exponential approach
+            out[i] = current
+
+        self._current = current
+        self._target = target
+        return Snippet(start, out.reshape(-1, 1))
 
     def __repr__(self) -> str:
         return f"RandomValuePE(rate={self._rate!r}, seed={self._seed!r})"

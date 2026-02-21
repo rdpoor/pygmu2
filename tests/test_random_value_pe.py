@@ -1,5 +1,5 @@
 """
-Tests for RandomValuePE (Ornstein-Uhlenbeck process).
+Tests for RandomValuePE (Poisson-target continuous wandering).
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
@@ -23,9 +23,14 @@ class TestRandomValuePEConstruction:
         assert rv.is_pure() is False
         assert rv.channel_count() == 1
 
-    def test_inputs_nonempty(self):
+    def test_inputs_empty_for_scalar_rate(self):
         rv = RandomValuePE()
-        assert len(rv.inputs()) == 1
+        assert rv.inputs() == []
+
+    def test_inputs_nonempty_for_pe_rate(self):
+        rate_pe = pg.ConstantPE(5.0)
+        rv = RandomValuePE(rate=rate_pe)
+        assert rate_pe in rv.inputs()
 
     def test_pe_rate_accepted(self):
         rv = RandomValuePE(rate=pg.ConstantPE(5.0))
@@ -77,10 +82,10 @@ class TestRandomValuePERange:
 
 
 # ---------------------------------------------------------------------------
-# Ornstein-Uhlenbeck behaviour
+# Wandering behaviour
 # ---------------------------------------------------------------------------
 
-class TestRandomValuePEOUBehaviour:
+class TestRandomValuePEWanderingBehaviour:
 
     @pytest.fixture(autouse=True)
     def _sr(self):
@@ -89,7 +94,7 @@ class TestRandomValuePEOUBehaviour:
         pg.set_sample_rate(44100)
 
     def test_output_varies(self):
-        """Output must not be constant — the O-U process must wander."""
+        """Output must wander significantly — not stuck near 0.5."""
         rv = RandomValuePE(rate=10.0, seed=1)
         rv.on_start()
         out = rv.render(0, 200).data[:, 0]
@@ -101,7 +106,7 @@ class TestRandomValuePEOUBehaviour:
         rv.on_start()
         out = rv.render(0, 200).data[:, 0]
         max_delta = float(np.abs(np.diff(out.astype(np.float64))).max())
-        # α = 0.5/100 = 0.005; max possible step ≤ 0.005
+        # p = 0.5/100 = 0.005; max per-sample step ≤ p * 1.0 = 0.005
         assert max_delta < 0.01, f"Low-rate max delta {max_delta:.6f} is too large"
 
     def test_high_rate_faster_variation(self):
