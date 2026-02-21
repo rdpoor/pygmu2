@@ -122,7 +122,7 @@ __version__ = "0.2.0"
 _lazy_imports = {
     "BiquadPE": ("pygmu2.biquad_pe", "BiquadPE"),
     "BiquadMode": ("pygmu2.biquad_pe", "BiquadMode"),
-    "Mp3ReaderPE": ("pygmu2.mp3_reader_pe", "Mp3ReaderPE"),
+    "AudioReaderPE": ("pygmu2.audio_reader_pe", "AudioReaderPE"),
     "SVFilterPE": ("pygmu2.svfilter_pe", "SVFilterPE"),
 }
 
@@ -212,7 +212,7 @@ __all__ = [
     "SpatialHRTF",
     "SuperSawPE",
     "TransformPE",
-    "Mp3ReaderPE",
+    "AudioReaderPE",
     "WavReaderPE",
     "WavWriterPE",
     "WavetablePE",

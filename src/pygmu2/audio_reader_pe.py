@@ -1,5 +1,5 @@
 """
-Mp3ReaderPE - decode and play back an MP3 (or other compressed audio) file.
+AudioReaderPE - decode and play back compressed audio files.
 
 Supports any format that miniaudio can decode: MP3, FLAC, OGG Vorbis, and WAV.
 The entire file is decoded into memory on _on_start() and resampled to the
@@ -32,15 +32,15 @@ def _import_miniaudio():
         return miniaudio
     except ImportError as e:
         raise ImportError(
-            "miniaudio is required for Mp3ReaderPE. "
+            "miniaudio is required for AudioReaderPE. "
             "Install it with: pip install miniaudio"
         ) from e
 
 
-class Mp3ReaderPE(SourcePE):
+class AudioReaderPE(SourcePE):
     """
-    A SourcePE that decodes an MP3 (or FLAC / OGG / WAV) file into memory
-    and serves samples on demand.
+    A SourcePE that decodes a compressed audio file (MP3, FLAC, OGG, WAV)
+    into memory and serves samples on demand.
 
     The file is decoded once on _on_start() and resampled to the system
     sample rate if necessary. The decoded buffer is released on _on_stop().
@@ -147,4 +147,4 @@ class Mp3ReaderPE(SourcePE):
             self._file_info = miniaudio.get_file_info(self._path)
 
     def __repr__(self) -> str:
-        return f"Mp3ReaderPE(path={self._path!r})"
+        return f"AudioReaderPE(path={self._path!r})"

@@ -1,5 +1,5 @@
 """
-Tests for Mp3ReaderPE.
+Tests for AudioReaderPE.
 
 miniaudio is mocked throughout so no real MP3 files or the miniaudio
 package itself are required to run the test suite.
@@ -77,38 +77,38 @@ def _inject_fake_miniaudio():
 # Construction
 # ---------------------------------------------------------------------------
 
-class TestMp3ReaderPEConstruction:
+class TestAudioReaderPEConstruction:
 
     def test_path_property(self):
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         assert pe.path == "song.mp3"
 
     def test_is_pure(self):
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         assert pe.is_pure() is True
 
     def test_no_inputs(self):
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         assert pe.inputs() == []
 
     def test_repr(self):
-        pe = pg.Mp3ReaderPE("song.mp3")
-        assert "Mp3ReaderPE" in repr(pe)
+        pe = pg.AudioReaderPE("song.mp3")
+        assert "AudioReaderPE" in repr(pe)
         assert "song.mp3" in repr(pe)
 
     def test_channel_count_from_file_info(self):
         sys.modules["miniaudio"] = _make_fake_miniaudio(nchannels=2)
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         assert pe.channel_count() == 2
 
     def test_channel_count_mono(self):
         sys.modules["miniaudio"] = _make_fake_miniaudio(nchannels=1)
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         assert pe.channel_count() == 1
 
     def test_file_sample_rate(self):
         sys.modules["miniaudio"] = _make_fake_miniaudio(file_sample_rate=48000)
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         assert pe.file_sample_rate == 48000
 
 
@@ -116,14 +116,14 @@ class TestMp3ReaderPEConstruction:
 # Extent
 # ---------------------------------------------------------------------------
 
-class TestMp3ReaderPEExtent:
+class TestAudioReaderPEExtent:
 
     def test_extent_matches_frame_count_at_same_rate(self):
         """When file rate == system rate, extent == num_frames."""
         sys.modules["miniaudio"] = _make_fake_miniaudio(
             file_sample_rate=44100, num_frames=1000
         )
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         ext = pe.extent()
         assert ext.start == 0
         assert ext.end == 1000
@@ -133,7 +133,7 @@ class TestMp3ReaderPEExtent:
         sys.modules["miniaudio"] = _make_fake_miniaudio(
             file_sample_rate=22050, num_frames=1000
         )
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         # system rate is 44100; file is 22050 → 2x as many output frames
         ext = pe.extent()
         assert ext.start == 0
@@ -144,11 +144,11 @@ class TestMp3ReaderPEExtent:
 # Rendering
 # ---------------------------------------------------------------------------
 
-class TestMp3ReaderPERender:
+class TestAudioReaderPERender:
 
     def test_render_returns_correct_shape(self):
         sys.modules["miniaudio"] = _make_fake_miniaudio(nchannels=2, num_frames=500)
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         snip = pe.render(0, 100)
         assert snip.data.shape == (100, 2)
 
@@ -157,7 +157,7 @@ class TestMp3ReaderPERender:
         sys.modules["miniaudio"] = _make_fake_miniaudio(
             nchannels=1, num_frames=500, decoded_data=ramp
         )
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         snip = pe.render(0, 100)
         assert snip.data.shape == (100, 1)
 
@@ -168,7 +168,7 @@ class TestMp3ReaderPERender:
         sys.modules["miniaudio"] = _make_fake_miniaudio(
             nchannels=2, num_frames=200, decoded_data=data
         )
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         snip = pe.render(0, 200)
         np.testing.assert_allclose(snip.data, data, atol=1e-6)
 
@@ -178,7 +178,7 @@ class TestMp3ReaderPERender:
         sys.modules["miniaudio"] = _make_fake_miniaudio(
             nchannels=1, num_frames=100, decoded_data=ramp
         )
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         snip = pe.render(10, 20)
         np.testing.assert_allclose(snip.data, ramp[10:30], atol=1e-6)
 
@@ -188,7 +188,7 @@ class TestMp3ReaderPERender:
         sys.modules["miniaudio"] = _make_fake_miniaudio(
             nchannels=1, num_frames=100, decoded_data=data
         )
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         snip = pe.render(-10, 20)
         # First 10 samples are before the file → zeros
         np.testing.assert_array_equal(snip.data[:10], 0.0)
@@ -201,7 +201,7 @@ class TestMp3ReaderPERender:
         sys.modules["miniaudio"] = _make_fake_miniaudio(
             nchannels=1, num_frames=50, decoded_data=data
         )
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         snip = pe.render(40, 20)
         # Samples 40-49 are in the file → ones
         np.testing.assert_allclose(snip.data[:10], 1.0, atol=1e-6)
@@ -211,7 +211,7 @@ class TestMp3ReaderPERender:
     def test_render_entirely_outside_is_zeros(self):
         """Rendering entirely outside the file returns zeros."""
         sys.modules["miniaudio"] = _make_fake_miniaudio(num_frames=100)
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         snip = pe.render(200, 50)
         np.testing.assert_array_equal(snip.data, 0.0)
 
@@ -221,7 +221,7 @@ class TestMp3ReaderPERender:
         sys.modules["miniaudio"] = _make_fake_miniaudio(
             nchannels=1, num_frames=100, decoded_data=ramp
         )
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         snip1 = pe.render(0, 50)
         snip2 = pe.render(0, 50)
         np.testing.assert_array_equal(snip1.data, snip2.data)
@@ -231,11 +231,11 @@ class TestMp3ReaderPERender:
 # Lifecycle
 # ---------------------------------------------------------------------------
 
-class TestMp3ReaderPELifecycle:
+class TestAudioReaderPELifecycle:
 
     def test_on_stop_releases_buffer(self):
         sys.modules["miniaudio"] = _make_fake_miniaudio(num_frames=100)
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         pe.render(0, 10)          # triggers decode
         assert pe._data is not None
         pe.on_stop()
@@ -244,14 +244,14 @@ class TestMp3ReaderPELifecycle:
     def test_render_without_renderer_still_works(self):
         """_ensure_data() should trigger decode if _on_start() was never called."""
         sys.modules["miniaudio"] = _make_fake_miniaudio(num_frames=100)
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         snip = pe.render(0, 10)
         assert snip.data.shape == (10, 2)
 
     def test_on_start_with_null_renderer(self):
         """Full renderer lifecycle should work."""
         sys.modules["miniaudio"] = _make_fake_miniaudio(nchannels=1, num_frames=200)
-        pe = pg.Mp3ReaderPE("song.mp3")
+        pe = pg.AudioReaderPE("song.mp3")
         renderer = pg.NullRenderer(sample_rate=44100)
         renderer.set_source(pe)
         renderer.start()
@@ -265,7 +265,7 @@ class TestMp3ReaderPELifecycle:
 # Missing dependency
 # ---------------------------------------------------------------------------
 
-class TestMp3ReaderPEMissingDep:
+class TestAudioReaderPEMissingDep:
 
     def test_missing_miniaudio_raises_import_error(self):
         """A helpful ImportError is raised if miniaudio is not installed."""
@@ -283,7 +283,7 @@ class TestMp3ReaderPEMissingDep:
 
         builtins.__import__ = _block_miniaudio
         try:
-            pe = pg.Mp3ReaderPE("song.mp3")
+            pe = pg.AudioReaderPE("song.mp3")
             with pytest.raises(ImportError, match="miniaudio"):
                 pe._ensure_file_info()
         finally:
