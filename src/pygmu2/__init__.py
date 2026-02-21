@@ -73,6 +73,7 @@ from pygmu2.random_select_pe import RandomSelectPE
 from pygmu2.renderer import Renderer, ProfileReport, PEProfile
 from pygmu2.reverb_pe import ReverbPE
 from pygmu2.reverse_pitch_echo_pe import ReversePitchEchoPE
+from pygmu2.ring_modulator_pe import RingModulatorPE
 from pygmu2.sample_hold_pe import SampleHoldPE
 from pygmu2.sequence_pe import SequencePE, SequenceMode
 from pygmu2.slew_limiter_pe import SlewLimiterPE, SlewMode
@@ -220,6 +221,7 @@ __all__ = [
     "TralfamPE",
     "WindowPE",
     "ReversePitchEchoPE",
+    "RingModulatorPE",
     # Enums
     "BiquadMode",
     "DetectionMode",
