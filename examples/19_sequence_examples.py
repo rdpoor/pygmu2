@@ -422,17 +422,6 @@ def demo_moz_plucked():
 # -----------------------------------------------------------------------------
 
 
-def demo_all_c_major():
-    demo_gapless_c_major()
-    demo_staccato_c_major()
-    demo_legato_c_major()
-    demo_constant_power_ramp()
-    demo_exponential_ramp()
-    demo_moz_connected()
-    demo_moz_articulated()
-    demo_moz_plucked()
-
-
 DEMOS = [
     ("C major: gapless (C → E → G)", demo_gapless_c_major),
     ("C major: staccato (C · E · G)", demo_staccato_c_major),
@@ -443,7 +432,6 @@ DEMOS = [
     ("Mozart: all connected notes", demo_moz_connected),
     ("Mozart: articulated notes", demo_moz_articulated),
     ("Mozart: articulated plucked notes", demo_moz_plucked),
-    ("All C major demos", demo_all_c_major),
 ]
 
 if __name__ == "__main__":

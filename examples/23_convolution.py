@@ -219,16 +219,6 @@ def demo_drums_mono_to_stereo():
     ir_pe = create_pingpong_ir_pe(sample_rate, beats_per_minute=91)
     _demo_wet(DRUMS_MONO_PATH, ir_pe=ir_pe, wet_gain=0.65)
 
-def demo_all():
-    demo_spoken_dry()
-    demo_spoken_short()
-    demo_spoken_long()
-    demo_drums_dry()
-    demo_drums_short()
-    demo_drums_long()
-    demo_drums_mono_dry()
-    demo_drums_mono_to_stereo()
-
 DEMOS = [
     ("spoken voice, dry", demo_spoken_dry),
     ("spoken voice * plate_ir", demo_spoken_short),
@@ -241,9 +231,4 @@ DEMOS = [
 ]
 
 if __name__ == "__main__":
-    import os
-    # Enable DEBUG via PYGMU_DEBUG=1 environment variable
-    if os.environ.get("PYGMU_DEBUG"):
-        logging.basicConfig(level=logging.DEBUG)
-        logger.setLevel(logging.DEBUG)
     run_demos(DEMOS)

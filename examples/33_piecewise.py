@@ -85,14 +85,6 @@ def demo_constant_power():
     pg.play(CropPE(_make_triad(TransitionType.CONSTANT_POWER), 0, DURATION_SAMPLES), SAMPLE_RATE)
 
 
-def demo_all():
-    demo_step()
-    demo_linear()
-    demo_exponential()
-    demo_sigmoid()
-    demo_constant_power()
-
-
 DEMOS = [
     ("STEP (instant pitch)", demo_step),
     ("LINEAR (constant glide)", demo_linear),

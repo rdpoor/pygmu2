@@ -27,9 +27,12 @@ MIT License
 
 from __future__ import annotations
 
+import logging
 import sys
 
 import pygmu2 as pg
+
+logger = logging.getLogger(__name__)
 
 
 def s(secs: float) -> int:
@@ -58,6 +61,12 @@ def run_demos(demos: dict) -> None:
         if __name__ == "__main__":
             run_demos(DEMOS)
     """
+
+    import os
+    # Enable DEBUG via PYGMU_EXAMPLES_DEBUG=1 environment variable
+    if os.environ.get("PYGMU_EXAMPLES_DEBUG"):
+        logging.basicConfig(level=logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
 
     def resolve_choice(choice: str):
         """Return (name, fn) for a valid digit choice, or (None, None)."""

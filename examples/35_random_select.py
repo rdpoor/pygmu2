@@ -143,11 +143,6 @@ def demo_bongo_fury():
     
     print("Done!\n", flush=True)
 
-def demo_all():
-    demo_weighted_pitch()
-    demo_weighted_pitch_one_osc()
-    demo_bongo_fury()
-
 DEMOS = [
     ("Demo weighted pitches", demo_weighted_pitch),
     ("Demo one oscillator", demo_weighted_pitch_one_osc),

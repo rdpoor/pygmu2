@@ -141,13 +141,6 @@ def demo_c_major_arpeggio():
     pg.play(CropPE(mix, 0, s2s(t)), SAMPLE_RATE)
 
 
-def demo_all():
-    demo_single_pluck()
-    demo_two_phase_decay()
-    demo_high_rho_vs_low_rho()
-    demo_c_major_arpeggio()
-
-
 DEMOS = [
     ("Single pluck (440 Hz)", demo_single_pluck),
     ("Two-phase decay (sustain then fade)", demo_two_phase_decay),

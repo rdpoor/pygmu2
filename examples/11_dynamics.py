@@ -11,13 +11,10 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-import sys
+from pathlib import Path
 import pygmu2 as pg
 from examples_helper import run_demos
 pg.set_sample_rate(44100)
-
-sys.path.insert(0, 'src')
-from pathlib import Path
 
 from pygmu2 import (
     BlitSawPE,

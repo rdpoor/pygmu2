@@ -120,13 +120,6 @@ def demo_svfilter_autowah():
     pg.play(CropPE(output_stream, 0, duration_samples), sample_rate)
 
 
-def demo_all():
-    """Run original, biquad autowah, then SVFilter autowah."""
-    demo_original()
-    demo_autowah()
-    demo_svfilter_autowah()
-
-
 DEMOS = [
     ("Original signal (looped djembe)", demo_original),
     ("Autowah effect (BiquadPE lowpass)", demo_autowah),

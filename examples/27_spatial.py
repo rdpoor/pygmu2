@@ -246,18 +246,6 @@ def demo_hrtf_spatialization():
     print("Done!\n", flush=True)
 
 
-def demo_all():
-    """Run all spatial demos in order."""
-    demo_channel_conversion()
-    demo_linear_panning()
-    demo_constant_power_panning()
-    demo_dynamic_panning()
-    demo_stereo_to_mono()
-    demo_multiple_sources_panned()
-    demo_hrtf_spatialization()
-    print("All demos complete!", flush=True)
-
-
 DEMOS = [
     ("Channel conversion (Mono → Stereo)", demo_channel_conversion),
     ("Linear panning (Left → Center → Right)", demo_linear_panning),
