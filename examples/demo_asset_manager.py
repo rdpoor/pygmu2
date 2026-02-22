@@ -3,6 +3,19 @@ demo_asset_mgr.py
 
 Simple example showing AssetManager with Google Drive and GitHub loaders.
 Fill in the required parameters before running.
+
+Troubleshooting
+---------------
+If you see:
+    google.auth.exceptions.RefreshError: invalid_grant: Token has been expired or revoked.
+
+Delete the cached OAuth token to force re-authentication on the next run:
+
+    macOS:   rm ~/Library/Application\ Support/pygmu2/gdrive_oauth/gdrive_token.json
+    Linux:   rm ~/.config/pygmu2/gdrive_oauth/gdrive_token.json
+    Windows: del %APPDATA%\\pygmu2\\gdrive_oauth\\gdrive_token.json
+
+Then run the script again — a browser window will open for you to re-authorize.
 """
 
 from pathlib import Path
