@@ -36,7 +36,7 @@ def demo_wav():
     print(f"  native rate : {source.file_sample_rate} Hz")
     print(f"  channels    : {source.channel_count()}")
     print(f"  duration    : {source.extent().end / 44100:.2f} s")
-    pg.play(source)
+    pg.play(pg.GainPE(source, gain=0.71))
 
 
 def demo_mp3():
@@ -49,7 +49,7 @@ def demo_mp3():
     print(f"  native rate : {source.file_sample_rate} Hz")
     print(f"  channels    : {source.channel_count()}")
     print(f"  duration    : {source.extent().end / 44100:.2f} s")
-    pg.play(source)
+    pg.play(pg.GainPE(source, gain=0.71))
 
 
 DEMOS = [

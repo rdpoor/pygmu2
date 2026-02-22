@@ -53,10 +53,10 @@ def demo_basic_compression():
     )
     
     print("Playing DRY signal...")
-    pg.play(looped_drums, sample_rate)
-    
+    pg.play(pg.GainPE(looped_drums, gain=0.62), sample_rate)
+
     print("Playing COMPRESSED signal...")
-    pg.play(compressed, sample_rate)
+    pg.play(pg.GainPE(compressed, gain=0.62), sample_rate)
     
     print()
 
@@ -87,7 +87,7 @@ def demo_limiter():
     print(f"Ceiling: -6dB, Release: 50ms, Lookahead: 5ms")
     print()
     
-    pg.play(limited_stream, sample_rate)
+    pg.play(pg.GainPE(limited_stream, gain=0.55), sample_rate)
     print()
 
 
@@ -117,7 +117,7 @@ def demo_noise_gate():
     print("You should hear the signal cut out during quiet portions.")
     print()
     
-    pg.play(gated_stream, sample_rate)
+    pg.play(pg.GainPE(gated_stream, gain=1.03), sample_rate)
     print()
 
 
@@ -155,7 +155,7 @@ def demo_parallel_compression():
     print("Result: Punchy transients from dry + sustained body from compressed")
     print()
     
-    pg.play(parallel_stream, sample_rate)
+    pg.play(pg.GainPE(parallel_stream, gain=0.54), sample_rate)
     print()
 
 DEMOS = [

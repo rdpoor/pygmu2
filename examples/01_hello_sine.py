@@ -55,7 +55,7 @@ def demo_sine():
 
     # Create audio renderer and play
     print(f"Playing for {DURATION_SECONDS} seconds...", flush=True)
-    pg.play(output_stream, SAMPLE_RATE)
+    pg.play(pg.GainPE(output_stream, gain=1.86), SAMPLE_RATE)
 
     print("Done!", flush=True)
 

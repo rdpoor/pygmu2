@@ -97,7 +97,7 @@ def demo_gapless_c_major():
         notes.append(delayed)
 
     mix = MixPE(*notes)
-    pg.play(CropPE(mix, 0, total), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix, 0, total), gain=1.26), SAMPLE_RATE)
 
 
 def demo_staccato_c_major():
@@ -123,7 +123,7 @@ def demo_staccato_c_major():
         notes.append(delayed)
 
     mix = MixPE(*notes)
-    pg.play(CropPE(mix, 0, total), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix, 0, total), gain=1.26), SAMPLE_RATE)
 
 
 def demo_legato_c_major():
@@ -151,10 +151,10 @@ def demo_legato_c_major():
     # Reduce gain when overlapping to avoid clipping
     mix = GainPE(mix, gain=0.5)
     ext = mix.extent()
-    pg.play(CropPE(mix, ext.start, ext.duration), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix, ext.start, ext.duration), gain=1.26), SAMPLE_RATE)
 
 
-def _ramped_c_major(transition_type: TransitionType, title: str):
+def _ramped_c_major(transition_type: TransitionType, title: str, gain: float = 1.0):
     """
     Shared ramped C major: C crossfades with E crossfades with G.
 
@@ -176,7 +176,7 @@ def _ramped_c_major(transition_type: TransitionType, title: str):
         cropped = CropPE(note, 0, (note_duration + xfade) - (0))
         delayed = DelayPE(cropped, delay=i * d - xfade_half)
 
-        gain = MixPE(
+        envelope = MixPE(
             DelayPE(PiecewisePE([(0, 0.0), (xfade, 1.0)], transition_type=transition_type), i * d - xfade_half),
             CropPE(
                 ConstantPE(1.0), i * d + xfade_half, d - xfade,
@@ -184,11 +184,12 @@ def _ramped_c_major(transition_type: TransitionType, title: str):
             DelayPE(PiecewisePE([(0, 1.0), (xfade, 0.0)], transition_type=transition_type), (i + 1) * d - xfade_half),
         )
 
-        notes.append(GainPE(delayed, gain=gain))
+        notes.append(GainPE(delayed, gain=envelope))
 
     mix = MixPE(*notes)
     ext = mix.extent()
-    pg.play(CropPE(mix, ext.start, ext.duration), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix, ext.start, ext.duration), gain=gain), SAMPLE_RATE)
+    # pg.play(CropPE(mix, ext.start, ext.duration), SAMPLE_RATE)
 
 
 def demo_sigmoid_ramp():
@@ -200,6 +201,7 @@ def demo_sigmoid_ramp():
     _ramped_c_major(
         TransitionType.SIGMOID,
         "=== C major: ramped with SIGMOID crossfades (C ⟷ E ⟷ G) ===",
+        gain=1.67,
     )
 
 
@@ -212,6 +214,7 @@ def demo_constant_power_ramp():
     _ramped_c_major(
         TransitionType.CONSTANT_POWER,
         "=== C major: ramped with CONSTANT_POWER crossfades (C ⟷ E ⟷ G) ===",
+        gain=1.32,
     )
 
 
@@ -224,6 +227,7 @@ def demo_exponential_ramp():
     _ramped_c_major(
         TransitionType.EXPONENTIAL,
         "=== C major: ramped with EXPONENTIAL crossfades (C ⟷ E ⟷ G) ===",
+        gain=1.67,
     )
 
 
@@ -368,7 +372,7 @@ def demo_moz_connected():
 
     # Here, notes[] is a list of ProcessingElements, ready to mix
     mix_stream = GainPE(MixPE(*notes), 0.33)
-    pg.play(CropPE(mix_stream, 0, _b2s(next_start)), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix_stream, 0, _b2s(next_start)), gain=3.81), SAMPLE_RATE)
 
 def demo_moz_articulated():
     next_start = 0
@@ -390,7 +394,7 @@ def demo_moz_articulated():
 
     # Here, notes[] is a list of ProcessingElements, ready to mix
     mix_stream = GainPE(MixPE(*notes), 0.33)
-    pg.play(CropPE(mix_stream, 0, _b2s(next_start)), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix_stream, 0, _b2s(next_start)), gain=3.81), SAMPLE_RATE)
 
 def demo_moz_plucked():
     next_start = 0
@@ -414,7 +418,7 @@ def demo_moz_plucked():
 
     # Here, notes[] is a list of ProcessingElements, ready to mix
     mix_stream = GainPE(MixPE(*notes), 0.7)
-    pg.play(CropPE(mix_stream, 0, _b2s(next_start)), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix_stream, 0, _b2s(next_start)), gain=0.84), SAMPLE_RATE)
 
 # -----------------------------------------------------------------------------
 # Main

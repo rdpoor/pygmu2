@@ -36,7 +36,7 @@ def dry_signal():
     print(f"\nPart 1: Dry signal - {DURATION_SECONDS}s", flush=True)
     dry_stream = CropPE(source_stream, 0, (duration_samples) - (0))
 
-    pg.play(dry_stream, sample_rate)
+    pg.play(pg.GainPE(dry_stream, gain=0.89), sample_rate)
 
 def comb_220():
     # --- Part 2: Comb tuned to 220 Hz ---
@@ -45,7 +45,7 @@ def comb_220():
     comb_220_stream = GainPE(comb_220_stream, gain=0.7)
     comb_220_out_stream = CropPE(comb_220_stream, 0, (duration_samples) - (0))
 
-    pg.play(comb_220_out_stream, sample_rate)
+    pg.play(pg.GainPE(comb_220_out_stream, gain=1.16), sample_rate)
 
 def comb_440():
     # --- Part 3: Comb tuned to 440 Hz ---
@@ -54,7 +54,7 @@ def comb_440():
     comb_440_stream = GainPE(comb_440_stream, gain=0.7)
     comb_440_out_stream = CropPE(comb_440_stream, 0, (duration_samples) - (0))
 
-    pg.play(comb_440_out_stream, sample_rate)
+    pg.play(pg.GainPE(comb_440_out_stream, gain=0.76), sample_rate)
 
 DEMOS = [
     ("Original signal", dry_signal),

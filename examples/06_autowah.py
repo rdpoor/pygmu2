@@ -43,7 +43,7 @@ def demo_original():
     sample_rate = source_stream.file_sample_rate
     duration_samples = int(DURATION_SECONDS * sample_rate)
     looped_stream = LoopPE(source_stream, crossfade_seconds=0.01)
-    pg.play(CropPE(looped_stream, 0, duration_samples), sample_rate)
+    pg.play(pg.GainPE(CropPE(looped_stream, 0, duration_samples), gain=0.89), sample_rate)
 
 
 def demo_autowah():
@@ -80,7 +80,7 @@ def demo_autowah():
         mode=BiquadMode.LOWPASS
     )
     output_stream = GainPE(filtered_stream, gain=1.0)
-    pg.play(CropPE(output_stream, 0, duration_samples), sample_rate)
+    pg.play(pg.GainPE(CropPE(output_stream, 0, duration_samples), gain=0.50), sample_rate)
 
 
 def demo_svfilter_autowah():
@@ -117,7 +117,7 @@ def demo_svfilter_autowah():
         mode=BiquadMode.LOWPASS
     )
     output_stream = GainPE(filtered_stream, gain=1.0)
-    pg.play(CropPE(output_stream, 0, duration_samples), sample_rate)
+    pg.play(pg.GainPE(CropPE(output_stream, 0, duration_samples), gain=0.50), sample_rate)
 
 
 DEMOS = [

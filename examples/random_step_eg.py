@@ -39,7 +39,7 @@ def demo_fixed_rates():
         note = pg.BlitSawPE(frequency=freq)
         cropped_note = pg.CropPE(note, 0, s(4))
         print(f"  rate = {rate}")
-        pg.play_offline(source=pad_clip(pg.GainPE(cropped_note, 0.1)))
+        pg.play_offline(source=pg.GainPE(pad_clip(pg.GainPE(cropped_note, 0.1)), gain=2.29))
 
 def demo_ramped_rate():
     """Play notes with rate ramping exponentially from 1 to 100."""
@@ -53,7 +53,7 @@ def demo_ramped_rate():
     freq = pg.TransformPE(step_value, func=random_to_frequency)
     note = pg.BlitSawPE(frequency=freq)
     cropped_note = pg.CropPE(note, 0, duration_samples)
-    pg.play_offline(source=pad_clip(pg.GainPE(cropped_note, 0.1)))
+    pg.play_offline(source=pg.GainPE(pad_clip(pg.GainPE(cropped_note, 0.1)), gain=3.11))
 
 
 DEMOS = [

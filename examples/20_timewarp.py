@@ -48,7 +48,7 @@ def demo_original():
 
     output_stream = GainPE(spoken_stream, gain=0.8)
 
-    pg.play(output_stream, sample_rate)
+    pg.play(pg.GainPE(output_stream, gain=2.67), sample_rate)
 def demo_fixed_rate():
     """
     Play a spoken sample at a fixed rate (1.5x).
@@ -63,7 +63,7 @@ def demo_fixed_rate():
     warped_stream = TimeWarpPE(spoken_stream, rate=1.5)
     output_stream = GainPE(warped_stream, gain=0.8)
 
-    pg.play(output_stream, sample_rate)
+    pg.play(pg.GainPE(output_stream, gain=2.67), sample_rate)
 def demo_accelerating_loop():
     """
     Loop the spoken sample and accelerate from 0.5x to 5.0x over 10 seconds.
@@ -87,7 +87,7 @@ def demo_accelerating_loop():
     output_stream = GainPE(warped_stream, gain=0.8)
     output_stream = CropPE(output_stream, 0, (dur_samples) - (0))
 
-    pg.play(output_stream, sample_rate)
+    pg.play(pg.GainPE(output_stream, gain=2.67), sample_rate)
 def demo_jog_shuttle():
     """
     Play at decreasing speeds, eventually going negative.
@@ -107,7 +107,7 @@ def demo_jog_shuttle():
     output_stream = GainPE(warped_stream, gain=0.8)
     output_stream = CropPE(output_stream, 0, (demo_length) - (0))
 
-    pg.play(output_stream, sample_rate)
+    pg.play(pg.GainPE(output_stream, gain=1.11), sample_rate)
 DEMOS = [
     ("Original", demo_original),
     ("Fixed Rate (1.5x)", demo_fixed_rate),

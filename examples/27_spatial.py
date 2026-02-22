@@ -54,7 +54,7 @@ def demo_channel_conversion():
     duration_samples = extent.end - extent.start
     duration_seconds = duration_samples / SAMPLE_RATE
     print(f"Playing {duration_seconds:.2f} seconds of mono→stereo conversion...", flush=True)
-    pg.play(stereo_output, sample_rate=SAMPLE_RATE)
+    pg.play(pg.GainPE(stereo_output, gain=1.16), sample_rate=SAMPLE_RATE)
     
     print("Done!\n", flush=True)
 
@@ -84,8 +84,8 @@ def demo_linear_panning():
     duration_samples = extent.end - extent.start
     duration_seconds = duration_samples / SAMPLE_RATE
     print(f"Playing {duration_seconds:.2f} seconds: Left → Center → Right...", flush=True)
-    pg.play(mixed_stream, sample_rate=SAMPLE_RATE)
-    
+    pg.play(pg.GainPE(mixed_stream, gain=1.20), sample_rate=SAMPLE_RATE)
+
     print("Done!\n", flush=True)
 
 
@@ -114,8 +114,8 @@ def demo_constant_power_panning():
     duration_samples = extent.end - extent.start
     duration_seconds = duration_samples / SAMPLE_RATE
     print(f"Playing {duration_seconds:.2f} seconds: Left → Center → Right (constant-power)...", flush=True)
-    pg.play(mixed_stream, sample_rate=SAMPLE_RATE)
-    
+    pg.play(pg.GainPE(mixed_stream, gain=1.20), sample_rate=SAMPLE_RATE)
+
     print("Done!\n", flush=True)
 
 
@@ -139,7 +139,7 @@ def demo_dynamic_panning():
     
     duration_seconds = duration_samples / SAMPLE_RATE
     print(f"Playing {duration_seconds:.2f} seconds with panning sweep...", flush=True)
-    pg.play(panned_stream, sample_rate=SAMPLE_RATE)
+    pg.play(pg.GainPE(panned_stream, gain=1.62), sample_rate=SAMPLE_RATE)
     
     print("Done!\n", flush=True)
 
@@ -165,7 +165,7 @@ def demo_stereo_to_mono():
     duration_samples = extent.end - extent.start
     duration_seconds = duration_samples / SAMPLE_RATE
     print(f"Playing {duration_seconds:.2f} seconds of stereo→mono conversion...", flush=True)
-    pg.play(mono_output, sample_rate=SAMPLE_RATE)
+    pg.play(pg.GainPE(mono_output, gain=1.07), sample_rate=SAMPLE_RATE)
     
     print("Done!\n", flush=True)
 
@@ -193,7 +193,7 @@ def demo_multiple_sources_panned():
     
     duration_seconds = min_duration / SAMPLE_RATE
     print(f"Playing {duration_seconds:.2f} seconds of two sources panned left and right...", flush=True)
-    pg.play(cropped_stream, sample_rate=SAMPLE_RATE)
+    pg.play(pg.GainPE(cropped_stream, gain=1.30), sample_rate=SAMPLE_RATE)
     
     print("Done!\n", flush=True)
 
@@ -241,7 +241,7 @@ def demo_hrtf_spatialization():
         flush=True,
     )
 
-    pg.play(mixed_stream, sample_rate=SAMPLE_RATE)
+    pg.play(pg.GainPE(mixed_stream, gain=0.81), sample_rate=SAMPLE_RATE)
 
     print("Done!\n", flush=True)
 

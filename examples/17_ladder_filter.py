@@ -38,7 +38,7 @@ def original_signal():
     print(f"\nPart 1: Dry signal - {DURATION_SECONDS}s", flush=True)
     dry_stream = CropPE(source_stream, 0, (duration_samples) - (0))
 
-    pg.play(dry_stream, sample_rate)
+    pg.play(pg.GainPE(dry_stream, gain=4.95), sample_rate)
 
 def resonant_lowpass():
     # --- Part 2: Resonant lowpass ---
@@ -47,7 +47,7 @@ def resonant_lowpass():
     lowpass_stream = GainPE(lowpass_stream, gain=0.8)
     lowpass_out_stream = CropPE(lowpass_stream, 0, (duration_samples) - (0))
 
-    pg.play(lowpass_out_stream, sample_rate)
+    pg.play(pg.GainPE(lowpass_out_stream, gain=2.06), sample_rate)
 
 def cutoff_sweep():
     # --- Part 3: Cutoff sweep ---
@@ -57,7 +57,7 @@ def cutoff_sweep():
     sweep_stream = GainPE(sweep_stream, gain=0.8)
     sweep_out_stream = CropPE(sweep_stream, 0, (duration_samples) - (0))
 
-    pg.play(sweep_out_stream, sample_rate)
+    pg.play(pg.GainPE(sweep_out_stream, gain=3.07), sample_rate)
 
 DEMOS = [
     ("Original signal", original_signal),

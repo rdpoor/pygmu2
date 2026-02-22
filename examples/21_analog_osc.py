@@ -67,7 +67,7 @@ def demo_morphing_saw_triangle():
     out = GainPE(osc, gain=0.35)
     out = CropPE(out, 0, (dur_samples) - (0))
 
-    pg.play(out, SAMPLE_RATE)
+    pg.play(pg.GainPE(out, gain=0.50), SAMPLE_RATE)
 def demo_subtractive_patch():
     """
     A simple subtractive synth patch: oscillator -> ladder lowpass.
@@ -98,7 +98,7 @@ def demo_subtractive_patch():
     out = GainPE(filtered, gain=0.25)
     out = CropPE(out, 0, (dur_samples) - (0))
 
-    pg.play(out, SAMPLE_RATE)
+    pg.play(pg.GainPE(out, gain=2.54), SAMPLE_RATE)
 DEMOS = [
     ("PWM Rectangle", demo_pwm_rectangle),
     ("Morphing Saw/Triangle", demo_morphing_saw_triangle),

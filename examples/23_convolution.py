@@ -114,7 +114,7 @@ def _assert_sample_rate_match(source: WavReaderPE, ir: WavReaderPE) -> None:
         )
 
 
-def _demo_dry(source_path: Path, *, gain: float = 0.8) -> None:
+def _demo_dry(source_path: Path, *, gain: float = 0.8, norm_gain: float = 1.0) -> None:
     source_stream = _load_wav(source_path)
     sample_rate = int(source_stream.file_sample_rate)
     out_stream = GainPE(source_stream, gain=gain)
@@ -123,7 +123,7 @@ def _demo_dry(source_path: Path, *, gain: float = 0.8) -> None:
     print("IR:     (dry)")
     print()
 
-    pg.play(out_stream, sample_rate)
+    pg.play(pg.GainPE(out_stream, gain=norm_gain), sample_rate)
 
 
 def _demo_wet(
@@ -132,6 +132,7 @@ def _demo_wet(
     *,
     ir_pe=None,
     wet_gain: float = 0.25,
+    norm_gain: float = 1.0,
 ) -> None:
     logger.debug(
         "_demo_wet(source_path=%s, ir_path=%s, ir_pe=%s, wet_gain=%s)",
@@ -180,44 +181,44 @@ def _demo_wet(
     print(f"Wet gain: {wet_gain:.2f} (effective: {wet_gain / ir_energy:.4f})")
     print()
 
-    pg.play(out_stream, sample_rate)
+    pg.play(pg.GainPE(out_stream, gain=norm_gain), sample_rate)
 
 def demo_spoken_dry():
     print("=== Demo: spoken voice (dry) ===")
-    _demo_dry(SPOKEN_PATH, gain=0.8)
+    _demo_dry(SPOKEN_PATH, gain=0.8, norm_gain=2.67)
 
 
 def demo_spoken_short():
     print("=== Demo: spoken voice * plate_ir ===")
-    _demo_wet(SPOKEN_PATH, PLATE_IR_PATH, wet_gain=0.30)
+    _demo_wet(SPOKEN_PATH, PLATE_IR_PATH, wet_gain=0.30, norm_gain=2.84)
 
 
 def demo_spoken_long():
     print("=== Demo: spoken voice * long_ir ===")
-    _demo_wet(SPOKEN_PATH, LONG_IR_PATH, wet_gain=0.30)
+    _demo_wet(SPOKEN_PATH, LONG_IR_PATH, wet_gain=0.30, norm_gain=2.41)
 
 def demo_drums_dry():
     print("=== Demo: drums (dry) ===")
-    _demo_dry(DRUMS_PATH, gain=0.8)
+    _demo_dry(DRUMS_PATH, gain=0.8, norm_gain=1.29)
 
 def demo_drums_short():
     print("=== Demo: drums * plate_ir ===")
-    _demo_wet(DRUMS_PATH, PLATE_IR_PATH, wet_gain=0.35)
+    _demo_wet(DRUMS_PATH, PLATE_IR_PATH, wet_gain=0.35, norm_gain=1.47)
 
 def demo_drums_long():
     print("=== Demo: drums * long_ir ===")
-    _demo_wet(DRUMS_PATH, LONG_IR_PATH, wet_gain=0.20)
+    _demo_wet(DRUMS_PATH, LONG_IR_PATH, wet_gain=0.20, norm_gain=1.33)
 
 def demo_drums_mono_dry():
     print("=== Demo: mono drums (dry) ===")
-    _demo_dry(DRUMS_MONO_PATH, gain=0.8)
+    _demo_dry(DRUMS_MONO_PATH, gain=0.8, norm_gain=1.45)
 
 def demo_drums_mono_to_stereo():
     print("=== Demo: drums (mono) spread to stereo via ping-pong IR (PE) ===")
     source_stream = _load_wav(DRUMS_MONO_PATH)
     sample_rate = int(source_stream.file_sample_rate)
     ir_pe = create_pingpong_ir_pe(sample_rate, beats_per_minute=91)
-    _demo_wet(DRUMS_MONO_PATH, ir_pe=ir_pe, wet_gain=0.65)
+    _demo_wet(DRUMS_MONO_PATH, ir_pe=ir_pe, wet_gain=0.65, norm_gain=2.13)
 
 DEMOS = [
     ("spoken voice, dry", demo_spoken_dry),

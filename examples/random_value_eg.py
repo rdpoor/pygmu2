@@ -40,7 +40,7 @@ def demo_fixed_rates():
             mode=pg.BiquadMode.LOWPASS)
         cropped_note = pg.CropPE(filtered_note, 0, s(4))
         print(f"  rate = {rate}")
-        pg.play(source=pad_clip(pg.GainPE(cropped_note, 0.1)))
+        pg.play(source=pg.GainPE(pad_clip(pg.GainPE(cropped_note, 0.1)), gain=0.98))
 
 def demo_ramped_rate():
     """Play notes with rate ramping exponentially from 100 to 1."""
@@ -59,7 +59,7 @@ def demo_ramped_rate():
         q=7.0,
         mode=pg.BiquadMode.LOWPASS)
     cropped_note = pg.CropPE(filtered_note, 0, duration_samples)
-    pg.play(source=pad_clip(pg.GainPE(cropped_note, 0.1)))
+    pg.play(source=pg.GainPE(pad_clip(pg.GainPE(cropped_note, 0.1)), gain=0.80))
 
 def demo_random_mumbling():
     """3-resonator filter vocal-tract model with wandering formants."""
@@ -81,7 +81,7 @@ def demo_random_mumbling():
         pg.BiquadPE(src, frequency=fo3, q=12, mode=pg.BiquadMode.BANDPASS),
     )
     mix = pg.GainPE(pg.CropPE(raw_mix, 0, duration_samples), 0.5)
-    pg.play_offline(mix)
+    pg.play_offline(pg.GainPE(mix, gain=1.38))
 
 
 DEMOS = [

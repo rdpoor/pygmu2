@@ -203,7 +203,7 @@ TEMPERAMENTS = [
 ]
 
 
-def play_chord_comparison(chord_name, notes):
+def play_chord_comparison(chord_name, notes, gain=1.0):
     """
     Play a specific chord in all temperaments.
     
@@ -250,27 +250,27 @@ def play_chord_comparison(chord_name, notes):
     print("Listen for the differences in consonance and beating.")
     print(f"{'='*60}\n")
     
-    pg.play(mixed, sample_rate=SAMPLE_RATE)
-    
+    pg.play(pg.GainPE(mixed, gain=gain), sample_rate=SAMPLE_RATE)
+
     print("\n✅ Playback complete!\n")
 
 
 def demo_c_major():
     """Compare C Major triad across temperaments."""
-    play_chord_comparison("C Major", notes_to_midi(["C4", "E4", "G4"]))
+    play_chord_comparison("C Major", notes_to_midi(["C4", "E4", "G4"]), gain=2.51)
 
 
 def demo_a_minor():
     """Compare A Minor triad across temperaments."""
-    play_chord_comparison("A Minor", notes_to_midi(["A4", "C5", "E4"]))
+    play_chord_comparison("A Minor", notes_to_midi(["A4", "C5", "E4"]), gain=2.51)
 
 def demo_fifth():
     """Compare stacked fifths (C-G-D) across temperaments."""
-    play_chord_comparison("5th Stack", notes_to_midi(["C4", "G4"]))
+    play_chord_comparison("5th Stack", notes_to_midi(["C4", "G4"]), gain=2.51)
 
 def demo_fifth_stack():
     """Compare stacked fifths (C-G-D-A) across temperaments."""
-    play_chord_comparison("5th Stack", notes_to_midi(["C3", "G3", "D4", "A4"]))
+    play_chord_comparison("5th Stack", notes_to_midi(["C3", "G3", "D4", "A4"]), gain=2.53)
 
 
 def demo_reference_frequency():
@@ -331,10 +331,10 @@ def demo_reference_frequency():
         print(f"\nPlaying {total_duration:.1f} seconds...")
         print("Listen for the subtle pitch difference.\n")
         
-        pg.play(mixed, sample_rate=SAMPLE_RATE)
-        
+        pg.play(pg.GainPE(mixed, gain=2.51), sample_rate=SAMPLE_RATE)
+
         print("\n✅ Playback complete!\n")
-    
+
     finally:
         # Restore original reference
         set_reference_frequency(*original_ref)

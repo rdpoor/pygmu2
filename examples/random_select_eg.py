@@ -49,7 +49,7 @@ def demo_weighted_pitch():
     duration_samples = int(duration_seconds * SAMPLE_RATE)
 
     pg.play(
-        pg.CropPE(chooser, 0, duration_samples),
+        pg.GainPE(pg.CropPE(chooser, 0, duration_samples), gain=1.67),
         sample_rate=SAMPLE_RATE,
     )
     print("Done!\n", flush=True)
@@ -89,7 +89,7 @@ def demo_weighted_pitch_one_osc():
     duration_samples = int(duration_seconds * SAMPLE_RATE)
 
     pg.play(
-        pg.CropPE(osc, 0, duration_samples),
+        pg.GainPE(pg.CropPE(osc, 0, duration_samples), gain=1.67),
         sample_rate=SAMPLE_RATE,
     )
     print("Done!\n", flush=True)
@@ -137,7 +137,7 @@ def demo_bongo_fury():
     duration_samples = int(duration_seconds * sample_rate)
 
     pg.play(
-        pg.CropPE(chooser, 0, duration_samples),
+        pg.GainPE(pg.CropPE(chooser, 0, duration_samples), gain=0.81),
         sample_rate=sample_rate,
     )
     print("Done!\n", flush=True)

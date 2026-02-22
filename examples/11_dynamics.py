@@ -90,7 +90,7 @@ def demo_sidechain_ducking():
     
     extent = bass_stream.extent()
     pg.play(
-        CropPE(mix_stream, extent.start or 0, extent.end - (extent.start or 0)),
+        pg.GainPE(CropPE(mix_stream, extent.start or 0, extent.end - (extent.start or 0)), gain=0.85),
         sample_rate=sample_rate,
     )
     print()
@@ -137,7 +137,7 @@ def demo_sidechain_ducking_voice():
     print("Music ducks during voice portions.")
     print()
     
-    pg.play(mix_stream, sample_rate)
+    pg.play(pg.GainPE(mix_stream, gain=4.73), sample_rate)
     print()
 
 
@@ -171,7 +171,7 @@ def demo_expander():
     print("Quiet parts become even quieter.")
     print()
     
-    pg.play(expanded_stream, sample_rate)
+    pg.play(pg.GainPE(expanded_stream, gain=0.67), sample_rate)
     print()
 
 
@@ -212,7 +212,7 @@ def demo_custom_envelope():
     print("Creates rhythmic 'breathing' effect")
     print()
     
-    pg.play(rhythmic_stream, sample_rate)
+    pg.play(pg.GainPE(rhythmic_stream, gain=4.95), sample_rate)
     print()
 
 

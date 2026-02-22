@@ -43,7 +43,7 @@ def demo_fixed_rates():
         gate = pg.RandomGatePE(rate=rate, seed=SEED)
         gated_choir = pg.GainPE(make_voice(), gate)
         print(f"  rate = {rate}")
-        pg.play(pad_clip(gated_choir))
+        pg.play(pg.GainPE(pad_clip(gated_choir), gain=4.95))
 
 def demo_ramped_rate():
     """Play gated choir with rate ramping from 1 to 100"""
@@ -57,7 +57,7 @@ def demo_ramped_rate():
 
     gate = pg.RandomGatePE(rate=rate_ramp, seed=SEED)
     gated_choir = pg.GainPE(looped_choir, gate)
-    pg.play(pad_clip(gated_choir))
+    pg.play(pg.GainPE(pad_clip(gated_choir), gain=4.95))
 
 
 DEMOS = [

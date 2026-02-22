@@ -39,7 +39,7 @@ def loop_without_crossfade():
     looped_basic_stream = LoopPE(source_stream)
     output_basic_stream = CropPE(looped_basic_stream, 0, (duration_samples) - (0))
 
-    pg.play(output_basic_stream, sample_rate=sample_rate)
+    pg.play(pg.GainPE(output_basic_stream, gain=0.89), sample_rate=sample_rate)
     print("\nDone!", flush=True)
 
 def loop_with_crossfade():
@@ -49,7 +49,7 @@ def loop_with_crossfade():
     looped_smooth_stream = LoopPE(source_stream, crossfade_seconds=0.02)  # 20ms crossfade
     output_smooth_stream = CropPE(looped_smooth_stream, 0, (duration_samples) - (0))
 
-    pg.play(output_smooth_stream, sample_rate=sample_rate)
+    pg.play(pg.GainPE(output_smooth_stream, gain=0.89), sample_rate=sample_rate)
     print("\nDone!", flush=True)
 
 DEMOS = [

@@ -53,7 +53,7 @@ def demo_pwm_rectangle_naive():
     out_stream = GainPE(osc_stream, gain=0.25)
     out_stream = CropPE(out_stream, 0, (dur) - (0))
 
-    pg.play(out_stream, SAMPLE_RATE)
+    pg.play(pg.GainPE(out_stream, gain=2.00), SAMPLE_RATE)
 def demo_morph_naive():
     """
     Naive duty-controlled morph:
@@ -69,7 +69,7 @@ def demo_morph_naive():
     out_stream = GainPE(osc_stream, gain=0.35)
     out_stream = CropPE(out_stream, 0, (dur) - (0))
 
-    pg.play(out_stream, SAMPLE_RATE)
+    pg.play(pg.GainPE(out_stream, gain=1.43), SAMPLE_RATE)
 def demo_ab_high_pitch():
     """
     A/B comparison at high pitch to highlight aliasing:
@@ -98,7 +98,7 @@ def demo_ab_high_pitch():
     stereo_stream = GainPE(MixPE(left_stream, right_stream), gain=0.2)
     stereo_stream = CropPE(stereo_stream, 0, (dur) - (0))
 
-    pg.play(stereo_stream, SAMPLE_RATE)
+    pg.play(pg.GainPE(stereo_stream, gain=1.25), SAMPLE_RATE)
 DEMOS = [
     ("PWM Rectangle (naive)", demo_pwm_rectangle_naive),
     ("Saw/Triangle Morph (naive)", demo_morph_naive),

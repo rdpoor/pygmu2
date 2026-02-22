@@ -55,7 +55,7 @@ def lowpass_sweep_low_to_high():
     )
     output_up_stream = CropPE(filtered_up_stream, 0, (duration_samples) - (0))
 
-    pg.play(output_up_stream, sample_rate)
+    pg.play(pg.GainPE(output_up_stream, gain=0.52), sample_rate)
 
 def lowpass_sweep_high_to_low():
     # --- Part 2: Lowpass filter sweep (high to low) ---
@@ -73,7 +73,7 @@ def lowpass_sweep_high_to_low():
     )
     output_down_stream = CropPE(filtered_down_stream, 0, (duration_samples) - (0))
 
-    pg.play(output_down_stream, sample_rate)
+    pg.play(pg.GainPE(output_down_stream, gain=0.50), sample_rate)
 
 def resonant_bandpass_sweep():
     # --- Part 3: Resonant bandpass sweep ---
@@ -89,7 +89,7 @@ def resonant_bandpass_sweep():
     )
     output_bp_stream = CropPE(filtered_bp_stream, 0, (duration_samples) - (0))
 
-    pg.play(output_bp_stream, sample_rate)
+    pg.play(pg.GainPE(output_bp_stream, gain=4.11), sample_rate)
 
     print("\nDone!", flush=True)
 

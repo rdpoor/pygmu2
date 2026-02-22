@@ -43,7 +43,7 @@ def demo_overlap():
         (choir_up, int(2.0 * sample_rate)),
         mode=pg.SequenceMode.OVERLAP,
     )
-    pg.play(pg.CropPE(seq, 0, int(3.5 * sample_rate)), sample_rate)
+    pg.play(pg.GainPE(pg.CropPE(seq, 0, int(3.5 * sample_rate)), gain=2.54), sample_rate)
 
 
 def demo_non_overlap():
@@ -57,7 +57,7 @@ def demo_non_overlap():
         (choir_up, int(2.0 * sample_rate)),
         mode=pg.SequenceMode.NON_OVERLAP,
     )
-    pg.play(pg.CropPE(seq, 0, int(3.5 * sample_rate)), sample_rate)
+    pg.play(pg.GainPE(pg.CropPE(seq, 0, int(3.5 * sample_rate)), gain=4.07), sample_rate)
 
 
 DEMOS = [

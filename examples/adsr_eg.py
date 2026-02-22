@@ -112,7 +112,8 @@ def demo_gate_adsr_vca():
     out = pg.GainPE(vca, gain=0.25)
 
     out = pg.CropPE(out, 0, seconds(duration_s))
-    pg.play(out, SR)
+    # pg.play_offline(pg.GainPE(out, gain=1.31), SR)
+    pg.render_to_file(pg.GainPE(out, gain=1.31), '/tmp/adsr_profile.wav', sample_rate=SR)
 
 
 def demo_trigger_adsr_vca():
@@ -154,7 +155,7 @@ def demo_trigger_adsr_vca():
     out = pg.GainPE(vca, gain=0.25)
 
     out = pg.CropPE(out, 0, seconds(duration_s))
-    pg.play(out, SR)
+    pg.play(pg.GainPE(out, gain=1.71), SR)
 
 
 def demo_trigger_adsr_filter_sweep():
@@ -197,7 +198,7 @@ def demo_trigger_adsr_filter_sweep():
     )
 
     out = pg.CropPE(flt, 0, seconds(duration_s))
-    pg.play(out, SR)
+    pg.play(pg.GainPE(out, gain=0.70), SR)
 
 
 def demo_dual_adsr_vca_and_filter():
@@ -258,7 +259,7 @@ def demo_dual_adsr_vca_and_filter():
 
     out = pg.GainPE(flt, gain=0.25)
     out = pg.CropPE(out, 0, seconds(duration_s))
-    pg.play(out, SR)
+    pg.play(pg.GainPE(out, gain=0.92), SR)
 
 
 DEMOS = [

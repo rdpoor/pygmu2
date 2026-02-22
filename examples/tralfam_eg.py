@@ -35,7 +35,7 @@ def demo_uke_dry():
     print("--------")
     source = UKE_WAV
     # pg.play_offline(source=source, sample_rate=SAMPLE_RATE, path='uke_dry.wav')
-    pg.play(source, SAMPLE_RATE)
+    pg.play(pg.GainPE(source, gain=0.71), SAMPLE_RATE)
 
 
 def demo_uke_tralfam():
@@ -44,7 +44,7 @@ def demo_uke_tralfam():
     source = UKE_WAV
     tralfam = pg.TralfamPE(source, seed=42, normalize_peak=0.33)
     # pg.play_offline(source=tralfam, sample_rate=SAMPLE_RATE, path='tralfam.wav')
-    pg.play(tralfam, SAMPLE_RATE)
+    pg.play(pg.GainPE(tralfam, gain=1.52), SAMPLE_RATE)
 
 
 def demo_uke_looped_tralfam():
@@ -54,7 +54,7 @@ def demo_uke_looped_tralfam():
     tralfam = pg.TralfamPE(source, seed=42, normalize_peak=0.33)
     looped_tralfam = pg.LoopPE(tralfam, count=4)
     # pg.play_offline(source=looped_tralfam, sample_rate=SAMPLE_RATE, path='looped_tralfam.wav')
-    pg.play(looped_tralfam, SAMPLE_RATE)
+    pg.play(pg.GainPE(looped_tralfam, gain=1.52), SAMPLE_RATE)
 
 
 def demo_short_man_dry():
@@ -62,7 +62,7 @@ def demo_short_man_dry():
     print("--------")
     source = SHORT_MAN
     # pg.play_offline(source=source, sample_rate=SAMPLE_RATE, path='man_dry.wav')
-    pg.play(source, SAMPLE_RATE)
+    pg.play(pg.GainPE(source, gain=2.83), SAMPLE_RATE)
 
 
 def demo_short_man_tralfam():
@@ -71,7 +71,7 @@ def demo_short_man_tralfam():
     source = SHORT_MAN
     tralfam = pg.TralfamPE(source, seed=42, normalize_peak=0.33)
     # pg.play_offline(source=tralfam, sample_rate=SAMPLE_RATE, path='short_man.wav')
-    pg.play(tralfam, SAMPLE_RATE)
+    pg.play(pg.GainPE(tralfam, gain=1.52), SAMPLE_RATE)
 
 
 def demo_short_man_looped_tralfam():
@@ -81,7 +81,7 @@ def demo_short_man_looped_tralfam():
     tralfam = pg.TralfamPE(source, seed=42, normalize_peak=0.33)
     looped_tralfam = pg.LoopPE(tralfam, count=8)
     # pg.play_offline(source=looped_tralfam, sample_rate=SAMPLE_RATE, path='looped_short_man.wav')
-    pg.play(looped_tralfam, SAMPLE_RATE)
+    pg.play(pg.GainPE(looped_tralfam, gain=1.52), SAMPLE_RATE)
 
 
 def demo_padded_man_tralfam():
@@ -91,7 +91,7 @@ def demo_padded_man_tralfam():
     padded_man = pg.SetExtentPE(SHORT_MAN, 0, 16964 + SAMPLE_RATE * 2)
     tralfam = pg.TralfamPE(padded_man, seed=42, normalize_peak=0.33)
     # pg.play_offline(source=tralfam, sample_rate=SAMPLE_RATE, path='padded_man.wav')
-    pg.play(tralfam, SAMPLE_RATE)
+    pg.play(pg.GainPE(tralfam, gain=1.52), SAMPLE_RATE)
 
 def demo_padded_man_looped_tralfam():
     print("Demo 8: Looped TralfamPE(padded man)")
@@ -101,7 +101,7 @@ def demo_padded_man_looped_tralfam():
     tralfam = pg.TralfamPE(padded_man, seed=42, normalize_peak=0.33)
     looped_tralfam = pg.LoopPE(tralfam, count=5)
     # pg.play_offline(source=looped_tralfam, sample_rate=SAMPLE_RATE, path='looped_padded_man.wav')
-    pg.play(looped_tralfam, SAMPLE_RATE)
+    pg.play(pg.GainPE(looped_tralfam, gain=1.52), SAMPLE_RATE)
 
 
 DEMOS = [

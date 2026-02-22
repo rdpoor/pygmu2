@@ -38,7 +38,7 @@ def play_wav():
     print(f"  Duration: {duration_seconds:.2f} seconds ({duration_samples} samples)", flush=True)
 
     print(f"Playing...", flush=True)
-    pg.play(source_stream, sample_rate=file_sr)
+    pg.play(pg.GainPE(source_stream, gain=1.67), sample_rate=file_sr)
 
     print("Done!", flush=True)
 

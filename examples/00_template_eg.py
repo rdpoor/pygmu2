@@ -27,7 +27,7 @@ def demo_one():
     wav_path = audio_dir / "choir.wav"
     source = pg.WavReaderPE(str(wav_path))
     sample_rate = source.file_sample_rate or 44100
-    pg.play(source, sample_rate)
+    pg.play(pg.GainPE(source, gain=4.95), sample_rate)
 
 
 def demo_two():
@@ -36,7 +36,7 @@ def demo_two():
     sample_rate = 44100
     source = pg.SinePE(frequency=440.0, amplitude=0.3)
     source = pg.CropPE(source, 0, int(2.0 * sample_rate))
-    pg.play(source, sample_rate)
+    pg.play(pg.GainPE(source, gain=1.67), sample_rate)
 
 DEMOS = [
     ("Demo one", demo_one),

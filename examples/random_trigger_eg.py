@@ -36,7 +36,7 @@ def demo_fixed_rates():
         ding = pg.TriggerRestartPE(trigger = trigger_signal, src = ping())
         print(f"  rate = {rate}")
         cropped_ding = pg.CropPE(ding, 0, s(4))
-        pg.play(pad_clip(cropped_ding))
+        pg.play(pg.GainPE(pad_clip(cropped_ding), gain=1.58))
         
 def demo_ramped_rate():
     """Play notes with rate ramping from 1 to 100"""
@@ -50,7 +50,7 @@ def demo_ramped_rate():
     trigger_signal = pg.RandomTriggerPE(rate=rate_ramp)
     ding = pg.TriggerRestartPE(trigger=trigger_signal, src=ping())
     cropped_ding = pg.CropPE(ding, 0, duration_samples)
-    pg.play(pad_clip(cropped_ding))
+    pg.play(pg.GainPE(pad_clip(cropped_ding), gain=1.74))
 
 DEMOS = [
     ("Random Trigger with different fixed rate values", demo_fixed_rates),

@@ -35,7 +35,7 @@ SILENCE_DUR = 1.0
 def demo_voice_count():
     print("Demo SuperSawPE with varying voice count")
     print("--------")
-    for n_voices in range(1, 12):
+    for n_voices in [1, 2, 3, 6, 9, 12]:
         ss = pg.SuperSawPE(
             frequency=pg.pitch_to_freq(45),
             amplitude=0.5,
@@ -43,7 +43,7 @@ def demo_voice_count():
             seed = RANDOM_SEED,
         )
         print(f"n voices = {n_voices}...")
-        pg.play(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR))
+        pg.play(pg.GainPE(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR), gain=0.50))
     print(f"Done!")
 
 def demo_mix_mode():
@@ -58,13 +58,13 @@ def demo_mix_mode():
             seed = RANDOM_SEED,
         )
         print(f"mix_mode = {mix_mode}...")
-        pg.play(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR))
+        pg.play(pg.GainPE(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR), gain=0.50))
     print(f"Done!")
 
 def demo_detune_amounts():
     print("Demo SuperSawPE with varying degrees of detuning")
     print("--------")
-    for detune_cents in [3, 12, 20, 30, 40]:
+    for detune_cents in [3, 12, 25, 40]:
         ss = pg.SuperSawPE(
             frequency=pg.pitch_to_freq(47),
             amplitude=0.5,
@@ -74,7 +74,7 @@ def demo_detune_amounts():
             seed = RANDOM_SEED,
         )
         print(f"detune_cents = {detune_cents}...")
-        pg.play(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR))
+        pg.play(pg.GainPE(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR), gain=0.51))
     print(f"Done!")
 
 def demo_randomize_phase():
@@ -91,7 +91,7 @@ def demo_randomize_phase():
             seed = RANDOM_SEED,
         )
         print(f"randomize_phase = {randomize_phase}...")
-        pg.play(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR))
+        pg.play(pg.GainPE(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR), gain=0.50))
     print(f"Done!")
 
 DEMOS = [

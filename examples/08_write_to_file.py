@@ -77,7 +77,7 @@ def write_to_file():
     print(f"\nPlaying back: {OUTPUT_FILE}", flush=True)
 
     playback_stream = WavReaderPE(str(OUTPUT_FILE))
-    pg.play(playback_stream, sample_rate=playback_stream.file_sample_rate)
+    pg.play(pg.GainPE(playback_stream, gain=1.11), sample_rate=playback_stream.file_sample_rate)
 
     # Clean up: delete the temporary output file
     OUTPUT_FILE.unlink()

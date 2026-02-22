@@ -66,7 +66,7 @@ def demo_single_pluck():
         amplitude=0.35,
         seed=42,
     )
-    pg.play(CropPE(ks, 0, s2s(duration_seconds)), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(ks, 0, s2s(duration_seconds)), gain=1.74), SAMPLE_RATE)
 
 
 def demo_two_phase_decay():
@@ -84,7 +84,7 @@ def demo_two_phase_decay():
         amplitude=0.35,
         seed=42,
     )
-    pg.play(CropPE(ks, 0, total_samp), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(ks, 0, total_samp), gain=1.88), SAMPLE_RATE)
 
 
 def demo_high_rho_vs_low_rho():
@@ -117,7 +117,7 @@ def demo_high_rho_vs_low_rho():
     t += duration_seconds
 
     mix = MixPE(*plucks)
-    pg.play(CropPE(mix, 0, s2s(t)), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix, 0, s2s(t)), gain=1.25), SAMPLE_RATE)
 
 
 def demo_c_major_arpeggio():
@@ -138,7 +138,7 @@ def demo_c_major_arpeggio():
         t += duration_seconds
 
     mix = MixPE(*plucks)
-    pg.play(CropPE(mix, 0, s2s(t)), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix, 0, s2s(t)), gain=1.21), SAMPLE_RATE)
 
 
 DEMOS = [

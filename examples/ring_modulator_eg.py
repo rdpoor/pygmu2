@@ -59,7 +59,7 @@ def demo_dry_voice():
     """Play the unprocessed voice for reference."""
     print("Demo: Dry voice (reference)")
     print("  Unprocessed spoken voice — the baseline before ring modulation.")
-    pg.play(make_voice())
+    pg.play(pg.GainPE(make_voice(), gain=2.14))
 
 
 def demo_modulator_frequency():
@@ -78,7 +78,7 @@ def demo_modulator_frequency():
         sine = pg.SinePE(frequency=float(freq), amplitude=1.0)
         rm = pg.RingModulatorPE(voice, sine, bias=0.0, mix=1.0)
         print(f"  modulator = {freq} Hz ...")
-        pg.play(pad_clip(rm))
+        pg.play(pg.GainPE(pad_clip(rm), gain=2.15))
     print("Done!")
 
 
@@ -99,7 +99,7 @@ def demo_static_bias():
         sine = pg.SinePE(frequency=MOD_FREQ, amplitude=1.0)
         rm = pg.RingModulatorPE(voice, sine, bias=bias, mix=1.0)
         print(f"  bias = {bias} ...")
-        pg.play(pad_clip(rm))
+        pg.play(pg.GainPE(pad_clip(rm), gain=1.18))
     print("Done!")
 
 
@@ -120,7 +120,7 @@ def demo_static_mix():
         sine = pg.SinePE(frequency=MOD_FREQ, amplitude=1.0)
         rm = pg.RingModulatorPE(voice, sine, bias=0.0, mix=mix)
         print(f"  mix = {mix} ...")
-        pg.play(pad_clip(rm))
+        pg.play(pg.GainPE(pad_clip(rm), gain=2.15))
     print("Done!")
 
 
@@ -137,7 +137,7 @@ def demo_dynamic_mix():
     voice = make_voice()
     sine = pg.SinePE(frequency=MOD_FREQ, amplitude=1.0)
     rm = pg.RingModulatorPE(voice, sine, bias=0.0, mix=mix_ramp)
-    pg.play(rm)
+    pg.play(pg.GainPE(rm, gain=2.36))
     print("Done!")
 
 
@@ -155,7 +155,7 @@ def demo_dynamic_bias():
     voice = make_voice()
     sine = pg.SinePE(frequency=MOD_FREQ, amplitude=1.0)
     rm = pg.RingModulatorPE(voice, sine, bias=bias_ramp, mix=1.0)
-    pg.play(rm)
+    pg.play(pg.GainPE(rm, gain=1.23))
     print("Done!")
 
 

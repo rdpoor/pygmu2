@@ -43,7 +43,7 @@ def dry_original():
 
     output1_stream = CropPE(source_stream, 0, (duration_samples) - (0))
 
-    pg.play(output1_stream, sample_rate)
+    pg.play(pg.GainPE(output1_stream, gain=1.67), sample_rate)
 
 def chorus_effect():
     # --- Part 2: Subtle chorus effect ---
@@ -69,7 +69,7 @@ def chorus_effect():
 
     output2_stream = CropPE(chorused_stream, 0, (duration_samples) - (0))
 
-    pg.play(output2_stream, sample_rate)
+    pg.play(pg.GainPE(output2_stream, gain=2.11), sample_rate)
 
 def classic_flanging():
     # --- Part 3: Classic flanging ---
@@ -103,7 +103,7 @@ def classic_flanging():
 
     output3_stream = CropPE(flanged_stream, 0, (duration_samples) - (0))
 
-    pg.play(output3_stream, sample_rate)
+    pg.play(pg.GainPE(output3_stream, gain=2.06), sample_rate)
 
 DEMOS = [
     ("Play original", dry_original),
