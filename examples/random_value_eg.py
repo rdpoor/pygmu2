@@ -42,7 +42,7 @@ def pad_clip(pe):
 
 def random_to_frequency(r):
     """map 0..1 to a frequency quantized to an equal-temperment pitch"""
-    return pg.pitch_to_freq(np.round(48 + (r * 40)))
+    return pg.pitch_to_freq(48 + (r * 50))
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Demos
@@ -54,33 +54,71 @@ def demo_fixed_rates():
     print("Demo: Random Value with different fixed rate values")
     for rate in [1, 3, 10, 30, 100]:
         random_value = pg.RandomValuePE(rate=rate)
-        freq = pg.TransformPE(random_value, func=random_to_frequency)
-        note = pg.BlitSawPE(frequency=freq)
-        cropped_note = pg.CropPE(note, 0, s(4)) # crop to 4 seconds
+        f0 = pg.TransformPE(random_value, func=random_to_frequency)
+        note = pg.SuperSawPE(frequency=110)
+        filtered_note = pg.BiquadPE(
+            source = note,
+            frequency = f0,
+            q = 7.0,
+            mode = pg.BiquadMode.LOWPASS)
+        cropped_note = pg.CropPE(filtered_note, 0, s(4)) # crop to 4 seconds
         print(f"  rate = {rate}")
         attenuated_note = pg.GainPE(cropped_note, 0.1)
         pg.play(source=pad_clip(attenuated_note))
         
 def demo_ramped_rate():
-    """Play notes with rate ramping from 1 to 100"""
+    """Play notes with rate ramping from 100 to 1"""
 
-    print("Demo: Random Value with rate ramping exponentially from 1 to 100")
-    duration_samples = s(8)
+    print("Demo: Random Value with rate ramping exponentially from 100 to 1")
+    duration_samples = s(10)
     rate_ramp = pg.PiecewisePE(
-        [(0, 1.0), (duration_samples, 100.0)],
+        [(0, 100.0), (duration_samples, 1.0)],
         transition_type=pg.TransitionType.EXPONENTIAL
     )
     random_value = pg.RandomValuePE(rate=rate_ramp)
-    freq = pg.TransformPE(random_value, func=random_to_frequency)
-    note = pg.BlitSawPE(frequency=freq)
-    cropped_note = pg.CropPE(note, 0, duration_samples)
+    f0 = pg.TransformPE(random_value, func=random_to_frequency)
+    note = pg.SuperSawPE(frequency=110)
+    filtered_note = pg.BiquadPE(
+        source = note,
+        frequency = f0,
+        q = 7.0,
+        mode = pg.BiquadMode.LOWPASS)
+    cropped_note = pg.CropPE(filtered_note, 0, duration_samples)
     attenuated_note = pg.GainPE(cropped_note, 0.1)
     pg.play(source=pad_clip(attenuated_note))
 
+def demo_random_mumbling():
+    """3-resonator filter vocal-tract model"""
+    def map(x0, x1, y0, y1):
+        """return a function f(x) that maps [x0, x1] => [y0, y1]"""
+        def f(x):
+            y = y0 + (y1-y0)*(x-x0)/(x1-x0)
+            return y
+        return f
+
+    print("Demo: Drunken robot")
+    duration_samples = s(20)
+    # Compute three randomly wandering formant frequencies
+    fo1 = pg.TransformPE(pg.RandomValuePE(rate=8), map(0, 1, 250, 900))
+    fo2 = pg.TransformPE(pg.RandomValuePE(rate=10), map(0, 1, 700, 2500))
+    fo3 = pg.TransformPE(pg.RandomValuePE(rate=12), map(0, 1, 1700, 3500))
+    q1 = 5
+    q2 = 8
+    q3 = 12
+    src = pg.CachePE(pg.SuperSawPE(frequency=pg.pitch_to_freq(30)))
+    raw_mix = pg.MixPE(
+        pg.BiquadPE(src, frequency=fo1, q = q1, mode=pg.BiquadMode.BANDPASS),
+        pg.BiquadPE(src, frequency=fo2, q = q2, mode=pg.BiquadMode.BANDPASS),
+        pg.BiquadPE(src, frequency=fo3, q = q3, mode=pg.BiquadMode.BANDPASS),
+    )
+    mix = pg.GainPE(pg.CropPE(raw_mix, 0, duration_samples), 0.25)
+    pg.play_offline(mix)
+
 
 DEMOS = {
-    "Random Step with different fixed rate values": demo_fixed_rates,
-    "Random Step with ramped rate": demo_ramped_rate,
+    "Random Value with different fixed rate values": demo_fixed_rates,
+    "Random Value with ramped rate": demo_ramped_rate,
+    "Random mumbling": demo_random_mumbling,
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
