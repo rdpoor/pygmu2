@@ -9,6 +9,7 @@ MIT License
 """
 
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 from pygmu2 import (
@@ -30,29 +31,41 @@ C4 = 60
 E4 = 64
 G4 = 67
 
-print("=== pygmu2 Example 01: Hello Sine ===", flush=True)
-print(f"Creating a C major triad ({DURATION_SECONDS}s)", flush=True)
+def demo_sine():
+    print("=== pygmu2 Example 01: Hello Sine ===", flush=True)
+    print(f"Creating a C major triad ({DURATION_SECONDS}s)", flush=True)
 
-# Create three sine oscillators at the triad frequencies
-print(f"  C4: {pitch_to_freq(C4):.1f} Hz", flush=True)
-print(f"  E4: {pitch_to_freq(E4):.1f} Hz", flush=True)
-print(f"  G4: {pitch_to_freq(G4):.1f} Hz", flush=True)
+    # Create three sine oscillators at the triad frequencies
+    print(f"  C4: {pitch_to_freq(C4):.1f} Hz", flush=True)
+    print(f"  E4: {pitch_to_freq(E4):.1f} Hz", flush=True)
+    print(f"  G4: {pitch_to_freq(G4):.1f} Hz", flush=True)
 
-sine_c_stream = SinePE(frequency=pitch_to_freq(C4), amplitude=0.3)
-sine_e_stream = SinePE(frequency=pitch_to_freq(E4), amplitude=0.3)
-sine_g_stream = SinePE(frequency=pitch_to_freq(G4), amplitude=0.3)
+    sine_c_stream = SinePE(frequency=pitch_to_freq(C4), amplitude=0.3)
+    sine_e_stream = SinePE(frequency=pitch_to_freq(E4), amplitude=0.3)
+    sine_g_stream = SinePE(frequency=pitch_to_freq(G4), amplitude=0.3)
 
-# Mix the three sines together
-mixed_stream = MixPE(sine_c_stream, sine_e_stream, sine_g_stream)
+    # Mix the three sines together
+    mixed_stream = MixPE(sine_c_stream, sine_e_stream, sine_g_stream)
 
-# Apply overall gain (reduce to avoid clipping)
-gained_stream = GainPE(mixed_stream, gain=0.3)
+    # Apply overall gain (reduce to avoid clipping)
+    gained_stream = GainPE(mixed_stream, gain=0.3)
 
-# Crop to desired duration
-output_stream = CropPE(gained_stream, 0, DURATION_SAMPLES)
+    # Crop to desired duration
+    output_stream = CropPE(gained_stream, 0, DURATION_SAMPLES)
 
-# Create audio renderer and play
-print(f"Playing for {DURATION_SECONDS} seconds...", flush=True)
-pg.play(output_stream, SAMPLE_RATE)
+    # Create audio renderer and play
+    print(f"Playing for {DURATION_SECONDS} seconds...", flush=True)
+    pg.play(output_stream, SAMPLE_RATE)
 
-print("Done!", flush=True)
+    print("Done!", flush=True)
+
+DEMOS = [
+    ("Play sine triad", demo_sine),
+]
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# Main
+
+if __name__ == "__main__":
+    run_demos(DEMOS)

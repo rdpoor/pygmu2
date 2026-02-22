@@ -20,7 +20,6 @@ from pygmu2 import (
     ConstantPE,
     CropPE,
     DelayPE,
-    Extent,
     ExtendMode,
     GainPE,
     KarplusStrongPE,
@@ -384,7 +383,7 @@ def demo_moz_articulated():
                         _make_note(pitch),
                         # articulation will extend or shorten duration without
                         # affecting next_start
-                        Extent(0, _b2s(duration*articulation))),
+                        0, _b2s(duration*articulation)),
                     _b2s(next_start)))
         # bump next_start to next start time (in beats)
         next_start += duration
@@ -408,7 +407,7 @@ def demo_moz_plucked():
                         _make_plucked_note(pitch, articulated_seconds),
                         # articulation will extend or shorten duration without
                         # affecting next_start
-                        Extent(0, _b2s(duration*articulation))),
+                        0, _b2s(duration*articulation)),
                     _b2s(next_start)))
         # bump next_start to next start time (in beats)
         next_start += duration

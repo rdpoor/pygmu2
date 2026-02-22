@@ -38,6 +38,7 @@ def demo_voice_count():
     for n_voices in range(1, 12):
         ss = pg.SuperSawPE(
             frequency=pg.pitch_to_freq(45),
+            amplitude=0.5,
             voices=n_voices,
             seed = RANDOM_SEED,
         )
@@ -51,6 +52,7 @@ def demo_mix_mode():
     for mix_mode in [pg.SuperSawPE.MIX_EQUAL, pg.SuperSawPE.MIX_LINEAR, pg.SuperSawPE.MIX_CENTER_HEAVY]:
         ss = pg.SuperSawPE(
             frequency=pg.pitch_to_freq(46),
+            amplitude=0.5,
             voices=7,
             mix_mode = mix_mode,
             seed = RANDOM_SEED,
@@ -65,6 +67,7 @@ def demo_detune_amounts():
     for detune_cents in [3, 12, 20, 30, 40]:
         ss = pg.SuperSawPE(
             frequency=pg.pitch_to_freq(47),
+            amplitude=0.5,
             voices=7,
             detune_cents = detune_cents,
             mix_mode = pg.SuperSawPE.MIX_CENTER_HEAVY,
@@ -80,6 +83,7 @@ def demo_randomize_phase():
     for randomize_phase in [True, False]:
         ss = pg.SuperSawPE(
             frequency=pg.pitch_to_freq(48),
+            amplitude=0.5,
             voices=7,
             detune_cents = 20,
             mix_mode = pg.SuperSawPE.MIX_CENTER_HEAVY,

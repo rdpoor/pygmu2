@@ -57,7 +57,7 @@ def demo_ramped_rate():
 
     gate = pg.RandomGatePE(rate=rate_ramp, seed=SEED)
     gated_choir = pg.GainPE(looped_choir, gate)
-    play_clip(gated_choir)
+    pg.play(pad_clip(gated_choir))
 
 
 DEMOS = [

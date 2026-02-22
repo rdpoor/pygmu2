@@ -22,7 +22,7 @@ from examples_helper import run_demos
 def demo_weighted_pitch():
     SAMPLE_RATE = 44100
     pg.set_sample_rate(SAMPLE_RATE)
-    pg.setup_logging(level="INFO")
+    pg.set_global_logging(level="INFO")
 
     weighted_boops = [
         (pg.SinePE(frequency=pg.pitch_to_freq(55), amplitude=0.3), 0.1),
@@ -58,7 +58,7 @@ def demo_weighted_pitch():
 def demo_weighted_pitch_one_osc():
     SAMPLE_RATE = 44100
     pg.set_sample_rate(SAMPLE_RATE)
-    pg.setup_logging(level="INFO")
+    pg.set_global_logging(level="INFO")
 
     # Similar to demo_weighted_pitch(), but selects from weighted *frequencies*
     # and feeds them into one oscillator.
@@ -98,7 +98,7 @@ def demo_weighted_pitch_one_osc():
 def demo_bongo_fury():
     SAMPLE_RATE = 44100
     pg.set_sample_rate(SAMPLE_RATE)
-    pg.setup_logging(level="INFO")
+    pg.set_global_logging(level="INFO")
 
     AUDIO_DIR = Path(__file__).parent / "audio"
     WAV_FILE = AUDIO_DIR / "djembe44.wav"

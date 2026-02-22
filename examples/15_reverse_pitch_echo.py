@@ -16,6 +16,7 @@ from pygmu2 import (
     WavReaderPE,
 )
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 
@@ -31,38 +32,52 @@ source_stream = WavReaderPE(str(WAV_FILE))
 sample_rate = source_stream.file_sample_rate or 44100
 duration_samples = int(DURATION_SECONDS * sample_rate)
 
-# --- Part 1: Dry ---
-print(f"\nPart 1: Dry signal - {DURATION_SECONDS}s", flush=True)
-dry_stream = CropPE(source_stream, 0, (duration_samples) - (0))
+def original_signal():
+    # --- Part 1: Dry ---
+    print(f"\nPart 1: Dry signal - {DURATION_SECONDS}s", flush=True)
+    dry_stream = CropPE(source_stream, 0, (duration_samples) - (0))
 
-pg.play(dry_stream, sample_rate)
+    pg.play(dry_stream, sample_rate)
 
-# --- Part 2: Wet only ---
-print("\nPart 2: Reverse pitch echo (wet only)", flush=True)
-wet_stream = ReversePitchEchoPE(
-    source_stream,
-    block_seconds=0.12,
-    pitch_ratio=0.75,
-    feedback=0.6,
-    alternate_direction=1.0,
-)
-wet_stream = GainPE(wet_stream, gain=0.8)
-wet_out_stream = CropPE(wet_stream, 0, (duration_samples) - (0))
+def wet_only():
+    # --- Part 2: Wet only ---
+    print("\nPart 2: Reverse pitch echo (wet only)", flush=True)
+    wet_stream = ReversePitchEchoPE(
+        source_stream,
+        block_seconds=0.12,
+        pitch_ratio=0.75,
+        feedback=0.6,
+        alternate_direction=1.0,
+    )
+    wet_stream = GainPE(wet_stream, gain=0.8)
+    wet_out_stream = CropPE(wet_stream, 0, (duration_samples) - (0))
 
-pg.play(wet_out_stream, sample_rate)
+    pg.play(wet_out_stream, sample_rate)
 
-# --- Part 3: Dry + wet mix ---
-print("\nPart 3: Reverse pitch echo mixed with dry", flush=True)
-wet_mix_stream = ReversePitchEchoPE(
-    source_stream,
-    block_seconds=0.12,
-    pitch_ratio=0.75,
-    feedback=0.6,
-    alternate_direction=1.0,
-)
-mixed_stream = MixPE(GainPE(source_stream, gain=0.5), GainPE(wet_mix_stream, gain=0.5))
-mixed_out_stream = CropPE(mixed_stream, 0, (duration_samples) - (0))
+def wet_plus_dry():
+    # --- Part 3: Dry + wet mix ---
+    print("\nPart 3: Reverse pitch echo mixed with dry", flush=True)
+    wet_mix_stream = ReversePitchEchoPE(
+        source_stream,
+        block_seconds=0.12,
+        pitch_ratio=0.75,
+        feedback=0.6,
+        alternate_direction=1.0,
+    )
+    mixed_stream = MixPE(GainPE(source_stream, gain=0.5), GainPE(wet_mix_stream, gain=0.5))
+    mixed_out_stream = CropPE(mixed_stream, 0, (duration_samples) - (0))
 
-pg.play(mixed_out_stream, sample_rate)
+    pg.play(mixed_out_stream, sample_rate)
 
-print("\nDone!", flush=True)
+DEMOS = [
+    ("Original signal", original_signal),
+    ("Wet only", wet_only),
+    ("Wet plus dry", wet_plus_dry),
+]
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# Main
+
+if __name__ == "__main__":
+    run_demos(DEMOS)

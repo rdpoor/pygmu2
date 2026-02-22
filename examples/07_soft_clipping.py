@@ -18,6 +18,7 @@ from pygmu2 import (
     pitch_to_freq,
 )
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 
@@ -45,54 +46,70 @@ sines = [
 
 source = MixPE(*sines)
 
-# --- Part 1: Clean signal ---
-print(f"\nPart 1: Clean signal (no clipping) - {DURATION_SECONDS}s", flush=True)
+def clean_signal():
+    # --- Part 1: Clean signal ---
+    print(f"\nPart 1: Clean signal (no clipping) - {DURATION_SECONDS}s", flush=True)
 
-clean = GainPE(source, gain=0.5)
-clean_out = CropPE(clean, 0, (DURATION_SAMPLES) - (0))
+    clean = GainPE(source, gain=0.5)
+    clean_out = CropPE(clean, 0, (DURATION_SAMPLES) - (0))
 
-pg.play(clean_out, SAMPLE_RATE)
+    pg.play(clean_out, SAMPLE_RATE)
 
-# --- Part 2: Light saturation ---
-print(f"\nPart 2: Light saturation (1.5x drive into tanh) - {DURATION_SECONDS}s", flush=True)
+def light_saturation():
+    # --- Part 2: Light saturation ---
+    print(f"\nPart 2: Light saturation (1.5x drive into tanh) - {DURATION_SECONDS}s", flush=True)
 
-# Drive the signal harder, then soft clip
-driven_light = GainPE(source, gain=1.5)
-saturated_light = TransformPE(driven_light, func=np.tanh, name="tanh")
-# Compensate for level reduction
-output_light = GainPE(saturated_light, gain=0.6)
-output_light = CropPE(output_light, 0, (DURATION_SAMPLES) - (0))
+    # Drive the signal harder, then soft clip
+    driven_light = GainPE(source, gain=1.5)
+    saturated_light = TransformPE(driven_light, func=np.tanh, name="tanh")
+    # Compensate for level reduction
+    output_light = GainPE(saturated_light, gain=0.6)
+    output_light = CropPE(output_light, 0, (DURATION_SAMPLES) - (0))
 
-pg.play(output_light, SAMPLE_RATE)
+    pg.play(output_light, SAMPLE_RATE)
 
-# --- Part 3: Heavy saturation ---
-print(f"\nPart 3: Heavy saturation (4x drive into tanh) - {DURATION_SECONDS}s", flush=True)
+def heavy_saturation():
+    # --- Part 3: Heavy saturation ---
+    print(f"\nPart 3: Heavy saturation (4x drive into tanh) - {DURATION_SECONDS}s", flush=True)
 
-driven_heavy = GainPE(source, gain=4.0)
-saturated_heavy = TransformPE(driven_heavy, func=np.tanh, name="tanh")
-output_heavy = GainPE(saturated_heavy, gain=0.5)
-output_heavy = CropPE(output_heavy, 0, (DURATION_SAMPLES) - (0))
+    driven_heavy = GainPE(source, gain=4.0)
+    saturated_heavy = TransformPE(driven_heavy, func=np.tanh, name="tanh")
+    output_heavy = GainPE(saturated_heavy, gain=0.5)
+    output_heavy = CropPE(output_heavy, 0, (DURATION_SAMPLES) - (0))
 
-pg.play(output_heavy, SAMPLE_RATE)
+    pg.play(output_heavy, SAMPLE_RATE)
 
-# --- Part 4: Asymmetric clipping (more "character") ---
-print(f"\nPart 4: Asymmetric clipping - {DURATION_SECONDS}s", flush=True)
+def asymmetric_clipping():
+    # --- Part 4: Asymmetric clipping (more "character") ---
+    print(f"\nPart 4: Asymmetric clipping - {DURATION_SECONDS}s", flush=True)
+
+    def asymmetric_clip(x):
+        """Define a custom function to pass to TransformPE"""
+        # Positive half: gentle clipping
+        # Negative half: hard clipping (creates even harmonics)
+        pos = np.tanh(x * 1.0)
+        neg = np.tanh(x * 5.0)  # Much harder negative clipping
+        return np.where(x >= 0, pos, neg)
 
 
-def asymmetric_clip(x):
-    """Asymmetric soft clipping - different positive/negative response."""
-    # Positive half: gentle clipping
-    # Negative half: hard clipping (creates even harmonics)
-    pos = np.tanh(x * 1.0)
-    neg = np.tanh(x * 5.0)  # Much harder negative clipping
-    return np.where(x >= 0, pos, neg)
+    driven_asym = GainPE(source, gain=3.0)
+    saturated_asym = TransformPE(driven_asym, func=asymmetric_clip, name="asymmetric")
+    output_asym = GainPE(saturated_asym, gain=0.6)
+    output_asym = CropPE(output_asym, 0, (DURATION_SAMPLES) - (0))
 
+    pg.play(output_asym, SAMPLE_RATE)
 
-driven_asym = GainPE(source, gain=3.0)
-saturated_asym = TransformPE(driven_asym, func=asymmetric_clip, name="asymmetric")
-output_asym = GainPE(saturated_asym, gain=0.6)
-output_asym = CropPE(output_asym, 0, (DURATION_SAMPLES) - (0))
+DEMOS = [
+    ("Clean signal", clean_signal),
+    ("Light saturation", light_saturation),
+    ("Heavy saturation", heavy_saturation),
+    ("Asymmetric clipping", asymmetric_clipping),
+]
 
-pg.play(output_asym, SAMPLE_RATE)
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# Main
 
-print("\nDone!", flush=True)
+if __name__ == "__main__":
+    run_demos(DEMOS)
+

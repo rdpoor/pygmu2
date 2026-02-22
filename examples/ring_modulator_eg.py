@@ -137,7 +137,7 @@ def demo_dynamic_mix():
     voice = make_voice()
     sine = pg.SinePE(frequency=MOD_FREQ, amplitude=1.0)
     rm = pg.RingModulatorPE(voice, sine, bias=0.0, mix=mix_ramp)
-    pg.play(rm, SRATE)
+    pg.play(rm)
     print("Done!")
 
 
@@ -155,7 +155,7 @@ def demo_dynamic_bias():
     voice = make_voice()
     sine = pg.SinePE(frequency=MOD_FREQ, amplitude=1.0)
     rm = pg.RingModulatorPE(voice, sine, bias=bias_ramp, mix=1.0)
-    pg.play(rm, SRATE)
+    pg.play(rm)
     print("Done!")
 
 

@@ -80,7 +80,7 @@ def demo_random_mumbling():
         pg.BiquadPE(src, frequency=fo2, q=8,  mode=pg.BiquadMode.BANDPASS),
         pg.BiquadPE(src, frequency=fo3, q=12, mode=pg.BiquadMode.BANDPASS),
     )
-    mix = pg.GainPE(pg.CropPE(raw_mix, 0, duration_samples), 0.25)
+    mix = pg.GainPE(pg.CropPE(raw_mix, 0, duration_samples), 0.5)
     pg.play_offline(mix)
 
 

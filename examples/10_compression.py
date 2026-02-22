@@ -109,7 +109,7 @@ def demo_noise_gate():
         threshold=-16,     # Gate threshold
         attack=0.001,      # 1ms attack (fast open)
         release=0.1 ,      # 1ms release
-        range=-30,         # -30dB attenuation when gated
+        gate_range=-30,    # -30dB attenuation when gated
     )
     
     print(f"Threshold: -16dB, Attack: 1ms, Release: 100ms")

@@ -21,6 +21,7 @@ from pygmu2 import (
     pitch_to_freq,
 )
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 
@@ -37,48 +38,60 @@ print("=== pygmu2 Example 08: Write to File ===", flush=True)
 # Create the same C major triad as example 01
 C4, E4, G4 = 60, 64, 67
 
-print(f"Creating C major triad...", flush=True)
-print(f"  C4: {pitch_to_freq(C4):.1f} Hz", flush=True)
-print(f"  E4: {pitch_to_freq(E4):.1f} Hz", flush=True)
-print(f"  G4: {pitch_to_freq(G4):.1f} Hz", flush=True)
+def write_to_file():
+    print(f"Creating C major triad...", flush=True)
+    print(f"  C4: {pitch_to_freq(C4):.1f} Hz", flush=True)
+    print(f"  E4: {pitch_to_freq(E4):.1f} Hz", flush=True)
+    print(f"  G4: {pitch_to_freq(G4):.1f} Hz", flush=True)
 
-sine_c_stream = SinePE(frequency=pitch_to_freq(C4), amplitude=0.3)
-sine_e_stream = SinePE(frequency=pitch_to_freq(E4), amplitude=0.3)
-sine_g_stream = SinePE(frequency=pitch_to_freq(G4), amplitude=0.3)
+    sine_c_stream = SinePE(frequency=pitch_to_freq(C4), amplitude=0.3)
+    sine_e_stream = SinePE(frequency=pitch_to_freq(E4), amplitude=0.3)
+    sine_g_stream = SinePE(frequency=pitch_to_freq(G4), amplitude=0.3)
 
-mixed_stream = MixPE(sine_c_stream, sine_e_stream, sine_g_stream)
-gained_stream = GainPE(mixed_stream, gain=0.5)
-cropped_stream = CropPE(gained_stream, 0, (DURATION_SAMPLES) - (0))
+    mixed_stream = MixPE(sine_c_stream, sine_e_stream, sine_g_stream)
+    gained_stream = GainPE(mixed_stream, gain=0.5)
+    cropped_stream = CropPE(gained_stream, 0, (DURATION_SAMPLES) - (0))
 
-# Wrap in WavWriterPE to write to file
-# WavWriterPE passes audio through while also writing to disk
-output_stream = WavWriterPE(cropped_stream, str(OUTPUT_FILE))
+    # Wrap in WavWriterPE to write to file
+    # WavWriterPE passes audio through while also writing to disk
+    output_stream = WavWriterPE(cropped_stream, str(OUTPUT_FILE))
 
-print(f"\nRendering to: {OUTPUT_FILE}", flush=True)
-print(f"  Duration: {DURATION_SECONDS} seconds", flush=True)
-print(f"  Sample rate: {SAMPLE_RATE} Hz", flush=True)
+    print(f"\nRendering to: {OUTPUT_FILE}", flush=True)
+    print(f"  Duration: {DURATION_SECONDS} seconds", flush=True)
+    print(f"  Sample rate: {SAMPLE_RATE} Hz", flush=True)
 
-# Use NullRenderer for offline rendering (no audio output)
-renderer = NullRenderer(sample_rate=SAMPLE_RATE)
-renderer.set_source(output_stream)
+    # Use NullRenderer for offline rendering (no audio output)
+    renderer = NullRenderer(sample_rate=SAMPLE_RATE)
+    renderer.set_source(output_stream)
 
-with renderer:
-    renderer.start()
-    # Render the entire extent
-    extent = output_stream.extent()
-    renderer.render(extent.start, extent.end - extent.start)
+    with renderer:
+        renderer.start()
+        # Render the entire extent
+        extent = output_stream.extent()
+        renderer.render(extent.start, extent.end - extent.start)
 
-print(f"\nFile written successfully!", flush=True)
-print(f"  Size: {OUTPUT_FILE.stat().st_size:,} bytes", flush=True)
+    print(f"\nFile written successfully!", flush=True)
+    print(f"  Size: {OUTPUT_FILE.stat().st_size:,} bytes", flush=True)
 
-# --- Play back the written file ---
-print(f"\nPlaying back: {OUTPUT_FILE}", flush=True)
+    # --- Play back the written file ---
+    print(f"\nPlaying back: {OUTPUT_FILE}", flush=True)
 
-playback_stream = WavReaderPE(str(OUTPUT_FILE))
-pg.play(playback_stream, sample_rate=playback_stream.file_sample_rate)
+    playback_stream = WavReaderPE(str(OUTPUT_FILE))
+    pg.play(playback_stream, sample_rate=playback_stream.file_sample_rate)
 
-# Clean up: delete the temporary output file
-OUTPUT_FILE.unlink()
-print(f"\nCleaned up: {OUTPUT_FILE.name}", flush=True)
+    # Clean up: delete the temporary output file
+    OUTPUT_FILE.unlink()
+    print(f"\nCleaned up: {OUTPUT_FILE.name}", flush=True)
 
-print("\nDone!", flush=True)
+    print("\nDone!", flush=True)
+
+DEMOS = [
+    ("Write to file", write_to_file),
+]
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# Main
+
+if __name__ == "__main__":
+    run_demos(DEMOS)
