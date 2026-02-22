@@ -39,6 +39,7 @@ from pygmu2 import (
     WavReaderPE,
 )
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 
@@ -228,53 +229,21 @@ def demo_all():
     demo_drums_mono_dry()
     demo_drums_mono_to_stereo()
 
+DEMOS = [
+    ("spoken voice, dry", demo_spoken_dry),
+    ("spoken voice * plate_ir", demo_spoken_short),
+    ("spoken voice * long_ir", demo_spoken_long),
+    ("drums, dry", demo_drums_dry),
+    ("drums * plate_ir", demo_drums_short),
+    ("drums * long_ir", demo_drums_long),
+    ("drums (mono) dry", demo_drums_mono_dry),
+    ("drums (mono) spread to stereo via reverb", demo_drums_mono_to_stereo),
+]
+
 if __name__ == "__main__":
     import os
-    import sys
-
-    # Enable DEBUG to see create_pingpong_ir_pe and _demo_wet flow (e.g. PYGMU_DEBUG=1)
+    # Enable DEBUG via PYGMU_DEBUG=1 environment variable
     if os.environ.get("PYGMU_DEBUG"):
         logging.basicConfig(level=logging.DEBUG)
         logger.setLevel(logging.DEBUG)
-
-    demos = [
-        ("1", "spoken voice, dry", demo_spoken_dry),
-        ("2", "spoken voice * plate_ir", demo_spoken_short),
-        ("3", "spoken voice * long_ir", demo_spoken_long),
-        ("4", "drums, dry", demo_drums_dry),
-        ("5", "drums * plate_ir", demo_drums_short),
-        ("6", "drums * long_ir", demo_drums_long),
-        ("7", "drums (mono) dry", demo_drums_mono_dry),
-        ("8", "drums (mono) spread to stereo via reverb", demo_drums_mono_to_stereo),
-        ("a", "All demos", demo_all),
-    ]
-
-    if len(sys.argv) > 1:
-        choice = sys.argv[1].strip().lower()
-    else:
-        print("pygmu2 Convolution Examples (ConvolvePE)")
-        print("--------------------------------------")
-        for key, name, _ in demos:
-            print(f"{key}: {name}")
-        print()
-        choice = input(f"Choose a demo (1-{len(demos)-1} or 'a' for all): ").strip().lower()
-        print()
-
-    try:
-        for key, _name, fn in demos:
-            if key == choice:
-                fn()
-                break
-        else:
-            print("Invalid choice.")
-    except FileNotFoundError as e:
-        print(str(e))
-        print()
-        print("Place your impulse response WAV files in:")
-        print(f"  {AUDIO_DIR}")
-        print()
-        print("Expected:")
-        print(f"  - {PLATE_IR_PATH.name}")
-        print(f"  - {LONG_IR_PATH.name}")
-    except Exception as e:
-        print(f"Error: {e}")
+    run_demos(DEMOS)

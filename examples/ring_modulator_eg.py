@@ -32,9 +32,9 @@ MIT License
 from pathlib import Path
 
 import pygmu2 as pg
+from examples_helper import pad_clip, run_demos
 
-SRATE = 44100
-pg.set_sample_rate(SRATE)
+pg.set_sample_rate(44100)
 
 AUDIO_DIR = Path(__file__).parent / "audio"
 VOICE_FILE = AUDIO_DIR / "spoken_voice44.wav"
@@ -42,28 +42,13 @@ VOICE_FILE = AUDIO_DIR / "spoken_voice44.wav"
 # Modulator frequency used for the bias, mix, and dynamic demos
 MOD_FREQ = 440.0  # Hz
 
-# Gap between clips in multi-clip demos
-SILENCE_DUR = 0.5  # seconds
-
 # Probe the voice file once at import time to get its length
 VOICE_SAMPLES = pg.WavReaderPE(str(VOICE_FILE)).extent().end  # 181753 @ 44100
-
-
-def s(secs):
-    """Convert seconds to samples."""
-    return pg.seconds_to_samples(secs, SRATE)
 
 
 def make_voice():
     """Return a fresh WavReaderPE for the voice file."""
     return pg.WavReaderPE(str(VOICE_FILE))
-
-
-def play_clip(pe):
-    """Play a finite PE, appending a short silence so clips are clearly separated."""
-    n = pe.extent().end
-    padded = pg.SetExtentPE(pe, 0, n + s(SILENCE_DUR))
-    pg.play(padded, SRATE)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -74,7 +59,7 @@ def demo_dry_voice():
     """Play the unprocessed voice for reference."""
     print("Demo: Dry voice (reference)")
     print("  Unprocessed spoken voice — the baseline before ring modulation.")
-    pg.play(make_voice(), SRATE)
+    pg.play(make_voice())
 
 
 def demo_modulator_frequency():
@@ -93,7 +78,7 @@ def demo_modulator_frequency():
         sine = pg.SinePE(frequency=float(freq), amplitude=1.0)
         rm = pg.RingModulatorPE(voice, sine, bias=0.0, mix=1.0)
         print(f"  modulator = {freq} Hz ...")
-        play_clip(rm)
+        pg.play(pad_clip(rm))
     print("Done!")
 
 
@@ -114,7 +99,7 @@ def demo_static_bias():
         sine = pg.SinePE(frequency=MOD_FREQ, amplitude=1.0)
         rm = pg.RingModulatorPE(voice, sine, bias=bias, mix=1.0)
         print(f"  bias = {bias} ...")
-        play_clip(rm)
+        pg.play(pad_clip(rm))
     print("Done!")
 
 
@@ -135,7 +120,7 @@ def demo_static_mix():
         sine = pg.SinePE(frequency=MOD_FREQ, amplitude=1.0)
         rm = pg.RingModulatorPE(voice, sine, bias=0.0, mix=mix)
         print(f"  mix = {mix} ...")
-        play_clip(rm)
+        pg.play(pad_clip(rm))
     print("Done!")
 
 
@@ -174,70 +159,18 @@ def demo_dynamic_bias():
     print("Done!")
 
 
-DEMOS = {
-    "Dry voice (reference)": demo_dry_voice,
-    "Modulator frequency sweep (pure ring mod)": demo_modulator_frequency,
-    "Static bias steps (ring mod → AM)": demo_static_bias,
-    "Static mix steps (dry → full ring mod)": demo_static_mix,
-    "Dynamic mix ramp (dry → full ring mod)": demo_dynamic_mix,
-    "Dynamic bias ramp (ring mod → AM)": demo_dynamic_bias,
-}
+DEMOS = [
+    ("Dry voice (reference)", demo_dry_voice),
+    ("Modulator frequency sweep (pure ring mod)", demo_modulator_frequency),
+    ("Static bias steps (ring mod → AM)", demo_static_bias),
+    ("Static mix steps (dry → full ring mod)", demo_static_mix),
+    ("Dynamic mix ramp (dry → full ring mod)", demo_dynamic_mix),
+    ("Dynamic bias ramp (ring mod → AM)", demo_dynamic_bias),
+]
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    import sys
-
-    def resolve_choice(choice: str):
-        item_list = list(DEMOS.items())
-        if choice.isdigit():
-            idx = int(choice)
-            if 1 <= idx <= len(item_list):
-                return item_list[idx - 1]
-            return None, None
-        if choice in DEMOS:
-            return choice, DEMOS[choice]
-        return None, None
-
-    def print_menu():
-        print("Available demos:")
-        for i, name in enumerate(DEMOS, start=1):
-            print(f"  {i}: {name}")
-        print("  ?: show list")
-        print("  a: run all")
-        print("  q: quit")
-
-    def choose_and_play():
-        while True:
-            choice = input("Select demo (name or number): ").strip()
-            if choice.lower() == "q":
-                break
-            if choice.lower() == "a":
-                for fn in DEMOS.values():
-                    fn()
-                continue
-            if choice == "?":
-                print_menu()
-                continue
-            _name, fn = resolve_choice(choice)
-            if fn is not None:
-                fn()
-            else:
-                print(f"Unrecognized choice '{choice}', '?' to see list")
-
-    if len(sys.argv) > 1:
-        choice = sys.argv[1].strip().lower()
-        if choice == "a":
-            for fn in DEMOS.values():
-                fn()
-            raise SystemExit(0)
-        _name, fn = resolve_choice(choice)
-        if fn is not None:
-            fn()
-        else:
-            print(f"Invalid choice '{choice}'")
-    else:
-        print_menu()
-        choose_and_play()
+    run_demos(DEMOS)

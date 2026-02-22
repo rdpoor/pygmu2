@@ -10,8 +10,8 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-import sys
 from pathlib import Path
+from examples_helper import run_demos
 from pygmu2 import (
     WavReaderPE,
     EnvelopePE,
@@ -127,27 +127,11 @@ def demo_all():
     demo_svfilter_autowah()
 
 
+DEMOS = [
+    ("Original signal (looped djembe)", demo_original),
+    ("Autowah effect (BiquadPE lowpass)", demo_autowah),
+    ("Autowah effect (SVFilterPE lowpass)", demo_svfilter_autowah),
+]
+
 if __name__ == "__main__":
-    demos = [
-        ("1", "Original signal (looped djembe)", demo_original),
-        ("2", "Autowah effect (BiquadPE lowpass)", demo_autowah),
-        ("3", "Autowah effect (SVFilterPE lowpass)", demo_svfilter_autowah),
-        ("a", "All autowah demos", demo_all),
-    ]
-
-    if len(sys.argv) > 1:
-        choice = sys.argv[1].strip().lower()
-    else:
-        print("Autowah examples (EnvelopePE, BiquadPE, SVFilterPE, TransformPE)")
-        print("-----------------------------------------------------------------")
-        for key, name, _ in demos:
-            print(f"  {key}: {name}")
-        print()
-        choice = input(f"Choice (1-3 or 'a'): ").strip().lower()
-
-    for key, _name, fn in demos:
-        if key == choice:
-            fn()
-            break
-    else:
-        print("Invalid choice.")
+    run_demos(DEMOS)

@@ -7,6 +7,7 @@ SequencePE example showing OVERLAP and NON_OVERLAP modes with audio material.
 from pathlib import Path
 
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 
@@ -59,33 +60,10 @@ def demo_non_overlap():
     pg.play(pg.CropPE(seq, 0, int(3.5 * sample_rate)), sample_rate)
 
 
+DEMOS = [
+    ("Demo overlap", demo_overlap),
+    ("Demo non-overlap", demo_non_overlap),
+]
+
 if __name__ == "__main__":
-    import sys
-
-    demos = [
-        ("1", "Demo overlap", demo_overlap),
-        ("2", "Demo non-overlap", demo_non_overlap),
-        ("a", "Demo all", None),
-    ]
-
-    if len(sys.argv) > 1:
-        choice = sys.argv[1].strip().lower()
-    else:
-        print("SequencePE Examples")
-        print("-------------------")
-        for key, name, _ in demos:
-            print(f"  {key}: {name}")
-        print()
-        choice = input(f"Choice (1-{len(demos)-1} or 'a'): ").strip().lower()
-
-    if choice == "a":
-        for _key, _name, fn in demos:
-            if fn is not None:
-                fn()
-    else:
-        for key, _name, fn in demos:
-            if key == choice and fn is not None:
-                fn()
-                break
-        else:
-            print("Invalid choice.")
+    run_demos(DEMOS)

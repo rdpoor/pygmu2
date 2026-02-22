@@ -9,9 +9,10 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-from pathlib import Path
 import sys
+from pathlib import Path
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 sys.path.insert(0, 'src')
@@ -160,34 +161,15 @@ def demo_parallel_compression():
     pg.play(parallel_stream, sample_rate)
     print()
 
+DEMOS = [
+    ("Basic Compression", demo_basic_compression),
+    ("Brick-Wall Limiter", demo_limiter),
+    ("Noise Gate", demo_noise_gate),
+    ("Parallel Compression", demo_parallel_compression),
+]
+
 if __name__ == "__main__":
     print("pygmu2 Compression Examples")
     print("=" * 50)
     print()
-    
-    demos = [
-        ("1", "Basic Compression", demo_basic_compression),
-        ("2", "Brick-Wall Limiter", demo_limiter),
-        ("3", "Noise Gate", demo_noise_gate),
-        ("4", "Parallel Compression", demo_parallel_compression),
-        ("a", "All demos", None),
-    ]
-    
-    print("Available demos:")
-    for key, name, _ in demos:
-        print(f"  {key}: {name}")
-    print()
-    
-    choice = input("Choose a demo (1-4 or 'a' for all): ").strip().lower()
-    print()
-    
-    if choice == "a":
-        for key, name, func in demos[:-1]:
-            func()
-    else:
-        for key, name, func in demos:
-            if key == choice and func:
-                func()
-                break
-        else:
-            print(f"Unknown choice: {choice}")
+    run_demos(DEMOS)

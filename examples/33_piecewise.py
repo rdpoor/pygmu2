@@ -22,6 +22,7 @@ from pygmu2 import (
     pitch_to_freq,
 )
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 
@@ -92,31 +93,13 @@ def demo_all():
     demo_constant_power()
 
 
+DEMOS = [
+    ("STEP (instant pitch)", demo_step),
+    ("LINEAR (constant glide)", demo_linear),
+    ("EXPONENTIAL", demo_exponential),
+    ("SIGMOID (S-curve)", demo_sigmoid),
+    ("CONSTANT_POWER", demo_constant_power),
+]
+
 if __name__ == "__main__":
-    import sys
-
-    demos = [
-        ("1", "STEP (instant pitch)", demo_step),
-        ("2", "LINEAR (constant glide)", demo_linear),
-        ("3", "EXPONENTIAL", demo_exponential),
-        ("4", "SIGMOID (S-curve)", demo_sigmoid),
-        ("5", "CONSTANT_POWER", demo_constant_power),
-        ("a", "All transition types", demo_all),
-    ]
-
-    if len(sys.argv) > 1:
-        choice = sys.argv[1].strip().lower()
-    else:
-        print("Example 33: PiecewisePE — C major triad pitch (sawtooth)")
-        print("----------------------------------------------------------")
-        for key, name, _ in demos:
-            print(f"  {key}: {name}")
-        print()
-        choice = input("Choice (1-5 or 'a'): ").strip().lower()
-
-    for key, _name, fn in demos:
-        if key == choice:
-            fn()
-            break
-    else:
-        print("Invalid choice.")
+    run_demos(DEMOS)

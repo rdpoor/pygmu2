@@ -20,21 +20,13 @@ MIT License
 from pathlib import Path
 
 import pygmu2 as pg
-SRATE = 44100
-pg.set_sample_rate(SRATE)
+from examples_helper import s, pad_clip, run_demos
+
+pg.set_sample_rate(44100)
 
 RANDOM_SEED = 123
 PLAY_DUR = 4.0
 SILENCE_DUR = 1.0
-
-def crop_and_pad_pe(pe, play_dur, silence_dur):
-    # crop PE to a finite length, followed by a silence
-    cropped_pe = pg.CropPE(
-        pe, 0, pg.seconds_to_samples(PLAY_DUR, SRATE))
-    # pad with silence
-    padded_pe = pg.SetExtentPE(
-        cropped_pe, 0, pg.seconds_to_samples(PLAY_DUR + SILENCE_DUR, SRATE))
-    return padded_pe
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
@@ -50,7 +42,7 @@ def demo_voice_count():
             seed = RANDOM_SEED,
         )
         print(f"n voices = {n_voices}...")
-        pg.play(crop_and_pad_pe(ss, PLAY_DUR, SILENCE_DUR))
+        pg.play(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR))
     print(f"Done!")
 
 def demo_mix_mode():
@@ -64,7 +56,7 @@ def demo_mix_mode():
             seed = RANDOM_SEED,
         )
         print(f"mix_mode = {mix_mode}...")
-        pg.play(crop_and_pad_pe(ss, PLAY_DUR, SILENCE_DUR))
+        pg.play(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR))
     print(f"Done!")
 
 def demo_detune_amounts():
@@ -79,7 +71,7 @@ def demo_detune_amounts():
             seed = RANDOM_SEED,
         )
         print(f"detune_cents = {detune_cents}...")
-        pg.play(crop_and_pad_pe(ss, PLAY_DUR, SILENCE_DUR))
+        pg.play(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR))
     print(f"Done!")
 
 def demo_randomize_phase():
@@ -95,88 +87,19 @@ def demo_randomize_phase():
             seed = RANDOM_SEED,
         )
         print(f"randomize_phase = {randomize_phase}...")
-        pg.play(crop_and_pad_pe(ss, PLAY_DUR, SILENCE_DUR))
+        pg.play(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR))
     print(f"Done!")
 
-DEMOS = {
-    "Demo SuperSawPE with varying voice count": demo_voice_count,
-    "Demo SuperSawPE with three mix modes": demo_mix_mode,
-    "Demo SuperSawPE with varying degrees of detuning": demo_detune_amounts,
-    "Demo SuperSawPE with and without randomized initial phase": demo_randomize_phase,
-}
+DEMOS = [
+    ("Demo SuperSawPE with varying voice count", demo_voice_count),
+    ("Demo SuperSawPE with three mix modes", demo_mix_mode),
+    ("Demo SuperSawPE with varying degrees of detuning", demo_detune_amounts),
+    ("Demo SuperSawPE with and without randomized initial phase", demo_randomize_phase),
+]
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 # Main
 
 if __name__ == "__main__":
-    import sys
-
-    def resolve_choice(choice: str):
-        """
-        Return (name, fn) on valid choice, (None, None) otherwise.
-        """
-        item_list = list(DEMOS.items())
-
-        if choice.isdigit():
-            # Numerical choice (one-based)
-            idx = int(choice)
-            if 1 <= idx <= len(item_list):
-                return item_list[idx - 1]
-            else:
-                return None, None
-
-        if choice in DEMOS:
-            # String match
-            return choice, DEMOS[choice]
-        else:
-            return None, None
-
-    def print_menu():
-        names = list(DEMOS.keys())
-        print("Available demos:")
-        for i, name in enumerate(names, start=1):
-            print(f"  {i}: {name}")
-        print("  ?: show list")
-        print("  a: run all")
-        print("  q: quit")
-
-    def choose_and_play():
-        """
-        DEMOS: dict[demo_name, demo_function]
-        Present list of demo names, call user's choice.  Loop until 'q'
-        """
-        while True:
-            choice = input("Select demo (name or number): ").strip()
-            if choice.lower() == "q":
-                break
-            if choice.lower() == "a":
-                for fn in DEMOS.values():
-                    fn()
-                continue
-            if choice == "?":
-                print_menu()
-                continue
-
-            _name, fn = resolve_choice(choice)
-            if fn is not None:
-                fn()
-            else:
-                print(f"unrecognized choice {choice}, '?' to see choices")
-
-    if len(sys.argv) > 1:
-        # Command line choice: Run single demo (or 'a' for all') and quit
-        choice = sys.argv[1].strip().lower()
-        if choice == "a":
-            for fn in DEMOS.values():
-                fn()
-            raise SystemExit(0)
-        _name, fn = resolve_choice(choice)
-        if fn is not None:
-            fn()
-        else:
-            print(f"Invalid choice '{choice}'")
-    else:
-        # Enter interactive loop
-        print_menu()
-        choose_and_play()
+    run_demos(DEMOS)

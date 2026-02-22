@@ -22,6 +22,7 @@ from pygmu2 import (
     pitch_to_freq,
 )
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 from pygmu2.karplus_strong_pe import rho_for_decay_db
@@ -147,30 +148,12 @@ def demo_all():
     demo_c_major_arpeggio()
 
 
+DEMOS = [
+    ("Single pluck (440 Hz)", demo_single_pluck),
+    ("Two-phase decay (sustain then fade)", demo_two_phase_decay),
+    ("High rho vs low rho (same pitch)", demo_high_rho_vs_low_rho),
+    ("C major arpeggio", demo_c_major_arpeggio),
+]
+
 if __name__ == "__main__":
-    import sys
-
-    demos = [
-        ("1", "Single pluck (440 Hz)", demo_single_pluck),
-        ("2", "Two-phase decay (sustain then fade)", demo_two_phase_decay),
-        ("3", "High rho vs low rho (same pitch)", demo_high_rho_vs_low_rho),
-        ("4", "C major arpeggio", demo_c_major_arpeggio),
-        ("a", "All demos", demo_all),
-    ]
-
-    if len(sys.argv) > 1:
-        choice = sys.argv[1].strip().lower()
-    else:
-        print("Example 29: Karplus-Strong plucked string")
-        print("----------------------------------------")
-        for key, name, _ in demos:
-            print(f"  {key}: {name}")
-        print()
-        choice = input("Choice (1-4 or 'a'): ").strip().lower()
-
-    for key, _name, fn in demos:
-        if key == choice:
-            fn()
-            break
-    else:
-        print("Invalid choice.")
+    run_demos(DEMOS)

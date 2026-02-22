@@ -29,6 +29,7 @@ from pygmu2 import (
     get_reference_frequency,
 )
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 
@@ -339,8 +340,15 @@ def demo_reference_frequency():
         set_reference_frequency(*original_ref)
 
 
-def main():
-    """Main menu for selecting temperament demos."""
+DEMOS = [
+    ("C Major Triad (temperaments)", demo_c_major),
+    ("A Minor Triad (temperaments)", demo_a_minor),
+    ("5th (C-G) (temperaments)", demo_fifth),
+    ("5th Stack (C-G-D-A) (temperaments)", demo_fifth_stack),
+    ("A=440 vs A=432 (reference freq)", demo_reference_frequency),
+]
+
+if __name__ == "__main__":
     print("\npygmu2 Alternative Temperaments Demo")
     print("=" * 60)
     print()
@@ -349,35 +357,7 @@ def main():
     print("  - Just Intonation (pure ratios)")
     print("  - Pythagorean Tuning (pure fifths)")
     print()
-    
-    demos = [
-        ("1", "C Major Triad (temperaments)", demo_c_major),
-        ("2", "A Minor Triad (temperaments)", demo_a_minor),
-        ("3", "5th (C-G) (temperaments)", demo_fifth),
-        ("4", "5th Stack (C-G-D-A) (temperaments)", demo_fifth_stack),
-        ("5", "A=440 vs A=432 (reference freq)", demo_reference_frequency),
-        ("a", "All demos", None),
-    ]
-    
-    print("Available demos:")
-    for key, name, _ in demos:
-        print(f"  {key}: {name}")
-    print()
-    
-    choice = input("Choose a demo (1-5 or 'a' for all): ").strip().lower()
-    print()
-    
-    if choice == "a":
-        for key, name, func in demos[:-1]:
-            func()
-    else:
-        for key, name, func in demos:
-            if key == choice and func:
-                func()
-                break
-        else:
-            print(f"Unknown choice: {choice}")
-    
+    run_demos(DEMOS)
     print("\nTips:")
     print("  Change temperament:")
     print("    >>> from pygmu2 import set_temperament, JustIntonation")
@@ -385,7 +365,3 @@ def main():
     print("  Change reference frequency:")
     print("    >>> from pygmu2 import set_verdi_tuning")
     print("    >>> set_verdi_tuning()  # A4 = 432 Hz")
-
-
-if __name__ == "__main__":
-    main()

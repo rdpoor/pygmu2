@@ -31,6 +31,7 @@ from pygmu2 import (
     rho_for_decay_db,
 )
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 from typing import Optional
@@ -432,35 +433,18 @@ def demo_all_c_major():
     demo_moz_plucked()
 
 
+DEMOS = [
+    ("C major: gapless (C → E → G)", demo_gapless_c_major),
+    ("C major: staccato (C · E · G)", demo_staccato_c_major),
+    ("C major: legato (overlapping)", demo_legato_c_major),
+    ("C major: ramped crossfades — SIGMOID", demo_sigmoid_ramp),
+    ("C major: ramped crossfades — CONSTANT_POWER", demo_constant_power_ramp),
+    ("C major: ramped crossfades — EXPONENTIAL", demo_exponential_ramp),
+    ("Mozart: all connected notes", demo_moz_connected),
+    ("Mozart: articulated notes", demo_moz_articulated),
+    ("Mozart: articulated plucked notes", demo_moz_plucked),
+    ("All C major demos", demo_all_c_major),
+]
+
 if __name__ == "__main__":
-    import sys
-
-    demos = [
-        ("1", "C major: gapless (C → E → G)", demo_gapless_c_major),
-        ("2", "C major: staccato (C · E · G)", demo_staccato_c_major),
-        ("3", "C major: legato (overlapping)", demo_legato_c_major),
-        ("4", "C major: ramped crossfades — SIGMOID", demo_sigmoid_ramp),
-        ("5", "C major: ramped crossfades — CONSTANT_POWER", demo_constant_power_ramp),
-        ("6", "C major: ramped crossfades — EXPONENTIAL", demo_exponential_ramp),
-        ("7", "Mozart: all connected notes", demo_moz_connected),
-        ("8", "Mozart: articulated notes", demo_moz_articulated),
-        ("9", "Mozart: articulated plucked notes", demo_moz_plucked),
-        ("a", "All sequence demos", demo_all_c_major),
-    ]
-
-    if len(sys.argv) > 1:
-        choice = sys.argv[1].strip().lower()
-    else:
-        print("Sequence examples (MixPE, CropPE, DelayPE, PiecewisePE)")
-        print("---------------------------------------------------")
-        for key, name, _ in demos:
-            print(f"  {key}: {name}")
-        print()
-        choice = input(f"Choice (1-{len(demos)-1} or 'a'): ").strip().lower()
-
-    for key, _name, fn in demos:
-        if key == choice:
-            fn()
-            break
-    else:
-        print("Invalid choice.")
+    run_demos(DEMOS)

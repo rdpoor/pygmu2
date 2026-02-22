@@ -14,6 +14,7 @@ Usage:
 from pathlib import Path
 
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 
@@ -71,73 +72,15 @@ def demo_ramp_mix():
     pg.play(reverb, sample_rate)
 
 
-DEMOS = {
-    "Dry only": demo_dry_only,
-    "Fixed mix": demo_fixed_mix,
-    "Ramp mix": demo_ramp_mix,
-}
+DEMOS = [
+    ("Dry only", demo_dry_only),
+    ("Fixed mix", demo_fixed_mix),
+    ("Ramp mix", demo_ramp_mix),
+]
 
 
 # ------------------------------------------------------------------------------
 # Main
 
 if __name__ == "__main__":
-    import sys
-
-    def resolve_choice(choice: str):
-        """Return (name, fn) on valid choice, (None, None) otherwise."""
-        item_list = list(DEMOS.items())
-
-        if choice.isdigit():
-            idx = int(choice)
-            if 1 <= idx <= len(item_list):
-                return item_list[idx - 1]
-            return None, None
-
-        if choice in DEMOS:
-            return choice, DEMOS[choice]
-        return None, None
-
-    def print_menu():
-        names = list(DEMOS.keys())
-        print("Available demos:")
-        for i, name in enumerate(names, start=1):
-            print(f"  {i}: {name}")
-        print("  ?: show list")
-        print("  a: run all")
-        print("  q: quit")
-
-    def choose_and_play():
-        """Present list of demo names, call user's choice. Loop until 'q'."""
-        while True:
-            choice = input("Select demo (name or number): ").strip()
-            if choice.lower() == "q":
-                break
-            if choice.lower() == "a":
-                for fn in DEMOS.values():
-                    fn()
-                continue
-            if choice == "?":
-                print_menu()
-                continue
-
-            _name, fn = resolve_choice(choice)
-            if fn is not None:
-                fn()
-            else:
-                print(f"unrecognized choice {choice}, '?' to see choices")
-
-    if len(sys.argv) > 1:
-        choice = sys.argv[1].strip().lower()
-        if choice == "a":
-            for fn in DEMOS.values():
-                fn()
-            raise SystemExit(0)
-        _name, fn = resolve_choice(choice)
-        if fn is not None:
-            fn()
-        else:
-            print(f"Invalid choice '{choice}'")
-    else:
-        print_menu()
-        choose_and_play()
+    run_demos(DEMOS)

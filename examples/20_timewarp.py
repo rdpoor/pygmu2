@@ -25,6 +25,7 @@ from pygmu2 import (
     seconds_to_samples,
 )
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 
@@ -107,36 +108,12 @@ def demo_jog_shuttle():
     output_stream = CropPE(output_stream, 0, (demo_length) - (0))
 
     pg.play(output_stream, sample_rate)
+DEMOS = [
+    ("Original", demo_original),
+    ("Fixed Rate (1.5x)", demo_fixed_rate),
+    ("Accelerating Loop (0.25x -> 5.0x over 10s)", demo_accelerating_loop),
+    ("Decelerating Playback", demo_jog_shuttle),
+]
+
 if __name__ == "__main__":
-    import sys
-
-    demos = [
-        ("1", "Original", demo_original),
-        ("2", "Fixed Rate (1.5x)", demo_fixed_rate),
-        ("3", "Accelerating Loop (0.25x -> 5.0x over 10s)", demo_accelerating_loop),
-        ("4", "Decelerating Playback", demo_jog_shuttle),
-        ("a", "All demos", None),
-    ]
-
-    if len(sys.argv) > 1:
-        choice = sys.argv[1].strip().lower()
-    else:
-        print("pygmu2 TimeWarpPE Examples")
-        print("-------------------------")
-        for key, name, _ in demos:
-            print(f"{key}: {name}")
-        print()
-        choice = input(f"Choose a demo (1-{len(demos)-1} or 'a' for all): ").strip().lower()
-        print()
-
-    if choice == "a":
-        for _, _, fn in demos:
-            if fn is not None:
-                fn()
-    else:
-        for key, _name, fn in demos:
-            if key == choice and fn is not None:
-                fn()
-                break
-        else:
-            print("Invalid choice.")
+    run_demos(DEMOS)

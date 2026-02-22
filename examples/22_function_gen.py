@@ -29,6 +29,7 @@ from pygmu2 import (
     seconds_to_samples,
 )
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 
@@ -98,35 +99,11 @@ def demo_ab_high_pitch():
     stereo_stream = CropPE(stereo_stream, 0, (dur) - (0))
 
     pg.play(stereo_stream, SAMPLE_RATE)
+DEMOS = [
+    ("PWM Rectangle (naive)", demo_pwm_rectangle_naive),
+    ("Saw/Triangle Morph (naive)", demo_morph_naive),
+    ("A/B at High Pitch (naive vs bandlimited)", demo_ab_high_pitch),
+]
+
 if __name__ == "__main__":
-    import sys
-
-    demos = [
-        ("1", "PWM Rectangle (naive)", demo_pwm_rectangle_naive),
-        ("2", "Saw/Triangle Morph (naive)", demo_morph_naive),
-        ("3", "A/B at High Pitch (naive vs bandlimited)", demo_ab_high_pitch),
-        ("a", "All demos", None),
-    ]
-
-    if len(sys.argv) > 1:
-        choice = sys.argv[1].strip().lower()
-    else:
-        print("pygmu2 FunctionGenPE Examples")
-        print("----------------------------")
-        for key, name, _ in demos:
-            print(f"{key}: {name}")
-        print()
-        choice = input("Choose a demo (1-3 or 'a' for all): ").strip().lower()
-        print()
-
-    if choice == "a":
-        for _, _, fn in demos:
-            if fn is not None:
-                fn()
-    else:
-        for key, _name, fn in demos:
-            if key == choice and fn is not None:
-                fn()
-                break
-        else:
-            print("Invalid choice.")
+    run_demos(DEMOS)

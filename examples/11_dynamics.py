@@ -13,6 +13,7 @@ MIT License
 
 import sys
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 sys.path.insert(0, 'src')
@@ -218,6 +219,13 @@ def demo_custom_envelope():
     print()
 
 
+DEMOS = [
+    ("Sidechain Ducking (EDM)", demo_sidechain_ducking),
+    ("Voice Ducking (Podcast)", demo_sidechain_ducking_voice),
+    ("Expander", demo_expander),
+    ("Custom Envelope Control", demo_custom_envelope),
+]
+
 if __name__ == "__main__":
     print("pygmu2 Advanced Dynamics Examples (DynamicsPE)")
     print("=" * 50)
@@ -225,30 +233,4 @@ if __name__ == "__main__":
     print("DynamicsPE allows flexible routing of control signals,")
     print("enabling sidechain compression and creative effects.")
     print()
-    
-    demos = [
-        ("1", "Sidechain Ducking (EDM)", demo_sidechain_ducking),
-        ("2", "Voice Ducking (Podcast)", demo_sidechain_ducking_voice),
-        ("3", "Expander", demo_expander),
-        ("4", "Custom Envelope Control", demo_custom_envelope),
-        ("a", "All demos", None),
-    ]
-    
-    print("Available demos:")
-    for key, name, _ in demos:
-        print(f"  {key}: {name}")
-    print()
-    
-    choice = input("Choose a demo (1-5 or 'a' for all): ").strip().lower()
-    print()
-    
-    if choice == "a":
-        for key, name, func in demos[:-1]:
-            func()
-    else:
-        for key, name, func in demos:
-            if key == choice and func:
-                func()
-                break
-        else:
-            print(f"Unknown choice: {choice}")
+    run_demos(DEMOS)

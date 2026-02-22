@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import numpy as np
 import pygmu2 as pg
+from examples_helper import run_demos
 
 
 def demo_weighted_pitch():
@@ -148,29 +149,11 @@ def demo_all():
     demo_bongo_fury()
 
 
+DEMOS = [
+    ("Demo weighted pitches", demo_weighted_pitch),
+    ("Demo one oscillator (freq select)", demo_weighted_pitch_one_osc),
+    ("Demo bongo fury", demo_bongo_fury),
+]
+
 if __name__ == "__main__":
-    import sys
-
-    demos = [
-        ("1", "Demo weighted pitches", demo_weighted_pitch),
-        ("2", "Demo one oscillator (freq select)", demo_weighted_pitch_one_osc),
-        ("3", "Demo bongo fury", demo_bongo_fury),
-        ("a", "Demo all", demo_all),
-    ]
-
-    if len(sys.argv) > 1:
-        choice = sys.argv[1].strip().lower()
-    else:
-        print("Demo RandomSelectPE (new TriggerSignal conventions)")
-        print("--------------------------------------------------")
-        for key, name, _ in demos:
-            print(f" {key}: {name}")
-        print()
-        choice = input(f"Choice (1-{len(demos)-1} or 'a'): ").strip().lower()
-
-    for key, _name, fn in demos:
-        if key == choice:
-            fn()
-            break
-    else:
-        print("Invalid choice.")
+    run_demos(DEMOS)

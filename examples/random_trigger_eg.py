@@ -13,25 +13,12 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-from pathlib import Path
 import pygmu2 as pg
 import numpy as np
+from examples_helper import s, pad_clip, run_demos
 
-SRATE = 44100
-pg.set_sample_rate(SRATE)
+pg.set_sample_rate(44100)
 
-# Gap between clips in multi-clip demos
-SILENCE_DUR = 0.5  # seconds
-
-def s(secs):
-    """Convert seconds to samples."""
-    return pg.seconds_to_samples(secs, SRATE)
-
-def pad_clip(pe):
-    """Pad a finite PE with a short silence so clips are clearly separated."""
-    n = pe.extent().end
-    padded = pg.SetExtentPE(pe, 0, n + s(SILENCE_DUR))
-    return padded
 
 def ping():
     return pg.KarplusStrongPE(frequency=440.0)
@@ -65,67 +52,15 @@ def demo_ramped_rate():
     cropped_ding = pg.CropPE(ding, 0, duration_samples)
     pg.play(pad_clip(cropped_ding))
 
-DEMOS = {
-    "Random Trigger with different fixed rate values": demo_fixed_rates,
-    "Random Trigger with ramped rate": demo_ramped_rate,
-}
+DEMOS = [
+    ("Random Trigger with different fixed rate values", demo_fixed_rates),
+    ("Random Trigger with ramped rate", demo_ramped_rate),
+]
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    import sys
-
-    def resolve_choice(choice: str):
-        item_list = list(DEMOS.items())
-        if choice.isdigit():
-            idx = int(choice)
-            if 1 <= idx <= len(item_list):
-                return item_list[idx - 1]
-            return None, None
-        if choice in DEMOS:
-            return choice, DEMOS[choice]
-        return None, None
-
-    def print_menu():
-        print("Available demos:")
-        for i, name in enumerate(DEMOS, start=1):
-            print(f"  {i}: {name}")
-        print("  ?: show list")
-        print("  a: run all")
-        print("  q: quit")
-
-    def choose_and_play():
-        while True:
-            choice = input("Select demo (name or number): ").strip()
-            if choice.lower() == "q":
-                break
-            if choice.lower() == "a":
-                for fn in DEMOS.values():
-                    fn()
-                continue
-            if choice == "?":
-                print_menu()
-                continue
-            _name, fn = resolve_choice(choice)
-            if fn is not None:
-                fn()
-            else:
-                print(f"Unrecognized choice '{choice}', '?' to see list")
-
-    if len(sys.argv) > 1:
-        choice = sys.argv[1].strip().lower()
-        if choice == "a":
-            for fn in DEMOS.values():
-                fn()
-            raise SystemExit(0)
-        _name, fn = resolve_choice(choice)
-        if fn is not None:
-            fn()
-        else:
-            print(f"Invalid choice '{choice}'")
-    else:
-        print_menu()
-        choose_and_play()
+    run_demos(DEMOS)
 

@@ -24,6 +24,7 @@ from pygmu2 import (
     seconds_to_samples,
 )
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 
@@ -98,35 +99,11 @@ def demo_subtractive_patch():
     out = CropPE(out, 0, (dur_samples) - (0))
 
     pg.play(out, SAMPLE_RATE)
+DEMOS = [
+    ("PWM Rectangle", demo_pwm_rectangle),
+    ("Morphing Saw/Triangle", demo_morphing_saw_triangle),
+    ("Subtractive Patch (Osc -> LadderLPF)", demo_subtractive_patch),
+]
+
 if __name__ == "__main__":
-    import sys
-
-    demos = [
-        ("1", "PWM Rectangle", demo_pwm_rectangle),
-        ("2", "Morphing Saw/Triangle", demo_morphing_saw_triangle),
-        ("3", "Subtractive Patch (Osc -> LadderLPF)", demo_subtractive_patch),
-        ("a", "All demos", None),
-    ]
-
-    if len(sys.argv) > 1:
-        choice = sys.argv[1].strip().lower()
-    else:
-        print("pygmu2 AnalogOscPE Examples")
-        print("--------------------------")
-        for key, name, _ in demos:
-            print(f"{key}: {name}")
-        print()
-        choice = input("Choose a demo (1-3 or 'a' for all): ").strip().lower()
-        print()
-
-    if choice == "a":
-        for _, _, fn in demos:
-            if fn is not None:
-                fn()
-    else:
-        for key, _name, fn in demos:
-            if key == choice and fn is not None:
-                fn()
-                break
-        else:
-            print("Invalid choice.")
+    run_demos(DEMOS)

@@ -27,6 +27,7 @@ from pygmu2 import (
     seconds_to_samples,
 )
 import pygmu2 as pg
+from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 from pygmu2.assets import get_kemar_dir
@@ -257,33 +258,15 @@ def demo_all():
     print("All demos complete!", flush=True)
 
 
+DEMOS = [
+    ("Channel conversion (Mono → Stereo)", demo_channel_conversion),
+    ("Linear panning (Left → Center → Right)", demo_linear_panning),
+    ("Constant-power panning (Left → Center → Right)", demo_constant_power_panning),
+    ("Dynamic panning (sweep Left → Right)", demo_dynamic_panning),
+    ("Stereo to mono conversion", demo_stereo_to_mono),
+    ("Multiple sources panned (left and right)", demo_multiple_sources_panned),
+    ("HRTF binaural spatialization (djembe hit)", demo_hrtf_spatialization),
+]
+
 if __name__ == "__main__":
-    import sys
-
-    demos = [
-        ("1", "Channel conversion (Mono → Stereo)", demo_channel_conversion),
-        ("2", "Linear panning (Left → Center → Right)", demo_linear_panning),
-        ("3", "Constant-power panning (Left → Center → Right)", demo_constant_power_panning),
-        ("4", "Dynamic panning (sweep Left → Right)", demo_dynamic_panning),
-        ("5", "Stereo to mono conversion", demo_stereo_to_mono),
-        ("6", "Multiple sources panned (left and right)", demo_multiple_sources_panned),
-        ("7", "HRTF binaural spatialization (djembe hit)", demo_hrtf_spatialization),
-        ("a", "All demos", demo_all),
-    ]
-
-    if len(sys.argv) > 1:
-        choice = sys.argv[1].strip().lower()
-    else:
-        print("Example 27: Spatial Audio - Panning and Channel Conversion")
-        print("-----------------------------------------------------------")
-        for key, name, _ in demos:
-            print(f"  {key}: {name}")
-        print()
-        choice = input("Choice (1-7 or 'a'): ").strip().lower()
-
-    for key, _name, fn in demos:
-        if key == choice:
-            fn()
-            break
-    else:
-        print("Invalid choice.")
+    run_demos(DEMOS)
