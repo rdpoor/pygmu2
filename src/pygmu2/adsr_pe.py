@@ -1,6 +1,8 @@
 """
 AdsrGatedPE, AdsrTriggeredPE - ADSR envelope generators.
 
+Uses segment-based vectorized rendering for efficiency.
+
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
@@ -27,6 +29,25 @@ SUSTAIN = "sustain"
 RELEASE = "release"
 
 
+def _generate_ramp(
+    output: np.ndarray,
+    starting_value: float,
+    slope: float,
+    offset: int,
+    length: int,
+) -> tuple[int, float]:
+    """
+    Write a linear ramp into output[offset:offset+length] and return
+    (offset + length, starting_value + slope * length).
+
+    output[offset + i] = starting_value + i * slope   for i in 0..length-1
+    """
+    output[offset:offset + length] = (
+        starting_value + np.arange(length, dtype=np.float64) * slope
+    ).astype(np.float32)
+    return (offset + length, starting_value + slope * length)
+
+
 class AdsrGatedPE(ProcessingElement):
     """
     Gate-driven ADSR envelope generator.
@@ -44,8 +65,8 @@ class AdsrGatedPE(ProcessingElement):
     Notes:
       - This PE is stateful (is_pure() == False) and therefore must be rendered
         with contiguous render requests.
-      - Internally it is implemented as a 1-sample-per-iteration state machine.
-        (Vectorization is possible but not shown here.)
+      - Internally it uses segment-based vectorized rendering: the buffer is split
+        at gate transitions and ADSR phase boundaries, then filled with numpy slices.
 
     Args:
         gate: GateSignal controlling the envelope (0 or 1).
@@ -128,72 +149,91 @@ class AdsrGatedPE(ProcessingElement):
         Output:
             Snippet(start, out) where out is a 1-D float32 array of length duration.
         """
+        # Place to write the result.
         out = np.zeros(duration, dtype=np.float32)
+        # GateSignal data is 0 or 1; flatten to 1-D in case it comes back as (N,1).
+        raw = self._gate.render(start=start, duration=duration).data
+        gate_data = raw[:, 0] if raw.ndim > 1 else raw
 
-        # GateSignal should produce shape (duration, 1) in pygmu2.
-        # This code assumes gate_data[cursor] returns scalar 0 or 1.
-        gate_data = self._gate.render(start=start, duration=duration).data
+        # Repeatedly call _render_segment until we've rendered to the end of
+        # this render buffer.
+        cursor = 0
+        while cursor < duration:
+            cursor = self._render_segment(start, cursor, duration, out, gate_data)
 
-        for cursor in range(duration):
-            # Emit the envelope level for this sample.
-            # (Important: this outputs the *current* env, then advances the state.)
-            out[cursor] = self._env
-            now = start + cursor
-
-            # Detect gate transitions by comparing current gate value to previous.
-            # Rising edge triggers ATTACK; falling edge triggers RELEASE.
-            curr_gate = gate_data[cursor]
-            is_new_attack = (self._prev_gate == 0 and curr_gate == 1)
-            is_new_release = (self._prev_gate == 1 and curr_gate == 0)
-            self._prev_gate = curr_gate
-
-            # Apply event-driven state changes immediately.
-            if is_new_attack:
-                self._update_state(now, ATTACK)
-            elif is_new_release:
-                self._update_state(now, RELEASE)
-
-            # State machine: update self._env and possibly transition.
-            if self._state == IDLE:
-                # Gate is low (or envelope finished). Force env to 0.
-                self._env = 0.0
-
-            elif self._state == ATTACK:
-                # Linear ramp up to 1.0 using precomputed slope.
-                self._env += self._attack_dvdt
-                if self._env >= 1.0:
-                    # Clamp and transition to decay.
-                    self._env = 1.0
-                    self._update_state(now, DECAY)
-
-            elif self._state == DECAY:
-                # Linear ramp down to sustain level.
-                self._env += self._decay_dvdt
-                if self._env <= self._sustain_level:
-                    # Clamp and transition to sustain.
-                    self._env = self._sustain_level
-                    self._update_state(now, SUSTAIN)
-
-            elif self._state == SUSTAIN:
-                # Hold sustain level while gate remains high.
-                # (In this gated variant, sustain ends only on a gate falling edge.)
-                self._env = self._sustain_level
-
-            elif self._state == RELEASE:
-                # Linear ramp down to 0.0.
-                # Note: dvdt was computed assuming a release starting at sustain_level,
-                # but we may enter release from any current envelope value. Using the same
-                # slope gives a constant-time release only when releasing from sustain.
-                # If you want constant-time release from arbitrary env, you would compute
-                # dvdt based on current env at release start.
-                self._env += self._release_dvdt
-                if self._env <= 0.0:
-                    self._env = 0.0
-                    self._update_state(now, IDLE)
-
-        # Snippet expects (start, data). In your earlier codebase, Snippet(start, out)
-        # is valid for 1-D mono, but many PEs use (N,1). Adjust to your convention as needed.
         return Snippet(start, out)
+
+    def _render_segment(
+        self,
+        start: int,
+        cursor: int,
+        duration: int,
+        out_data: np.ndarray,
+        gate_data: np.ndarray,
+    ) -> int:
+        """
+        Process one contiguous region — either a constant-gate segment or the
+        portion of the current ADSR phase that fits within it — and return the
+        updated cursor position.
+        """
+        # Detect gate edge at this cursor and update state immediately.
+        curr_gate = gate_data[cursor]
+        if curr_gate != self._prev_gate:
+            self._state = ATTACK if curr_gate > self._prev_gate else RELEASE
+        self._prev_gate = curr_gate
+
+        # End of the current constant-gate region.
+        gate_end = self._next_gate_event(cursor, duration, gate_data)
+        seg_len = gate_end - cursor
+
+        # Constant states: fill the whole gate segment and return.
+        if self._state == IDLE:
+            out_data[cursor:gate_end] = 0.0
+            self._env = 0.0
+            return gate_end
+
+        if self._state == SUSTAIN:
+            out_data[cursor:gate_end] = self._sustain_level
+            self._env = self._sustain_level
+            return gate_end
+
+        # Ramping states: select slope, threshold, and successor state.
+        if self._state == ATTACK:
+            dvdt, threshold, next_state = self._attack_dvdt, 1.0, DECAY
+        elif self._state == DECAY:
+            dvdt, threshold, next_state = self._decay_dvdt, self._sustain_level, SUSTAIN
+        else:  # RELEASE
+            dvdt, threshold, next_state = self._release_dvdt, 0.0, IDLE
+
+        # Number of samples until the state transition.
+        # Formula: emit env₀ + k×dvdt at step k; crossing at post-step k+1 ≥ threshold
+        # → n_in_state = ceil(T) where T = (threshold - env₀) / dvdt.
+        if dvdt == 0.0:
+            n_in_state = 1  # sustain_level == threshold → instant transition
+        else:
+            T = (threshold - self._env) / dvdt
+            n_in_state = max(1, int(np.ceil(T)))
+
+        n = min(seg_len, n_in_state)
+
+        # Vectorised ramp fill; advances cursor and env.
+        cursor, self._env = _generate_ramp(out_data, self._env, dvdt, cursor, n)
+
+        # Clamp and transition if the phase completed within this segment.
+        if n == n_in_state:
+            self._env = threshold
+            self._state = next_state
+
+        return cursor
+
+    def _next_gate_event(self, cursor: int, duration: int, gate_data: np.ndarray) -> int:
+        """
+        Return the index of the first gate transition strictly after `cursor`,
+        or `duration` if the gate value is constant for the rest of the buffer.
+        """
+        current = gate_data[cursor]
+        changes = np.where(gate_data[cursor + 1:] != current)[0]
+        return cursor + 1 + int(changes[0]) if len(changes) > 0 else duration
 
 
 class AdsrTriggeredPE(ProcessingElement):
@@ -243,7 +283,7 @@ class AdsrTriggeredPE(ProcessingElement):
         # We count down by comparing absolute 'now' to an end time.
         self._sustain_samples = int(round(self._sustain_time * sr))
 
-        self.reset_state()
+        self._reset_state()
 
     def is_pure(self) -> bool:
         return False
@@ -278,58 +318,102 @@ class AdsrTriggeredPE(ProcessingElement):
 
     def _render(self, start: int, duration: int) -> Snippet:
         """
-        Render `duration` envelope samples.
+        Render `duration` samples starting at absolute sample index `start`.
 
-        Important: If trigger pulses occur at block boundaries, this per-sample loop
-        guarantees that the envelope restart happens on the exact trigger sample.
+        Output:
+            Snippet(start, out) where out is a 1-D float32 array of length duration.
         """
         out = np.zeros(duration, dtype=np.float32)
+        # Flatten to 1-D in case trigger data comes back as (N, 1).
+        raw = self._trigger.render(start=start, duration=duration).data
+        trigger_data = raw[:, 0] if raw.ndim > 1 else raw
 
-        # TriggerSignal should produce shape (duration, 1). We treat trigger>0 as event.
-        trigger_data = self._trigger.render(start=start, duration=duration).data
-
-        for cursor in range(duration):
-            out[cursor] = self._env
-            now = start + cursor
-
-            # Trigger restart: any positive sample restarts the ADSR cycle.
-            # This is intentionally simple; if you later encode +/- edges you can
-            # distinguish rising vs falling events.
-            is_new_attack = (trigger_data[cursor] > 0.0)
-
-            if is_new_attack:
-                # Restart the envelope immediately on the trigger sample.
-                # This implementation does not force env=0; it begins attack from the
-                # current env. If you want "restart from 0", set self._env = 0.0 here.
-                self._update_state(now, ATTACK)
-
-            if self._state == IDLE:
-                self._env = 0.0
-
-            elif self._state == ATTACK:
-                self._env += self._attack_dvdt
-                if self._env >= 1.0:
-                    self._env = 1.0
-                    self._update_state(now, DECAY)
-
-            elif self._state == DECAY:
-                self._env += self._decay_dvdt
-                if self._env <= self._sustain_level:
-                    self._env = self._sustain_level
-                    # Schedule sustain end time in absolute samples.
-                    self._sustain_ends_at = now + self._sustain_samples
-                    self._update_state(now, SUSTAIN)
-
-            elif self._state == SUSTAIN:
-                # Hold sustain level until the sustain timer expires.
-                self._env = self._sustain_level
-                if now >= self._sustain_ends_at:
-                    self._update_state(now, RELEASE)
-
-            elif self._state == RELEASE:
-                self._env += self._release_dvdt
-                if self._env <= 0.0:
-                    self._env = 0.0
-                    self._update_state(now, IDLE)
+        cursor = 0
+        while cursor < duration:
+            cursor = self._render_segment(start, cursor, duration, out, trigger_data)
 
         return Snippet(start, out)
+
+    def _next_trigger_event(
+        self, cursor: int, duration: int, trigger_data: np.ndarray
+    ) -> int:
+        """
+        Return the index of the first positive trigger sample STRICTLY AFTER
+        `cursor`, or `duration` if no such sample exists.
+
+        We skip `cursor` itself because the caller already handles any trigger
+        present at that position before calling this method.
+        """
+        if cursor + 1 >= duration:
+            return duration
+        hits = np.where(trigger_data[cursor + 1:] > 0.0)[0]
+        return cursor + 1 + int(hits[0]) if len(hits) > 0 else duration
+
+    def _render_segment(
+        self,
+        start: int,
+        cursor: int,
+        duration: int,
+        out_data: np.ndarray,
+        trigger_data: np.ndarray,
+    ) -> int:
+        """
+        Process one contiguous region — either a constant-trigger segment or the
+        portion of the current ADSR phase that fits within it — and return the
+        updated cursor position.
+        """
+        # Detect trigger at cursor → restart to ATTACK from current env level.
+        if trigger_data[cursor] > 0.0:
+            self._state = ATTACK
+
+        # Find the next trigger event (after cursor) to bound this segment.
+        trig_end = self._next_trigger_event(cursor, duration, trigger_data)
+
+        # IDLE: fill with silence up to the next trigger.
+        if self._state == IDLE:
+            out_data[cursor:trig_end] = 0.0
+            self._env = 0.0
+            return trig_end
+
+        # SUSTAIN: fill at sustain_level, bounded by next trigger OR the timer.
+        if self._state == SUSTAIN:
+            sustain_end = self._sustain_ends_at - start  # convert to buffer-relative
+            seg_end = min(trig_end, sustain_end)
+            seg_end = max(cursor + 1, seg_end)  # always advance at least one sample
+            out_data[cursor:seg_end] = self._sustain_level
+            self._env = self._sustain_level
+            if seg_end >= sustain_end:
+                self._state = RELEASE
+            return seg_end
+
+        # Ramping states: ATTACK, DECAY, RELEASE.
+        seg_len = trig_end - cursor
+
+        if self._state == ATTACK:
+            dvdt, threshold, next_state = self._attack_dvdt, 1.0, DECAY
+        elif self._state == DECAY:
+            dvdt, threshold, next_state = self._decay_dvdt, self._sustain_level, SUSTAIN
+        else:  # RELEASE
+            dvdt, threshold, next_state = self._release_dvdt, 0.0, IDLE
+
+        # Number of samples until the state transition.
+        if dvdt == 0.0:
+            n_in_state = 1
+        else:
+            T = (threshold - self._env) / dvdt
+            n_in_state = max(1, int(np.ceil(T)))
+
+        n = min(seg_len, n_in_state)
+
+        # Vectorised ramp fill; advances cursor and env.
+        cursor, self._env = _generate_ramp(out_data, self._env, dvdt, cursor, n)
+
+        # Clamp and transition if the phase completed within this segment.
+        if n == n_in_state:
+            self._env = threshold
+            if next_state == SUSTAIN:
+                # Start the sustain countdown from the first SUSTAIN sample (cursor).
+                self._sustain_ends_at = start + cursor + self._sustain_samples
+            self._state = next_state
+
+        return cursor

@@ -1,12 +1,12 @@
 """
-Tests for Adsr2GatedPE, Adsr2TriggeredPE, and the _generate_ramp helper.
+Tests for AdsrGatedPE, AdsrTriggeredPE, and the _generate_ramp helper.
 
 At 1 kHz (SR=1000), 1 ms == 1 sample — convenient for exact arithmetic.
 
 Timing reference for most tests
   (attack=10ms, decay=20ms, sustain_level=0.5, release=30ms):
 
-  Adsr2GatedPE (gate high for N samples, then low):
+  AdsrGatedPE (gate high for N samples, then low):
     dvdt_attack  =  0.1 / sample
     dvdt_decay   = -0.025 / sample   (1.0 → 0.5 in 20 samples)
     dvdt_release = -1/60  / sample   (0.5 → 0.0 in 30 samples)
@@ -16,7 +16,7 @@ Timing reference for most tests
     out[G+k]     =  0.5 - k / 60    for k = 0..29   (release, gate fell at G)
     out[G+30+..] =  0.0                              (idle)
 
-  Adsr2TriggeredPE (trigger at sample 0,
+  AdsrTriggeredPE (trigger at sample 0,
                     attack=10ms, decay=20ms, sustain_time=10ms, release=30ms):
     attack  : samples  0-9
     decay   : samples 10-29
@@ -33,7 +33,7 @@ import numpy as np
 import pytest
 import pygmu2 as pg
 from pygmu2 import ArrayPE, ConstantPE, CropPE, NullRenderer
-from pygmu2.adsr2_pe import Adsr2GatedPE, Adsr2TriggeredPE, _generate_ramp
+from pygmu2.adsr_pe import AdsrGatedPE, AdsrTriggeredPE, _generate_ramp
 
 SR = 1000  # 1 kHz — 1 ms == 1 sample
 
@@ -97,52 +97,52 @@ class TestGenerateRamp:
 
 
 # ---------------------------------------------------------------------------
-# Adsr2GatedPE — properties
+# AdsrGatedPE — properties
 # ---------------------------------------------------------------------------
 
-class TestAdsr2GatedPEBasics:
+class TestAdsrGatedPEBasics:
 
     def setup_method(self):
         self.renderer = setup_renderer()
 
     def test_is_pure(self):
-        adsr = Adsr2GatedPE(ConstantPE(1.0))
+        adsr = AdsrGatedPE(ConstantPE(1.0))
         assert adsr.is_pure() is False
 
     def test_channel_count(self):
-        adsr = Adsr2GatedPE(ConstantPE(1.0))
+        adsr = AdsrGatedPE(ConstantPE(1.0))
         assert adsr.channel_count() == 1
 
     def test_extent_matches_gate(self):
         gate = CropPE(ConstantPE(1.0), 0, 100)
-        adsr = Adsr2GatedPE(gate)
+        adsr = AdsrGatedPE(gate)
         ext = adsr.extent()
         assert ext.start == 0
         assert ext.end == 100
 
     def test_extent_infinite_gate_is_infinite(self):
-        adsr = Adsr2GatedPE(ConstantPE(1.0))
+        adsr = AdsrGatedPE(ConstantPE(1.0))
         ext = adsr.extent()
         assert ext.start is None and ext.end is None
 
     def test_inputs_contains_gate(self):
         gate = ConstantPE(1.0)
-        adsr = Adsr2GatedPE(gate)
+        adsr = AdsrGatedPE(gate)
         assert gate in adsr.inputs()
 
 
 # ---------------------------------------------------------------------------
-# Adsr2GatedPE — envelope shape (loose tolerance)
+# AdsrGatedPE — envelope shape (loose tolerance)
 # ---------------------------------------------------------------------------
 
-class TestAdsr2GatedPERender:
+class TestAdsrGatedPERender:
 
     def setup_method(self):
         self.renderer = setup_renderer()
 
     def _make_adsr(self, gate_data):
         gate = ArrayPE(gate_data)
-        adsr = Adsr2GatedPE(
+        adsr = AdsrGatedPE(
             gate,
             attack_time=0.010,   # 10 samples
             decay_time=0.020,    # 20 samples
@@ -238,7 +238,7 @@ class TestAdsr2GatedPERender:
     def test_output_always_in_range(self):
         """Output never leaves [0, 1] under rapid gate changes."""
         gate = ArrayPE(np.tile([1.0, 0.0], 25).astype(np.float32))
-        adsr = Adsr2GatedPE(gate, attack_time=0.010, decay_time=0.020,
+        adsr = AdsrGatedPE(gate, attack_time=0.010, decay_time=0.020,
                             sustain_level=0.5, release_time=0.010)
         self.renderer.set_source(adsr)
         self.renderer.start()
@@ -263,10 +263,10 @@ class TestAdsr2GatedPERender:
 
 
 # ---------------------------------------------------------------------------
-# Adsr2GatedPE — sample-accurate values (arange-based semantics)
+# AdsrGatedPE — sample-accurate values (arange-based semantics)
 # ---------------------------------------------------------------------------
 
-class TestAdsr2GatedPESampleAccurate:
+class TestAdsrGatedPESampleAccurate:
     """
     Pin exact output values using the arange formula:
         out[offset + i] = env0 + i * dvdt   for i = 0..n-1
@@ -282,7 +282,7 @@ class TestAdsr2GatedPESampleAccurate:
 
     def _adsr(self, gate_data):
         gate = ArrayPE(gate_data)
-        adsr = Adsr2GatedPE(gate, attack_time=0.010, decay_time=0.020,
+        adsr = AdsrGatedPE(gate, attack_time=0.010, decay_time=0.020,
                             sustain_level=0.5, release_time=0.030)
         self.renderer.set_source(adsr)
         self.renderer.start()
@@ -334,10 +334,10 @@ class TestAdsr2GatedPESampleAccurate:
 
 
 # ---------------------------------------------------------------------------
-# Adsr2GatedPE — edge cases
+# AdsrGatedPE — edge cases
 # ---------------------------------------------------------------------------
 
-class TestAdsr2GatedPEEdgeCases:
+class TestAdsrGatedPEEdgeCases:
 
     def setup_method(self):
         self.renderer = setup_renderer()
@@ -345,7 +345,7 @@ class TestAdsr2GatedPEEdgeCases:
     def test_zero_sustain_level(self):
         """sustain_level=0: decay ramps all the way to zero."""
         gate = ArrayPE(gate_array((1, 50)))
-        adsr = Adsr2GatedPE(gate, attack_time=0.010, decay_time=0.020,
+        adsr = AdsrGatedPE(gate, attack_time=0.010, decay_time=0.020,
                             sustain_level=0.0, release_time=0.030)
         self.renderer.set_source(adsr)
         self.renderer.start()
@@ -356,7 +356,7 @@ class TestAdsr2GatedPEEdgeCases:
     def test_unit_sustain_level(self):
         """sustain_level=1.0: decay is a no-op; output stays at 1.0."""
         gate = ArrayPE(gate_array((1, 50)))
-        adsr = Adsr2GatedPE(gate, attack_time=0.010, decay_time=0.020,
+        adsr = AdsrGatedPE(gate, attack_time=0.010, decay_time=0.020,
                             sustain_level=1.0, release_time=0.030)
         self.renderer.set_source(adsr)
         self.renderer.start()
@@ -368,7 +368,7 @@ class TestAdsr2GatedPEEdgeCases:
     def test_single_sample_gate_high(self):
         """Gate high for exactly one sample; no crash, output in [0, 1]."""
         gate = ArrayPE(gate_array((1, 1), (0, 60)))
-        adsr = Adsr2GatedPE(gate, attack_time=0.010, decay_time=0.020,
+        adsr = AdsrGatedPE(gate, attack_time=0.010, decay_time=0.020,
                             sustain_level=0.5, release_time=0.030)
         self.renderer.set_source(adsr)
         self.renderer.start()
@@ -378,7 +378,7 @@ class TestAdsr2GatedPEEdgeCases:
     def test_rapid_gate_changes(self):
         """Rapid alternating gate doesn't crash; output stays in [0, 1]."""
         gate = ArrayPE(np.tile([1.0, 0.0], 25).astype(np.float32))
-        adsr = Adsr2GatedPE(gate, attack_time=0.010, decay_time=0.020,
+        adsr = AdsrGatedPE(gate, attack_time=0.010, decay_time=0.020,
                             sustain_level=0.5, release_time=0.010)
         self.renderer.set_source(adsr)
         self.renderer.start()
@@ -387,47 +387,47 @@ class TestAdsr2GatedPEEdgeCases:
 
 
 # ---------------------------------------------------------------------------
-# Adsr2TriggeredPE — properties
+# AdsrTriggeredPE — properties
 # ---------------------------------------------------------------------------
 
-class TestAdsr2TriggeredPEBasics:
+class TestAdsrTriggeredPEBasics:
 
     def setup_method(self):
         self.renderer = setup_renderer()
 
     def test_is_pure(self):
-        adsr = Adsr2TriggeredPE(ArrayPE(np.zeros(10, dtype=np.float32)))
+        adsr = AdsrTriggeredPE(ArrayPE(np.zeros(10, dtype=np.float32)))
         assert adsr.is_pure() is False
 
     def test_channel_count(self):
-        adsr = Adsr2TriggeredPE(ArrayPE(np.zeros(10, dtype=np.float32)))
+        adsr = AdsrTriggeredPE(ArrayPE(np.zeros(10, dtype=np.float32)))
         assert adsr.channel_count() == 1
 
     def test_extent_matches_trigger(self):
         trigger = CropPE(ConstantPE(0.0), 0, 100)
-        adsr = Adsr2TriggeredPE(trigger)
+        adsr = AdsrTriggeredPE(trigger)
         ext = adsr.extent()
         assert ext.start == 0
         assert ext.end == 100
 
     def test_inputs_contains_trigger(self):
         trigger = ArrayPE(np.zeros(10, dtype=np.float32))
-        adsr = Adsr2TriggeredPE(trigger)
+        adsr = AdsrTriggeredPE(trigger)
         assert trigger in adsr.inputs()
 
 
 # ---------------------------------------------------------------------------
-# Adsr2TriggeredPE — envelope shape (loose tolerance)
+# AdsrTriggeredPE — envelope shape (loose tolerance)
 # ---------------------------------------------------------------------------
 
-class TestAdsr2TriggeredPERender:
+class TestAdsrTriggeredPERender:
 
     def setup_method(self):
         self.renderer = setup_renderer()
 
     def _make_adsr(self, trig_data, sustain_time=0.010):
         trigger = ArrayPE(trig_data)
-        adsr = Adsr2TriggeredPE(
+        adsr = AdsrTriggeredPE(
             trigger,
             attack_time=0.010,       # 10 samples
             decay_time=0.020,        # 20 samples
@@ -517,10 +517,10 @@ class TestAdsr2TriggeredPERender:
 
 
 # ---------------------------------------------------------------------------
-# Adsr2TriggeredPE — sample-accurate values
+# AdsrTriggeredPE — sample-accurate values
 # ---------------------------------------------------------------------------
 
-class TestAdsr2TriggeredPESampleAccurate:
+class TestAdsrTriggeredPESampleAccurate:
     """
     Pin exact output at 1kHz, trigger at sample 0:
         attack=10ms, decay=20ms, sustain_time=10ms, sustain_level=0.5, release=30ms
@@ -537,7 +537,7 @@ class TestAdsr2TriggeredPESampleAccurate:
 
     def _adsr(self, trig_data):
         trigger = ArrayPE(trig_data)
-        adsr = Adsr2TriggeredPE(
+        adsr = AdsrTriggeredPE(
             trigger,
             attack_time=0.010, decay_time=0.020,
             sustain_time=0.010, sustain_level=0.5, release_time=0.030,
@@ -582,10 +582,10 @@ class TestAdsr2TriggeredPESampleAccurate:
 
 
 # ---------------------------------------------------------------------------
-# Adsr2TriggeredPE — edge cases
+# AdsrTriggeredPE — edge cases
 # ---------------------------------------------------------------------------
 
-class TestAdsr2TriggeredPEEdgeCases:
+class TestAdsrTriggeredPEEdgeCases:
 
     def setup_method(self):
         self.renderer = setup_renderer()
@@ -593,7 +593,7 @@ class TestAdsr2TriggeredPEEdgeCases:
     def test_zero_sustain_time(self):
         """sustain_time=0: sustain phase is skipped; release follows decay."""
         trigger = ArrayPE(trigger_array(80, 0))
-        adsr = Adsr2TriggeredPE(trigger, attack_time=0.010, decay_time=0.020,
+        adsr = AdsrTriggeredPE(trigger, attack_time=0.010, decay_time=0.020,
                                 sustain_time=0.0, sustain_level=0.5,
                                 release_time=0.030)
         self.renderer.set_source(adsr)
@@ -607,7 +607,7 @@ class TestAdsr2TriggeredPEEdgeCases:
         """Triggers every 5 samples; no crash, output stays in [0, 1]."""
         trig = trigger_array(50, *range(0, 50, 5))
         trigger = ArrayPE(trig)
-        adsr = Adsr2TriggeredPE(trigger, attack_time=0.010, decay_time=0.020,
+        adsr = AdsrTriggeredPE(trigger, attack_time=0.010, decay_time=0.020,
                                 sustain_time=0.010, sustain_level=0.5,
                                 release_time=0.010)
         self.renderer.set_source(adsr)
@@ -619,7 +619,7 @@ class TestAdsr2TriggeredPEEdgeCases:
         """Trigger at the last sample of a buffer doesn't crash."""
         trig = trigger_array(50, 49)
         trigger = ArrayPE(trig)
-        adsr = Adsr2TriggeredPE(trigger, attack_time=0.010, decay_time=0.020,
+        adsr = AdsrTriggeredPE(trigger, attack_time=0.010, decay_time=0.020,
                                 sustain_time=0.010, sustain_level=0.5,
                                 release_time=0.010)
         self.renderer.set_source(adsr)

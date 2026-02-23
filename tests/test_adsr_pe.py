@@ -349,12 +349,12 @@ class TestAdsrGatedPESampleAccurate:
         snippet = adsr.render(0, 40)
         output = snippet.data[:, 0]
 
-        # Attack completes at cursor 10 (emits ~1.0), decay runs from cursor 11.
-        # Due to float accumulation, attack takes 11 steps (not 10).
-        assert abs(output[10] - 1.0) < 0.01  # near-1.0 pre-clamp value
-        assert abs(output[11] - 1.0) < 0.01  # exact 1.0 after clamp
-        assert abs(output[21] - 0.75) < 0.01 # midpoint (decay step 9 → cursor 21)
-        assert abs(output[31] - 0.5) < 0.01  # sustain reached (decay step 19 → cursor 31)
+        # Attack completes at cursor 10 (arange-based, exact); decay runs from cursor 10.
+        # out[k] = k * 0.1 for k=0..9; out[10+k] = 1.0 - k * 0.025 for k=0..19.
+        assert abs(output[10] - 1.0) < 0.01  # first decay sample (k=0)
+        assert abs(output[11] - 0.975) < 0.01 # decay k=1
+        assert abs(output[20] - 0.75) < 0.01 # midpoint (decay k=10 → cursor 20)
+        assert abs(output[30] - 0.5) < 0.01  # sustain reached (decay k=20 → cursor 30)
 
     def test_precise_release_ramp(self):
         """Test precise release ramp values."""
@@ -408,9 +408,8 @@ class TestAdsrGatedPEEdgeCases:
         snippet = adsr.render(0, 50)
         output = snippet.data[:, 0]
 
-        # Attack takes 11 slots (output-then-update + float accumulation),
-        # decay 20 more → sustain level first emitted at cursor 31.
-        assert abs(output[31]) < 0.01
+        # Attack takes 10 samples, decay 20 more → sustain level first emitted at cursor 30.
+        assert abs(output[30]) < 0.01
         assert abs(output[49]) < 0.01
 
     def test_unit_sustain_level(self):
