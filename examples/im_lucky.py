@@ -51,7 +51,7 @@ TRIPLET = (2.0/3.0)    # multiplicative modifier
 # ===== Articulation, modifies durations 
 
 LEGATO = 1.2     # mild overlap
-DETACHED = 1.0  # notes directly abut one another, no overlap
+CONNECTED = 1.0  # notes directly abut one another, no overlap
 DETACHED = 0.7   # slight space between notes
 STACCATO = 0.5   # shortened notes
 
@@ -147,7 +147,7 @@ beat = 0
 for pitch, duration, articulation in im_lucky_synth:
     if pitch != REST:
         beat_points.append((_b2sam(beat), _b2sam(duration * articulation)))
-        beat += duration
+    beat += duration
 
 # Build a list of (start, pitch) pairs, used to control the pitch of
 # the synth.  Includes portamento (glide) between pitches.
