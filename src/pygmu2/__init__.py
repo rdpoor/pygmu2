@@ -79,6 +79,7 @@ from pygmu2.reverb_pe import ReverbPE
 from pygmu2.reverse_pitch_echo_pe import ReversePitchEchoPE
 from pygmu2.ring_modulator_pe import RingModulatorPE
 from pygmu2.sample_hold_pe import SampleHoldPE
+from pygmu2.scheduled_gate_pe import ScheduledGatePE
 from pygmu2.sequence_pe import SequencePE, SequenceMode
 from pygmu2.slew_limiter_pe import SlewLimiterPE, SlewMode
 from pygmu2.set_extent_pe import SetExtentPE
@@ -206,6 +207,7 @@ __all__ = [
     "RandomTriggerPE",
     "RandomValuePE",
     "SampleHoldPE",
+    "ScheduledGatePE",
     "SlewLimiterPE",
     "TrackHoldPE",
     "TriggerRestartPE",
