@@ -16,40 +16,44 @@ from pygmu2.snippet import Snippet
 class MixPE(ProcessingElement):
     """
     A ProcessingElement that mixes (adds) multiple PE outputs together.
-    
+
     All inputs must be ProcessingElements. For adding constants to signals,
     use AddPE (to be implemented) or ConstantPE as an input.
-    
+
     Channel handling:
     - All inputs must have the same channel count
     - Output channel count matches input channel count
-    
+
     Extent:
     - The union of all input extents (covers the full range of all inputs)
-    
+
     Args:
-        *inputs: Two or more ProcessingElements to mix together. You may also
-            pass a single list/tuple of inputs.
-    
+        *inputs: One or more ProcessingElements to mix together. You may also
+            pass a single list/tuple of inputs.  When exactly one input is
+            given, render() delegates directly to that input with no copying.
+
     Raises:
-        ValueError: If fewer than 2 inputs provided
-    
+        ValueError: If no inputs are provided
+
     Example:
         # Mix two sine waves
         sine1_stream = SinePE(frequency=440.0, amplitude=0.5)
         sine2_stream = SinePE(frequency=550.0, amplitude=0.5)
         mixed_stream = MixPE(sine1_stream, sine2_stream)
-        
+
         # Mix three sources
         mixed_stream = MixPE(source1_stream, source2_stream, source3_stream)
+
+        # Pass-through a single source
+        mixed_stream = MixPE(source1_stream)
     """
     
     def __init__(self, *inputs: ProcessingElement):
         if len(inputs) == 1 and isinstance(inputs[0], (list, tuple)):
             inputs = tuple(inputs[0])
 
-        if len(inputs) < 2:
-            raise ValueError("MixPE requires at least 2 inputs")
+        if len(inputs) < 1:
+            raise ValueError("MixPE requires at least 1 input")
 
         self._inputs = list(inputs)
     
@@ -77,6 +81,10 @@ class MixPE(ProcessingElement):
         Returns:
             Snippet containing the sum of all input samples
         """
+        # Singleton fast-path: delegate directly, no allocation or copying.
+        if len(self._inputs) == 1:
+            return self._inputs[0].render(start, duration)
+
         # Render only inputs whose extents intersect the requested range
         req_extent = Extent(start, start + duration)
         rendered = []

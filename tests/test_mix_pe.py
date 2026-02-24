@@ -27,13 +27,13 @@ class TestMixPEBasics:
         mix = MixPE(source1, source2, source3)
         assert len(mix.inputs()) == 3
     
-    def test_requires_at_least_two_inputs(self):
+    def test_single_input_is_accepted(self):
         source = ConstantPE(0.5)
-        with pytest.raises(ValueError, match="at least 2 inputs"):
-            MixPE(source)
-    
-    def test_requires_at_least_two_inputs_empty(self):
-        with pytest.raises(ValueError, match="at least 2 inputs"):
+        mix = MixPE(source)
+        assert len(mix.inputs()) == 1
+
+    def test_requires_at_least_one_input(self):
+        with pytest.raises(ValueError, match="at least 1 input"):
             MixPE()
     
     def test_is_pure(self):
