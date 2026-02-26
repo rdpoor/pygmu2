@@ -4,11 +4,17 @@ SlewLimiterPE - limit the rate of change of a control signal.
 The output "chases" the source at no more than `rate` units/second
 (symmetric: same limit for rise and fall).
 
-Two modes are available:
-  LINEAR      - output changes at a constant rate toward target
+Three modes are available:
+  LINEAR      - output changes at a constant rate toward target (units/s)
   EXPONENTIAL - output changes proportionally to remaining error (RC-filter
                 style); rate sets the per-sample coefficient so that at full
                 error the initial velocity equals the linear mode velocity.
+  LOGARITHMIC - slewing is performed in log₂ (octave) space, so `rate` is
+                measured in octaves/second.  The output signal stays in the
+                original (e.g. Hz) domain.  Useful for frequency glides where
+                a musically constant glide speed is desired regardless of
+                register: e.g. rate=2 takes 0.5 s to move one octave at any
+                base frequency.
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
@@ -30,6 +36,7 @@ class SlewMode(Enum):
 
     LINEAR = "linear"
     EXPONENTIAL = "exponential"
+    LOGARITHMIC = "logarithmic"  # rate in octaves/second; signal stays in Hz
 
 
 class SlewLimiterPE(ProcessingElement):
@@ -38,17 +45,22 @@ class SlewLimiterPE(ProcessingElement):
 
     Args:
         source: Mono control PE to limit.
-        rate:   Maximum slew velocity in units/second (float or ProcessingElement).
+        rate:   Maximum slew velocity (float or ProcessingElement).
+                LINEAR/EXPONENTIAL: units/second.
+                LOGARITHMIC: octaves/second (signal remains in Hz).
                 Applied symmetrically for both rise and fall.
-        mode:   SlewMode.LINEAR (default) or SlewMode.EXPONENTIAL.
+        mode:   SlewMode.LINEAR (default), SlewMode.EXPONENTIAL, or
+                SlewMode.LOGARITHMIC.
 
     Notes:
         - is_pure() is False; the current output value is state.
-        - In LINEAR mode the output moves toward the source at a constant rate
-          of at most `rate` units/second.
-        - In EXPONENTIAL mode the per-sample coefficient is derived from rate
-          so that the initial velocity (at maximum error) matches the linear
-          mode.  The output asymptotically approaches the target.
+        - LINEAR: output moves toward source at ≤ rate units/second.
+        - EXPONENTIAL: per-sample coefficient derived so that the initial
+          velocity at maximum error matches LINEAR.  Asymptotically approaches
+          target.
+        - LOGARITHMIC: slewing computed in log₂ space so `rate` octaves/second
+          is constant regardless of register.  If the current value is ≤ 0 the
+          output jumps immediately to the target (avoids log(0)).
     """
 
     def __init__(
@@ -115,12 +127,28 @@ class SlewLimiterPE(ProcessingElement):
                     delta = -dt
                 current += delta
                 out[i] = current
-        else:  # EXPONENTIAL
+        elif self._mode == SlewMode.EXPONENTIAL:
             for i in range(duration):
                 dt = float(rate_data[i]) / sr
                 k = min(dt, 1.0)
                 error = float(src[i]) - current
                 current += k * error
+                out[i] = current
+        else:  # LOGARITHMIC — slew in octave space, signal stays in Hz
+            import math
+            for i in range(duration):
+                target = float(src[i])
+                if current <= 0.0 or target <= 0.0:
+                    # Can't take log of non-positive; jump immediately.
+                    current = target if target > 0.0 else current
+                else:
+                    max_oct = float(rate_data[i]) / sr   # octaves per sample
+                    delta_oct = math.log2(target) - math.log2(current)
+                    if delta_oct > max_oct:
+                        delta_oct = max_oct
+                    elif delta_oct < -max_oct:
+                        delta_oct = -max_oct
+                    current *= math.pow(2.0, delta_oct)
                 out[i] = current
 
         self._current = current

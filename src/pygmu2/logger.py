@@ -52,6 +52,16 @@ def set_global_logging(
     return logger
 
 
+def setup_logging(
+    level: str = "INFO",
+    format_string: str | None = None,
+    log_file: str | None = None,
+) -> logging.Logger:
+    """Alias for set_global_logging — configure pygmu2 logging."""
+    return set_global_logging(level=level, format_string=format_string,
+                              log_file=log_file)
+
+
 def get_logger(name: str | None = None) -> logging.Logger:
     """
     Get a logger instance for the given name.
