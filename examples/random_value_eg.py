@@ -61,7 +61,7 @@ def demo_ramped_rate():
     cropped_note = pg.CropPE(filtered_note, 0, duration_samples)
     pg.play(source=pg.GainPE(pad_clip(pg.GainPE(cropped_note, 0.1)), gain=0.80))
 
-def demo_random_mumbling():
+def demo_drunken_hypnotoad():
     """3-resonator filter vocal-tract model with wandering formants."""
     def map(x0, x1, y0, y1):
         """Return a function f(x) that maps [x0, x1] → [y0, y1]."""
@@ -69,7 +69,7 @@ def demo_random_mumbling():
             return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
         return f
 
-    print("Demo: Drunken robot")
+    print("Demo: Drunken Hypnotoad")
     duration_samples = s(20)
     fo1 = pg.TransformPE(pg.RandomValuePE(rate=8),  map(0, 1, 250, 900))
     fo2 = pg.TransformPE(pg.RandomValuePE(rate=10), map(0, 1, 700, 2500))
@@ -84,10 +84,36 @@ def demo_random_mumbling():
     pg.play_offline(pg.GainPE(mix, gain=1.38))
 
 
+def demo_drunken_robot():
+    """3-resonator filter vocal-tract model with wandering formants."""
+    def map(x0, x1, y0, y1):
+        """Return a function f(x) that maps [x0, x1] → [y0, y1]."""
+        def f(x):
+            return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+        return f
+
+    print("Demo: Drunken robot")
+    duration_samples = s(20)
+    fo1 = pg.TransformPE(pg.RandomValuePE(rate=8),  map(0, 1, 250, 900))
+    fo2 = pg.TransformPE(pg.RandomValuePE(rate=10), map(0, 1, 700, 2500))
+    fo3 = pg.TransformPE(pg.RandomValuePE(rate=12), map(0, 1, 1700, 3500))
+    src = pg.CachePE(pg.FunctionGenPE(
+        frequency=pg.pitch_to_freq(42),
+        duty_cycle=0.1))
+    raw_mix = pg.MixPE(
+        pg.BiquadPE(src, frequency=fo1, q=5,  mode=pg.BiquadMode.BANDPASS),
+        pg.BiquadPE(src, frequency=fo2, q=8,  mode=pg.BiquadMode.BANDPASS),
+        pg.BiquadPE(src, frequency=fo3, q=12, mode=pg.BiquadMode.BANDPASS),
+    )
+    mix = pg.GainPE(pg.CropPE(raw_mix, 0, duration_samples), 0.5)
+    pg.play_offline(pg.GainPE(mix, gain=1.38))
+
+
 DEMOS = [
     ("Random Value with different fixed rate values", demo_fixed_rates),
     ("Random Value with ramped rate", demo_ramped_rate),
-    ("Random mumbling", demo_random_mumbling),
+    ("Drunken Hypnotoad", demo_drunken_hypnotoad),
+    ("Drunken robot", demo_drunken_robot),
 ]
 
 # ──────────────────────────────────────────────────────────────────────────────
