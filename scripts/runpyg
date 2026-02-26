@@ -7,12 +7,12 @@ SEARCH_DIRS=("$REPO_ROOT/scripts" "$REPO_ROOT/examples")
 usage() {
   cat <<'EOF'
 Usage:
-  scripts/run_python_target.sh <script_or_name> [demo_choice]
+  scripts/runpyg <script_or_name> [demo_choice]
 
 Examples:
-  scripts/run_python_target.sh examples/23_convolution.py 4
-  scripts/run_python_target.sh 23_convolution 4
-  scripts/run_python_target.sh fluttersynth_midi
+  scripts/runpyg examples/23_convolution.py 4
+  scripts/runpyg 23_convolution 4
+  scripts/runpyg fluttersynth_midi
 EOF
 }
 
@@ -33,6 +33,7 @@ resolve_script() {
   local script_arg="$1"
   local candidate
   local matches=()
+  local fuzzy_matches=()
 
   # Explicit or qualified path: use as-is (relative paths are from repo root).
   if [[ "$script_arg" == /* || "$script_arg" == */* ]]; then
@@ -65,7 +66,38 @@ resolve_script() {
   done
 
   if [[ ${#matches[@]} -eq 0 ]]; then
+    # Fallback: simple substring match against script stems.
+    local dir file base stem
+    for dir in "${SEARCH_DIRS[@]}"; do
+      [ -d "$dir" ] || continue
+      for file in "$dir"/*.py; do
+        [ -e "$file" ] || continue
+        base="$(basename "$file")"
+        stem="${base%.py}"
+        if [[ "$stem" == *"$script_arg"* ]]; then
+          fuzzy_matches+=("$file")
+        fi
+      done
+    done
+  fi
+
+  if [[ ${#matches[@]} -eq 0 && ${#fuzzy_matches[@]} -eq 0 ]]; then
     echo "Could not find '$script_arg' in scripts/ or examples/." >&2
+    return 2
+  fi
+
+  if [[ ${#matches[@]} -eq 0 && ${#fuzzy_matches[@]} -eq 1 ]]; then
+    printf '%s\n' "${fuzzy_matches[0]}"
+    return 0
+  fi
+
+  if [[ ${#matches[@]} -eq 0 && ${#fuzzy_matches[@]} -gt 1 ]]; then
+    echo "Ambiguous script name via substring match. Please provide a path." >&2
+    local fm rel
+    for fm in "${fuzzy_matches[@]}"; do
+      rel="${fm#$REPO_ROOT/}"
+      echo "  - $rel" >&2
+    done
     return 2
   fi
   if [[ ${#matches[@]} -gt 1 ]]; then
@@ -89,6 +121,8 @@ fi
 if [[ $# -lt 1 ]]; then
   echo "Please provide a script name or path." >&2
   echo >&2
+  usage >&2
+  echo >&2
   echo "Available script names:" >&2
   list_available >&2
   exit 2
@@ -97,7 +131,11 @@ fi
 script_arg="$1"
 demo_choice="${2:-}"
 
-script_path="$(resolve_script "$script_arg")"
+if ! script_path="$(resolve_script "$script_arg")"; then
+  echo >&2
+  usage >&2
+  exit 2
+fi
 
 cmd=(uv run python "$script_path")
 if [[ -n "$demo_choice" ]]; then
