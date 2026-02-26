@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SEARCH_DIRS=("$REPO_ROOT/scripts" "$REPO_ROOT/examples")
+
+usage() {
+  cat <<'EOF'
+Usage:
+  scripts/run_python_target.sh <script_or_name> [demo_choice]
+
+Examples:
+  scripts/run_python_target.sh examples/23_convolution.py 4
+  scripts/run_python_target.sh 23_convolution 4
+  scripts/run_python_target.sh fluttersynth_midi
+EOF
+}
+
+list_available() {
+  for dir in "${SEARCH_DIRS[@]}"; do
+    [ -d "$dir" ] || continue
+    rel="${dir#$REPO_ROOT/}"
+    echo "${rel}/"
+    while IFS= read -r -d '' file; do
+      base="$(basename "$file")"
+      stem="${base%.py}"
+      echo "  - $stem"
+    done < <(find "$dir" -maxdepth 1 -type f -name '*.py' -print0 | sort -z)
+  done
+}
+
+resolve_script() {
+  local script_arg="$1"
+  local candidate
+  local matches=()
+
+  # Explicit or qualified path: use as-is (relative paths are from repo root).
+  if [[ "$script_arg" == /* || "$script_arg" == */* ]]; then
+    if [[ "$script_arg" == /* ]]; then
+      candidate="$script_arg"
+    else
+      candidate="$REPO_ROOT/$script_arg"
+    fi
+    if [[ -f "$candidate" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+    echo "Script path not found: $script_arg" >&2
+    return 2
+  fi
+
+  local variants=("$script_arg")
+  if [[ "$script_arg" != *.py ]]; then
+    variants+=("${script_arg}.py")
+  fi
+
+  local dir variant probe
+  for dir in "${SEARCH_DIRS[@]}"; do
+    for variant in "${variants[@]}"; do
+      probe="$dir/$variant"
+      if [[ -f "$probe" ]]; then
+        matches+=("$probe")
+      fi
+    done
+  done
+
+  if [[ ${#matches[@]} -eq 0 ]]; then
+    echo "Could not find '$script_arg' in scripts/ or examples/." >&2
+    return 2
+  fi
+  if [[ ${#matches[@]} -gt 1 ]]; then
+    echo "Ambiguous script name. Please provide a path." >&2
+    local m rel
+    for m in "${matches[@]}"; do
+      rel="${m#$REPO_ROOT/}"
+      echo "  - $rel" >&2
+    done
+    return 2
+  fi
+
+  printf '%s\n' "${matches[0]}"
+}
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+if [[ $# -lt 1 ]]; then
+  echo "Please provide a script name or path." >&2
+  echo >&2
+  echo "Available script names:" >&2
+  list_available >&2
+  exit 2
+fi
+
+script_arg="$1"
+demo_choice="${2:-}"
+
+script_path="$(resolve_script "$script_arg")"
+
+cmd=(uv run python "$script_path")
+if [[ -n "$demo_choice" ]]; then
+  cmd+=("$demo_choice")
+fi
+
+echo "Running: ${cmd[*]}"
+(
+  cd "$REPO_ROOT"
+  "${cmd[@]}"
+)
