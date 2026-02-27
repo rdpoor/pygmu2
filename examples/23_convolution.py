@@ -123,8 +123,6 @@ def _apply_chorus(
     rate_hz: float = 0.25,
     depth_ms: float = 2.5,
     center_ms: float = 22.0,
-    dry_gain: float = 0.3,
-    wet_gain: float = 0.7,
 ):
     depth_samples = depth_ms * sample_rate / 1000.0
     center_samples = center_ms * sample_rate / 1000.0
@@ -132,9 +130,7 @@ def _apply_chorus(
     center_stream = ConstantPE(center_samples)
     delay_signal_stream = MixPE(center_stream, lfo_stream)
     delayed_stream = DelayPE(source_stream, delay=delay_signal_stream)
-    dry_stream = GainPE(source_stream, gain=dry_gain)
-    wet_stream = GainPE(delayed_stream, gain=wet_gain)
-    return MixPE(dry_stream, wet_stream)
+    return MixPE(source_stream, delayed_stream)
 
 
 def _demo_dry(source_path: Path, *, gain: float = 0.8, norm_gain: float = 1.0) -> None:
@@ -216,8 +212,6 @@ def _demo_wet_chorus_on_wet(
     chorus_rate_hz: float = 0.25,
     chorus_depth_ms: float = 2.5,
     chorus_center_ms: float = 22.0,
-    chorus_dry_gain: float = 0.3,
-    chorus_wet_gain: float = 0.7,
 ) -> None:
     source_stream = _load_wav(source_path)
     ir_stream = _load_wav(ir_path)
@@ -233,8 +227,6 @@ def _demo_wet_chorus_on_wet(
         rate_hz=chorus_rate_hz,
         depth_ms=chorus_depth_ms,
         center_ms=chorus_center_ms,
-        dry_gain=chorus_dry_gain,
-        wet_gain=chorus_wet_gain,
     )
 
     dry_gain = 1.0 - wet_gain
@@ -243,7 +235,10 @@ def _demo_wet_chorus_on_wet(
         dry_stream,
         method=SpatialAdapter(channels=wet_stream.channel_count()),
     )
-    out_stream = MixPE(dry_stream, wet_stream)
+    out_stream = MixPE(
+        dry_stream, 
+        wet_stream
+        )
 
     print(f"Source: {source_path.name}")
     print(f"IR:     {ir_path.name} (chorus applied to wet only)")
@@ -251,17 +246,15 @@ def _demo_wet_chorus_on_wet(
     print(f"Dry gain: {dry_gain:.2f}")
     print(f"Wet gain: {wet_gain:.2f} (effective: {wet_gain / ir_energy:.4f})")
     print(
-        "Chorus: rate={:.2f}Hz, depth={:.1f}ms, center={:.1f}ms, mix={:.2f}/{:.2f}".format(
+        "Chorus: rate={:.2f}Hz, depth={:.1f}ms, center={:.1f}ms".format(
             chorus_rate_hz,
             chorus_depth_ms,
             chorus_center_ms,
-            chorus_dry_gain,
-            chorus_wet_gain,
         )
     )
     print()
 
-    pg.play(pg.GainPE(out_stream, gain=norm_gain), sample_rate)
+    pg.play_offline(pg.GainPE(out_stream, gain=norm_gain), sample_rate)
 
 def demo_spoken_dry():
     print("=== Demo: spoken voice (dry) ===")
@@ -294,13 +287,11 @@ def demo_spoken_long_chorus_on_wet():
     _demo_wet_chorus_on_wet(
         SPOKEN_PATH,
         LONG_IR_PATH,
-        wet_gain=0.75,
+        wet_gain=0.25,
         norm_gain=2.41,
-        chorus_rate_hz=0.25,
-        chorus_depth_ms=2.5,
-        chorus_center_ms=22.0,
-        chorus_dry_gain=0.10,
-        chorus_wet_gain=0.90,
+        chorus_rate_hz=0.5,
+        chorus_depth_ms=5,
+        chorus_center_ms=2.0,
     )
 
 def demo_drums_mono_dry():
