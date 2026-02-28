@@ -101,6 +101,9 @@ def run_demos(demos: dict) -> None:
                 continue
             _name, fn = resolve_choice(choice)
             if fn is not None:
+                banner = f"Demo {choice}: {_name}"
+                print(banner)
+                print("-"*len(banner))
                 fn()
             else:
                 print(f"Invalid choice '{choice}', '?' to see list")

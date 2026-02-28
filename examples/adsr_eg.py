@@ -59,9 +59,6 @@ def demo_gate_adsr_vca():
     """
     PeriodicGate -> AdsrGateSignal -> GainPE(SuperSaw)
     """
-    print("Gate ADSR: VCA on SuperSaw")
-    print("--------------------------")
-
     duration_s = 8.0
 
     if GATE_SEC + RELEASE_SEC > REPEAT_SEC:
@@ -120,9 +117,6 @@ def demo_trigger_adsr_vca():
     """
     PeriodicTrigger -> AdsrTriggerSignal -> GainPE(SuperSaw)
     """
-    print("Trigger ADSR: VCA on SuperSaw")
-    print("--------------------------")
-
     duration_s = 8.0
 
     if GATE_SEC + RELEASE_SEC > REPEAT_SEC:
@@ -162,9 +156,6 @@ def demo_trigger_adsr_filter_sweep():
     """
     PeriodicTrigger -> AdsrTriggerSignal -> TransformPE -> LadderPE cutoff
     """
-    print("Trigger ADSR: Resonant filter sweep")
-    print("-----------------------------------")
-
     duration_s = 10.0
 
     # A periodic trigger to launch one-shot envelopes
@@ -207,9 +198,6 @@ def demo_dual_adsr_vca_and_filter():
       - Gate ADSR gates the amplitude (VCA)
       - Trigger ADSR sweeps filter cutoff
     """
-    print("Dual ADSR: VCA + filter sweep")
-    print("-----------------------------")
-
     duration_s = 12.0
 
     # Gate pattern: controls loudness and note "hold"
