@@ -60,6 +60,7 @@ from pygmu2.karplus_strong_pe import KarplusStrongPE, rho_for_decay_db
 from pygmu2.ladder_pe import LadderPE, LadderMode
 from pygmu2.logger import set_global_logging, get_logger
 from pygmu2.loop_pe import LoopPE
+from pygmu2.mag_freq_pe import MagFreqPE
 from pygmu2.meltysynth_pe import MeltysynthPE
 from pygmu2.midi_in_pe import MidiInPE
 from pygmu2.mix_pe import MixPE
@@ -190,6 +191,7 @@ __all__ = [
     "LadderPE",
     "LimiterPE",
     "LoopPE",
+    "MagFreqPE",
     "MeltysynthPE",
     "MidiInPE",
     "MixPE",
