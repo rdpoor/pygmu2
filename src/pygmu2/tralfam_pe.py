@@ -3,7 +3,7 @@ TralfamPE - spread a finite source's spectrum randomly across its time span.
 
 Tralfamadorians exist in all times simultaneously. This PE takes a finite
 source, FFTs the whole extent, keeps magnitudes but randomizes phases, then
-IFFTs. The result is cached; output extent matches the source extent.
+IFFTs. The result is cached; output extent matches the (padded) source extent.
 
 Requires finite extent (start and end not None). Large extents will use
 significant memory (full buffer in memory for FFT).
@@ -14,30 +14,30 @@ MIT License
 
 from __future__ import annotations
 
-
 import numpy as np
 
-from pygmu2.extent import Extent
+from pygmu2.mag_freq_pe import MagFreqPE
 from pygmu2.processing_element import ProcessingElement
-from pygmu2.snippet import Snippet
+from pygmu2.set_extent_pe import SetExtentPE
 
 
-class TralfamPE(ProcessingElement):
+class TralfamPE(MagFreqPE):
     """
     PE that spreads a finite source's spectrum randomly across its time span.
 
-    Renders the full source extent, FFTs (per channel), keeps magnitudes,
-    replaces phases with random [0, 2π), IFFTs, and caches the result.
-    Subsequent render requests return slices (or zero-padded slices) of that
-    cached buffer.
-
-    The source must have finite extent (extent().start and extent().end
-    not None). Memory use is O(extent.duration * channels).
+    Keeps FFT magnitudes intact but replaces every phase with an independent
+    uniform random value in [0, 2π). All rendering and caching behaviour is
+    inherited from MagFreqPE.
 
     Args:
-        source: Input PE with finite extent.
-        seed: Optional RNG seed for reproducible random phases (default: None).
-        normalize_peak: Optional linear amplitude (e.g. 0.5) to scale peak to; None = no normalization.
+        source:         Input PE with finite extent.
+        seed:           Optional RNG seed for reproducible random phases.
+        normalize_peak: Optional linear amplitude (e.g. 0.5) to scale peak to;
+                        None = no normalization.
+        padded_length:  If given, the source is zero-padded (or truncated) to
+                        this many samples before the FFT, anchored at the
+                        source's own start sample.  The output extent grows or
+                        shrinks to match.
     """
 
     def __init__(
@@ -45,99 +45,21 @@ class TralfamPE(ProcessingElement):
         source: ProcessingElement,
         seed: int | None = None,
         normalize_peak: float | None = None,
+        padded_length: int | None = None,
     ):
-        self._source = source
         self._seed = seed
-        if normalize_peak is not None and (normalize_peak <= 0 or not np.isfinite(normalize_peak)):
-            raise ValueError(
-                f"normalize_peak must be a positive finite number, got {normalize_peak!r}"
-            )
-        self._normalize_peak = normalize_peak
-        self._mogrified: np.ndarray | None = None  # (samples, channels), float32
+        self._padded_length = padded_length
 
-    def inputs(self) -> list[ProcessingElement]:
-        return [self._source]
+        if padded_length is not None:
+            src_start = source.extent().start
+            source = SetExtentPE(source, start=src_start, duration=padded_length)
 
-    def _compute_extent(self) -> Extent:
-        return self._source.extent()
+        rng = np.random.default_rng(seed)
 
-    def channel_count(self) -> int | None:
-        return self._source.channel_count()
+        def _tralfam_mangler(magnitudes, phases):
+            return magnitudes, rng.random(phases.shape) * 2.0 * np.pi
 
-    def is_pure(self) -> bool:
-        return True
-
-    def _mogrify(self) -> np.ndarray:
-        """Render full source, FFT → random phases → IFFT; cache and return (samples, channels)."""
-        if self._mogrified is not None:
-            return self._mogrified
-
-        ext = self.extent()
-        if ext.start is None or ext.end is None:
-            raise ValueError(
-                f"{self.__class__.__name__} requires finite source extent; "
-                f"got start={ext.start}, end={ext.end}"
-            )
-        n_frames = ext.duration
-        if n_frames is None or n_frames <= 0:
-            raise ValueError(
-                f"{self.__class__.__name__} requires positive extent duration; "
-                f"got duration={n_frames}"
-            )
-
-        snippet = self._source.render(ext.start, n_frames)
-        frames = snippet.data  # (samples, channels), float32
-
-        # FFT along time axis (axis=0)
-        analysis = np.fft.fft(frames, axis=0)
-        magnitudes = np.abs(analysis)
-
-        rng = np.random.default_rng(self._seed)
-        mangled_phases = rng.random(frames.shape) * 2.0 * np.pi
-        mangled_analysis = magnitudes * np.exp(1j * mangled_phases)
-        self._mogrified = np.real(np.fft.ifft(mangled_analysis, axis=0)).astype(
-            np.float32
-        )
-        if self._normalize_peak is not None:
-            peak = np.max(np.abs(self._mogrified))
-            if peak > 0:
-                self._mogrified *= (self._normalize_peak / peak)
-        return self._mogrified
-
-    def _render(self, start: int, duration: int) -> Snippet:
-        ext = self.extent()
-        if ext.start is None or ext.end is None:
-            return Snippet.from_zeros(
-                start, duration, self.channel_count() or 1
-            )
-
-        mogrified = self._mogrify()
-        channels = mogrified.shape[1]
-        req_end = start + duration
-
-        # No overlap with extent
-        if req_end <= ext.start or start >= ext.end:
-            return Snippet.from_zeros(start, duration, channels)
-
-        # Request fully inside extent: return slice
-        if ext.spans(start, duration):
-            local_start = start - ext.start
-            slice_data = mogrified[local_start : local_start + duration].copy()
-            return Snippet(start, slice_data)
-
-        # Partial overlap: build output with zeros and mogrified slice
-        out = np.zeros((duration, channels), dtype=np.float32)
-        overlap_start = max(start, ext.start)
-        overlap_end = min(req_end, ext.end)
-        if overlap_end <= overlap_start:
-            return Snippet(start, out)
-
-        mog_start = overlap_start - ext.start
-        mog_end = overlap_end - ext.start
-        out_start = overlap_start - start
-        out_end = overlap_end - start
-        out[out_start:out_end, :] = mogrified[mog_start:mog_end, :]
-        return Snippet(start, out)
+        super().__init__(source, _tralfam_mangler, normalize_peak=normalize_peak)
 
     def __repr__(self) -> str:
         parts = [f"source={self._source.__class__.__name__}"]
@@ -145,4 +67,6 @@ class TralfamPE(ProcessingElement):
             parts.append(f"seed={self._seed}")
         if self._normalize_peak is not None:
             parts.append(f"normalize_peak={self._normalize_peak}")
+        if self._padded_length is not None:
+            parts.append(f"padded_length={self._padded_length}")
         return f"TralfamPE({', '.join(parts)})"
