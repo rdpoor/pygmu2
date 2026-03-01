@@ -166,6 +166,7 @@ class FftManglerPE(ProcessingElement):
 
 AUDIO_DIR = Path(__file__).parent / "audio"
 DRUM_WAV = pg.WavReaderPE(str(AUDIO_DIR / "LOA_99_Drums_DoubleDown.wav"))
+# DRUM_WAV = pg.WavReaderPE(str(AUDIO_DIR / "spoken_voice44.wav"))
 BPM = 99
 BPS = BPM / 60.0
 
@@ -264,7 +265,7 @@ def demo_alternate_phases():
     source = DRUM_WAV
 
     def mangler(magnitudes, phases):
-        for i in range(100, len(phases), 2):
+        for i in range(100, len(phases)-1, 2):
             tmp = phases[i]
             phases[i] = phases[i+1]
             phases[i+1] = tmp
