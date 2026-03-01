@@ -1,0 +1,120 @@
+"""
+envelope_filter_eg.py — Envelope-controlled filter: louder hits sound brighter.
+
+Each percussive transient in claps.wav simultaneously:
+  • retriggers choir.wav playback via TriggerRestartPE, and
+  • modulates a low-pass filter cutoff so loud hits sound bright and
+    soft hits sound dark.
+
+Signal chain (Demo 3):
+
+    claps.wav → WavReaderPE → EnvelopePE → CachePE
+                                                  │                       │
+                                            SignalToGatePE           TransformPE
+                                            GateToTriggerPE          (env → Hz)
+                                                  │                       │
+                                            TriggerRestartPE ← choir.wav  │
+                                                  │                       │
+                                             GainPE(env×20)               │
+                                                  │                       │
+                                            BiquadPE(LOWPASS) ◄───────────┘
+                                                  │
+                                             GainPE(0.5)
+                                                  │
+                                         SetExtentPE (+tail)
+                                                  │
+                                              pg.play()
+
+Usage:
+    uv run python examples/envelope_filter_eg.py        # interactive menu
+    uv run python examples/envelope_filter_eg.py 1      # claps only
+    uv run python examples/envelope_filter_eg.py 2      # choir only
+    uv run python examples/envelope_filter_eg.py 3      # full effect
+    uv run python examples/envelope_filter_eg.py a      # all demos
+
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
+MIT License
+"""
+
+import pygmu2 as pg
+from pathlib import Path
+from examples_helper import run_demos
+
+SRATE = 44100
+pg.set_sample_rate(SRATE)
+
+AUDIO = Path(__file__).parent / "audio"
+
+CLAPS_FILE = AUDIO / "claps.wav"
+CHOIR_FILE  = AUDIO / "choir.wav"
+
+RELEASE   = 0.2      # seconds — envelope release time
+LOW_FREQ  = 300.0    # Hz — dark (soft clap / envelope near 0)
+HIGH_FREQ = 8000.0   # Hz — bright (loud clap / envelope near 1)
+
+
+# ── Demos ─────────────────────────────────────────────────────────────────────
+
+def demo_claps():
+    """Play claps.wav unmodified."""
+    pg.play(pg.WavReaderPE(str(CLAPS_FILE)), SRATE)
+
+
+def demo_choir():
+    """Play choir.wav unmodified."""
+    pg.play(pg.WavReaderPE(str(CHOIR_FILE)), SRATE)
+
+
+def demo_envelope_filter():
+    """Clap-driven choir retrigger with envelope-tracked filter cutoff."""
+    claps = pg.WavReaderPE(str(CLAPS_FILE))
+    choir = pg.WavReaderPE(str(CHOIR_FILE))
+
+    # Envelope follows clap energy.  CachePE lets it fan out to two branches
+    # (SignalToGatePE and TransformPE) without the impure-multiple-sinks error.
+    envelope = pg.CachePE(pg.EnvelopePE(claps, attack=0.002, release=RELEASE))
+
+    # Trigger branch: retrigger choir on each rising edge of the gate
+    gate    = pg.SignalToGatePE(envelope,
+                  low_threshold=0.02,
+                  high_threshold=0.05)
+    trigger = pg.GateToTriggerPE(gate)
+
+    retriggered = pg.TriggerRestartPE(trigger, choir)
+
+    # Shape amplitude with the envelope (×20 to bring up the level)
+    gated = pg.GainPE(
+        retriggered,
+        pg.TransformPE(envelope, func=lambda x: x * 20, name="amplify_gated"),
+    )
+
+    # Filter branch: cutoff tracks envelope → bright on loud hits, dark on soft
+    freq_pe = pg.TransformPE(
+        envelope,
+        func=lambda x: LOW_FREQ + x * (HIGH_FREQ - LOW_FREQ),
+        name="env_to_freq",
+    )
+
+    filtered = pg.BiquadPE(gated, frequency=freq_pe, q=3.0,
+                   mode=pg.BiquadMode.LOWPASS)
+
+    # Extend by release tail so the last clap decays fully before the file ends
+    claps_end = claps.extent().end
+    release_samples = int((RELEASE + 0.4) * SRATE)
+
+    output = pg.SetExtentPE(pg.GainPE(filtered, 0.5),
+                            start=0, duration=claps_end + release_samples)
+
+    pg.play(output, SRATE)
+
+
+# ── Entry point ───────────────────────────────────────────────────────────────
+
+DEMOS = [
+    ("Claps — source audio unmodified",          demo_claps),
+    ("Choir — source audio unmodified",          demo_choir),
+    ("Envelope filter: clap-driven choir retrigger + brightness", demo_envelope_filter),
+]
+
+if __name__ == "__main__":
+    run_demos(DEMOS)
