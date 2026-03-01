@@ -54,6 +54,7 @@ from pygmu2.extent import Extent, ExtendMode
 from pygmu2.function_gen_pe import FunctionGenPE
 from pygmu2.gain_pe import GainPE
 from pygmu2.gate_signal import GateSignal
+from pygmu2.gate_to_trigger_pe import GateToTriggerPE
 from pygmu2.identity_pe import IdentityPE
 from pygmu2.karplus_strong_pe import KarplusStrongPE, rho_for_decay_db
 from pygmu2.ladder_pe import LadderPE, LadderMode
@@ -155,6 +156,7 @@ __all__ = [
     "ProcessingElement",
     "SourcePE",
     "GateSignal",
+    "GateToTriggerPE",
     "TriggerSignal",
     "Renderer",
     "ProfileReport",
