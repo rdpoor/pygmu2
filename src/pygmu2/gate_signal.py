@@ -95,5 +95,5 @@ class GateSignal(ProcessingElement, ABC):
             raise ValueError(
                 "GateSignal values must be exactly 0 or 1 "
                 f"(found out-of-domain values in probe; min={mn}, max={mx}). "
-                "If you meant to threshold a control/audio signal, wrap it with ToGateSignal."
+                "If you meant to threshold a control/audio signal, wrap it with SignalToGatePE."
             )
