@@ -8,22 +8,27 @@ Each percussive transient in claps.wav simultaneously:
 
 Signal chain (Demo 3):
 
-    claps.wav → WavReaderPE → EnvelopePE → CachePE
-                                                  │                       │
-                                            SignalToGatePE           TransformPE
-                                            GateToTriggerPE          (env → Hz)
-                                                  │                       │
-                                            TriggerRestartPE ← choir.wav  │
-                                                  │                       │
-                                             GainPE(env×20)               │
-                                                  │                       │
-                                            BiquadPE(LOWPASS) ◄───────────┘
-                                                  │
-                                             GainPE(0.5)
-                                                  │
-                                         SetExtentPE (+tail)
-                                                  │
-                                              pg.play()
+    claps.wav ──► WavReaderPE
+                      │
+                 EnvelopePE
+                      │
+                   CachePE ──────────────────────────────────────────────┐
+                      │                                             TransformPE
+               SignalToGatePE                                       (env → Hz)
+                  CachePE ─────────────────────────────────┐             │
+                      │                                 (gain)           │
+               GateToTriggerPE   choir.wav                 │             │
+                      │              └──► WavReaderPE      │             │
+                      └──────────────► TriggerRestartPE    │             │
+                                               └───────► GainPE          │
+                                                              │          │
+                                                       BiquadPE(LOWPASS)◄┘
+                                                              │
+                                                        GainPE(0.5)
+                                                              │
+                                                    SetExtentPE (+tail)
+                                                              │
+                                                         pg.play()
 
 Usage:
     uv run python examples/envelope_filter_eg.py        # interactive menu
@@ -49,8 +54,8 @@ CLAPS_FILE = AUDIO / "claps.wav"
 CHOIR_FILE  = AUDIO / "choir.wav"
 
 RELEASE   = 0.2      # seconds — envelope release time
-LOW_FREQ  = 300.0    # Hz — dark (soft clap / envelope near 0)
-HIGH_FREQ = 8000.0   # Hz — bright (loud clap / envelope near 1)
+LOW_FREQ  = 200.0    # Hz — dark (soft clap / envelope near 0)
+HIGH_FREQ = 4000.0   # Hz — bright (loud clap / envelope near 1)
 
 
 # ── Demos ─────────────────────────────────────────────────────────────────────
@@ -74,19 +79,19 @@ def demo_envelope_filter():
     # (SignalToGatePE and TransformPE) without the impure-multiple-sinks error.
     envelope = pg.CachePE(pg.EnvelopePE(claps, attack=0.002, release=RELEASE))
 
-    # Trigger branch: retrigger choir on each rising edge of the gate
-    gate    = pg.SignalToGatePE(envelope,
-                  low_threshold=0.02,
-                  high_threshold=0.05)
-    trigger = pg.GateToTriggerPE(gate)
+    # Trigger branch: retrigger choir on each rising edge of the gate.  CachePE
+    # lets it fan out to two branches (GateToTriggerPE and GainPE).
+    gate = pg.CachePE(
+        pg.SignalToGatePE(
+            envelope,
+            low_threshold=0.02,
+            high_threshold=0.05))
 
-    retriggered = pg.TriggerRestartPE(trigger, choir)
+    # Restart choir on each positive going edge of the gate singal
+    retriggered = pg.TriggerRestartPE(pg.GateToTriggerPE(gate), choir)
 
-    # Shape amplitude with the envelope (×20 to bring up the level)
-    gated = pg.GainPE(
-        retriggered,
-        pg.TransformPE(envelope, func=lambda x: x * 20, name="amplify_gated"),
-    )
+    # Use the gate to turn on and off the choir
+    gated = pg.GainPE(retriggered, gate)
 
     # Filter branch: cutoff tracks envelope → bright on loud hits, dark on soft
     freq_pe = pg.TransformPE(
@@ -95,8 +100,11 @@ def demo_envelope_filter():
         name="env_to_freq",
     )
 
-    filtered = pg.BiquadPE(gated, frequency=freq_pe, q=3.0,
-                   mode=pg.BiquadMode.LOWPASS)
+    filtered = pg.BiquadPE(
+        gated, 
+        frequency=freq_pe, 
+        q=3.0,
+        mode=pg.BiquadMode.LOWPASS)
 
     # Extend by release tail so the last clap decays fully before the file ends
     claps_end = claps.extent().end
