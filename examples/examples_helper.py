@@ -84,9 +84,15 @@ def run_demos(demos: dict) -> None:
         print("  a: run all")
         print("  q: quit")
 
-    def run_all():
-        for _name, fn in demos:
-            fn()
+    def run_one_demo(choice, name, fn):
+        banner = f"Demo {choice}: {name}"
+        print(banner)
+        print("-"*len(banner))
+        fn()
+
+    def run_all(): 
+        for choice, (name, fn) in enumerate(demos):
+            run_one_demo(choice+1, name, fn)
 
     def choose_and_play():
         while True:
@@ -99,12 +105,9 @@ def run_demos(demos: dict) -> None:
             if choice == "?":
                 print_menu()
                 continue
-            _name, fn = resolve_choice(choice)
+            name, fn = resolve_choice(choice)
             if fn is not None:
-                banner = f"Demo {choice}: {_name}"
-                print(banner)
-                print("-"*len(banner))
-                fn()
+                run_one_demo(choice, name, fn)
             else:
                 print(f"Invalid choice '{choice}', '?' to see list")
 
