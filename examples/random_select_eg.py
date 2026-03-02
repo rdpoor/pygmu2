@@ -95,7 +95,7 @@ def demo_weighted_pitch_one_osc():
     print("Done!\n", flush=True)
 
 
-def demo_bongo_fury():
+def demo_djembe_fury():
     SAMPLE_RATE = 44100
     pg.set_sample_rate(SAMPLE_RATE)
     pg.set_global_logging(level="INFO")
@@ -146,7 +146,7 @@ def demo_bongo_fury():
 DEMOS = [
     ("Demo weighted pitches", demo_weighted_pitch),
     ("Demo one oscillator (freq select)", demo_weighted_pitch_one_osc),
-    ("Demo bongo fury", demo_bongo_fury),
+    ("Demo djembe fury", demo_djembe_fury),
 ]
 
 if __name__ == "__main__":

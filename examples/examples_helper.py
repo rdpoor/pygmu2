@@ -87,7 +87,7 @@ def run_demos(demos: dict) -> None:
     def run_one_demo(choice, name, fn):
         banner = f"Demo {choice}: {name}"
         print(banner)
-        print("-"*len(banner))
+        print("-"*len(banner), flush=True)
         fn()
 
     def run_all(): 

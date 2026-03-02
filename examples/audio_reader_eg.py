@@ -28,8 +28,6 @@ AUDIO_DIR = Path(__file__).parent / "audio"
 
 def demo_wav():
     """Play a WAV file via AudioReaderPE."""
-    print("Demo: WAV via AudioReaderPE")
-    print("---------------------------")
     audio_file = str(AUDIO_DIR / "djembe_hit.wav")
     source = pg.AudioReaderPE(audio_file, max_level_db = -3.0)
     print(f"  file: {audio_file}")
@@ -41,8 +39,6 @@ def demo_wav():
 
 def demo_mp3():
     """Play an MP3 file via AudioReaderPE (resampled to 44100 Hz if needed)."""
-    print("Demo: MP3 via AudioReaderPE")
-    print("---------------------------")
     audio_file = str(AUDIO_DIR / "clown_horn.mp3")
     source = pg.AudioReaderPE(audio_file, max_level_db = -3.0)
     print(f"  file: {audio_file}")
@@ -53,8 +49,8 @@ def demo_mp3():
 
 
 DEMOS = [
-    ("WAV file", demo_wav),
-    ("MP3 file", demo_mp3),
+    ("WAV via AudioReaderPE", demo_wav),
+    ("MP3 via AudioReaderPE", demo_mp3),
 ]
 
 # ------------------------------------------------------------------------------

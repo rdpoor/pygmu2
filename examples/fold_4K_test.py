@@ -17,8 +17,6 @@ AUDIO_DIR = Path(__file__).parent / "audio"
 
 def demo_original():
     """Play original sound"""
-    print("Demo: Play original sound")
-    print("---------------------------")
     audio_file = str(AUDIO_DIR / "strawberry-shaker__long_forte_shaken.mp3")
     carrier = pg.AudioReaderPE(audio_file, max_level_db = -3.0)
     pg.play_offline(pg.GainPE(carrier, gain=0.71), path="shaker_original.wav")
@@ -26,8 +24,6 @@ def demo_original():
 
 def demo_fold_4k():
     """Ring modulate at 4K with sine wave"""
-    print("Demo: Ring modulate with 4KHz")
-    print("---------------------------")
     audio_file = str(AUDIO_DIR / "strawberry-shaker__long_forte_shaken.mp3")
     carrier = pg.AudioReaderPE(audio_file, max_level_db = -3.0)
     modulator = pg.SinePE(frequency=4000.0)

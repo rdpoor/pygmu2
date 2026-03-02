@@ -11,7 +11,7 @@ If you see:
 
 Delete the cached OAuth token to force re-authentication on the next run:
 
-    macOS:   rm ~/Library/Application\ Support/pygmu2/gdrive_oauth/gdrive_token.json
+    macOS:   rm ~/Library/Application\\ Support/pygmu2/gdrive_oauth/gdrive_token.json
     Linux:   rm ~/.config/pygmu2/gdrive_oauth/gdrive_token.json
     Windows: del %APPDATA%\\pygmu2\\gdrive_oauth\\gdrive_token.json
 
@@ -19,9 +19,9 @@ Then run the script again — a browser window will open for you to re-authorize
 """
 
 from pathlib import Path
+from examples_helper import run_demos
 
 from pygmu2.asset_manager import (
-
     AssetManager,
     GoogleDriveAssetLoader,
     GithubUserContentAssetLoader,
@@ -30,9 +30,11 @@ from pygmu2.asset_manager import (
 import pygmu2 as pg
 pg.set_sample_rate(44100)
 
+# ------------------------------------------------------------------------------
+# Demos
+# ------------------------------------------------------------------------------
 
 def demo_google_drive_giant_fish():
-    print("\n=== Google Drive Giant Fish Demo ===")
     folder_id = "1qX5s1KCxAodHIA2sxxiHgybAHY_52LQn"
     oauth_client_secrets = (
         _default_config_base() / "pygmu2" / "client_secrets.json"
@@ -55,7 +57,6 @@ def demo_google_drive_giant_fish():
     print(f"Google Drive Giant Fish selected asset: {path}")
 
 def demo_google_drive():
-    print("\n=== Google Drive Demo ===")
     # TODO: Fill in your Google Drive folder ID.
     folder_id = "1idxVO258Lbs_5c97MGnal8W3mdp6T2YL"
     # TODO: Path to your OAuth client secrets JSON (downloaded from Google Cloud).
@@ -91,7 +92,6 @@ def demo_google_drive():
 
 
 def demo_github():
-    print("\n=== GitHub Demo ===")
     # TODO: Fill in your GitHub repo information.
     owner = "tomandandy"
     repo = "go"
@@ -116,8 +116,15 @@ def demo_github():
     path = manager.load_asset(asset_spec)
     print(f"GitHub selected asset: {path}")
 
+DEMOS = [
+    ("Google Drive Giant Fish Demo", demo_google_drive_giant_fish),
+    ("Google Drive Demo", demo_google_drive),
+    ("GitHub Demo", demo_github)
+]
+
+# ------------------------------------------------------------------------------
+# Main
+# ------------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    demo_google_drive_giant_fish()
-    demo_google_drive()
-    demo_github()
+    run_demos(DEMOS)

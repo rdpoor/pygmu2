@@ -38,15 +38,11 @@ def _load_sources():
 
 
 def demo_dry_only():
-    print("Demo: dry only")
-    print("--------------")
     source, _ir, sample_rate = _load_sources()
     pg.play(pg.GainPE(source, gain=0.81), sample_rate)
 
 
 def demo_fixed_mix():
-    print("Demo: fixed mix (40% wet)")
-    print("-------------------------")
     source, ir, sample_rate = _load_sources()
 
     reverb = pg.ReverbPE(source, ir, mix=0.4, normalize_ir=True)
@@ -54,8 +50,6 @@ def demo_fixed_mix():
 
 
 def demo_ramp_mix():
-    print("Demo: ramp mix (wet -> dry)")
-    print("----------------------------")
     source, ir, sample_rate = _load_sources()
 
     extent = source.extent()
@@ -74,10 +68,9 @@ def demo_ramp_mix():
 
 DEMOS = [
     ("Dry only", demo_dry_only),
-    ("Fixed mix", demo_fixed_mix),
-    ("Ramp mix", demo_ramp_mix),
+    ("Fixed mix (40% wet)", demo_fixed_mix),
+    ("Ramped mix (wet -> dry)", demo_ramp_mix),
 ]
-
 
 # ------------------------------------------------------------------------------
 # Main

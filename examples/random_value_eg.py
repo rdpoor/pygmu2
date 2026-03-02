@@ -28,7 +28,6 @@ def random_to_frequency(r):
 
 def demo_fixed_rates():
     """Use RandomValuePE to control filter cutoff with selected values for rate."""
-    print("Demo: Random Value with different fixed rate values")
     for rate in [1, 3, 10, 30, 100]:
         random_value = pg.RandomValuePE(rate=rate)
         f0 = pg.TransformPE(random_value, func=random_to_frequency)
@@ -39,12 +38,11 @@ def demo_fixed_rates():
             q=7.0,
             mode=pg.BiquadMode.LOWPASS)
         cropped_note = pg.CropPE(filtered_note, 0, s(4))
-        print(f"  rate = {rate}")
+        print(f"  rate = {rate}", flush=True)
         pg.play(source=pg.GainPE(pad_clip(pg.GainPE(cropped_note, 0.1)), gain=0.98))
 
 def demo_ramped_rate():
     """Play notes with rate ramping exponentially from 100 to 1."""
-    print("Demo: Random Value with rate ramping exponentially from 100 to 1")
     duration_samples = s(10)
     rate_ramp = pg.PiecewisePE(
         [(0, 100.0), (duration_samples, 1.0)],
@@ -69,7 +67,6 @@ def demo_drunken_hypnotoad():
             return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
         return f
 
-    print("Demo: Drunken Hypnotoad")
     duration_samples = s(20)
     fo1 = pg.TransformPE(pg.RandomValuePE(rate=8),  map(0, 1, 250, 900))
     fo2 = pg.TransformPE(pg.RandomValuePE(rate=10), map(0, 1, 700, 2500))
@@ -92,7 +89,6 @@ def demo_drunken_robot():
             return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
         return f
 
-    print("Demo: Drunken robot")
     duration_samples = s(20)
     fo1 = pg.TransformPE(pg.RandomValuePE(rate=8),  map(0, 1, 250, 900))
     fo2 = pg.TransformPE(pg.RandomValuePE(rate=10), map(0, 1, 700, 2500))
@@ -111,7 +107,7 @@ def demo_drunken_robot():
 
 DEMOS = [
     ("Random Value with different fixed rate values", demo_fixed_rates),
-    ("Random Value with ramped rate", demo_ramped_rate),
+    ("Random Value with rate ramping exponentially from 100 to 1", demo_ramped_rate),
     ("Drunken Hypnotoad", demo_drunken_hypnotoad),
     ("Drunken robot", demo_drunken_robot),
 ]

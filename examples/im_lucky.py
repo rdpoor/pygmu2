@@ -222,4 +222,4 @@ stereo_mix = pg.SpatialPE(eq_mix, method=pg.SpatialAdapter(channels=2))
 # add plate reverb
 wet_mix = pg.ReverbPE(source=stereo_mix, ir=IR, mix=0.3)
 # Render and play...
-pg.browse(source=wet_mix, sample_rate=SRATE, path="ladders.wav")
+pg.browse(source=wet_mix, sample_rate=SRATE)

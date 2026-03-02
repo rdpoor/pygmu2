@@ -38,17 +38,15 @@ def make_voice():
 def demo_fixed_rates():
     """Play gated choir with varying values for rate"""
 
-    print("Demo: Random Gate with different fixed rate values")
     for rate in [1, 3, 10, 30, 100]:
         gate = pg.RandomGatePE(rate=rate, seed=SEED)
         gated_choir = pg.GainPE(make_voice(), gate)
-        print(f"  rate = {rate}")
+        print(f"  rate = {rate}", flush=True)
         pg.play(pg.GainPE(pad_clip(gated_choir), gain=4.95))
 
 def demo_ramped_rate():
     """Play gated choir with rate ramping from 1 to 100"""
 
-    print("Demo: Random Gate with rate ramping exponentially from 1 to 100")
     looped_choir = pg.LoopPE(make_voice(), count=4) # extend choir
     rate_ramp = pg.PiecewisePE(
         [(0, 1.0), (looped_choir.extent().end, 100.0)],
@@ -62,7 +60,7 @@ def demo_ramped_rate():
 
 DEMOS = [
     ("Random Gate with different fixed rate values", demo_fixed_rates),
-    ("Random Gate with ramped rate", demo_ramped_rate),
+    ("Random Gate with rate ramping exponentially from 1 to 100", demo_ramped_rate),
 ]
 
 # ──────────────────────────────────────────────────────────────────────────────
