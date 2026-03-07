@@ -1,0 +1,3 @@
+# Extra script search directories for runpyg.
+# One path per line.  Absolute paths or paths relative to the pygmu2 repo root.
+/Users/andy/Dev/python/tralfam_etude

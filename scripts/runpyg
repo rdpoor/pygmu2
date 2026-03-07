@@ -4,6 +4,21 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SEARCH_DIRS=("$REPO_ROOT/scripts" "$REPO_ROOT/examples")
 
+# Load extra search dirs from .runpyg_paths (one path per line; # comments ok)
+if [[ -f "$REPO_ROOT/.runpyg_paths" ]]; then
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%%#*}"   # strip inline comments
+    line="${line#"${line%%[![:space:]]*}"}"  # ltrim
+    line="${line%"${line##*[![:space:]]}"}"  # rtrim
+    [[ -z "$line" ]] && continue
+    # Resolve relative paths against REPO_ROOT
+    if [[ "$line" != /* ]]; then
+      line="$REPO_ROOT/$line"
+    fi
+    SEARCH_DIRS+=("$line")
+  done < "$REPO_ROOT/.runpyg_paths"
+fi
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -35,10 +50,15 @@ resolve_script() {
   local matches=()
   local fuzzy_matches=()
 
-  # Explicit or qualified path: use as-is (relative paths are from repo root).
+  # Explicit or qualified path: use as-is.
+  # Absolute paths are used directly.
+  # Paths starting with ../ or ./ resolve from the caller's CWD.
+  # Other slash-containing paths resolve from REPO_ROOT.
   if [[ "$script_arg" == /* || "$script_arg" == */* ]]; then
     if [[ "$script_arg" == /* ]]; then
       candidate="$script_arg"
+    elif [[ "$script_arg" == ../* || "$script_arg" == ./* ]]; then
+      candidate="$(pwd)/$script_arg"
     else
       candidate="$REPO_ROOT/$script_arg"
     fi
