@@ -21,8 +21,14 @@ from pathlib import Path
 
 import numpy as np
 import pygmu2 as pg
+from pygmu2.annotations import AnnotationRecord, write_annotation_sidecar
 
-RANDOM_SEED = 49
+RANDOM_SEED = 51
+NUM_FILES = 4
+SLICES_PER_FILE = 2
+REVERB_MIX = 0.76
+
+
 
 SAMPLE_RATE = 44100
 pg.set_sample_rate(SAMPLE_RATE)
@@ -31,37 +37,40 @@ EXAMPLES_DIR = Path(__file__).parent
 IR_PATH = EXAMPLES_DIR / "audio" / "long_ir44.wav"
 
 STRUDEL_JSON_URL = "https://software.tomandandy.com/strudel.json"
-NUM_FILES = 3
-SLICES_PER_FILE = 2
 FORCED_SOURCE_NAME = None
 MIN_SLICE_SECONDS = 0.80
 MAX_SLICE_SECONDS = 3.20
-SLICE_FADE_IN_SECONDS = 4.0
-SLICE_FADE_OUT_SECONDS = 7.0
+SLICE_FADE_IN_SECONDS = 6.0
+SLICE_FADE_OUT_SECONDS = 12.0
 TRALFAM_TAIL_SECONDS = 4.0
 TRALFAM_LOOP_COUNT = 5
 TRALFAM_NORMALIZE_PEAK = 0.63
 OVERLAP_RATIO = 0.30
 USE_OVERLAP = True
-MASTER_GAIN = 0.62
+MASTER_GAIN = 1.0
 ENABLE_VOICE_COMPRESSION = True
 ENABLE_MASTER_COMPRESSION = True
-VOICE_COMPRESSOR_THRESHOLD = -28
+VOICE_COMPRESSOR_THRESHOLD = -18
 VOICE_COMPRESSOR_RATIO = 6
-VOICE_COMPRESSOR_ATTACK = 0.02
+VOICE_COMPRESSOR_ATTACK = 0.04
 VOICE_COMPRESSOR_RELEASE = 0.25
 VOICE_COMPRESSOR_KNEE = 6.0
 MASTER_COMPRESSOR_THRESHOLD = -28
-MASTER_COMPRESSOR_RATIO = 6
-MASTER_COMPRESSOR_ATTACK = 0.02
+MASTER_COMPRESSOR_RATIO = 4
+MASTER_COMPRESSOR_ATTACK = 0.05
 MASTER_COMPRESSOR_RELEASE = 0.25
 MASTER_COMPRESSOR_KNEE = 6.0
-REVERB_MIX = 0.68
 OUTPUT_PATH = Path(__file__).with_name("tralfam_etude4_render.wav")
 RENDER_VOICE_STEMS = False
 VOICE_STEMS_DIR = OUTPUT_PATH.parent
 VOICE_STEMS_PREFIX = OUTPUT_PATH.stem
 VOICE_BANDPASS_Q = 3
+MIN_CROSSFADE_LPF_FREQ = 180.0
+MAX_CROSSFADE_LPF_FREQ = 12000.0
+LPF_FADE_IN_SECONDS = 12.0
+LPF_FADE_OUT_SECONDS = 12.0
+CROSSFADE_LPF_Q = 2.4
+CROSSFADE_LPF_POW = 2.0
 
 # Voice-level configuration. Add more entries to create more voices.
 VOICE_CONFIGS = [
@@ -80,6 +89,10 @@ VOICE_CONFIGS = [
         "overlap_ratio": OVERLAP_RATIO,
         "voice_filter_min_hz": 60.0,
         "voice_filter_max_hz": 12000.0,
+        "min_crossfade_lpf_freq": MIN_CROSSFADE_LPF_FREQ,
+        "max_crossfade_lpf_freq": MAX_CROSSFADE_LPF_FREQ,
+        "lpf_fade_in_seconds": LPF_FADE_IN_SECONDS,
+        "lpf_fade_out_seconds": LPF_FADE_OUT_SECONDS,
         "voice_gain": 1.0,
         "accompaniment_min_hz": 68.0,
         "accompaniment_max_hz": 196.0,
@@ -101,6 +114,10 @@ VOICE_CONFIGS = [
         "overlap_ratio": OVERLAP_RATIO,
         "voice_filter_min_hz": 60.0,
         "voice_filter_max_hz": 12000.0,
+        "min_crossfade_lpf_freq": MIN_CROSSFADE_LPF_FREQ,
+        "max_crossfade_lpf_freq": MAX_CROSSFADE_LPF_FREQ,
+        "lpf_fade_in_seconds": LPF_FADE_IN_SECONDS,
+        "lpf_fade_out_seconds": LPF_FADE_OUT_SECONDS,
         "voice_gain": 1.0,
         "accompaniment_min_hz": 390.0,
         "accompaniment_max_hz": 1260.0,
@@ -122,6 +139,10 @@ VOICE_CONFIGS = [
         "overlap_ratio": OVERLAP_RATIO,
         "voice_filter_min_hz": 560.0,
         "voice_filter_max_hz": 900.0,
+        "min_crossfade_lpf_freq": 2000,
+        "max_crossfade_lpf_freq": 5000,
+        "lpf_fade_in_seconds": LPF_FADE_IN_SECONDS,
+        "lpf_fade_out_seconds": LPF_FADE_OUT_SECONDS,
         "voice_gain": 1.0,
         "accompaniment_min_hz": 1390.0,
         "accompaniment_max_hz": 3260.0,
@@ -217,6 +238,35 @@ def _sanitize_voice_config(raw_config, voice_index):
             f"voice_filter_max_hz <= voice_filter_min_hz; setting voice_filter_max_hz={corrected}",
         )
         cfg["voice_filter_max_hz"] = corrected
+
+    cfg["min_crossfade_lpf_freq"] = as_float(
+        "min_crossfade_lpf_freq",
+        MIN_CROSSFADE_LPF_FREQ,
+        minimum=20.0,
+    )
+    cfg["max_crossfade_lpf_freq"] = as_float(
+        "max_crossfade_lpf_freq",
+        MAX_CROSSFADE_LPF_FREQ,
+        minimum=20.0,
+    )
+    if cfg["max_crossfade_lpf_freq"] <= cfg["min_crossfade_lpf_freq"]:
+        corrected = cfg["min_crossfade_lpf_freq"] * 2.0
+        _log_constraint(
+            voice_name,
+            "max_crossfade_lpf_freq <= min_crossfade_lpf_freq; "
+            f"setting max_crossfade_lpf_freq={corrected}",
+        )
+        cfg["max_crossfade_lpf_freq"] = corrected
+    cfg["lpf_fade_in_seconds"] = as_float(
+        "lpf_fade_in_seconds",
+        LPF_FADE_IN_SECONDS,
+        minimum=0.0,
+    )
+    cfg["lpf_fade_out_seconds"] = as_float(
+        "lpf_fade_out_seconds",
+        LPF_FADE_OUT_SECONDS,
+        minimum=0.0,
+    )
 
     cfg["accompaniment_min_hz"] = as_float("accompaniment_min_hz", 38.0, minimum=20.0)
     cfg["accompaniment_max_hz"] = as_float("accompaniment_max_hz", 96.0, minimum=20.0)
@@ -417,6 +467,56 @@ def apply_sequence_crossfade(pe, fade_in_samples=0, fade_out_start=None):
         transition_type=pg.TransitionType.CONSTANT_POWER,
     )
     return pg.GainPE(pe, gain=envelope)
+
+
+def apply_sequence_crossfade_lpf(pe, voice_config):
+    """Apply LPF sweep per slice-pair: low->high on fade-in, high->low on fade-out."""
+    voice_name = voice_config["name"]
+    duration = pe.extent().end
+    if duration <= 0:
+        raise RuntimeError("Slice has no duration.")
+
+    min_freq = float(voice_config["min_crossfade_lpf_freq"])
+    max_freq = float(voice_config["max_crossfade_lpf_freq"])
+    fade_in = min(int(round(voice_config["lpf_fade_in_seconds"] * SAMPLE_RATE)), duration)
+    fade_out = min(int(round(voice_config["lpf_fade_out_seconds"] * SAMPLE_RATE)), duration)
+
+    if fade_in + fade_out > duration:
+        requested_in = fade_in
+        requested_out = fade_out
+        total = max(1, fade_in + fade_out)
+        scale = duration / total
+        fade_in = int(round(fade_in * scale))
+        fade_in = max(0, min(fade_in, duration))
+        fade_out = max(0, duration - fade_in)
+        _log_constraint(
+            voice_name,
+            "lpf_fade_in_seconds + lpf_fade_out_seconds exceeded slice duration; "
+            f"scaled from ({requested_in / SAMPLE_RATE:.2f}s, {requested_out / SAMPLE_RATE:.2f}s) "
+            f"to ({fade_in / SAMPLE_RATE:.2f}s, {fade_out / SAMPLE_RATE:.2f}s)",
+        )
+
+    sustain_end = max(fade_in, duration - fade_out)
+    shape_env = pg.PiecewisePE(
+        [
+            (0, 0.0),
+            (fade_in, 1.0),
+            (sustain_end, 1.0),
+            (duration, 0.0),
+        ],
+        transition_type=pg.TransitionType.LINEAR,
+    )
+    cutoff_env = pg.TransformPE(
+        shape_env,
+        func=lambda x: min_freq + (max_freq - min_freq) * np.power(np.clip(x, 0.0, 1.0), CROSSFADE_LPF_POW),
+        name="crossfade_lpf_pow2",
+    )
+    return pg.BiquadPE(
+        pe,
+        frequency=cutoff_env,
+        q=CROSSFADE_LPF_Q,
+        mode=pg.BiquadMode.LOWPASS,
+    )
 
 
 def make_blurry_slice(slice_pe, slice_duration, rng, voice_config):
@@ -655,6 +755,7 @@ def sequence_with_overlap(processed_slices, rng, voice_config):
         overlap_ratio = 0.95
 
     positioned = []
+    annotations = []
     cursor = 0
     print("\nSequence order:", flush=True)
     for index, item in enumerate(play_order):
@@ -674,6 +775,7 @@ def sequence_with_overlap(processed_slices, rng, voice_config):
                 flush=True,
             )
             cursor_step = next_offset
+            crossfade_seconds = overlap_samples / SAMPLE_RATE
         else:
             print(
                 f"  {item['source_name']} slice {item['slice_num']} @ {cursor / SAMPLE_RATE:.2f}s "
@@ -682,6 +784,7 @@ def sequence_with_overlap(processed_slices, rng, voice_config):
                 flush=True,
             )
             cursor_step = duration
+            crossfade_seconds = 0.0
 
         if USE_OVERLAP and index > 0:
             previous_duration = play_order[index - 1]["base_duration"]
@@ -709,10 +812,30 @@ def sequence_with_overlap(processed_slices, rng, voice_config):
         bass_stereo = pg.SpatialPE(bass_mono, method=pg.SpatialAdapter(channels=2))
 
         combined = pg.MixPE(paired, bass_stereo)
+        combined = apply_sequence_crossfade_lpf(combined, voice_config)
         positioned.append(pg.DelayPE(combined, delay=cursor))
+        annotations.append(
+            AnnotationRecord(
+                id=f"{voice_name}_{index + 1:04d}",
+                onset=cursor / SAMPLE_RATE,
+                extent=duration / SAMPLE_RATE,
+                label=f"{voice_name} {item['source_name']}#{item['slice_num']}",
+                kind="slice",
+                voice=voice_name,
+                meta={
+                    "source_name": item["source_name"],
+                    "slice_num": item["slice_num"],
+                    "tonic_hz": float(item["tonic_hz"]),
+                    "periodicity": float(item["periodicity"]),
+                    "bass_hz": float(item["bass_hz"]),
+                    "duration_seconds": duration / SAMPLE_RATE,
+                    "crossfade_seconds": float(crossfade_seconds),
+                },
+            )
+        )
         cursor += cursor_step
 
-    return pg.MixPE(*positioned)
+    return pg.MixPE(*positioned), annotations
 
 
 def build_voice(library, ir, rng, voice_config):
@@ -727,6 +850,10 @@ def build_voice(library, ir, rng, voice_config):
         f"overlap={voice_config['overlap_ratio']:.0%}, "
         f"voice_band={voice_config['voice_filter_min_hz']:.1f}-"
         f"{voice_config['voice_filter_max_hz']:.1f}Hz, "
+        f"crossfade_lpf={voice_config['min_crossfade_lpf_freq']:.1f}-"
+        f"{voice_config['max_crossfade_lpf_freq']:.1f}Hz "
+        f"(in={voice_config['lpf_fade_in_seconds']:.2f}s, "
+        f"out={voice_config['lpf_fade_out_seconds']:.2f}s), "
         f"accompaniment_range={voice_config['accompaniment_min_hz']:.1f}-"
         f"{voice_config['accompaniment_max_hz']:.1f}Hz, "
         f"accompaniment_gain={voice_config['accompaniment_gain']:.3f}, "
@@ -744,7 +871,7 @@ def build_voice(library, ir, rng, voice_config):
     for item in processed_slices:
         item["voice_config"] = voice_config
 
-    voice = sequence_with_overlap(processed_slices, rng, voice_config)
+    voice, annotations = sequence_with_overlap(processed_slices, rng, voice_config)
     voice = pg.BiquadPE(
         voice,
         frequency=voice_config["voice_filter_min_hz"],
@@ -769,10 +896,10 @@ def build_voice(library, ir, rng, voice_config):
         )
     voice = pg.ReverbPE(voice, ir, mix=reverb_wet_dry, normalize_ir=True)
     voice = pg.GainPE(voice, gain=voice_config["voice_gain"])
-    return voice
+    return voice, annotations
 
 
-def build_etude(seed=RANDOM_SEED, return_voice_stems=False):
+def build_etude(seed=RANDOM_SEED, return_voice_stems=False, return_annotations=False):
     rng = random.Random(seed)
 
     print(f"Fetching catalog: {STRUDEL_JSON_URL}", flush=True)
@@ -793,7 +920,9 @@ def build_etude(seed=RANDOM_SEED, return_voice_stems=False):
     sanitized_voice_configs = [
         _sanitize_voice_config(voice_config, index) for index, voice_config in enumerate(VOICE_CONFIGS)
     ]
-    voices = [build_voice(library, ir, rng, voice_config) for voice_config in sanitized_voice_configs]
+    voice_results = [build_voice(library, ir, rng, voice_config) for voice_config in sanitized_voice_configs]
+    voices = [voice_result[0] for voice_result in voice_results]
+    annotations = [item for _, ann in voice_results for item in ann]
     mixed = pg.MixPE(*voices)
     if ENABLE_MASTER_COMPRESSION:
         mixed = pg.CompressorPE(
@@ -806,17 +935,25 @@ def build_etude(seed=RANDOM_SEED, return_voice_stems=False):
             makeup_gain="auto",
         )
     master = pg.GainPE(mixed, gain=MASTER_GAIN)
+    if return_voice_stems and return_annotations:
+        return master, list(zip(sanitized_voice_configs, voices)), annotations
     if return_voice_stems:
         return master, list(zip(sanitized_voice_configs, voices))
+    if return_annotations:
+        return master, annotations
     return master
 
 
 def main():
-    build_result = build_etude(seed=RANDOM_SEED, return_voice_stems=RENDER_VOICE_STEMS)
+    build_result = build_etude(
+        seed=RANDOM_SEED,
+        return_voice_stems=RENDER_VOICE_STEMS,
+        return_annotations=True,
+    )
     if RENDER_VOICE_STEMS:
-        etude, voice_stems = build_result
+        etude, voice_stems, annotations = build_result
     else:
-        etude = build_result
+        etude, annotations = build_result
         voice_stems = []
 
     if RENDER_VOICE_STEMS:
@@ -836,6 +973,13 @@ def main():
     total_duration = etude.extent().end / SAMPLE_RATE
     print(f"\nRendering etude ({total_duration:.2f} seconds)...", flush=True)
     pg.render_to_file(etude, str(OUTPUT_PATH), sample_rate=SAMPLE_RATE)
+    sidecar_path = write_annotation_sidecar(
+        OUTPUT_PATH,
+        annotations=annotations,
+        sample_rate=SAMPLE_RATE,
+        total_frames=int(etude.extent().end),
+    )
+    print(f"Wrote {len(annotations)} annotations to {sidecar_path}", flush=True)
     print(f"Rendered to {OUTPUT_PATH}", flush=True)
 
 

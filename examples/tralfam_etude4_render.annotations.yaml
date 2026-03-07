@@ -1,0 +1,342 @@
+schema_version: 1
+timebase: seconds
+audio_file: tralfam_etude4_render.wav
+sample_rate: 44100
+total_frames: 13210516
+annotations:
+- id: voice_1_0001
+  onset: 0.0
+  label: voice_1 utoVocal#2
+  kind: slice
+  extent: 26.951927437641725
+  voice: voice_1
+  meta:
+    source_name: utoVocal
+    slice_num: 2
+    tonic_hz: 113.36760925449872
+    periodicity: 0.30030053190771727
+    bass_hz: 113.36760925449872
+    duration_seconds: 26.951927437641725
+    crossfade_seconds: 8.085578231292518
+- id: voice_1_0002
+  onset: 18.866349206349206
+  label: voice_1 sorLoop61#2
+  kind: slice
+  extent: 35.801473922902495
+  voice: voice_1
+  meta:
+    source_name: sorLoop61
+    slice_num: 2
+    tonic_hz: 148.4848484848485
+    periodicity: 0.37767652638449745
+    bass_hz: 148.4848484848485
+    duration_seconds: 35.801473922902495
+    crossfade_seconds: 10.740430839002267
+- id: voice_1_0003
+  onset: 43.927392290249436
+  label: voice_1 loop50#1
+  kind: slice
+  extent: 28.037528344671202
+  voice: voice_1
+  meta:
+    source_name: loop50
+    slice_num: 1
+    tonic_hz: 832.0754716981132
+    periodicity: 0.6154552628686479
+    bass_hz: 104.00943396226415
+    duration_seconds: 28.037528344671202
+    crossfade_seconds: 8.411269841269842
+- id: voice_1_0004
+  onset: 63.553650793650796
+  label: voice_1 nesatovaBrs#1
+  kind: slice
+  extent: 32.42108843537415
+  voice: voice_1
+  meta:
+    source_name: nesatovaBrs
+    slice_num: 1
+    tonic_hz: 518.8235294117648
+    periodicity: 0.5141003574840619
+    bass_hz: 129.7058823529412
+    duration_seconds: 32.42108843537415
+    crossfade_seconds: 9.726326530612244
+- id: voice_1_0005
+  onset: 86.2484126984127
+  label: voice_1 sorLoop61#1
+  kind: slice
+  extent: 26.398639455782313
+  voice: voice_1
+  meta:
+    source_name: sorLoop61
+    slice_num: 1
+    tonic_hz: 324.2647058823529
+    periodicity: 0.30000627199525376
+    bass_hz: 162.13235294117646
+    duration_seconds: 26.398639455782313
+    crossfade_seconds: 7.919591836734694
+- id: voice_1_0006
+  onset: 104.72746031746031
+  label: voice_1 utoVocal#1
+  kind: slice
+  extent: 32.43038548752835
+  voice: voice_1
+  meta:
+    source_name: utoVocal
+    slice_num: 1
+    tonic_hz: 113.95348837209302
+    periodicity: 0.3338166845897348
+    bass_hz: 113.95348837209302
+    duration_seconds: 32.43038548752835
+    crossfade_seconds: 9.729115646258503
+- id: voice_1_0007
+  onset: 127.42873015873016
+  label: voice_1 loop50#2
+  kind: slice
+  extent: 34.45204081632653
+  voice: voice_1
+  meta:
+    source_name: loop50
+    slice_num: 2
+    tonic_hz: 848.0769230769231
+    periodicity: 0.8640504926270339
+    bass_hz: 106.00961538461539
+    duration_seconds: 34.45204081632653
+    crossfade_seconds: 10.33562358276644
+- id: voice_1_0008
+  onset: 151.54514739229026
+  label: voice_1 nesatovaBrs#2
+  kind: slice
+  extent: 30.051247165532878
+  voice: voice_1
+  meta:
+    source_name: nesatovaBrs
+    slice_num: 2
+    tonic_hz: 531.3253012048193
+    periodicity: 0.41093806510377845
+    bass_hz: 132.83132530120483
+    duration_seconds: 30.051247165532878
+    crossfade_seconds: 0.0
+- id: voice_2_0001
+  onset: 0.0
+  label: voice_2 gtrDroneG#2
+  kind: slice
+  extent: 35.45736961451247
+  voice: voice_2
+  meta:
+    source_name: gtrDroneG
+    slice_num: 2
+    tonic_hz: 98.0
+    periodicity: 0.8630606740720076
+    bass_hz: 392.0
+    duration_seconds: 35.45736961451247
+    crossfade_seconds: 10.637210884353742
+- id: voice_2_0002
+  onset: 24.82015873015873
+  label: voice_2 gtrDroneG#1
+  kind: slice
+  extent: 34.957142857142856
+  voice: voice_2
+  meta:
+    source_name: gtrDroneG
+    slice_num: 1
+    tonic_hz: 98.0
+    periodicity: 0.8565837639361703
+    bass_hz: 392.0
+    duration_seconds: 34.957142857142856
+    crossfade_seconds: 10.487142857142857
+- id: voice_2_0003
+  onset: 49.29015873015873
+  label: voice_2 gujen120#1
+  kind: slice
+  extent: 26.14160997732426
+  voice: voice_2
+  meta:
+    source_name: gujen120
+    slice_num: 1
+    tonic_hz: 66.01796407185628
+    periodicity: 0.3890374260320818
+    bass_hz: 528.1437125748503
+    duration_seconds: 26.14160997732426
+    crossfade_seconds: 7.842471655328798
+- id: voice_2_0004
+  onset: 67.5892970521542
+  label: voice_2 leadScreechCrackleG#2
+  kind: slice
+  extent: 24.753968253968253
+  voice: voice_2
+  meta:
+    source_name: leadScreechCrackleG
+    slice_num: 2
+    tonic_hz: 544.4444444444445
+    periodicity: 0.3908598382874377
+    bass_hz: 544.4444444444445
+    duration_seconds: 24.753968253968253
+    crossfade_seconds: 7.4261904761904765
+- id: voice_2_0005
+  onset: 84.91707482993198
+  label: voice_2 atmosPad#2
+  kind: slice
+  extent: 29.56530612244898
+  voice: voice_2
+  meta:
+    source_name: atmosPad
+    slice_num: 2
+    tonic_hz: 257.89473684210526
+    periodicity: 0.8979566239602337
+    bass_hz: 515.7894736842105
+    duration_seconds: 29.56530612244898
+    crossfade_seconds: 8.869591836734694
+- id: voice_2_0006
+  onset: 105.61278911564627
+  label: voice_2 leadScreechCrackleG#1
+  kind: slice
+  extent: 27.994444444444444
+  voice: voice_2
+  meta:
+    source_name: leadScreechCrackleG
+    slice_num: 1
+    tonic_hz: 801.8181818181819
+    periodicity: 0.32835207878745326
+    bass_hz: 801.8181818181819
+    duration_seconds: 27.994444444444444
+    crossfade_seconds: 8.398344671201814
+- id: voice_2_0007
+  onset: 125.2088888888889
+  label: voice_2 gujen120#2
+  kind: slice
+  extent: 30.24342403628118
+  voice: voice_2
+  meta:
+    source_name: gujen120
+    slice_num: 2
+    tonic_hz: 106.52173913043478
+    periodicity: 0.684261387396879
+    bass_hz: 426.0869565217391
+    duration_seconds: 30.24342403628118
+    crossfade_seconds: 9.073038548752834
+- id: voice_2_0008
+  onset: 146.37927437641724
+  label: voice_2 atmosPad#1
+  kind: slice
+  extent: 29.43299319727891
+  voice: voice_2
+  meta:
+    source_name: atmosPad
+    slice_num: 1
+    tonic_hz: 154.73684210526315
+    periodicity: 0.8296271305069743
+    bass_hz: 618.9473684210526
+    duration_seconds: 29.43299319727891
+    crossfade_seconds: 0.0
+- id: voice_3_0001
+  onset: 0.0
+  label: voice_3 loop48#1
+  kind: slice
+  extent: 44.425396825396824
+  voice: voice_3
+  meta:
+    source_name: loop48
+    slice_num: 1
+    tonic_hz: 850.0
+    periodicity: 0.8003477669661881
+    bass_hz: 1700.0
+    duration_seconds: 44.425396825396824
+    crossfade_seconds: 13.327619047619047
+- id: voice_3_0002
+  onset: 31.09777777777778
+  label: voice_3 leadWhispersDm#1
+  kind: slice
+  extent: 52.720181405895694
+  voice: voice_3
+  meta:
+    source_name: leadWhispersDm
+    slice_num: 1
+    tonic_hz: 588.0
+    periodicity: 0.9354787241725804
+    bass_hz: 2352.0
+    duration_seconds: 52.720181405895694
+    crossfade_seconds: 15.816054421768708
+- id: voice_3_0003
+  onset: 68.00190476190477
+  label: voice_3 sidebandsARP#1
+  kind: slice
+  extent: 55.072108843537414
+  voice: voice_3
+  meta:
+    source_name: sidebandsARP
+    slice_num: 1
+    tonic_hz: 157.5
+    periodicity: 0.6915270086394895
+    bass_hz: 2520.0
+    duration_seconds: 55.072108843537414
+    crossfade_seconds: 16.521632653061225
+- id: voice_3_0004
+  onset: 106.55238095238096
+  label: voice_3 loop49#1
+  kind: slice
+  extent: 46.08639455782313
+  voice: voice_3
+  meta:
+    source_name: loop49
+    slice_num: 1
+    tonic_hz: 637.5846862792969
+    periodicity: 0.08841812976515304
+    bass_hz: 2550.3387451171875
+    duration_seconds: 46.08639455782313
+    crossfade_seconds: 13.825918367346938
+- id: voice_3_0005
+  onset: 138.81285714285715
+  label: voice_3 leadScreechCrackleG#1
+  kind: slice
+  extent: 54.6
+  voice: voice_3
+  meta:
+    source_name: leadScreechCrackleG
+    slice_num: 1
+    tonic_hz: 544.4444444444445
+    periodicity: 0.2664231525427136
+    bass_hz: 2177.777777777778
+    duration_seconds: 54.6
+    crossfade_seconds: 16.38
+- id: voice_3_0006
+  onset: 177.03285714285715
+  label: voice_3 cymbal#1
+  kind: slice
+  extent: 49.285487528344675
+  voice: voice_3
+  meta:
+    source_name: cymbal
+    slice_num: 1
+    tonic_hz: 773.6842105263158
+    periodicity: 0.6215193137043459
+    bass_hz: 1547.3684210526317
+    duration_seconds: 49.285487528344675
+    crossfade_seconds: 14.785646258503402
+- id: voice_3_0007
+  onset: 211.5326984126984
+  label: voice_3 loop20#1
+  kind: slice
+  extent: 45.24399092970521
+  voice: voice_3
+  meta:
+    source_name: loop20
+    slice_num: 1
+    tonic_hz: 165.78947368421052
+    periodicity: 0.27632117806012185
+    bass_hz: 2652.6315789473683
+    duration_seconds: 45.24399092970521
+    crossfade_seconds: 13.573197278911564
+- id: voice_3_0008
+  onset: 243.20349206349206
+  label: voice_3 hugeBubbles#1
+  kind: slice
+  extent: 53.3297052154195
+  voice: voice_3
+  meta:
+    source_name: hugeBubbles
+    slice_num: 1
+    tonic_hz: 137.8125
+    periodicity: 0.4293428874773564
+    bass_hz: 2205.0
+    duration_seconds: 53.3297052154195
+    crossfade_seconds: 0.0
