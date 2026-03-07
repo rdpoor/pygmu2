@@ -25,6 +25,7 @@ from pathlib import Path
 
 from pygmu2 import (
     ConvolvePE,
+    ConstantPE,
     CropPE,
     DelayPE,
     DiracPE,
@@ -33,6 +34,7 @@ from pygmu2 import (
     LimiterPE,
     MixPE,
     seconds_to_samples,
+    SinePE,
     SpatialAdapter,
     SpatialLinear,
     SpatialPE,
@@ -114,6 +116,23 @@ def _assert_sample_rate_match(source: WavReaderPE, ir: WavReaderPE) -> None:
         )
 
 
+def _apply_chorus(
+    source_stream,
+    sample_rate: int,
+    *,
+    rate_hz: float = 0.25,
+    depth_ms: float = 2.5,
+    center_ms: float = 22.0,
+):
+    depth_samples = depth_ms * sample_rate / 1000.0
+    center_samples = center_ms * sample_rate / 1000.0
+    lfo_stream = SinePE(frequency=rate_hz, amplitude=depth_samples)
+    center_stream = ConstantPE(center_samples)
+    delay_signal_stream = MixPE(center_stream, lfo_stream)
+    delayed_stream = DelayPE(source_stream, delay=delay_signal_stream)
+    return MixPE(source_stream, delayed_stream)
+
+
 def _demo_dry(source_path: Path, *, gain: float = 0.8, norm_gain: float = 1.0) -> None:
     source_stream = _load_wav(source_path)
     sample_rate = int(source_stream.file_sample_rate)
@@ -183,6 +202,60 @@ def _demo_wet(
 
     pg.play(pg.GainPE(out_stream, gain=norm_gain), sample_rate)
 
+
+def _demo_wet_chorus_on_wet(
+    source_path: Path,
+    ir_path: Path,
+    *,
+    wet_gain: float = 0.25,
+    norm_gain: float = 1.0,
+    chorus_rate_hz: float = 0.25,
+    chorus_depth_ms: float = 2.5,
+    chorus_center_ms: float = 22.0,
+) -> None:
+    source_stream = _load_wav(source_path)
+    ir_stream = _load_wav(ir_path)
+    _assert_sample_rate_match(source_stream, ir_stream)
+    sample_rate = int(source_stream.file_sample_rate)
+
+    ir_energy = ConvolvePE.ir_energy_norm(ir_stream)
+    wet_stream = ConvolvePE(source_stream, ir_stream)
+    wet_stream = GainPE(wet_stream, gain=wet_gain / ir_energy)
+    wet_stream = _apply_chorus(
+        wet_stream,
+        sample_rate,
+        rate_hz=chorus_rate_hz,
+        depth_ms=chorus_depth_ms,
+        center_ms=chorus_center_ms,
+    )
+
+    dry_gain = 1.0 - wet_gain
+    dry_stream = GainPE(source_stream, gain=dry_gain)
+    dry_stream = SpatialPE(
+        dry_stream,
+        method=SpatialAdapter(channels=wet_stream.channel_count()),
+    )
+    out_stream = MixPE(
+        dry_stream, 
+        wet_stream
+        )
+
+    print(f"Source: {source_path.name}")
+    print(f"IR:     {ir_path.name} (chorus applied to wet only)")
+    print(f"IR energy norm: {ir_energy:.2f}")
+    print(f"Dry gain: {dry_gain:.2f}")
+    print(f"Wet gain: {wet_gain:.2f} (effective: {wet_gain / ir_energy:.4f})")
+    print(
+        "Chorus: rate={:.2f}Hz, depth={:.1f}ms, center={:.1f}ms".format(
+            chorus_rate_hz,
+            chorus_depth_ms,
+            chorus_center_ms,
+        )
+    )
+    print()
+
+    pg.play_offline(pg.GainPE(out_stream, gain=norm_gain), sample_rate)
+
 def demo_spoken_dry():
     print("=== Demo: spoken voice (dry) ===")
     _demo_dry(SPOKEN_PATH, gain=0.8, norm_gain=2.67)
@@ -209,6 +282,18 @@ def demo_drums_long():
     print("=== Demo: drums * long_ir ===")
     _demo_wet(DRUMS_PATH, LONG_IR_PATH, wet_gain=0.20, norm_gain=1.33)
 
+def demo_spoken_long_chorus_on_wet():
+    print("=== Demo: spoken voice * long_ir (chorus on wet only) ===")
+    _demo_wet_chorus_on_wet(
+        SPOKEN_PATH,
+        LONG_IR_PATH,
+        wet_gain=0.25,
+        norm_gain=2.41,
+        chorus_rate_hz=0.5,
+        chorus_depth_ms=5,
+        chorus_center_ms=2.0,
+    )
+
 def demo_drums_mono_dry():
     print("=== Demo: mono drums (dry) ===")
     _demo_dry(DRUMS_MONO_PATH, gain=0.8, norm_gain=1.45)
@@ -224,6 +309,7 @@ DEMOS = [
     ("spoken voice, dry", demo_spoken_dry),
     ("spoken voice * plate_ir", demo_spoken_short),
     ("spoken voice * long_ir", demo_spoken_long),
+    ("spoken voice * long_ir (chorus wet-only)", demo_spoken_long_chorus_on_wet),
     ("drums, dry", demo_drums_dry),
     ("drums * plate_ir", demo_drums_short),
     ("drums * long_ir", demo_drums_long),

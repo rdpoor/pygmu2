@@ -58,12 +58,14 @@ from pygmu2.gate_to_trigger_pe import GateToTriggerPE
 from pygmu2.identity_pe import IdentityPE
 from pygmu2.karplus_strong_pe import KarplusStrongPE, rho_for_decay_db
 from pygmu2.ladder_pe import LadderPE, LadderMode
-from pygmu2.logger import set_global_logging, get_logger
+from pygmu2.logger import set_global_logging, setup_logging, get_logger
 from pygmu2.loop_pe import LoopPE
 from pygmu2.mag_freq_pe import MagFreqPE
 from pygmu2.meltysynth_pe import MeltysynthPE
 from pygmu2.midi_in_pe import MidiInPE
 from pygmu2.mix_pe import MixPE
+from pygmu2.moving_average_pe import MovingAveragePE, window_for_cutoff
+from pygmu2.notes_pe import Note, NotesPE, get_notes_from_midi
 from pygmu2.noise_pe import NoisePE, NoiseMode
 from pygmu2.null_renderer import NullRenderer
 from pygmu2.periodic_gate import PeriodicGate
@@ -77,6 +79,7 @@ from pygmu2.random_step_pe import RandomStepPE
 from pygmu2.random_trigger_pe import RandomTriggerPE
 from pygmu2.random_value_pe import RandomValuePE
 from pygmu2.renderer import Renderer, ProfileReport, PEProfile
+from pygmu2.resample_pe import ResamplePE
 from pygmu2.reverb_pe import ReverbPE
 from pygmu2.reverse_pitch_echo_pe import ReversePitchEchoPE
 from pygmu2.ring_modulator_pe import RingModulatorPE
@@ -195,6 +198,12 @@ __all__ = [
     "MeltysynthPE",
     "MidiInPE",
     "MixPE",
+    "MovingAveragePE",
+    "window_for_cutoff",
+    "Note",
+    "NotesPE",
+    "get_notes_from_midi",
+    "ResamplePE",
     "CombPE",
     "ConvolvePE",
     "ReverbPE",
@@ -274,6 +283,7 @@ __all__ = [
     "set_baroque_pitch",
     # Logging utilities
     "set_global_logging",
+    "setup_logging",
     "get_logger",
     # Playback utilities
     "browse",

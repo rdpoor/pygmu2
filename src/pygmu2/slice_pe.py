@@ -73,11 +73,21 @@ class SlicePE(ProcessingElement):
             fo = min(self._fade_out, self._duration)
 
             if fi > 0:
-                ramp = (np.arange(fi, dtype=np.float32) + 1.0) / float(fi)
+                if fi == 1:
+                    ramp = np.array([1.0], dtype=np.float32)
+                else:
+                    # Raised-cosine fade avoids the sharp slope change of a linear ramp.
+                    phase = np.linspace(0.0, np.pi, fi, dtype=np.float32)
+                    ramp = 0.5 - 0.5 * np.cos(phase)
                 env[:fi] = np.minimum(env[:fi], ramp)
 
             if fo > 0:
-                ramp = 1.0 - (np.arange(fo, dtype=np.float32) + 1.0) / float(fo)
+                if fo == 1:
+                    ramp = np.array([0.0], dtype=np.float32)
+                else:
+                    # Mirror the fade-in shape so fade-out begins at unity with zero slope.
+                    phase = np.linspace(0.0, np.pi, fo, dtype=np.float32)
+                    ramp = 0.5 + 0.5 * np.cos(phase)
                 env[-fo:] = np.minimum(env[-fo:], ramp)
 
             env_pe = ArrayPE(env)

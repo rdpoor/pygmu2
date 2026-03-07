@@ -19,8 +19,14 @@ from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 
 from pygmu2.logger import get_logger
+
+try:
+    from scipy.signal import lfilter as _scipy_lfilter
+    _HAVE_SCIPY = True
+except ImportError:
+    _HAVE_SCIPY = False
+
 logger = get_logger(__name__)
-logger.setLevel("DEBUG")
 
 class BlitSawPE(ProcessingElement):
     """
@@ -137,7 +143,6 @@ class BlitSawPE(ProcessingElement):
         self._phase = self._initial_phase
         self._integrator = 0.0
         self._last_render_end = None
-        logger.debug(f"_reset_state: initial_phase = {self._initial_phase}")
     
     def _on_start(self) -> None:
         """Reset state on start."""
@@ -180,7 +185,6 @@ class BlitSawPE(ProcessingElement):
         
         # Handle discontinuous rendering
         if self._last_render_end is None or start != self._last_render_end:
-            logger.debug("discontinuous rendering, resetting...")
             self._phase = self._initial_phase
             self._integrator = 0.0
         
@@ -221,21 +225,14 @@ class BlitSawPE(ProcessingElement):
         # This is a one-pole IIR filter: lfilter(b=[1], a=[1, -leak], x)
         leak = self._leak
         
-        try:
-            from scipy.signal import lfilter
+        if _HAVE_SCIPY:
             # Transfer function: H(z) = 1 / (1 - leak*z^-1)
-            # b = [1.0], a = [1.0, -leak]
             b = np.array([1.0])
             a = np.array([1.0, -leak])
-            
-            # Initial condition for lfilter: zi = [leak * y_initial]
-            # This ensures continuity from previous render
             zi = np.array([leak * self._integrator])
-            saw, zf = lfilter(b, a, blit_ac, zi=zi)
-            
-            # Update integrator state from final filter state
+            saw, zf = _scipy_lfilter(b, a, blit_ac, zi=zi)
             y = zf[0] / leak if leak != 0 else saw[-1]
-        except ImportError:
+        else:
             # Fallback to Python loop if scipy not available
             saw = np.zeros(duration, dtype=np.float64)
             y = self._integrator
