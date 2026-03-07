@@ -1,15 +1,20 @@
 """
 trafalm_etude3.py
 
-Diagnostic version: pick two random raw slices from the remote Strudel
-catalog, blur each slice with the Tralfam chain, apply fade in/out after the
-blur, then sequence the two slices with 30% overlap.
+Build a randomized etude from the remote Strudel catalog:
+1. choose multiple random source files
+2. extract multiple raw slices from each file
+3. blur each slice with the Tralfam chain
+4. apply fade in/out after the blur
+5. sequence all slices in random order with 30% overlap
+6. render the full piece to a WAV file
 
 Usage:
   uv run python examples/trafalm_etude3.py
 """
 
 import random
+from pathlib import Path
 
 import pygmu2 as pg
 
@@ -18,17 +23,20 @@ pg.set_sample_rate(SAMPLE_RATE)
 
 STRUDEL_JSON_URL = "https://software.tomandandy.com/strudel.json"
 RANDOM_SEED = 42
-NUM_FILES = 1
-NUM_SLICES = 2
+NUM_FILES = 4
+SLICES_PER_FILE = 3
+FORCED_SOURCE_NAME = None
 MIN_SLICE_SECONDS = 1.20
 MAX_SLICE_SECONDS = 3.20
-SLICE_FADE_IN_SECONDS = 1.0
-SLICE_FADE_OUT_SECONDS = 1.0
+SLICE_FADE_IN_SECONDS = 2.0
+SLICE_FADE_OUT_SECONDS = 2.0
 TRALFAM_TAIL_SECONDS = 2.0
-TRALFAM_LOOP_COUNT = 3
+TRALFAM_LOOP_COUNT = 5
 TRALFAM_NORMALIZE_PEAK = 0.33
 OVERLAP_RATIO = 0.30
+USE_OVERLAP = True
 MASTER_GAIN = 0.62
+OUTPUT_PATH = Path(__file__).with_name("trafalm_etude3_render.wav")
 
 
 def catalog_wav_entries(library):
@@ -46,6 +54,11 @@ def choose_sources(library, rng):
     entries = catalog_wav_entries(library)
     if not entries:
         raise RuntimeError("No WAV entries found in the Strudel catalog.")
+
+    if FORCED_SOURCE_NAME is not None:
+        entries = [entry for entry in entries if entry[0] == FORCED_SOURCE_NAME]
+        if not entries:
+            raise RuntimeError(f"Forced source {FORCED_SOURCE_NAME!r} not found in the catalog.")
 
     if len(entries) < NUM_FILES:
         raise RuntimeError(
@@ -108,7 +121,7 @@ def make_random_slice(reader, rng):
     return slice_pe, start, duration
 
 
-def apply_probe_fade(pe):
+def apply_post_blur_fade(pe):
     """Apply an explicit gain envelope after the blur stage."""
     duration = pe.extent().end
     fade_in = min(int(round(SLICE_FADE_IN_SECONDS * SAMPLE_RATE)), duration)
@@ -130,6 +143,32 @@ def apply_probe_fade(pe):
     return pg.GainPE(pe, gain=envelope)
 
 
+def apply_sequence_crossfade(pe, fade_in_samples=0, fade_out_start=None):
+    """Apply an additional sequence-stage crossfade envelope."""
+    duration = pe.extent().end
+    if duration <= 0:
+        raise RuntimeError("Slice has no duration.")
+
+    if fade_out_start is None:
+        fade_out_start = duration
+    fade_in_samples = max(0, min(int(fade_in_samples), duration))
+    fade_out_start = max(0, min(int(fade_out_start), duration))
+
+    points = [(0, 1.0)]
+    if fade_in_samples > 0:
+        points = [(0, 0.0), (fade_in_samples, 1.0)]
+    if fade_out_start > fade_in_samples:
+        points.append((fade_out_start, 1.0))
+    if fade_out_start < duration:
+        points.append((duration, 0.0))
+
+    envelope = pg.PiecewisePE(
+        points,
+        transition_type=pg.TransitionType.CONSTANT_POWER,
+    )
+    return pg.GainPE(pe, gain=envelope)
+
+
 def make_blurry_slice(slice_pe, slice_duration, rng):
     """Blur one raw slice via SetExtentPE -> TralfamPE -> LoopPE."""
     padded_duration = slice_duration + int(round(TRALFAM_TAIL_SECONDS * slice_pe.sample_rate))
@@ -142,46 +181,82 @@ def make_blurry_slice(slice_pe, slice_duration, rng):
     return pg.LoopPE(tralfam, count=TRALFAM_LOOP_COUNT)
 
 
-def build_two_slice_sequence(reader, rng):
-    """Create two blurred/ramped slices and overlap them by OVERLAP_RATIO."""
+def collect_processed_slices(sources, rng):
+    """Extract, blur, ramp, and annotate slices from all chosen sources."""
     processed = []
-    for slice_num in range(NUM_SLICES):
-        slice_pe, start, duration = make_random_slice(reader, rng)
-        blurry = make_blurry_slice(slice_pe, duration, rng)
-        ramped = apply_probe_fade(blurry)
-        processed.append(
-            {
-                "slice_num": slice_num + 1,
-                "start": start,
-                "raw_duration": duration,
-                "pe": ramped,
-            }
+    for source_info in sources:
+        file_sample_rate = source_info["file_sample_rate"]
+        print(
+            f"Source: {source_info['sound_name']} ({source_info['catalog_path']}) "
+            f"{source_info['frames'] / file_sample_rate:.2f}s",
+            flush=True,
         )
+        for slice_num in range(SLICES_PER_FILE):
+            slice_pe, start, duration = make_random_slice(source_info["reader"], rng)
+            blurry = make_blurry_slice(slice_pe, duration, rng)
+            ramped = apply_post_blur_fade(blurry)
+            processed.append(
+                {
+                    "source_name": source_info["sound_name"],
+                    "slice_num": slice_num + 1,
+                    "start": start,
+                    "raw_duration": duration,
+                    "pe": ramped,
+                }
+            )
+            print(
+                f"  slice {slice_num + 1}: start={start / file_sample_rate:.2f}s, "
+                f"raw_dur={duration / file_sample_rate:.2f}s, "
+                f"blurred_dur={ramped.extent().end / file_sample_rate:.2f}s",
+                flush=True,
+            )
+    return processed
 
-    first = processed[0]
-    second = processed[1]
-    first_duration = first["pe"].extent().end
-    second_offset = max(1, int(round(first_duration * (1.0 - OVERLAP_RATIO))))
 
-    print(
-        f"Slice 1: start={first['start'] / SAMPLE_RATE:.2f}s, "
-        f"raw_dur={first['raw_duration'] / SAMPLE_RATE:.2f}s, "
-        f"blurred_dur={first_duration / SAMPLE_RATE:.2f}s, "
-        f"placed @ 0.00s",
-        flush=True,
-    )
-    print(
-        f"Slice 2: start={second['start'] / SAMPLE_RATE:.2f}s, "
-        f"raw_dur={second['raw_duration'] / SAMPLE_RATE:.2f}s, "
-        f"blurred_dur={second['pe'].extent().end / SAMPLE_RATE:.2f}s, "
-        f"placed @ {second_offset / SAMPLE_RATE:.2f}s",
-        flush=True,
-    )
+def sequence_with_overlap(processed_slices, rng):
+    """Shuffle slices, crossfade overlaps, and mix into one stream."""
+    if not processed_slices:
+        raise RuntimeError("No processed slices were created.")
 
-    return pg.MixPE(
-        first["pe"],
-        pg.DelayPE(second["pe"], delay=second_offset),
-    )
+    play_order = processed_slices[:]
+    rng.shuffle(play_order)
+
+    positioned = []
+    cursor = 0
+    print("\nSequence order:", flush=True)
+    for index, item in enumerate(play_order):
+        duration = item["pe"].extent().end
+        pe_to_place = item["pe"]
+
+        if USE_OVERLAP and index < len(play_order) - 1:
+            next_offset = max(1, int(round(duration * (1.0 - OVERLAP_RATIO))))
+            pe_to_place = apply_sequence_crossfade(pe_to_place, fade_out_start=next_offset)
+            overlap_samples = duration - next_offset
+            print(
+                f"  {item['source_name']} slice {item['slice_num']} @ {cursor / SAMPLE_RATE:.2f}s "
+                f"for {duration / SAMPLE_RATE:.2f}s, "
+                f"crossfade={overlap_samples / SAMPLE_RATE:.2f}s",
+                flush=True,
+            )
+            cursor_step = next_offset
+        else:
+            print(
+                f"  {item['source_name']} slice {item['slice_num']} @ {cursor / SAMPLE_RATE:.2f}s "
+                f"for {duration / SAMPLE_RATE:.2f}s",
+                flush=True,
+            )
+            cursor_step = duration
+
+        if USE_OVERLAP and index > 0:
+            previous_duration = play_order[index - 1]["pe"].extent().end
+            previous_step = max(1, int(round(previous_duration * (1.0 - OVERLAP_RATIO))))
+            fade_in_samples = previous_duration - previous_step
+            pe_to_place = apply_sequence_crossfade(pe_to_place, fade_in_samples=fade_in_samples)
+
+        positioned.append(pg.DelayPE(pe_to_place, delay=cursor))
+        cursor += cursor_step
+
+    return pg.MixPE(*positioned)
 
 
 def build_etude(seed=RANDOM_SEED):
@@ -190,29 +265,26 @@ def build_etude(seed=RANDOM_SEED):
     print(f"Fetching catalog: {STRUDEL_JSON_URL}", flush=True)
     library = pg.AudioLibrary.from_url(STRUDEL_JSON_URL)
 
-    source_info = choose_sources(library, rng)[0]
-    file_sample_rate = source_info["file_sample_rate"]
     print(
-        f"Selected source: {source_info['sound_name']} ({source_info['catalog_path']}) "
-        f"{source_info['frames'] / file_sample_rate:.2f}s @ {file_sample_rate} Hz",
-        flush=True,
-    )
-
-    print(
-        f"Building {NUM_SLICES} slices with {OVERLAP_RATIO:.0%} overlap, "
+        f"Selected {NUM_FILES} sources, building {SLICES_PER_FILE} slices per file with "
+        f"{(f'{OVERLAP_RATIO:.0%} overlap' if USE_OVERLAP else 'no overlap')}, "
         f"fade_in={SLICE_FADE_IN_SECONDS:.2f}s, "
-        f"fade_out={SLICE_FADE_OUT_SECONDS:.2f}s",
+        f"fade_out={SLICE_FADE_OUT_SECONDS:.2f}s, "
+        f"source_mode={'forced' if FORCED_SOURCE_NAME else 'random'}",
         flush=True,
     )
-    sequence = build_two_slice_sequence(source_info["reader"], rng)
+    sources = choose_sources(library, rng)
+    processed_slices = collect_processed_slices(sources, rng)
+    sequence = sequence_with_overlap(processed_slices, rng)
     return pg.GainPE(sequence, gain=MASTER_GAIN)
 
 
 def main():
     etude = build_etude()
     total_duration = etude.extent().end / SAMPLE_RATE
-    print(f"\nPlaying etude ({total_duration:.2f} seconds)...", flush=True)
-    pg.play(etude, sample_rate=SAMPLE_RATE)
+    print(f"\nRendering etude ({total_duration:.2f} seconds)...", flush=True)
+    pg.render_to_file(etude, str(OUTPUT_PATH), sample_rate=SAMPLE_RATE)
+    print(f"Rendered to {OUTPUT_PATH}", flush=True)
 
 
 if __name__ == "__main__":
