@@ -18,24 +18,35 @@ from pathlib import Path
 
 import pygmu2 as pg
 
+RANDOM_SEED = 44
+
 SAMPLE_RATE = 44100
 pg.set_sample_rate(SAMPLE_RATE)
 
+EXAMPLES_DIR = Path(__file__).parent
+IR_PATH = EXAMPLES_DIR / "audio" / "long_ir44.wav"
+
 STRUDEL_JSON_URL = "https://software.tomandandy.com/strudel.json"
-RANDOM_SEED = 42
 NUM_FILES = 4
 SLICES_PER_FILE = 3
 FORCED_SOURCE_NAME = None
 MIN_SLICE_SECONDS = 1.20
 MAX_SLICE_SECONDS = 3.20
 SLICE_FADE_IN_SECONDS = 2.0
-SLICE_FADE_OUT_SECONDS = 2.0
-TRALFAM_TAIL_SECONDS = 2.0
-TRALFAM_LOOP_COUNT = 5
-TRALFAM_NORMALIZE_PEAK = 0.33
+SLICE_FADE_OUT_SECONDS = 4.0
+TRALFAM_TAIL_SECONDS = 5.0
+TRALFAM_LOOP_COUNT = 7
+TRALFAM_NORMALIZE_PEAK = 0.53
 OVERLAP_RATIO = 0.30
 USE_OVERLAP = True
 MASTER_GAIN = 0.62
+ENABLE_MASTER_COMPRESSION = True
+COMPRESSOR_THRESHOLD = -28
+COMPRESSOR_RATIO = 6
+COMPRESSOR_ATTACK = 0.02
+COMPRESSOR_RELEASE = 0.25
+COMPRESSOR_KNEE = 6.0
+REVERB_MIX = 0.28
 OUTPUT_PATH = Path(__file__).with_name("trafalm_etude3_render.wav")
 
 
@@ -181,6 +192,19 @@ def make_blurry_slice(slice_pe, slice_duration, rng):
     return pg.LoopPE(tralfam, count=TRALFAM_LOOP_COUNT)
 
 
+def load_reverb_ir():
+    """Load the plate IR used by reverb_eg.py."""
+    if not IR_PATH.exists():
+        raise FileNotFoundError(f"Missing reverb IR: {IR_PATH}")
+    ir = pg.WavReaderPE(str(IR_PATH))
+    if ir.file_sample_rate != SAMPLE_RATE:
+        raise ValueError(
+            f"IR sample rate mismatch: {IR_PATH} is {ir.file_sample_rate} Hz, "
+            f"expected {SAMPLE_RATE} Hz."
+        )
+    return ir
+
+
 def collect_processed_slices(sources, rng):
     """Extract, blur, ramp, and annotate slices from all chosen sources."""
     processed = []
@@ -270,13 +294,28 @@ def build_etude(seed=RANDOM_SEED):
         f"{(f'{OVERLAP_RATIO:.0%} overlap' if USE_OVERLAP else 'no overlap')}, "
         f"fade_in={SLICE_FADE_IN_SECONDS:.2f}s, "
         f"fade_out={SLICE_FADE_OUT_SECONDS:.2f}s, "
-        f"source_mode={'forced' if FORCED_SOURCE_NAME else 'random'}",
+        f"source_mode={'forced' if FORCED_SOURCE_NAME else 'random'}, "
+        f"compressor={'on' if ENABLE_MASTER_COMPRESSION else 'off'}, "
+        f"reverb_mix={REVERB_MIX:.2f}, "
+        f"ir={IR_PATH.name}",
         flush=True,
     )
     sources = choose_sources(library, rng)
     processed_slices = collect_processed_slices(sources, rng)
     sequence = sequence_with_overlap(processed_slices, rng)
-    return pg.GainPE(sequence, gain=MASTER_GAIN)
+    mixed = sequence
+    if ENABLE_MASTER_COMPRESSION:
+        mixed = pg.CompressorPE(
+            mixed,
+            threshold=COMPRESSOR_THRESHOLD,
+            ratio=COMPRESSOR_RATIO,
+            attack=COMPRESSOR_ATTACK,
+            release=COMPRESSOR_RELEASE,
+            knee=COMPRESSOR_KNEE,
+            makeup_gain="auto",
+        )
+    reverb = pg.ReverbPE(mixed, load_reverb_ir(), mix=REVERB_MIX, normalize_ir=True)
+    return pg.GainPE(reverb, gain=MASTER_GAIN)
 
 
 def main():
