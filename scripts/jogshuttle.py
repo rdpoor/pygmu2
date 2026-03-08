@@ -578,13 +578,13 @@ class JogShuttleApp(QMainWindow):
     SPRING_FACTOR = 0.30
 
     # Offline noFFT defaults
-    NOFFT_MIN_FREQ = 100.0
-    NOFFT_MAX_FREQ = 16000.0
+    NOFFT_MIN_FREQ = 80.0
+    NOFFT_MAX_FREQ = 8000.0
     NOFFT_BINS_PER_SEMITONE = 2.0
     NOFFT_FREQUENCY_SCALE = "musical"
     NOFFT_CYCLES_FOR_DECAY = 5.0
     NOFFT_HOP_SIZE = 128
-    NOFFT_MIN_DB = -80.0
+    NOFFT_MIN_DB = -51.0
     NOFFT_MAX_DB = 0.0
 
     def __init__(self, initial_path: str | None = None, delete_on_close: bool = False):

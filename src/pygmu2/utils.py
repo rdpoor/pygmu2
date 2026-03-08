@@ -31,21 +31,31 @@ def _resolve_sample_rate(sample_rate: int | None) -> int:
     return int(sr)
 
 
+_DEFAULT_CHUNK_FRAMES = 8192
+
+
 def render_to_file(
     source: ProcessingElement,
     out_path: str,
     *,
     sample_rate: int | None = None,
     extent=None,
+    chunk_frames: int = _DEFAULT_CHUNK_FRAMES,
 ) -> None:
     """
     Render a PE to a WAV file as fast as possible using NullRenderer.
+
+    Rendering is done in fixed-size chunks so that intermediate PE buffers
+    stay small regardless of the total duration.  MagFreqPE / TralfamPE cache
+    their result on the first chunk and serve slices thereafter, so chunked
+    rendering is safe even for FFT-based PEs.
 
     Args:
         source: PE to render (must have finite extent).
         out_path: Path to write WAV file.
         sample_rate: Optional sample rate override (uses global if None).
         extent: Optional precomputed extent (to avoid recomputation).
+        chunk_frames: Number of frames per render call (default 8192).
     """
     sr = _resolve_sample_rate(sample_rate)
     if extent is None:
@@ -59,7 +69,12 @@ def render_to_file(
 
     with renderer:
         renderer.start()
-        renderer.render(extent.start, extent.end - extent.start)
+        pos = extent.start
+        end = extent.end
+        while pos < end:
+            chunk = min(chunk_frames, end - pos)
+            renderer.render(pos, chunk)
+            pos += chunk
 
 
 def play(source: ProcessingElement, sample_rate: int | None = None) -> None:
