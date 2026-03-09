@@ -149,5 +149,18 @@ DEMOS = [
     ("Demo djembe fury", demo_djembe_fury),
 ]
 
+README = """\
+RandomSelectPE — weighted random selection from multiple inputs.
+
+Uses TriggerSignal conventions (+1 = rising-edge event) to choose one of N
+inputs on each trigger.  TriggerRestartPE restarts the chosen source from
+local time 0 so each hit sounds fresh.
+
+Demo 1: weighted pitch selection from six sine oscillators.
+Demo 2: same idea but selects *frequencies* fed to a single oscillator
+        (avoids clicks from starting/stopping separate oscillators).
+Demo 3: randomly selects slices from a djembe recording at 10 Hz.
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)

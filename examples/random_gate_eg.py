@@ -67,6 +67,17 @@ DEMOS = [
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
 
+README = """\
+RandomGatePE — Poisson-process toggle gate.
+
+Outputs a gate signal (0 or 1) that toggles at random intervals following
+a Poisson process.  At rate r the gate is high for an expected 1/(2r)
+seconds then low for 1/(2r) seconds.
+
+Demo 1: fixed rates (1, 3, 10, 30, 100 Hz) gating a choir sample.
+Demo 2: rate ramps exponentially from 1 to 100 Hz over a looped choir.
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)
 

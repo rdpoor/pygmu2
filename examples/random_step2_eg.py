@@ -280,6 +280,21 @@ DEMOS = [
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
 
+README = """\
+Random Step 2 — Musical ratios with parallel stepped LPF and slew
+
+Two independent RandomStepPE sources modulate pitch and Moog ladder filter
+cutoff simultaneously.  Pitch is quantized to just-intonation intervals above
+a root (A2 = 110 Hz), and filter cutoff is quantized to harmonics of that same
+root, so every discrete state is acoustically related.
+
+Each stepped control signal passes through a SlewLimiterPE that adds a brief
+linear ramp between states — turning hard voltage jumps into short glides.
+
+Demos progress from simple (both clocks in lockstep) to complex (rhythmic
+gating with beat-phase envelope shaping the filter range and rate).
+"""
+
 if __name__ == "__main__":
     print(f"Run seed: {RUN_SEED}  (set RUN_SEED = {RUN_SEED} at the top of the file to reproduce this run)")
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)

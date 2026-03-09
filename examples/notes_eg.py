@@ -148,5 +148,16 @@ DEMOS = [
     ("NotesPE with WAV source",  demo_wav_source),
 ]
 
+README = """\
+NotesPE — play MIDI notes from a source sample.
+
+Pitch-shifts and time-positions a single source sound to play every note
+in a MIDI file.  Each note uses a pure ResamplePE chain so any number of
+simultaneous voices can overlap without interference.
+
+Demo 1: blitsaw source with spatial panning and reverb.
+Demo 2: recorded WAV source with delay-based doubling.
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)

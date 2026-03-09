@@ -75,5 +75,16 @@ DEMOS = [
 # ------------------------------------------------------------------------------
 # Main
 
+README = """\
+ReverbPE — convolution reverb with fixed and time-varying wet/dry mix.
+
+Convolves a source signal with a plate impulse response.  The mix parameter
+can be a constant or a PiecewisePE ramp for real-time crossfading.
+
+Demo 1: dry signal only (no reverb).
+Demo 2: fixed 40% wet mix.
+Demo 3: mix ramps from fully wet to fully dry over the clip duration.
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)

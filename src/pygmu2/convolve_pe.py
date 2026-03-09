@@ -150,6 +150,8 @@ class ConvolvePE(ProcessingElement):
         self._reset_state()
 
     def _reset_state(self) -> None:
+        self._fir_len = None
+        self._H = None
         self._tail = None
         self._last_render_end = None
 

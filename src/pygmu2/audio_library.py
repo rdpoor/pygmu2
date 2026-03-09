@@ -30,7 +30,7 @@ from pathlib import Path, PurePosixPath
 from typing import Dict, List
 from urllib import request
 from urllib.error import URLError
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 import soundfile as sf
 
@@ -235,7 +235,7 @@ class AudioLibrary:
                 handle_error(
                     f"Remote base not allowed: {self._base!r}", fatal=True
                 )
-            url = base + rel_posix
+            url = base + quote(rel_posix, safe="/:@!$&'()*+,;=")
             cached = self._cache_path(base, rel_posix)
             local_path = self._ensure_downloaded(url, cached)
             return self._maybe_convert_to_wav(local_path)

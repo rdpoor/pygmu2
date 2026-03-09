@@ -116,5 +116,15 @@ DEMOS = [
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
 
+README = """\
+RandomValuePE produces a continuously wandering random signal inspired
+by the Buchla 266 "Source of Uncertainty" fluctuating output.
+
+Demo 1 sweeps through fixed rates controlling a resonant filter cutoff.
+Demo 2 ramps the rate from 100 down to 1.
+Demos 3-4 use three RandomValuePEs as wandering formant frequencies
+in a vocal-tract bandpass filter model ("Drunken Hypnotoad/Robot").
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)

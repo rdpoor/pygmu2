@@ -160,5 +160,16 @@ DEMOS = [
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
 
+README = """\
+RingModulatorPE — sideband synthesis and vocal morphing.
+
+Multiplies carrier x (modulator + bias) for classic analog ring modulation.
+bias=0 gives pure ring mod (sidebands only); bias=1 gives amplitude
+modulation (carrier preserved).  mix controls dry/wet balance.
+
+Demos sweep modulator frequency, step through bias and mix values, and
+ramp bias and mix dynamically over time using PiecewisePE.
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)

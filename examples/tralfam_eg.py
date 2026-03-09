@@ -94,6 +94,18 @@ def demo_padded_man_looped_tralfam():
     pg.play(pg.GainPE(looped_tralfam, gain=1.52), SAMPLE_RATE)
 
 
+def demo_uke_tralfam_pitch_up():
+    source = UKE_WAV
+    tralfam = pg.TralfamPE(source, seed=42, normalize_peak=0.33, pitch_shift=7)
+    pg.play(pg.GainPE(tralfam, gain=1.52), SAMPLE_RATE)
+
+
+def demo_uke_tralfam_pitch_down():
+    source = UKE_WAV
+    tralfam = pg.TralfamPE(source, seed=42, normalize_peak=0.33, pitch_shift=-12)
+    pg.play(pg.GainPE(tralfam, gain=1.52), SAMPLE_RATE)
+
+
 DEMOS = [
     ("Dry uke", demo_uke_dry),
     ("TralfamPE(uke)", demo_uke_tralfam),
@@ -103,11 +115,24 @@ DEMOS = [
     ("Looped TralfamPE(man) - you can hear the loop points", demo_short_man_looped_tralfam),
     ("TralfamPE(man) padded with 2 seconds of 0s", demo_padded_man_tralfam),
     ("Looped TralfamPE(padded man)", demo_padded_man_looped_tralfam),
+    ("TralfamPE(uke) pitch +7 semitones (fifth up)", demo_uke_tralfam_pitch_up),
+    ("TralfamPE(uke) pitch -12 semitones (octave down)", demo_uke_tralfam_pitch_down),
 ]
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 # Main
 
+README = """\
+TralfamPE randomizes FFT phases while preserving magnitudes, producing
+a time-smeared, ambient version of the source audio.
+
+Demos compare dry vs tralfam-processed ukulele and spoken-voice samples,
+with optional looping, zero-padding, and pitch shifting.  Padding the
+source with silence before processing lengthens the result and smooths
+loop boundaries.  pitch_shift (in semitones) rescales the magnitude
+spectrum before phase randomization.
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)

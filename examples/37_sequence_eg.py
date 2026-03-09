@@ -65,5 +65,15 @@ DEMOS = [
     ("Demo non-overlap", demo_non_overlap),
 ]
 
+README = """\
+SequencePE places multiple audio sources at specified time offsets.
+
+OVERLAP mode mixes overlapping sources together.
+NON_OVERLAP mode truncates each source when the next one begins.
+
+Both demos layer the original choir with pitch-shifted variants
+(down 3 semitones and up 4 semitones) at 1-second intervals.
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)

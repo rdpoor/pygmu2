@@ -63,5 +63,15 @@ DEMOS = [
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
 
+README = """\
+RandomStepPE generates a piecewise-constant (sample-and-hold) random signal.
+At each sample it may jump to a new value via a Poisson process controlled
+by a rate parameter (jumps per second).  Higher rates produce faster,
+more chaotic stepping; lower rates give longer held values.
+
+Demo 1 steps through several fixed rates.
+Demo 2 ramps the rate exponentially from 1 to 100 over 8 seconds.
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)

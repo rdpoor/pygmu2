@@ -258,5 +258,14 @@ DEMOS = [
 ]
 
 
+README = """\
+ADSR envelope generators using gate and trigger signals.
+
+Demos show AdsrGatedPE (gate-driven) and AdsrTriggeredPE (trigger-driven)
+controlling amplitude (VCA) and resonant filter cutoff sweeps on a
+SuperSaw oscillator.  The final demo combines both: a gate ADSR for
+amplitude and a trigger ADSR for a filter "wah" sweep.
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)

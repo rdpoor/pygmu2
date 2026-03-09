@@ -49,17 +49,18 @@ def pad_clip(pe, silence_secs: float = 0.5):
     return pg.SetExtentPE(pe, 0, n + s(silence_secs))
 
 
-def run_demos(demos: dict) -> None:
+def run_demos(demos: dict, readme: str | None = None) -> None:
     """
     Run the standard interactive demo menu (or a single demo from argv).
 
     *demos* is an ``{name: callable}`` dict — identical to the ``DEMOS``
-    variable used in every example script.
+    variable used in every example script.  *readme* is optional text
+    (plain or markdown) printed before the menu in interactive mode.
 
     Call as the body of ``if __name__ == "__main__":``::
 
         if __name__ == "__main__":
-            run_demos(DEMOS)
+            run_demos(DEMOS, readme="# My Example\\nSome description...")
     """
 
     import os
@@ -122,5 +123,9 @@ def run_demos(demos: dict) -> None:
         else:
             print(f"Invalid choice '{choice}'")
     else:
+        if readme:
+            print()
+            print(readme)
+            print()
         print_menu()
         choose_and_play()

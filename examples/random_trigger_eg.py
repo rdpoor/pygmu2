@@ -59,6 +59,17 @@ DEMOS = [
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
 
+README = """\
+RandomTriggerPE — Poisson-process trigger generator.
+
+Emits +1 trigger impulses at random intervals following a Poisson process.
+At each sample there is an independent probability p = rate/sr of firing,
+giving exponentially distributed inter-event intervals.
+
+Demo 1: fixed rates (1, 3, 10, 30, 100 Hz) triggering Karplus-Strong pings.
+Demo 2: rate ramps exponentially from 1 to 100 Hz over 8 seconds.
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)
 

@@ -93,5 +93,16 @@ DEMOS = [
 # ------------------------------------------------------------------------------
 # Main
 
+README = """\
+SuperSawPE — rich, detuned unison oscillator.
+
+Inspired by the Roland JP-8000 Supersaw, SuperSawPE stacks multiple
+slightly-detuned sawtooth oscillators for the thick unison sound used
+in trance, EDM, and synth pads.
+
+Demos vary voice count, mix mode (equal/linear/center-heavy), detune
+amount, and initial phase randomization.
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)

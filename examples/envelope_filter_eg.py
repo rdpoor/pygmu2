@@ -124,5 +124,14 @@ DEMOS = [
     ("Envelope filter: clap-driven choir retrigger + brightness", demo_envelope_filter),
 ]
 
+README = """\
+Envelope-following filter driven by percussive transients.
+
+Clap hits from claps.wav retrigger choir.wav playback via TriggerRestartPE
+and simultaneously modulate a low-pass filter cutoff: loud claps sound
+bright, soft claps sound dark.  The signal chain uses EnvelopePE,
+SignalToGatePE, GateToTriggerPE, and BiquadPE(LOWPASS).
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)

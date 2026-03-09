@@ -185,16 +185,16 @@ pitches = pg.PiecewisePE(pitch_points)
 
 def make_synth(gates, pitches):
     # Generate ADSR ramps
-    adsr = pg.AdsrGatedPE(
+    adsr = pg.CachePE(pg.AdsrGatedPE(
         gates,
         attack_time = 0.02,
         decay_time = 0.05,
         sustain_level = 0.75,
         release_time = 0.5,
-        )
+        ))
 
     # Mix two SuperSaws running an octave apart
-    f_lo = pg.TransformPE(pitches, func=pg.pitch_to_freq)
+    f_lo = pg.CachePE(pg.TransformPE(pitches, func=pg.pitch_to_freq))
     synth_lo = pg.SuperSawPE(
         frequency = f_lo, 
         detune_cents = 8)
@@ -207,19 +207,36 @@ def make_synth(gates, pitches):
     # Apply ADSR to the mixed synths
     mix = pg.GainPE(synth, adsr)
 
+    # Individual voiced stems (ADSR-shaped, same gain as the mix)
+    stem_lo = pg.GainPE(pg.GainPE(synth_lo, adsr), 0.1)
+    stem_hi = pg.GainPE(pg.GainPE(synth_hi, adsr), 0.1)
+
     # Not too loud, please...
-    return pg.GainPE(mix, 0.1)
+    return pg.GainPE(mix, 0.1), stem_lo, stem_hi
 
 
 # Now for the final mix...
 duration = pitch_points[-1][0] + _sec2sam(5) # account for reverb tail
 
-mono_mix = make_synth(gates, pitches)
+mono_mix, stem_lo, stem_hi = make_synth(gates, pitches)
 # a bit more bass...
 eq_mix = pg.BiquadPE(mono_mix, frequency=200.0, q=0.707, mode=pg.BiquadMode.LOWSHELF)
 # convert to stereo to match the plate reverb
 stereo_mix = pg.SpatialPE(eq_mix, method=pg.SpatialAdapter(channels=2))
 # add plate reverb
 wet_mix = pg.ReverbPE(source=stereo_mix, ir=IR, mix=0.3)
-# Render and play...
+
+# Render supersaw stems to separate files
+stem_dir = Path(__file__).parent / "audio"
+cropped_lo = pg.CropPE(stem_lo, 0, duration)
+cropped_hi = pg.CropPE(stem_hi, 0, duration)
+lo_path = str(stem_dir / "im_lucky_supersaw_lo.wav")
+hi_path = str(stem_dir / "im_lucky_supersaw_hi.wav")
+print(f"Rendering supersaw lo stem → {lo_path}")
+pg.render_to_file(cropped_lo, lo_path, sample_rate=SRATE)
+print(f"Rendering supersaw hi stem → {hi_path}")
+pg.render_to_file(cropped_hi, hi_path, sample_rate=SRATE)
+print("Stems written.")
+
+# Render and play the full mix...
 pg.browse(source=wet_mix, sample_rate=SRATE)

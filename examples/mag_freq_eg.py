@@ -110,5 +110,14 @@ DEMOS = [
     ("Negate every other phase",                     demo_negate_every_other_phase),
 ]
 
+README = """\
+MagFreqPE converts audio to the FFT domain, applies a user-supplied
+"mangler" function to the magnitude and phase arrays, then resynthesizes.
+
+Demos apply various phase manipulations to a drum loop: negating phases
+in selected frequency bands, progressively shifting phases, randomizing
+all phases, swapping adjacent phases, and negating every other phase.
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)

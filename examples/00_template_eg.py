@@ -47,5 +47,15 @@ DEMOS = [
 # ------------------------------------------------------------------------------
 # Main
 
+README = """\
+Template example — starter file for new pygmu2 demos.
+
+Shows the minimal boilerplate for a demo script: import pygmu2, define
+one or more demo functions, register them in DEMOS, and call run_demos().
+
+Demo 1: plays a WAV file through GainPE.
+Demo 2: plays a 440 Hz sine wave for 2 seconds.
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)

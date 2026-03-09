@@ -57,5 +57,15 @@ DEMOS = [
 # Main
 # ------------------------------------------------------------------------------
 
+README = """\
+AudioReaderPE — decode compressed audio files into memory.
+
+Uses miniaudio to read MP3, FLAC, OGG Vorbis, and WAV files, serving
+samples on demand just like WavReaderPE but supporting compressed formats.
+
+Demo 1: play a WAV file.
+Demo 2: play an MP3 file (resampled to 44100 Hz if needed).
+"""
+
 if __name__ == "__main__":
-    run_demos(DEMOS)
+    run_demos(DEMOS, readme=README)

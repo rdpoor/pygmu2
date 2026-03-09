@@ -89,6 +89,7 @@ def write_annotation_sidecar(
     sample_rate: int,
     total_frames: int,
     sidecar_path: str | Path | None = None,
+    readme: str | None = None,
 ) -> Path:
     """Write annotations to YAML sidecar and return the written path."""
     out_path = resolve_annotation_sidecar_path(audio_path, sidecar_path=sidecar_path)
@@ -98,8 +99,10 @@ def write_annotation_sidecar(
         "audio_file": Path(audio_path).name,
         "sample_rate": int(sample_rate),
         "total_frames": int(total_frames),
-        "annotations": [_annotation_to_dict(a) for a in annotations],
     }
+    if readme is not None:
+        payload["readme"] = str(readme)
+    payload["annotations"] = [_annotation_to_dict(a) for a in annotations]
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with out_path.open("w", encoding="utf-8") as handle:
         yaml.safe_dump(payload, handle, sort_keys=False, allow_unicode=False)
@@ -122,6 +125,17 @@ def load_annotation_sidecar(path: str | Path) -> list[AnnotationRecord]:
             raise ValueError("Invalid annotation sidecar: each annotation must be a mapping.")
         records.append(_annotation_from_dict(entry, index=index))
     return records
+
+
+def load_sidecar_readme(path: str | Path) -> str | None:
+    """Return the ``readme`` field from a YAML sidecar, or *None* if absent."""
+    sidecar_path = Path(path)
+    if not sidecar_path.exists():
+        return None
+    with sidecar_path.open("r", encoding="utf-8") as handle:
+        payload = yaml.safe_load(handle) or {}
+    value = payload.get("readme")
+    return str(value) if value is not None else None
 
 
 def normalize_annotations_to_frames(
