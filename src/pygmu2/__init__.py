@@ -57,6 +57,7 @@ from pygmu2.gain_pe import GainPE
 from pygmu2.gate_signal import GateSignal
 from pygmu2.gate_to_trigger_pe import GateToTriggerPE
 from pygmu2.identity_pe import IdentityPE
+from pygmu2.idiophone_pe import IdiophonePE
 from pygmu2.karplus_strong_pe import KarplusStrongPE, rho_for_decay_db
 from pygmu2.ladder_pe import LadderPE, LadderMode
 from pygmu2.logger import set_global_logging, setup_logging, get_logger
