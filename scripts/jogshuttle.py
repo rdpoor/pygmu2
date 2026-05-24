@@ -21,6 +21,7 @@ import argparse
 import logging
 import os
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -31,6 +32,8 @@ from PySide6.QtGui import (
     QColor,
     QFont,
     QFontDatabase,
+    QIcon,
+    QImage,
     QKeySequence,
     QMouseEvent,
     QPainter,
@@ -40,6 +43,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QApplication,
+    QComboBox,
     QFileDialog,
     QHBoxLayout,
     QLabel,
@@ -61,10 +65,22 @@ from pygmu2 import (
     TimeWarpPE,
     WavReaderPE,
 )
+from pygmu2.nofft_spectrogram import (
+    NoFFTSpectrogramConfig,
+    NoFFTSpectrogramResult,
+    compute_nofft_spectrogram_from_file,
+)
+from pygmu2.annotations import (
+    FrameAnnotation,
+    load_annotation_sidecar,
+    normalize_annotations_to_frames,
+    resolve_annotation_sidecar_path,
+)
 
 logger = logging.getLogger("jogshuttle")
 
 AUDIO_DIR = Path(__file__).resolve().parent.parent / "examples" / "audio"
+APP_ICON_PATH = Path(__file__).resolve().parent.parent / "src" / "pygmu2" / "assets" / "target2_icon_black.png"
 
 
 # ---------------------------------------------------------------------------
@@ -111,6 +127,80 @@ class JumpSliderStyle(QProxyStyle):
         return super().styleHint(hint, option, widget, returnData)
 
 
+@dataclass(frozen=True)
+class TimelineOverlayStyle:
+    onset_line: QColor
+    extent_fill: QColor
+    label_bg: QColor
+    label_fg: QColor
+
+
+def _draw_timeline_annotations(
+    p: QPainter,
+    width: int,
+    height: int,
+    annotations: list[FrameAnnotation],
+    total_frames: int,
+    style: TimelineOverlayStyle,
+) -> None:
+    if width <= 0 or height <= 0 or total_frames <= 0 or not annotations:
+        return
+
+    frame_span = max(1, int(total_frames))
+    fill_color = QColor(style.extent_fill)
+    line_pen = QPen(style.onset_line)
+    line_pen.setWidth(1)
+
+    # Draw extents first, then onset lines, then compact labels.
+    for ann in annotations:
+        if ann.end_frame is None or ann.end_frame <= ann.onset_frame:
+            continue
+        x0 = int(round((ann.onset_frame / frame_span) * width))
+        x1 = int(round((ann.end_frame / frame_span) * width))
+        if x1 <= 0 or x0 >= width:
+            continue
+        left = max(0, x0)
+        right = min(width, x1)
+        if right > left:
+            p.fillRect(left, 0, right - left, height, fill_color)
+
+    p.setPen(line_pen)
+    for ann in annotations:
+        x = int(round((ann.onset_frame / frame_span) * width))
+        x = max(0, min(width - 1, x))
+        p.drawLine(QPointF(x, 0), QPointF(x, height))
+
+    fm = p.fontMetrics()
+    row_height = fm.height() + 4
+    max_rows = max(1, min(4, max(1, (height - 4) // row_height)))
+    row_right_edges = [-10_000] * max_rows
+    max_label_w = max(80, min(width // 3, 240))
+    for ann in annotations:
+        text = ann.label.strip() or ann.kind.strip()
+        if not text:
+            continue
+        x = int(round((ann.onset_frame / frame_span) * width))
+        x = max(0, min(width - 1, x))
+        text = fm.elidedText(text, Qt.ElideRight, max_label_w)
+        text_w = fm.horizontalAdvance(text)
+        left = min(max(2, x + 4), max(2, width - text_w - 8))
+        right = left + text_w + 6
+
+        row_index: int | None = None
+        for idx, row_right in enumerate(row_right_edges):
+            if left > row_right + 8:
+                row_index = idx
+                break
+        if row_index is None:
+            continue
+        y_top = 2 + row_index * row_height
+        p.fillRect(left - 2, y_top, text_w + 6, fm.height() + 2, style.label_bg)
+        p.setPen(style.label_fg)
+        p.drawText(left + 1, y_top + fm.ascent() + 1, text)
+        p.setPen(line_pen)
+        row_right_edges[row_index] = right
+
+
 # ---------------------------------------------------------------------------
 # Waveform widget
 # ---------------------------------------------------------------------------
@@ -126,12 +216,20 @@ class WaveformWidget(QWidget):
     WAVE_FILL = QColor("#16a085")
     CENTER_LINE = QColor("#2c3e50")
     PLAYHEAD_COLOR = QColor("#e74c3c")
+    ANNOTATION_STYLE = TimelineOverlayStyle(
+        onset_line=QColor(255, 230, 140, 210),
+        extent_fill=QColor(255, 215, 80, 60),
+        label_bg=QColor(20, 20, 28, 190),
+        label_fg=QColor("#f8e27a"),
+    )
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMinimumHeight(120)
         self._peaks: np.ndarray | None = None
         self._playhead_frac: float = 0.0
+        self._annotations: list[FrameAnnotation] = []
+        self._total_frames: int = 0
         self._dragging = False
 
     def set_peaks(self, peaks: np.ndarray | None) -> None:
@@ -140,6 +238,11 @@ class WaveformWidget(QWidget):
 
     def set_playhead(self, frac: float) -> None:
         self._playhead_frac = max(0.0, min(1.0, frac))
+        self.update()
+
+    def set_annotations(self, annotations: list[FrameAnnotation], total_frames: int) -> None:
+        self._annotations = list(annotations)
+        self._total_frames = max(0, int(total_frames))
         self.update()
 
     def paintEvent(self, event):
@@ -180,6 +283,15 @@ class WaveformWidget(QWidget):
         p.setPen(pen)
         p.drawLine(QPointF(0, mid), QPointF(w, mid))
 
+        _draw_timeline_annotations(
+            p,
+            width=w,
+            height=h,
+            annotations=self._annotations,
+            total_frames=self._total_frames,
+            style=self.ANNOTATION_STYLE,
+        )
+
         # Playhead
         x = self._playhead_frac * w
         pen = QPen(self.PLAYHEAD_COLOR)
@@ -187,6 +299,145 @@ class WaveformWidget(QWidget):
         p.setPen(pen)
         p.drawLine(QPointF(x, 0), QPointF(x, h))
 
+        p.end()
+
+    def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.LeftButton and self.width() > 0:
+            self._dragging = True
+            frac = max(0.0, min(1.0, event.position().x() / self.width()))
+            self.scrub_started.emit(frac)
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        if self._dragging and self.width() > 0:
+            frac = max(0.0, min(1.0, event.position().x() / self.width()))
+            self.scrub_moved.emit(frac)
+
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        if event.button() == Qt.LeftButton and self._dragging:
+            self._dragging = False
+            self.scrub_ended.emit()
+
+
+def _build_colormap_lut() -> np.ndarray:
+    """
+    Return a 256x3 uint8 LUT.
+
+    Viridis ramp tuned for spectrogram readability.
+    """
+    color_stops = np.asarray(
+        [
+            [0, 0, 0],
+            [72, 40, 120],
+            [62, 74, 137],
+            [49, 104, 142],
+            [38, 130, 142],
+            [31, 158, 137],
+            [53, 183, 121],
+            [109, 205, 89],
+            [180, 222, 44],
+            [253, 231, 37],
+        ],
+        dtype=np.float32,
+    )
+    lut = np.zeros((256, 3), dtype=np.uint8)
+    segment_count = len(color_stops) - 1
+    for i in range(256):
+        t = i / 255.0
+        seg = min(int(t * segment_count), segment_count - 1)
+        seg_t = (t * segment_count) - seg
+        c0 = color_stops[seg]
+        c1 = color_stops[seg + 1]
+        rgb = c0 + (c1 - c0) * seg_t
+        lut[i] = np.clip(np.round(rgb), 0, 255).astype(np.uint8)
+    return lut
+
+
+_COLORMAP_LUT = _build_colormap_lut()
+
+
+class SpectrogramWidget(QWidget):
+    """Heatmap spectrogram view with scrubbing and shared playhead semantics."""
+
+    scrub_started = Signal(float)  # fraction 0..1
+    scrub_moved = Signal(float)
+    scrub_ended = Signal()
+
+    BG_COLOR = QColor("#0f1020")
+    PLAYHEAD_COLOR = QColor("#e74c3c")
+    ANNOTATION_STYLE = TimelineOverlayStyle(
+        onset_line=QColor(120, 220, 255, 220),
+        extent_fill=QColor(70, 180, 255, 55),
+        label_bg=QColor(6, 18, 28, 195),
+        label_fg=QColor(182, 230, 255),
+    )
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMinimumHeight(120)
+        self._intensities: np.ndarray | None = None  # shape: bins x frames
+        self._image: QImage | None = None
+        self._playhead_frac: float = 0.0
+        self._annotations: list[FrameAnnotation] = []
+        self._total_frames: int = 0
+        self._dragging = False
+
+    def set_spectrogram(self, intensities: np.ndarray | None) -> None:
+        self._intensities = intensities
+        self._rebuild_image()
+        self.update()
+
+    def set_playhead(self, frac: float) -> None:
+        self._playhead_frac = max(0.0, min(1.0, frac))
+        self.update()
+
+    def set_annotations(self, annotations: list[FrameAnnotation], total_frames: int) -> None:
+        self._annotations = list(annotations)
+        self._total_frames = max(0, int(total_frames))
+        self.update()
+
+    def _rebuild_image(self) -> None:
+        if self._intensities is None or self._intensities.size == 0:
+            self._image = None
+            return
+
+        intensities = np.clip(self._intensities, 0.0, 1.0)
+        # Draw low frequencies at bottom by reversing rows for image space.
+        img_values = (intensities[::-1, :] * 255.0).astype(np.uint8, copy=False)
+        rgb = _COLORMAP_LUT[img_values]
+        h, w, _ = rgb.shape
+        rgba = np.empty((h, w, 4), dtype=np.uint8)
+        rgba[:, :, :3] = rgb
+        rgba[:, :, 3] = 255
+        self._image = QImage(
+            rgba.data,
+            w,
+            h,
+            4 * w,
+            QImage.Format_RGBA8888,
+        ).copy()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing, False)
+        p.fillRect(self.rect(), self.BG_COLOR)
+
+        if self._image is not None:
+            p.drawImage(self.rect(), self._image)
+
+        _draw_timeline_annotations(
+            p,
+            width=self.width(),
+            height=self.height(),
+            annotations=self._annotations,
+            total_frames=self._total_frames,
+            style=self.ANNOTATION_STYLE,
+        )
+
+        x = self._playhead_frac * self.width()
+        pen = QPen(self.PLAYHEAD_COLOR)
+        pen.setWidth(2)
+        p.setPen(pen)
+        p.drawLine(QPointF(x, 0), QPointF(x, self.height()))
         p.end()
 
     def mousePressEvent(self, event: QMouseEvent):
@@ -326,6 +577,16 @@ class JogShuttleApp(QMainWindow):
     # Spring-back dynamics
     SPRING_FACTOR = 0.30
 
+    # Offline noFFT defaults
+    NOFFT_MIN_FREQ = 100.0
+    NOFFT_MAX_FREQ = 16000.0
+    NOFFT_BINS_PER_SEMITONE = 2.0
+    NOFFT_FREQUENCY_SCALE = "musical"
+    NOFFT_CYCLES_FOR_DECAY = 5.0
+    NOFFT_HOP_SIZE = 128
+    NOFFT_MIN_DB = -80.0
+    NOFFT_MAX_DB = 0.0
+
     def __init__(self, initial_path: str | None = None, delete_on_close: bool = False):
         super().__init__()
         self.setWindowTitle("pygmu2 Jog/Shuttle Player")
@@ -337,6 +598,10 @@ class JogShuttleApp(QMainWindow):
         self._sample_rate: int = 44100
         self._total_frames: int = 0
         self._channels: int = 1
+        self._spectrogram_result: NoFFTSpectrogramResult | None = None
+        self._spec_cache: dict[tuple[str, int, int, float], NoFFTSpectrogramResult] = {}
+        self._active_view: str = "Waveform"
+        self._spectrogram_stale: bool = True
 
         # PE graph
         self._wav_pe: WavReaderPE | None = None
@@ -388,17 +653,35 @@ class JogShuttleApp(QMainWindow):
         top = QHBoxLayout()
         self._file_label = QLabel("No file loaded")
         top.addWidget(self._file_label, 1)
+        top.addWidget(QLabel("View:"))
+        self._view_select = QComboBox()
+        self._view_select.addItems(["Waveform", "Spectrogram"])
+        self._view_select.currentTextChanged.connect(self._on_view_changed)
+        top.addWidget(self._view_select)
         open_btn = QPushButton("Open\u2026")
         open_btn.clicked.connect(self._on_open)
         top.addWidget(open_btn)
         layout.addLayout(top)
 
-        # --- Waveform ---
+        # --- Visualization views ---
         self._waveform = WaveformWidget()
         self._waveform.scrub_started.connect(self._on_scrub_start)
         self._waveform.scrub_moved.connect(self._on_scrub_move)
         self._waveform.scrub_ended.connect(self._on_scrub_end)
-        layout.addWidget(self._waveform, 1)
+
+        self._spectrogram = SpectrogramWidget()
+        self._spectrogram.scrub_started.connect(self._on_scrub_start)
+        self._spectrogram.scrub_moved.connect(self._on_scrub_move)
+        self._spectrogram.scrub_ended.connect(self._on_scrub_end)
+        self._spectrogram.hide()
+
+        self._viz_container = QWidget()
+        viz_layout = QVBoxLayout(self._viz_container)
+        viz_layout.setContentsMargins(0, 0, 0, 0)
+        viz_layout.setSpacing(0)
+        viz_layout.addWidget(self._waveform)
+        viz_layout.addWidget(self._spectrogram)
+        layout.addWidget(self._viz_container, 1)
 
         # --- Transport buttons ---
         transport = QHBoxLayout()
@@ -444,6 +727,66 @@ class JogShuttleApp(QMainWindow):
             self._on_stop
         )
 
+    def _on_view_changed(self, view_name: str) -> None:
+        self._active_view = view_name
+        show_waveform = view_name == "Waveform"
+        self._waveform.setVisible(show_waveform)
+        self._spectrogram.setVisible(not show_waveform)
+        if not show_waveform:
+            self._refresh_spectrogram_if_needed()
+
+    def _current_viz_width(self) -> int:
+        width = self._viz_container.width() if hasattr(self, "_viz_container") else 0
+        if width <= 0:
+            width = self._waveform.width()
+        return max(32, int(width))
+
+    def _nofft_config(self) -> NoFFTSpectrogramConfig:
+        return NoFFTSpectrogramConfig(
+            min_freq=self.NOFFT_MIN_FREQ,
+            max_freq=self.NOFFT_MAX_FREQ,
+            bins_per_semitone=self.NOFFT_BINS_PER_SEMITONE,
+            frequency_scale=self.NOFFT_FREQUENCY_SCALE,
+            cycles_for_decay=self.NOFFT_CYCLES_FOR_DECAY,
+            hop_size=self.NOFFT_HOP_SIZE,
+            min_db=self.NOFFT_MIN_DB,
+            max_db=self.NOFFT_MAX_DB,
+        )
+
+    def _compute_spectrogram(self, path: str, target_width: int) -> NoFFTSpectrogramResult:
+        mtime = Path(path).stat().st_mtime
+        cache_key = (path, target_width, self._sample_rate, mtime)
+        cached = self._spec_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        # A mild 2x horizontal oversampling keeps the image sharp during scaling.
+        target_frames = max(128, target_width * 2)
+        result = compute_nofft_spectrogram_from_file(
+            path,
+            self._nofft_config(),
+            target_frames=target_frames,
+        )
+        self._spec_cache[cache_key] = result
+        return result
+
+    def _refresh_spectrogram_if_needed(self, force: bool = False) -> None:
+        if self._wav_path is None:
+            return
+        if not force and self._active_view != "Spectrogram":
+            return
+        if not force and not self._spectrogram_stale:
+            return
+        width = self._current_viz_width()
+        if width <= 10:
+            return
+        self._spectrogram_result = self._compute_spectrogram(
+            self._wav_path,
+            target_width=width,
+        )
+        self._spectrogram.set_spectrogram(self._spectrogram_result.intensities)
+        self._spectrogram_stale = False
+
     # ------------------------------------------------------------------
     # File loading
     # ------------------------------------------------------------------
@@ -472,8 +815,33 @@ class JogShuttleApp(QMainWindow):
 
         pg.set_sample_rate(self._sample_rate)
 
-        canvas_w = self._waveform.width() or 640
+        normalized_annotations: list[FrameAnnotation] = []
+        sidecar_path = resolve_annotation_sidecar_path(path)
+        try:
+            annotations = load_annotation_sidecar(sidecar_path)
+            normalized_annotations = normalize_annotations_to_frames(
+                annotations,
+                sample_rate=self._sample_rate,
+                total_frames=self._total_frames,
+            )
+            if normalized_annotations:
+                logger.debug(
+                    "Loaded %d annotations from %s",
+                    len(normalized_annotations),
+                    sidecar_path,
+                )
+        except Exception as exc:
+            logger.warning("Failed to load annotations from %s: %s", sidecar_path, exc)
+
+        canvas_w = self._current_viz_width() or 640
         self._waveform.set_peaks(compute_peaks(path, target_width=canvas_w))
+        self._waveform.set_annotations(normalized_annotations, self._total_frames)
+        self._spectrogram_result = None
+        self._spectrogram.set_spectrogram(None)
+        self._spectrogram.set_annotations(normalized_annotations, self._total_frames)
+        self._spectrogram_stale = True
+        if self._active_view == "Spectrogram":
+            self._refresh_spectrogram_if_needed(force=True)
 
         self._build_graph(path)
 
@@ -654,11 +1022,14 @@ class JogShuttleApp(QMainWindow):
 
     def _do_resize(self) -> None:
         if self._wav_path is not None:
-            new_width = self._waveform.width()
+            new_width = self._current_viz_width()
             if new_width > 10:
                 self._waveform.set_peaks(
                     compute_peaks(self._wav_path, target_width=new_width)
                 )
+                self._spectrogram_stale = True
+                if self._active_view == "Spectrogram":
+                    self._refresh_spectrogram_if_needed()
 
     # ------------------------------------------------------------------
     # Playhead polling & auto-stop
@@ -680,6 +1051,7 @@ class JogShuttleApp(QMainWindow):
                     logger.debug("AUTO-STOP: pos=%.1f, rate=%.2f", pos, self._rate)
                     self._set_rate(0.0)
             self._waveform.set_playhead(pos / self._total_frames)
+            self._spectrogram.set_playhead(pos / self._total_frames)
             self._shuttle.set_rate_display(self._rate)
             pos_str = self._format_time(max(0, pos))
             samples = int(max(0, pos))
@@ -737,8 +1109,15 @@ def main() -> None:
     pg.set_sample_rate(44100)
 
     app = QApplication(sys.argv)
+    if APP_ICON_PATH.is_file():
+        icon = QIcon(str(APP_ICON_PATH))
+        app.setWindowIcon(icon)
+    else:
+        icon = None
     window = JogShuttleApp(initial_path=args.file,
                            delete_on_close=args.delete_on_close)
+    if icon is not None:
+        window.setWindowIcon(icon)
     window.show()
     sys.exit(app.exec())
 

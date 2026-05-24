@@ -225,7 +225,7 @@ class EnvelopePE(ProcessingElement):
             for ch in range(channels):
                 # uniform_filter1d computes the mean, so we apply to squared signal
                 mean_squared = uniform_filter1d(x_squared[:, ch], size=window, mode='nearest')
-                result[:, ch] = np.sqrt(mean_squared)
+                result[:, ch] = np.sqrt(np.maximum(mean_squared, 0.0))
             return result
         except ImportError:
             pass
@@ -244,7 +244,7 @@ class EnvelopePE(ProcessingElement):
             window_sum = cumsum[end_idx] - cumsum[start_idx]
             window_len = end_idx - start_idx
             
-            result[:, ch] = np.sqrt(window_sum / window_len)
+            result[:, ch] = np.sqrt(np.maximum(window_sum / window_len, 0.0))
         
         return result
     
