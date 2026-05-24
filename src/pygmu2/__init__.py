@@ -46,6 +46,7 @@ from pygmu2.conversions import (
 from pygmu2.convolve_pe import ConvolvePE
 from pygmu2.crop_pe import CropPE
 from pygmu2.debug_utils import print_pe_tree
+from pygmu2.decaying_sine_pe import DecayingSinePE
 from pygmu2.delay_pe import DelayPE
 from pygmu2.dirac_pe import DiracPE
 from pygmu2.dynamics_pe import DynamicsPE, DynamicsMode
