@@ -50,7 +50,6 @@ def demo_weighted_pitch():
 
     pg.play(
         pg.GainPE(pg.CropPE(chooser, 0, duration_samples), gain=1.67),
-        sample_rate=SAMPLE_RATE,
     )
     print("Done!\n", flush=True)
 
@@ -90,7 +89,6 @@ def demo_weighted_pitch_one_osc():
 
     pg.play(
         pg.GainPE(pg.CropPE(osc, 0, duration_samples), gain=1.67),
-        sample_rate=SAMPLE_RATE,
     )
     print("Done!\n", flush=True)
 
@@ -112,16 +110,16 @@ def demo_djembe_fury():
 
     # Ten slices from the file (as in the original example)
     slices = [
-        pg.SlicePE(source_stream, *start_dur(0, 13811)),          # 0
-        pg.SlicePE(source_stream, *start_dur(13811, 20882)),      # 1
-        pg.SlicePE(source_stream, *start_dur(20882, 35331)),      # 2
-        pg.SlicePE(source_stream, *start_dur(35331, 42732)),      # 3
-        pg.SlicePE(source_stream, *start_dur(42732, 57006)),      # 4
-        pg.SlicePE(source_stream, *start_dur(57006, 71456)),      # 5
-        pg.SlicePE(source_stream, *start_dur(71456, 78857)),      # 6
-        pg.SlicePE(source_stream, *start_dur(78857, 93130)),      # 7
-        pg.SlicePE(source_stream, *start_dur(93130, 100355)),     # 8
-        pg.SlicePE(source_stream, *start_dur(100355, 114541)),    # 9
+        pg.SlicePE(source_stream, *start_dur(0, 13811)),  # 0
+        pg.SlicePE(source_stream, *start_dur(13811, 20882)),  # 1
+        pg.SlicePE(source_stream, *start_dur(20882, 35331)),  # 2
+        pg.SlicePE(source_stream, *start_dur(35331, 42732)),  # 3
+        pg.SlicePE(source_stream, *start_dur(42732, 57006)),  # 4
+        pg.SlicePE(source_stream, *start_dur(57006, 71456)),  # 5
+        pg.SlicePE(source_stream, *start_dur(71456, 78857)),  # 6
+        pg.SlicePE(source_stream, *start_dur(78857, 93130)),  # 7
+        pg.SlicePE(source_stream, *start_dur(93130, 100355)),  # 8
+        pg.SlicePE(source_stream, *start_dur(100355, 114541)),  # 9
     ]
 
     # 10 triggers/sec
@@ -138,7 +136,6 @@ def demo_djembe_fury():
 
     pg.play(
         pg.GainPE(pg.CropPE(chooser, 0, duration_samples), gain=0.81),
-        sample_rate=sample_rate,
     )
     print("Done!\n", flush=True)
 

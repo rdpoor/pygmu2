@@ -14,11 +14,13 @@ from pathlib import Path
 
 import pygmu2 as pg
 from examples_helper import run_demos
+
 pg.set_sample_rate(44100)
 
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 # write your demos here, list demo names and demo functions in DEMOS
+
 
 def demo_one():
     print("Demo one")
@@ -27,7 +29,8 @@ def demo_one():
     wav_path = audio_dir / "choir.wav"
     source = pg.WavReaderPE(str(wav_path))
     sample_rate = source.file_sample_rate or 44100
-    pg.play(pg.GainPE(source, gain=4.95), sample_rate)
+    pg.set_sample_rate(sample_rate)
+    pg.play(pg.GainPE(source, gain=4.95))
 
 
 def demo_two():
@@ -36,7 +39,8 @@ def demo_two():
     sample_rate = 44100
     source = pg.SinePE(frequency=440.0, amplitude=0.3)
     source = pg.CropPE(source, 0, int(2.0 * sample_rate))
-    pg.play(pg.GainPE(source, gain=1.67), sample_rate)
+    pg.play(pg.GainPE(source, gain=1.67))
+
 
 DEMOS = [
     ("Demo one", demo_one),

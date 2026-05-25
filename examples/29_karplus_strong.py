@@ -23,6 +23,7 @@ from pygmu2 import (
 )
 import pygmu2 as pg
 from examples_helper import run_demos
+
 pg.set_sample_rate(44100)
 
 from pygmu2.karplus_strong_pe import rho_for_decay_db
@@ -31,19 +32,21 @@ from typing import Optional
 
 SAMPLE_RATE = 44100
 
+
 def s2s(seconds):
     return int(round(seconds * SAMPLE_RATE))
+
 
 def _make_note(
     frequency: float = 440.0,
     duration_seconds: float = 1.0,
     amplitude: float = 0.5,
     seed: Optional[int] = None,
-    channels: int = 1
-    ):
+    channels: int = 1,
+):
     """A thin wrapper around KarplusStrongPE with a duration parameter"""
-    rho=rho_for_decay_db(duration_seconds, frequency, SAMPLE_RATE, db=-30)
-    print(f'duration={duration_seconds} => rho={rho}')
+    rho = rho_for_decay_db(duration_seconds, frequency, SAMPLE_RATE, db=-30)
+    print(f"duration={duration_seconds} => rho={rho}")
     return CropPE(
         KarplusStrongPE(
             frequency=frequency,
@@ -62,11 +65,11 @@ def demo_single_pluck():
     duration_seconds = 1.0
     ks = _make_note(
         frequency=440.0,
-        duration_seconds = duration_seconds,
+        duration_seconds=duration_seconds,
         amplitude=0.35,
         seed=42,
     )
-    pg.play(pg.GainPE(CropPE(ks, 0, s2s(duration_seconds)), gain=1.74), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(ks, 0, s2s(duration_seconds)), gain=1.74))
 
 
 def demo_two_phase_decay():
@@ -84,7 +87,7 @@ def demo_two_phase_decay():
         amplitude=0.35,
         seed=42,
     )
-    pg.play(pg.GainPE(CropPE(ks, 0, total_samp), gain=1.88), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(ks, 0, total_samp), gain=1.88))
 
 
 def demo_high_rho_vs_low_rho():
@@ -94,30 +97,26 @@ def demo_high_rho_vs_low_rho():
     plucks = []
     t = 0
 
-
-    frequency: float = 440.0,
-    duration_seconds: float = 1.0,
-    amplitude: float = 0.5,
-    seed: Optional[int] = None,
+    frequency: float = (440.0,)
+    duration_seconds: float = (1.0,)
+    amplitude: float = (0.5,)
+    seed: Optional[int] = (None,)
     channels: int = 1
-
 
     duration_seconds = 2.0
     plucks.append(
-        DelayPE(
-            _make_note(
-                frequency=330.0, duration_seconds=duration_seconds), s2s(t)))
+        DelayPE(_make_note(frequency=330.0, duration_seconds=duration_seconds), s2s(t))
+    )
     t += duration_seconds
 
     duration_seconds = 0.25
     plucks.append(
-        DelayPE(
-            _make_note(
-                frequency=330.0, duration_seconds=duration_seconds), s2s(t)))
+        DelayPE(_make_note(frequency=330.0, duration_seconds=duration_seconds), s2s(t))
+    )
     t += duration_seconds
 
     mix = MixPE(*plucks)
-    pg.play(pg.GainPE(CropPE(mix, 0, s2s(t)), gain=1.25), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix, 0, s2s(t)), gain=1.25))
 
 
 def demo_c_major_arpeggio():
@@ -132,13 +131,15 @@ def demo_c_major_arpeggio():
         plucks.append(
             DelayPE(
                 _make_note(
-                    frequency=pitch_to_freq(midi), 
-                    duration_seconds=duration_seconds), 
-                s2s(t)))
+                    frequency=pitch_to_freq(midi), duration_seconds=duration_seconds
+                ),
+                s2s(t),
+            )
+        )
         t += duration_seconds
 
     mix = MixPE(*plucks)
-    pg.play(pg.GainPE(CropPE(mix, 0, s2s(t)), gain=1.21), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix, 0, s2s(t)), gain=1.21))
 
 
 DEMOS = [

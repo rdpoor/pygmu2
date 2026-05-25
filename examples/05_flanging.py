@@ -20,6 +20,7 @@ from pygmu2 import (
 )
 import pygmu2 as pg
 from examples_helper import run_demos
+
 pg.set_sample_rate(44100)
 
 
@@ -35,7 +36,9 @@ print(f"Loading: {WAV_FILE}", flush=True)
 # Load orchestral source
 source_stream = WavReaderPE(str(WAV_FILE))
 sample_rate = source_stream.file_sample_rate
+pg.set_sample_rate(sample_rate)
 duration_samples = int(DURATION_SECONDS * sample_rate)
+
 
 def dry_original():
     # --- Part 1: Original sound (dry) ---
@@ -43,11 +46,15 @@ def dry_original():
 
     output1_stream = CropPE(source_stream, 0, (duration_samples) - (0))
 
-    pg.play(pg.GainPE(output1_stream, gain=1.67), sample_rate)
+    pg.play(pg.GainPE(output1_stream, gain=1.67))
+
 
 def chorus_effect():
     # --- Part 2: Subtle chorus effect ---
-    print(f"\nPart 2: Chorus effect (0.25Hz, 20-25ms delay) - {DURATION_SECONDS}s", flush=True)
+    print(
+        f"\nPart 2: Chorus effect (0.25Hz, 20-25ms delay) - {DURATION_SECONDS}s",
+        flush=True,
+    )
 
     # Chorus uses longer delay times with slow, subtle modulation
     chorus_rate = 0.25  # Hz - very slow for subtle thickening
@@ -69,11 +76,15 @@ def chorus_effect():
 
     output2_stream = CropPE(chorused_stream, 0, (duration_samples) - (0))
 
-    pg.play(pg.GainPE(output2_stream, gain=2.11), sample_rate)
+    pg.play(pg.GainPE(output2_stream, gain=2.11))
+
 
 def classic_flanging():
     # --- Part 3: Classic flanging ---
-    print(f"\nPart 3: Classic flanging (0.5Hz, 0-10ms delay) - {DURATION_SECONDS}s", flush=True)
+    print(
+        f"\nPart 3: Classic flanging (0.5Hz, 0-10ms delay) - {DURATION_SECONDS}s",
+        flush=True,
+    )
 
     # Flanging uses a slowly oscillating short delay (0-10ms)
     # delay_samples = base_delay + depth * sin(rate * t)
@@ -103,7 +114,8 @@ def classic_flanging():
 
     output3_stream = CropPE(flanged_stream, 0, (duration_samples) - (0))
 
-    pg.play(pg.GainPE(output3_stream, gain=2.06), sample_rate)
+    pg.play(pg.GainPE(output3_stream, gain=2.06))
+
 
 DEMOS = [
     ("Play original", dry_original),

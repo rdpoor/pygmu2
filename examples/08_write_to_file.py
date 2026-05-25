@@ -22,6 +22,7 @@ from pygmu2 import (
 )
 import pygmu2 as pg
 from examples_helper import run_demos
+
 pg.set_sample_rate(44100)
 
 
@@ -37,6 +38,7 @@ print("=== pygmu2 Example 08: Write to File ===", flush=True)
 
 # Create the same C major triad as example 01
 C4, E4, G4 = 60, 64, 67
+
 
 def write_to_file():
     print(f"Creating C major triad...", flush=True)
@@ -77,13 +79,15 @@ def write_to_file():
     print(f"\nPlaying back: {OUTPUT_FILE}", flush=True)
 
     playback_stream = WavReaderPE(str(OUTPUT_FILE))
-    pg.play(pg.GainPE(playback_stream, gain=1.11), sample_rate=playback_stream.file_sample_rate)
+    pg.set_sample_rate(playback_stream.file_sample_rate)
+    pg.play(pg.GainPE(playback_stream, gain=1.11))
 
     # Clean up: delete the temporary output file
     OUTPUT_FILE.unlink()
     print(f"\nCleaned up: {OUTPUT_FILE.name}", flush=True)
 
     print("\nDone!", flush=True)
+
 
 DEMOS = [
     ("Write to file", write_to_file),

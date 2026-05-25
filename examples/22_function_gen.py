@@ -30,8 +30,8 @@ from pygmu2 import (
 )
 import pygmu2 as pg
 from examples_helper import run_demos
-pg.set_sample_rate(44100)
 
+pg.set_sample_rate(44100)
 
 
 SAMPLE_RATE = 44_100
@@ -47,13 +47,19 @@ def demo_pwm_rectangle_naive():
     dur = int(seconds_to_samples(6.0, SAMPLE_RATE))
 
     duty_lfo_stream = SinePE(frequency=0.25, amplitude=1.0)
-    duty_stream = TransformPE(duty_lfo_stream, func=lambda x: 0.5 + 0.45 * x, name="duty_map")
+    duty_stream = TransformPE(
+        duty_lfo_stream, func=lambda x: 0.5 + 0.45 * x, name="duty_map"
+    )
 
-    osc_stream = FunctionGenPE(frequency=110.0, duty_cycle=duty_stream, waveform="rectangle")
+    osc_stream = FunctionGenPE(
+        frequency=110.0, duty_cycle=duty_stream, waveform="rectangle"
+    )
     out_stream = GainPE(osc_stream, gain=0.25)
     out_stream = CropPE(out_stream, 0, (dur) - (0))
 
-    pg.play(pg.GainPE(out_stream, gain=2.00), SAMPLE_RATE)
+    pg.play(pg.GainPE(out_stream, gain=2.00))
+
+
 def demo_morph_naive():
     """
     Naive duty-controlled morph:
@@ -65,11 +71,15 @@ def demo_morph_naive():
     dur = int(seconds_to_samples(8.0, SAMPLE_RATE))
     duty_stream = PiecewisePE([(0, 0.0), (dur, 1.0)])
 
-    osc_stream = FunctionGenPE(frequency=220.0, duty_cycle=duty_stream, waveform="sawtooth")
+    osc_stream = FunctionGenPE(
+        frequency=220.0, duty_cycle=duty_stream, waveform="sawtooth"
+    )
     out_stream = GainPE(osc_stream, gain=0.35)
     out_stream = CropPE(out_stream, 0, (dur) - (0))
 
-    pg.play(pg.GainPE(out_stream, gain=1.43), SAMPLE_RATE)
+    pg.play(pg.GainPE(out_stream, gain=1.43))
+
+
 def demo_ab_high_pitch():
     """
     A/B comparison at high pitch to highlight aliasing:
@@ -88,17 +98,31 @@ def demo_ab_high_pitch():
     duty = 0.2
 
     # Make both sources explicitly 2-channel so AudioRenderer runs a 2-channel stream.
-    naive_stream = FunctionGenPE(frequency=freq_stream, duty_cycle=duty, waveform="rectangle", channels=2)
-    aa_stream = AnalogOscPE(frequency=freq_stream, duty_cycle=duty, waveform="rectangle", channels=2)
+    naive_stream = FunctionGenPE(
+        frequency=freq_stream, duty_cycle=duty, waveform="rectangle", channels=2
+    )
+    aa_stream = AnalogOscPE(
+        frequency=freq_stream, duty_cycle=duty, waveform="rectangle", channels=2
+    )
 
     # Pan by zeroing the opposite channel (keep shape (N,2)).
-    left_stream = TransformPE(naive_stream, func=lambda x: np.column_stack([x[:, 0], np.zeros_like(x[:, 0])]), name="pan_left")
-    right_stream = TransformPE(aa_stream, func=lambda x: np.column_stack([np.zeros_like(x[:, 0]), x[:, 0]]), name="pan_right")
+    left_stream = TransformPE(
+        naive_stream,
+        func=lambda x: np.column_stack([x[:, 0], np.zeros_like(x[:, 0])]),
+        name="pan_left",
+    )
+    right_stream = TransformPE(
+        aa_stream,
+        func=lambda x: np.column_stack([np.zeros_like(x[:, 0]), x[:, 0]]),
+        name="pan_right",
+    )
 
     stereo_stream = GainPE(MixPE(left_stream, right_stream), gain=0.2)
     stereo_stream = CropPE(stereo_stream, 0, (dur) - (0))
 
-    pg.play(pg.GainPE(stereo_stream, gain=1.25), SAMPLE_RATE)
+    pg.play(pg.GainPE(stereo_stream, gain=1.25))
+
+
 DEMOS = [
     ("PWM Rectangle (naive)", demo_pwm_rectangle_naive),
     ("Saw/Triangle Morph (naive)", demo_morph_naive),
