@@ -23,6 +23,7 @@ SR = 44100
 # Helpers
 # ------------------------------------------------------------------------------
 
+
 def seconds(s: float) -> int:
     return int(round(float(s) * SR))
 
@@ -55,6 +56,7 @@ RELEASE_SEC = 0.25
 REPEAT_SEC = 1.0 / REPEAT_HZ
 GATE_SEC = ATTACK_SEC + DECAY_SEC + HOLD_SEC
 
+
 def demo_gate_adsr_vca():
     """
     PeriodicGate -> AdsrGateSignal -> GainPE(SuperSaw)
@@ -62,7 +64,7 @@ def demo_gate_adsr_vca():
     duration_s = 8.0
 
     if GATE_SEC + RELEASE_SEC > REPEAT_SEC:
-        print(f'warning: REPEAT_HZ is too high for ADSR to complete')
+        print(f"warning: REPEAT_HZ is too high for ADSR to complete")
 
     # An on-off gate to simulate a note repeating every 1/REPEAT_HZ seconds,
     # held for GATE_SEC each time.
@@ -72,7 +74,7 @@ def demo_gate_adsr_vca():
         duty_cycle=GATE_SEC / REPEAT_SEC,
     )
 
-    # When the gate signal goes high, the ADSR sequences through Attack => 
+    # When the gate signal goes high, the ADSR sequences through Attack =>
     # Decay before settling on the Sustain level.  It holds Sustain as long
     # as the gate signal is high.  When the gate signal drops, the ADSR starts
     # the Release phase.
@@ -85,8 +87,8 @@ def demo_gate_adsr_vca():
     )
 
     # We want the SuperSaw to restart at the same time as the ADSR.  For this,
-    # we need a trigger rather than a gate.  
-    # 
+    # we need a trigger rather than a gate.
+    #
     # TODO: Implement EdgeSignal that converts a gate signal into a trigger
     # signal.  But for now, use a PeriodicTrigger running at the same speed as
     # the PeriodicGate.
@@ -96,7 +98,7 @@ def demo_gate_adsr_vca():
 
     # SuperSaw makes a nice fat synth sound.
     saw = pg.SuperSawPE(
-        frequency=110.0,     # A2
+        frequency=110.0,  # A2
         voices=7,
         detune_cents=12.0,
     )
@@ -109,8 +111,8 @@ def demo_gate_adsr_vca():
     out = pg.GainPE(vca, gain=0.25)
 
     out = pg.CropPE(out, 0, seconds(duration_s))
-    # pg.play_offline(pg.GainPE(out, gain=1.31), SR)
-    pg.render_to_file(pg.GainPE(out, gain=1.31), '/tmp/adsr_profile.wav', sample_rate=SR)
+    # pg.play_offline(pg.GainPE(out, gain=1.31))
+    pg.render_to_file(pg.GainPE(out, gain=1.31), "/tmp/adsr_profile.wav")
 
 
 def demo_trigger_adsr_vca():
@@ -120,7 +122,7 @@ def demo_trigger_adsr_vca():
     duration_s = 8.0
 
     if GATE_SEC + RELEASE_SEC > REPEAT_SEC:
-        print(f'warning: REPEAT_HZ is too high for ADSR to complete')
+        print(f"warning: REPEAT_HZ is too high for ADSR to complete")
 
     trigger = pg.PeriodicTrigger(
         hz=REPEAT_HZ,
@@ -136,7 +138,7 @@ def demo_trigger_adsr_vca():
     )
 
     saw = pg.SuperSawPE(
-        frequency=110.0,     # A2
+        frequency=110.0,  # A2
         voices=7,
         detune_cents=12.0,
     )
@@ -149,7 +151,7 @@ def demo_trigger_adsr_vca():
     out = pg.GainPE(vca, gain=0.25)
 
     out = pg.CropPE(out, 0, seconds(duration_s))
-    pg.play(pg.GainPE(out, gain=1.71), SR)
+    pg.play(pg.GainPE(out, gain=1.71))
 
 
 def demo_trigger_adsr_filter_sweep():
@@ -175,7 +177,7 @@ def demo_trigger_adsr_filter_sweep():
     cutoff = pg.TransformPE(sweep_env, lin_map(200.0, 6000.0))
 
     src = pg.SuperSawPE(
-        frequency=55.0,      # A1
+        frequency=55.0,  # A1
         voices=9,
         detune_cents=18.0,
     )
@@ -183,13 +185,13 @@ def demo_trigger_adsr_filter_sweep():
 
     # Resonant low-pass sweep using BiquadPE
     flt = pg.BiquadPE(
-        src,                    # or vca in the dual-ADSR demo
-        frequency=cutoff,       # modulated cutoff (PE)
-        q=8.0,                  # resonance; tweak 2..12
+        src,  # or vca in the dual-ADSR demo
+        frequency=cutoff,  # modulated cutoff (PE)
+        q=8.0,  # resonance; tweak 2..12
     )
 
     out = pg.CropPE(flt, 0, seconds(duration_s))
-    pg.play(pg.GainPE(out, gain=0.70), SR)
+    pg.play(pg.GainPE(out, gain=0.70))
 
 
 def demo_dual_adsr_vca_and_filter():
@@ -240,14 +242,14 @@ def demo_dual_adsr_vca_and_filter():
 
     # Resonant low-pass sweep using BiquadPE
     flt = pg.BiquadPE(
-        vca,                    # or vca in the dual-ADSR demo
-        frequency=cutoff,       # modulated cutoff (PE)
-        q=8.0,                  # resonance; tweak 2..12
+        vca,  # or vca in the dual-ADSR demo
+        frequency=cutoff,  # modulated cutoff (PE)
+        q=8.0,  # resonance; tweak 2..12
     )
 
     out = pg.GainPE(flt, gain=0.25)
     out = pg.CropPE(out, 0, seconds(duration_s))
-    pg.play(pg.GainPE(out, gain=0.92), SR)
+    pg.play(pg.GainPE(out, gain=0.92))
 
 
 DEMOS = [

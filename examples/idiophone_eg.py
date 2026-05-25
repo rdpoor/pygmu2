@@ -9,8 +9,8 @@ Instruments: marimba, xylophone, glockenspiel, balafon.
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
+
 from pygmu2 import (
-    CropPE,
     DelayPE,
     MixPE,
     pitch_to_freq,
@@ -26,44 +26,44 @@ from pygmu2.idiophone_pe import (
 from examples_helper import run_demos
 
 pg.set_sample_rate(44100)
-SAMPLE_RATE = 44100
-
-
-def s2s(seconds):
-    return int(round(seconds * SAMPLE_RATE))
+SR = 44100
 
 
 # ---------------------------------------------------------------------------
 # Note and arpeggio builders
 # ---------------------------------------------------------------------------
 
-def _make_note(instrument, frequency, amplitude, crop_seconds):
-    """IdiophonePE cropped to crop_seconds — gives the note a finite extent."""
-    return CropPE(
-        IdiophonePE(instrument, frequency=frequency, amplitude=amplitude),
-        0,
-        s2s(crop_seconds),
-    )
 
-
-def _make_arpeggio(instrument, midi_notes, note_spacing, crop_seconds, amplitude=0.3):
+def _make_arpeggio(instrument, midi_notes, note_spacing, amplitude=0.3):
     """
-    Sequential arpeggio: one note every note_spacing seconds, each ringing
-    for crop_seconds.  crop_seconds > note_spacing produces natural overlap.
+    Sequential arpeggio: one note every note_spacing seconds.
+    Each note rings to its natural -60 dB extent.  When note_spacing is
+    shorter than a note's decay, adjacent notes overlap naturally.
     Returns a MixPE spanning the full duration.
     """
     notes = []
     t = 0.0
     for midi in midi_notes:
-        notes.append(
-            DelayPE(
-                _make_note(instrument, pitch_to_freq(midi), amplitude, crop_seconds),
-                s2s(t),
-            )
+        note = IdiophonePE(
+            instrument, frequency=pitch_to_freq(midi), amplitude=amplitude
         )
+        notes.append(DelayPE(note, int(round(t * SR))))
         t += note_spacing
-    total = t + crop_seconds
-    return CropPE(MixPE(*notes), 0, s2s(total))
+    return MixPE(*notes)
+
+
+def _make_low_high(instrument, midi_low, midi_high, amplitude):
+    """Low note followed by high note, no overlap (waits for low to decay to -60 dB)."""
+    low = IdiophonePE(
+        instrument, frequency=pitch_to_freq(midi_low), amplitude=amplitude
+    )
+    high = DelayPE(
+        IdiophonePE(
+            instrument, frequency=pitch_to_freq(midi_high), amplitude=amplitude
+        ),
+        low.extent().duration,
+    )
+    return MixPE(low, high)
 
 
 # ---------------------------------------------------------------------------
@@ -71,33 +71,46 @@ def _make_arpeggio(instrument, midi_notes, note_spacing, crop_seconds, amplitude
 # ---------------------------------------------------------------------------
 
 # C diatonic across two octaves: C3 – C5
-C_DIATONIC_2OCT = [48, 50, 52, 53, 55, 57, 59,
-                   60, 62, 64, 65, 67, 69, 71, 72]
+C_DIATONIC_2OCT = [48, 50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72]
 
 # C pentatonic across two octaves: C3 – C5
-C_PENTATONIC_2OCT = [48, 50, 52, 55, 57,
-                     60, 62, 64, 67, 69, 72]
+C_PENTATONIC_2OCT = [48, 50, 52, 55, 57, 60, 62, 64, 67, 69, 72]
 
 
 # ---------------------------------------------------------------------------
 # Demos
 # ---------------------------------------------------------------------------
 
+
+def demo_marimba_low_high():
+    """Marimba: lowest note (C3) then highest note (C5), sequential."""
+    pg.play(_make_low_high(MARIMBA, midi_low=48, midi_high=72, amplitude=0.25))
+
+
 def demo_marimba_arpeggio():
     """
     Marimba: C diatonic, C3–C5.
     Slow spacing lets each note's fundamental decay be audible.
-    crop_seconds >> note_spacing so adjacent notes overlap and blend.
+    Notes overlap naturally when decay exceeds note_spacing.
     """
     print("=== Marimba: C diatonic arpeggio (C3–C5) ===")
     mix = _make_arpeggio(
         MARIMBA,
         midi_notes=C_DIATONIC_2OCT,
         note_spacing=0.12,
-        crop_seconds=1.5,     # tau_mid = 1.0 s at A4; 1.5 s allows full decay
-        amplitude=0.25,
+        amplitude=0.2,
     )
-    pg.play(mix, SAMPLE_RATE)
+    pg.play(mix)
+
+
+def demo_xylophone_low_high():
+    """Xylophone: lowest note (C4) then highest note (C6), sequential."""
+    midi_notes = [m + 12 for m in [48, 72]]
+    pg.play(
+        _make_low_high(
+            XYLOPHONE, midi_low=midi_notes[0], midi_high=midi_notes[1], amplitude=0.25
+        )
+    )
 
 
 def demo_xylophone_arpeggio():
@@ -106,15 +119,27 @@ def demo_xylophone_arpeggio():
     Short decay (tau_mid = 0.3 s) suits faster spacing; notes stay crisp.
     """
     print("=== Xylophone: C diatonic arpeggio (C4–C6) ===")
-    midi_notes = [m + 12 for m in C_DIATONIC_2OCT]   # shift up one octave
+    midi_notes = [m + 12 for m in C_DIATONIC_2OCT]  # shift up one octave
     mix = _make_arpeggio(
         XYLOPHONE,
         midi_notes=midi_notes,
-        note_spacing=0.09,
-        crop_seconds=0.45,    # tau_mid = 0.3 s at A4
-        amplitude=0.25,
+        note_spacing=0.12,
+        amplitude=0.2,
     )
-    pg.play(mix, SAMPLE_RATE)
+    pg.play(mix)
+
+
+def demo_glockenspiel_low_high():
+    """Glockenspiel: lowest note (C5) then highest note (C7), sequential."""
+    midi_notes = [m + 24 for m in [48, 72]]
+    pg.play(
+        _make_low_high(
+            GLOCKENSPIEL,
+            midi_low=midi_notes[0],
+            midi_high=midi_notes[1],
+            amplitude=0.25,
+        )
+    )
 
 
 def demo_glockenspiel_arpeggio():
@@ -124,15 +149,19 @@ def demo_glockenspiel_arpeggio():
     characteristic bright shimmer; notes overlap heavily.
     """
     print("=== Glockenspiel: C diatonic arpeggio (C5–C7) ===")
-    midi_notes = [m + 24 for m in C_DIATONIC_2OCT]   # shift up two octaves
+    midi_notes = [m + 24 for m in C_DIATONIC_2OCT]  # shift up two octaves
     mix = _make_arpeggio(
         GLOCKENSPIEL,
         midi_notes=midi_notes,
-        note_spacing=0.15,
-        crop_seconds=4.0,     # tau_mid = 3.0 s at A4; long ring-out
-        amplitude=0.18,
+        note_spacing=0.12,
+        amplitude=0.2,
     )
-    pg.play(pg.GainPE(mix, gain=1.3), SAMPLE_RATE)
+    pg.play(mix)
+
+
+def demo_balafon_low_high():
+    """Balafon: lowest note (C3) then highest note (C5), sequential."""
+    pg.play(_make_low_high(BALAFON, midi_low=48, midi_high=72, amplitude=0.25))
 
 
 def demo_balafon_arpeggio():
@@ -146,10 +175,9 @@ def demo_balafon_arpeggio():
         BALAFON,
         midi_notes=C_PENTATONIC_2OCT,
         note_spacing=0.12,
-        crop_seconds=1.2,     # tau_mid = 0.9 s at A4
-        amplitude=0.25,
+        amplitude=0.2,
     )
-    pg.play(mix, SAMPLE_RATE)
+    pg.play(mix)
 
 
 # ---------------------------------------------------------------------------
@@ -157,10 +185,14 @@ def demo_balafon_arpeggio():
 # ---------------------------------------------------------------------------
 
 DEMOS = [
-    ("Marimba arpeggio (C diatonic, C3–C5)",       demo_marimba_arpeggio),
-    ("Xylophone arpeggio (C diatonic, C4–C6)",      demo_xylophone_arpeggio),
-    ("Glockenspiel arpeggio (C diatonic, C5–C7)",   demo_glockenspiel_arpeggio),
-    ("Balafon arpeggio (C pentatonic, C3–C5)",      demo_balafon_arpeggio),
+    ("Marimba: low→high", demo_marimba_low_high),
+    ("Marimba arpeggio (C diatonic, C3–C5)", demo_marimba_arpeggio),
+    ("Xylophone: low→high", demo_xylophone_low_high),
+    ("Xylophone arpeggio (C diatonic, C4–C6)", demo_xylophone_arpeggio),
+    ("Glockenspiel: low→high", demo_glockenspiel_low_high),
+    ("Glockenspiel arpeggio (C diatonic, C5–C7)", demo_glockenspiel_arpeggio),
+    ("Balafon: low→high", demo_balafon_low_high),
+    ("Balafon arpeggio (C pentatonic, C3–C5)", demo_balafon_arpeggio),
 ]
 
 if __name__ == "__main__":

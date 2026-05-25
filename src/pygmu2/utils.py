@@ -22,20 +22,10 @@ from pygmu2.wav_reader_pe import WavReaderPE
 from pygmu2.wav_writer_pe import WavWriterPE
 
 
-def _resolve_sample_rate(sample_rate: int | None) -> int:
-    if sample_rate is not None:
-        return int(sample_rate)
-    sr = get_sample_rate()
-    if sr is None:
-        raise RuntimeError("Sample rate not set. Call pg.set_sample_rate() or pass sample_rate.")
-    return int(sr)
-
-
 def render_to_file(
     source: ProcessingElement,
     out_path: str,
     *,
-    sample_rate: int | None = None,
     extent=None,
 ) -> None:
     """
@@ -44,10 +34,11 @@ def render_to_file(
     Args:
         source: PE to render (must have finite extent).
         out_path: Path to write WAV file.
-        sample_rate: Optional sample rate override (uses global if None).
         extent: Optional precomputed extent (to avoid recomputation).
     """
-    sr = _resolve_sample_rate(sample_rate)
+    sr = get_sample_rate()
+    if sr is None:
+        raise RuntimeError("Sample rate not set. Call pg.set_sample_rate() first.")
     if extent is None:
         extent = source.extent()
     if extent.start is None or extent.end is None:
@@ -62,11 +53,13 @@ def render_to_file(
         renderer.render(extent.start, extent.end - extent.start)
 
 
-def play(source: ProcessingElement, sample_rate: int | None = None) -> None:
+def play(source: ProcessingElement) -> None:
     """
     Play a PE in real time using AudioRenderer.
     """
-    sr = _resolve_sample_rate(sample_rate)
+    sr = get_sample_rate()
+    if sr is None:
+        raise RuntimeError("Sample rate not set. Call pg.set_sample_rate() first.")
     renderer = AudioRenderer(sample_rate=sr)
     renderer.set_source(source)
     with renderer:
@@ -76,7 +69,6 @@ def play(source: ProcessingElement, sample_rate: int | None = None) -> None:
 
 def play_offline(
     source: ProcessingElement,
-    sample_rate: int | None = None,
     path: str | None = None,
 ) -> None:
     """
@@ -84,7 +76,9 @@ def play_offline(
 
     If path is None, a temporary file is created and deleted after playback.
     """
-    sr = _resolve_sample_rate(sample_rate)
+    sr = get_sample_rate()
+    if sr is None:
+        raise RuntimeError("Sample rate not set. Call pg.set_sample_rate() first.")
     extent = source.extent()
     if extent.start is None or extent.end is None:
         raise RuntimeError("Cannot render offline: source has infinite extent.")
@@ -93,21 +87,20 @@ def play_offline(
         fd, tmp_path = tempfile.mkstemp(suffix=".wav")
         os.close(fd)
         try:
-            render_to_file(source, tmp_path, sample_rate=sr, extent=extent)
-            play(WavReaderPE(tmp_path), sample_rate=sr)
+            render_to_file(source, tmp_path, extent=extent)
+            play(WavReaderPE(tmp_path))
         finally:
             try:
                 os.remove(tmp_path)
             except FileNotFoundError:
                 pass
     else:
-        render_to_file(source, path, sample_rate=sr, extent=extent)
-        play(WavReaderPE(path), sample_rate=sr)
+        render_to_file(source, path, extent=extent)
+        play(WavReaderPE(path))
 
 
 def browse(
     source: ProcessingElement,
-    sample_rate: int | None = None,
     path: str | None = None,
 ) -> None:
     """
@@ -118,11 +111,12 @@ def browse(
 
     Args:
         source: PE to render (must have finite extent).
-        sample_rate: Optional sample rate override (uses global if None).
         path: Path to write WAV file.  If None, a temporary file is created
               and automatically deleted when the player closes.
     """
-    sr = _resolve_sample_rate(sample_rate)
+    sr = get_sample_rate()
+    if sr is None:
+        raise RuntimeError("Sample rate not set. Call pg.set_sample_rate() first.")
     extent = source.extent()
     if extent.start is None or extent.end is None:
         raise RuntimeError("Cannot browse: source has infinite extent.")
@@ -133,7 +127,7 @@ def browse(
         os.close(fd)
 
     path = str(Path(path).resolve())
-    render_to_file(source, path, sample_rate=sr, extent=extent)
+    render_to_file(source, path, extent=extent)
 
     project_root = Path(__file__).resolve().parents[2]
     script_path = project_root / "scripts" / "jogshuttle.py"
@@ -141,8 +135,15 @@ def browse(
         raise FileNotFoundError(
             "scripts/jogshuttle.py not found — run from the pygmu2 source tree"
         )
-    cmd = ["uv", "run", "--directory", str(project_root), "python",
-           str(script_path), path]
+    cmd = [
+        "uv",
+        "run",
+        "--directory",
+        str(project_root),
+        "python",
+        str(script_path),
+        path,
+    ]
     if delete_on_close:
         cmd.append("--delete-on-close")
     env = {k: v for k, v in os.environ.items() if k != "VIRTUAL_ENV"}

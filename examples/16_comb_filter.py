@@ -16,6 +16,7 @@ from pygmu2 import (
 )
 import pygmu2 as pg
 from examples_helper import run_demos
+
 pg.set_sample_rate(44100)
 
 
@@ -29,14 +30,17 @@ print(f"Loading: {WAV_FILE}", flush=True)
 
 source_stream = WavReaderPE(str(WAV_FILE))
 sample_rate = source_stream.file_sample_rate or 44100
+pg.set_sample_rate(sample_rate)
 duration_samples = int(DURATION_SECONDS * sample_rate)
+
 
 def dry_signal():
     # --- Part 1: Dry ---
     print(f"\nPart 1: Dry signal - {DURATION_SECONDS}s", flush=True)
     dry_stream = CropPE(source_stream, 0, (duration_samples) - (0))
 
-    pg.play(pg.GainPE(dry_stream, gain=0.89), sample_rate)
+    pg.play(pg.GainPE(dry_stream, gain=0.89))
+
 
 def comb_220():
     # --- Part 2: Comb tuned to 220 Hz ---
@@ -45,7 +49,8 @@ def comb_220():
     comb_220_stream = GainPE(comb_220_stream, gain=0.7)
     comb_220_out_stream = CropPE(comb_220_stream, 0, (duration_samples) - (0))
 
-    pg.play(pg.GainPE(comb_220_out_stream, gain=1.16), sample_rate)
+    pg.play(pg.GainPE(comb_220_out_stream, gain=1.16))
+
 
 def comb_440():
     # --- Part 3: Comb tuned to 440 Hz ---
@@ -54,7 +59,8 @@ def comb_440():
     comb_440_stream = GainPE(comb_440_stream, gain=0.7)
     comb_440_out_stream = CropPE(comb_440_stream, 0, (duration_samples) - (0))
 
-    pg.play(pg.GainPE(comb_440_out_stream, gain=0.76), sample_rate)
+    pg.play(pg.GainPE(comb_440_out_stream, gain=0.76))
+
 
 DEMOS = [
     ("Original signal", dry_signal),

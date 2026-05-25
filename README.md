@@ -47,19 +47,43 @@ pipenv shell
 ## Quick Start
 
 ```python
-from pygmu2 import SinePE, GainPE, AudioRenderer
+import pygmu2 as pg
+from pygmu2 import SinePE
+
+# Set global sample rate before constructing any PEs
+pg.set_sample_rate(44100)
 
 # Create a 440 Hz sine wave
 sine_stream = SinePE(frequency=440.0, amplitude=0.5)
 
 # Play through speakers
-with AudioRenderer(sample_rate=44100) as renderer:
+with pg.AudioRenderer() as renderer:
     renderer.set_source(sine_stream)
     renderer.start()
     renderer.play_range(0, 44100 * 3)  # Play 3 seconds
 ```
 
 ## Core Concepts
+
+### Sample Rate
+
+The global sample rate must be set before constructing any Processing Elements:
+
+```python
+import pygmu2 as pg
+pg.set_sample_rate(44100)   # 44.1 kHz — call this first
+```
+
+Every PE captures the sample rate at construction time. If `set_sample_rate()` has not been called, `ProcessingElement.__new__()` raises a `RuntimeError`. Renderers (`AudioRenderer`, `NullRenderer`) also read the global rate by default.
+
+Use the convenience functions in `pg.utils` for common tasks — they read the global rate automatically:
+
+```python
+pg.play(source)                        # real-time playback
+pg.play_offline(source)                # render to WAV then play
+pg.browse(source)                      # render to WAV, open in jog/shuttle player
+pg.render_to_file(source, "out.wav")   # render to WAV file
+```
 
 ### Processing Elements (PEs)
 
@@ -100,17 +124,17 @@ sine_stream = SinePE(frequency=440.0)  # Extent(None, None) - plays forever
 
 ### Renderers
 
-A **Renderer** pulls audio from the PE graph:
+A **Renderer** pulls audio from the PE graph. The sample rate is read from the global `set_sample_rate()` unless explicitly provided:
 
 ```python
 # Play to speakers
-with AudioRenderer(sample_rate=44100) as renderer:
+with AudioRenderer() as renderer:
     renderer.set_source(my_pe)
     renderer.start()
     renderer.play_range(0, 44100 * 5)
 
 # Or render silently (for testing/processing)
-renderer = NullRenderer(sample_rate=44100)
+renderer = NullRenderer()
 ```
 
 ## Available Processing Elements

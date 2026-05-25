@@ -12,6 +12,7 @@ MIT License
 from pathlib import Path
 import pygmu2 as pg
 from examples_helper import run_demos
+
 pg.set_sample_rate(44100)
 
 from pygmu2 import (
@@ -30,6 +31,7 @@ from pygmu2 import (
 AUDIO_DIR = Path(__file__).parent / "audio"
 sound_path = AUDIO_DIR / "acoustic_drums.wav"
 
+
 def demo_basic_compression():
     """
     Compare dry vs compressed signal.
@@ -37,28 +39,30 @@ def demo_basic_compression():
     print("=== Dry vs Compressed Comparison ===")
     print("First: dry signal, Then: compressed signal")
     print()
-    
+
     source = WavReaderPE(sound_path)
     sample_rate = source.file_sample_rate
+    pg.set_sample_rate(sample_rate)
     looped_drums = LoopPE(source, count=2, crossfade_seconds=0.002)
-    
+
     compressed = CompressorPE(
         looped_drums,
-        threshold=-24,      # Start compressing at -24dB
-        ratio=6,            # 6:1 compression
-        attack=0.02,        # 20ms attack
-        release=0.2,        # 200ms release
-        knee=6,             # Soft knee for smooth transition
-        makeup_gain="auto", # Auto makeup gain
+        threshold=-24,  # Start compressing at -24dB
+        ratio=6,  # 6:1 compression
+        attack=0.02,  # 20ms attack
+        release=0.2,  # 200ms release
+        knee=6,  # Soft knee for smooth transition
+        makeup_gain="auto",  # Auto makeup gain
     )
-    
+
     print("Playing DRY signal...")
-    pg.play(pg.GainPE(looped_drums, gain=0.62), sample_rate)
+    pg.play(pg.GainPE(looped_drums, gain=0.62))
 
     print("Playing COMPRESSED signal...")
-    pg.play(pg.GainPE(compressed, gain=0.62), sample_rate)
-    
+    pg.play(pg.GainPE(compressed, gain=0.62))
+
     print()
+
 
 def demo_limiter():
     """
@@ -67,27 +71,28 @@ def demo_limiter():
     print("=== Brick-Wall Limiter ===")
     print("Preventing peaks from exceeding -6dB ceiling.")
     print()
-    
+
     source_stream = WavReaderPE(sound_path)
     sample_rate = source_stream.file_sample_rate
+    pg.set_sample_rate(sample_rate)
     looped_drums_stream = LoopPE(source_stream, count=2, crossfade_seconds=0.002)
 
     # Make it intentionally too loud
     loud_stream = GainPE(looped_drums_stream, gain=10.0)
-    
+
     # Apply limiter
     limited_stream = LimiterPE(
         loud_stream,
-        ceiling=-12.0,     # -12dB ceiling
-        release=0.05,      # 50ms release
-        lookahead=0.005,   # 5ms lookahead for transparent limiting
+        ceiling=-12.0,  # -12dB ceiling
+        release=0.05,  # 50ms release
+        lookahead=0.005,  # 5ms lookahead for transparent limiting
     )
-    
+
     print(f"Input: 10x amplitude (clipping without limiter)")
     print(f"Ceiling: -6dB, Release: 50ms, Lookahead: 5ms")
     print()
-    
-    pg.play(pg.GainPE(limited_stream, gain=0.55), sample_rate)
+
+    pg.play(pg.GainPE(limited_stream, gain=0.55))
     print()
 
 
@@ -98,26 +103,27 @@ def demo_noise_gate():
     print("=== Noise Gate ===")
     print("Gating a signal to remove quiet passages.")
     print()
-    
+
     source_stream = WavReaderPE(sound_path)
     sample_rate = source_stream.file_sample_rate
+    pg.set_sample_rate(sample_rate)
     looped_drums_stream = LoopPE(source_stream, count=2, crossfade_seconds=0.002)
-    
+
     # Apply gate - quiet parts will be silenced
     gated_stream = ExpanderPE(
         looped_drums_stream,
-        threshold=-16,     # Gate threshold
-        attack=0.001,      # 1ms attack (fast open)
-        release=0.1 ,      # 1ms release
-        gate_range=-30,    # -30dB attenuation when gated
+        threshold=-16,  # Gate threshold
+        attack=0.001,  # 1ms attack (fast open)
+        release=0.1,  # 1ms release
+        gate_range=-30,  # -30dB attenuation when gated
     )
-    
+
     print(f"Threshold: -16dB, Attack: 1ms, Release: 100ms")
     print(f"Range: -30dB (attenuation when gated)")
     print("You should hear the signal cut out during quiet portions.")
     print()
-    
-    pg.play(pg.GainPE(gated_stream, gain=1.03), sample_rate)
+
+    pg.play(pg.GainPE(gated_stream, gain=1.03))
     print()
 
 
@@ -128,35 +134,37 @@ def demo_parallel_compression():
     print("=== Parallel Compression ===")
     print("Mixing dry signal with heavily compressed signal for punch + dynamics.")
     print()
-    
+
     sample_rate = 44100
     duration = 3.0
-    
+
     source_stream = WavReaderPE(sound_path)
     sample_rate = source_stream.file_sample_rate
+    pg.set_sample_rate(sample_rate)
     looped_drums_stream = LoopPE(source_stream, count=2, crossfade_seconds=0.002)
-    
+
     # Apply limiter to squash it
     limited_stream = LimiterPE(
         GainPE(looped_drums_stream, gain=10.0),
-        ceiling=-6.0,      # -3dB ceiling
-        release=0.05,      # 50ms release
-        lookahead=0.005,   # 5ms lookahead for transparent limiting
+        ceiling=-6.0,  # -3dB ceiling
+        release=0.05,  # 50ms release
+        lookahead=0.005,  # 5ms lookahead for transparent limiting
     )
-    
+
     # Mix dry + wet (parallel compression)
     parallel_stream = MixPE(
-        GainPE(looped_drums_stream, gain=0.6),      # Dry (60%)
-        GainPE(limited_stream, gain=0.4),     # Limited (40%)
+        GainPE(looped_drums_stream, gain=0.6),  # Dry (60%)
+        GainPE(limited_stream, gain=0.4),  # Limited (40%)
     )
-    
+
     print("Mixing 60% dry + 40% heavily compressed")
     print(f"Compression: threshold=-30dB, ratio=10:1")
     print("Result: Punchy transients from dry + sustained body from compressed")
     print()
-    
-    pg.play(pg.GainPE(parallel_stream, gain=0.54), sample_rate)
+
+    pg.play(pg.GainPE(parallel_stream, gain=0.54))
     print()
+
 
 DEMOS = [
     ("Basic Compression", demo_basic_compression),

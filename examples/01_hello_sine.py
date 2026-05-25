@@ -10,6 +10,7 @@ MIT License
 
 import pygmu2 as pg
 from examples_helper import run_demos
+
 pg.set_sample_rate(44100)
 
 from pygmu2 import (
@@ -30,6 +31,7 @@ DURATION_SAMPLES = int(DURATION_SECONDS * SAMPLE_RATE)
 C4 = 60
 E4 = 64
 G4 = 67
+
 
 def demo_sine():
     print("=== pygmu2 Example 01: Hello Sine ===", flush=True)
@@ -55,9 +57,10 @@ def demo_sine():
 
     # Create audio renderer and play
     print(f"Playing for {DURATION_SECONDS} seconds...", flush=True)
-    pg.play(pg.GainPE(output_stream, gain=1.86), SAMPLE_RATE)
+    pg.play(pg.GainPE(output_stream, gain=1.86))
 
     print("Done!", flush=True)
+
 
 DEMOS = [
     ("Play sine triad", demo_sine),

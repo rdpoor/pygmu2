@@ -11,16 +11,16 @@ than treble notes as in the physical instruments.
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import log2
+from math import log, log2
 from typing import List
 
 from pygmu2.source_pe import SourcePE
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
-from pygmu2.crop_pe import CropPE
 from pygmu2.mix_pe import MixPE
 from pygmu2.decaying_sine_pe import DecayingSinePE
 
@@ -28,11 +28,13 @@ from pygmu2.decaying_sine_pe import DecayingSinePE
 # Constants
 # ---------------------------------------------------------------------------
 
-REF_FREQ: float = 440.0   # A4 — the register pivot for tau scaling
+REF_FREQ: float = 440.0  # A4 — the register pivot for tau scaling
+TAU_FACTOR: float = 60.0 / 20.0 * log(10)  # ≈ 6.908 — convert -60 dB time to τ
 
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class PartialDef:
@@ -46,10 +48,11 @@ class PartialDef:
                      matching the behaviour of real wooden and metal bars.
         amp_ratio:   Partial amplitude as a fraction of the note amplitude.
     """
+
     freq_ratio: float
-    tau_mid:    float
-    tau_scale:  float
-    amp_ratio:  float
+    tau_mid: float
+    tau_scale: float
+    amp_ratio: float
 
 
 @dataclass
@@ -60,7 +63,8 @@ class InstrumentDef:
         name:     Identifier string (used in __repr__ and INSTRUMENTS dict).
         partials: Ordered list of PartialDef objects, fundamental first.
     """
-    name:     str
+
+    name: str
     partials: List[PartialDef]
 
 
@@ -81,8 +85,8 @@ class InstrumentDef:
 MARIMBA = InstrumentDef(
     name="marimba",
     partials=[
-        PartialDef(freq_ratio=1.0,  tau_mid=1.00, tau_scale=2.0, amp_ratio=1.00),
-        PartialDef(freq_ratio=4.0,  tau_mid=0.20, tau_scale=1.6, amp_ratio=0.50),
+        PartialDef(freq_ratio=1.0, tau_mid=1.00, tau_scale=2.0, amp_ratio=1.00),
+        PartialDef(freq_ratio=4.0, tau_mid=0.20, tau_scale=1.6, amp_ratio=0.50),
         PartialDef(freq_ratio=10.0, tau_mid=0.05, tau_scale=1.3, amp_ratio=0.15),
     ],
 )
@@ -108,8 +112,8 @@ GLOCKENSPIEL = InstrumentDef(
 BALAFON = InstrumentDef(
     name="balafon",
     partials=[
-        PartialDef(freq_ratio=1.0,  tau_mid=0.90, tau_scale=1.9, amp_ratio=1.00),
-        PartialDef(freq_ratio=4.0,  tau_mid=0.18, tau_scale=1.5, amp_ratio=0.40),
+        PartialDef(freq_ratio=1.0, tau_mid=0.90, tau_scale=1.9, amp_ratio=1.00),
+        PartialDef(freq_ratio=4.0, tau_mid=0.18, tau_scale=1.5, amp_ratio=0.40),
         PartialDef(freq_ratio=10.0, tau_mid=0.06, tau_scale=1.2, amp_ratio=0.14),
     ],
 )
@@ -119,17 +123,9 @@ INSTRUMENTS: dict[str, InstrumentDef] = {
 }
 
 # ---------------------------------------------------------------------------
-# Helper
-# ---------------------------------------------------------------------------
-
-def _s2s(seconds: float, sample_rate: int) -> int:
-    """Convert seconds to the nearest sample count."""
-    return int(round(seconds * sample_rate))
-
-
-# ---------------------------------------------------------------------------
 # PE
 # ---------------------------------------------------------------------------
+
 
 class IdiophonePE(SourcePE):
     """Struck bar idiophone synthesis PE.
@@ -143,10 +139,9 @@ class IdiophonePE(SourcePE):
     so that low notes decay more slowly than high notes, matching the
     acoustic behaviour of real bars.
 
-    The internal MixPE is built lazily on the first render call, once
-    sample_rate is available from the framework.
+    The internal MixPE is built at construction time.
 
-    Extent is (0, None); use CropPE if a hard stop is needed.
+    Extent is determined by the longest partial's -60 dB crop.
 
     Args:
         instrument:  InstrumentDef — use MARIMBA, XYLOPHONE, etc.
@@ -155,19 +150,16 @@ class IdiophonePE(SourcePE):
         channels:    Output channel count (default 1).
 
     Example::
-        note = CropPE(
-            IdiophonePE(MARIMBA, frequency=261.63, amplitude=0.5),
-            0,
-            s2s(3.0),          # crop to 3 seconds
-        )
+        note = IdiophonePE(MARIMBA, frequency=261.63, amplitude=0.5)
+        cropped = CropPE(note, 0, 3 * note.sample_rate)  # optional crop
     """
 
     def __init__(
         self,
         instrument: InstrumentDef,
-        frequency:  float = 440.0,
-        amplitude:  float = 0.3,
-        channels:   int   = 1,
+        frequency: float = 440.0,
+        amplitude: float = 0.3,
+        channels: int = 1,
     ):
         super().__init__()
         if frequency <= 0:
@@ -176,30 +168,29 @@ class IdiophonePE(SourcePE):
             raise ValueError(f"amplitude must be positive, got {amplitude}")
 
         self._instrument = instrument
-        self._frequency  = float(frequency)
-        self._amplitude  = float(amplitude)
-        self._channels   = channels
-        self._mix_pe: MixPE | None = None
+        self._frequency = float(frequency)
+        self._amplitude = float(amplitude)
+        self._channels = channels
+        self._mix_pe = self._build_mix_pe()
 
     # ------------------------------------------------------------------
-    # Internal construction — deferred until sample_rate is known
+    # Internal construction
     # ------------------------------------------------------------------
 
     def _build_mix_pe(self) -> MixPE:
-        sr = self.sample_rate
         octaves_below_ref = log2(REF_FREQ / self._frequency)
         partials = []
         for p in self._instrument.partials:
-            partial_freq     = self._frequency * p.freq_ratio
-            partial_duration = p.tau_mid * (p.tau_scale ** octaves_below_ref)
-            partial_amp      = self._amplitude * p.amp_ratio
+            partial_freq = self._frequency * p.freq_ratio
+            partial_tau = p.tau_mid * (p.tau_scale**octaves_below_ref) / TAU_FACTOR
+            partial_amp = self._amplitude * p.amp_ratio
             sine = DecayingSinePE(
                 frequency=partial_freq,
                 amplitude=partial_amp,
-                duration=partial_duration,
+                tau=partial_tau,
                 channels=self._channels,
             )
-            partials.append(CropPE(sine, 0, _s2s(partial_duration, sr)))
+            partials.append(sine)
         return MixPE(*partials)
 
     # ------------------------------------------------------------------
@@ -207,12 +198,11 @@ class IdiophonePE(SourcePE):
     # ------------------------------------------------------------------
 
     def _compute_extent(self) -> Extent:
-        # Returning infinite extent is safe: CropPE on each partial
-        # ensures output goes silent naturally.  Callers may crop further.
-        return Extent(0, None)
+        return self._mix_pe.extent()
 
     def _reset_state(self) -> None:
-        self._mix_pe = None
+        for input_pe in self._mix_pe.inputs():
+            input_pe._reset_state()
 
     def _on_start(self) -> None:
         self._reset_state()
@@ -221,8 +211,6 @@ class IdiophonePE(SourcePE):
         self._reset_state()
 
     def _render(self, start: int, duration: int) -> Snippet:
-        if self._mix_pe is None:
-            self._mix_pe = self._build_mix_pe()
         return self._mix_pe.render(start, duration)
 
     def channel_count(self) -> int:

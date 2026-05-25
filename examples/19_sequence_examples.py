@@ -31,6 +31,7 @@ from pygmu2 import (
 )
 import pygmu2 as pg
 from examples_helper import run_demos
+
 pg.set_sample_rate(44100)
 
 from typing import Optional
@@ -46,9 +47,11 @@ C_MAJOR = [C4, E4, G4]
 def _s2s(duration_sec):
     return int(round(duration_sec * SAMPLE_RATE))
 
+
 def _make_note(midi: int, amplitude: float = 0.25):
     """One note as BlitSawPE at given MIDI pitch."""
     return BlitSawPE(frequency=pitch_to_freq(midi), amplitude=amplitude)
+
 
 def _make_plucked_note(midi: int, sustain_seconds: float, amplitude: float = 1.0):
     """One note as a Karplus-Strong plucked note at a given MIDI pitch"""
@@ -97,7 +100,7 @@ def demo_gapless_c_major():
         notes.append(delayed)
 
     mix = MixPE(*notes)
-    pg.play(pg.GainPE(CropPE(mix, 0, total), gain=1.26), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix, 0, total), gain=1.26))
 
 
 def demo_staccato_c_major():
@@ -108,8 +111,8 @@ def demo_staccato_c_major():
     delay each by its slot start (note_len + gap), then mix.
     """
     print("=== C major chord: staccato (C · E · G) ===")
-    note_len = int(0.5 * SAMPLE_RATE)   # 0.5 s note
-    gap_len = int(0.2 * SAMPLE_RATE)   # 0.5 s gap
+    note_len = int(0.5 * SAMPLE_RATE)  # 0.5 s note
+    gap_len = int(0.2 * SAMPLE_RATE)  # 0.5 s gap
     slot = note_len + gap_len
     total = len(C_MAJOR) * slot
 
@@ -123,7 +126,7 @@ def demo_staccato_c_major():
         notes.append(delayed)
 
     mix = MixPE(*notes)
-    pg.play(pg.GainPE(CropPE(mix, 0, total), gain=1.26), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix, 0, total), gain=1.26))
 
 
 def demo_legato_c_major():
@@ -135,8 +138,8 @@ def demo_legato_c_major():
     """
     print("=== C major chord: legato (C overlap E overlap G) ===")
     onset_interval = int(0.5 * SAMPLE_RATE)  # next note starts 0.5 s after previous
-    note_duration = int(1.5 * SAMPLE_RATE)   # each note long enough to overlap
-    total = int(1.5 * SAMPLE_RATE)           # total output length
+    note_duration = int(1.5 * SAMPLE_RATE)  # each note long enough to overlap
+    total = int(1.5 * SAMPLE_RATE)  # total output length
 
     notes = []
     for i, midi_pitch in enumerate(C_MAJOR):
@@ -151,7 +154,7 @@ def demo_legato_c_major():
     # Reduce gain when overlapping to avoid clipping
     mix = GainPE(mix, gain=0.5)
     ext = mix.extent()
-    pg.play(pg.GainPE(CropPE(mix, ext.start, ext.duration), gain=1.26), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix, ext.start, ext.duration), gain=1.26))
 
 
 def _ramped_c_major(transition_type: TransitionType, title: str, gain: float = 1.0):
@@ -177,19 +180,27 @@ def _ramped_c_major(transition_type: TransitionType, title: str, gain: float = 1
         delayed = DelayPE(cropped, delay=i * d - xfade_half)
 
         envelope = MixPE(
-            DelayPE(PiecewisePE([(0, 0.0), (xfade, 1.0)], transition_type=transition_type), i * d - xfade_half),
-            CropPE(
-                ConstantPE(1.0), i * d + xfade_half, d - xfade,
+            DelayPE(
+                PiecewisePE([(0, 0.0), (xfade, 1.0)], transition_type=transition_type),
+                i * d - xfade_half,
             ),
-            DelayPE(PiecewisePE([(0, 1.0), (xfade, 0.0)], transition_type=transition_type), (i + 1) * d - xfade_half),
+            CropPE(
+                ConstantPE(1.0),
+                i * d + xfade_half,
+                d - xfade,
+            ),
+            DelayPE(
+                PiecewisePE([(0, 1.0), (xfade, 0.0)], transition_type=transition_type),
+                (i + 1) * d - xfade_half,
+            ),
         )
 
         notes.append(GainPE(delayed, gain=envelope))
 
     mix = MixPE(*notes)
     ext = mix.extent()
-    pg.play(pg.GainPE(CropPE(mix, ext.start, ext.duration), gain=gain), SAMPLE_RATE)
-    # pg.play(CropPE(mix, ext.start, ext.duration), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix, ext.start, ext.duration), gain=gain))
+    # pg.play(CropPE(mix, ext.start, ext.duration))
 
 
 def demo_sigmoid_ramp():
@@ -260,7 +271,7 @@ As4, Cs4, Ds4, Fs4, Gs4 = [Bf4, Df4, Ef4, Gf4, Af4]
 As5, Cs5, Ds5, Fs5, Gs5 = [Bf5, Df5, Ef5, Gf5, Af5]
 As6, Cs6, Ds6, Fs6, Gs6 = [Bf6, Df6, Ef6, Gf6, Af6]
 
-REST = -1 # an out-of-band value
+REST = -1  # an out-of-band value
 
 # ===== Durations, expressed as beats
 WHOLE = 4.0
@@ -269,20 +280,20 @@ QUARTER = 1.0
 EIGHTH = 0.5
 SIXTEENTH = 0.25
 THIRTY_SECOND = 0.125
-DOTTED = 1.5           # multiplicative modifier
-TRIPLET = (2.0/3.0)    # multiplicative modifier
+DOTTED = 1.5  # multiplicative modifier
+TRIPLET = 2.0 / 3.0  # multiplicative modifier
 
 # ===== Articulation, scales duration
 
-LEGATO = 1.2     # mild overlap
+LEGATO = 1.2  # mild overlap
 CONNECTED = 1.0  # notes directly abut one another, no overlap
-DETACHED = 0.7   # slight space between notes
-STACCATO = 0.5   # shortened notes
+DETACHED = 0.7  # slight space between notes
+STACCATO = 0.5  # shortened notes
 
 # ein bisschen Mozart...
 moz_k333 = [
     # midi note, duration, expression
-    (F5, QUARTER*DOTTED, CONNECTED),
+    (F5, QUARTER * DOTTED, CONNECTED),
     (D5, EIGHTH, CONNECTED),
     (Bf4, QUARTER, DETACHED),
     (Bf4, QUARTER, DETACHED),
@@ -306,7 +317,7 @@ moz_k333 = [
     (F5, EIGHTH, CONNECTED),
     (Ef5, EIGHTH, DETACHED),
     # 12
-    (D5, QUARTER*DOTTED, CONNECTED),
+    (D5, QUARTER * DOTTED, CONNECTED),
     (Ef5, SIXTEENTH, CONNECTED),
     (D5, SIXTEENTH, CONNECTED),
     (C5, EIGHTH, CONNECTED),
@@ -314,15 +325,15 @@ moz_k333 = [
     (Ef5, EIGHTH, CONNECTED),
     (E5, EIGHTH, DETACHED),
     # 13
-    (F5, QUARTER*DOTTED, CONNECTED),
-    (Ef5, SIXTEENTH*TRIPLET, CONNECTED),
-    (D5, SIXTEENTH*TRIPLET, CONNECTED),
-    (C5, SIXTEENTH*TRIPLET, DETACHED),
+    (F5, QUARTER * DOTTED, CONNECTED),
+    (Ef5, SIXTEENTH * TRIPLET, CONNECTED),
+    (D5, SIXTEENTH * TRIPLET, CONNECTED),
+    (C5, SIXTEENTH * TRIPLET, DETACHED),
     (Bf4, EIGHTH, STACCATO),
     (Bf4, EIGHTH, STACCATO),
     (Bf4, EIGHTH, STACCATO),
     (Bf4, EIGHTH, STACCATO),
-    # 14        
+    # 14
     (Ef5, EIGHTH, CONNECTED),
     (F5, THIRTY_SECOND, CONNECTED),
     (Ef5, THIRTY_SECOND, CONNECTED),
@@ -333,28 +344,30 @@ moz_k333 = [
     (REST, EIGHTH, DETACHED),
     (A5, EIGHTH, DETACHED),
     # 15
-    (Bf5, EIGHTH*TRIPLET, CONNECTED),
-    (F5, EIGHTH*TRIPLET, CONNECTED),
-    (D5, EIGHTH*TRIPLET, CONNECTED),
-    (G5, EIGHTH*TRIPLET, CONNECTED),
-    (Ef5, EIGHTH*TRIPLET, CONNECTED),
-    (C5, EIGHTH*TRIPLET, CONNECTED),
-    (F5, EIGHTH*TRIPLET, CONNECTED),
-    (D5, EIGHTH*TRIPLET, CONNECTED),
-    (Bf4, EIGHTH*TRIPLET, CONNECTED),
-    (Ef5, EIGHTH*TRIPLET, CONNECTED),
-    (C5, EIGHTH*TRIPLET, CONNECTED),
-    (A4, EIGHTH*TRIPLET, DETACHED),
+    (Bf5, EIGHTH * TRIPLET, CONNECTED),
+    (F5, EIGHTH * TRIPLET, CONNECTED),
+    (D5, EIGHTH * TRIPLET, CONNECTED),
+    (G5, EIGHTH * TRIPLET, CONNECTED),
+    (Ef5, EIGHTH * TRIPLET, CONNECTED),
+    (C5, EIGHTH * TRIPLET, CONNECTED),
+    (F5, EIGHTH * TRIPLET, CONNECTED),
+    (D5, EIGHTH * TRIPLET, CONNECTED),
+    (Bf4, EIGHTH * TRIPLET, CONNECTED),
+    (Ef5, EIGHTH * TRIPLET, CONNECTED),
+    (C5, EIGHTH * TRIPLET, CONNECTED),
+    (A4, EIGHTH * TRIPLET, DETACHED),
     # 16
     (Bf4, QUARTER, CONNECTED),
 ]
 
 BEATS_PER_MINUTE = 166
 
+
 def _b2s(beat):
     """convert beats to samples"""
     seconds = beat * 60.0 / BEATS_PER_MINUTE
     return _s2s(seconds)
+
 
 def demo_moz_connected():
     next_start = 0
@@ -366,13 +379,16 @@ def demo_moz_connected():
                 # make the tone, crop to duration, delay it to next start
                 DelayPE(
                     CropPE(_make_note(pitch), 0, (_b2s(duration) - (0))),
-                    _b2s(next_start)))
+                    _b2s(next_start),
+                )
+            )
         # bump next_start to next start time (in beats)
         next_start += duration
 
     # Here, notes[] is a list of ProcessingElements, ready to mix
     mix_stream = GainPE(MixPE(*notes), 0.33)
-    pg.play(pg.GainPE(CropPE(mix_stream, 0, _b2s(next_start)), gain=3.81), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix_stream, 0, _b2s(next_start)), gain=3.81))
+
 
 def demo_moz_articulated():
     next_start = 0
@@ -387,14 +403,19 @@ def demo_moz_articulated():
                         _make_note(pitch),
                         # articulation will extend or shorten duration without
                         # affecting next_start
-                        0, _b2s(duration*articulation)),
-                    _b2s(next_start)))
+                        0,
+                        _b2s(duration * articulation),
+                    ),
+                    _b2s(next_start),
+                )
+            )
         # bump next_start to next start time (in beats)
         next_start += duration
 
     # Here, notes[] is a list of ProcessingElements, ready to mix
     mix_stream = GainPE(MixPE(*notes), 0.33)
-    pg.play(pg.GainPE(CropPE(mix_stream, 0, _b2s(next_start)), gain=3.81), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix_stream, 0, _b2s(next_start)), gain=3.81))
+
 
 def demo_moz_plucked():
     next_start = 0
@@ -411,14 +432,19 @@ def demo_moz_plucked():
                         _make_plucked_note(pitch, articulated_seconds),
                         # articulation will extend or shorten duration without
                         # affecting next_start
-                        0, _b2s(duration*articulation)),
-                    _b2s(next_start)))
+                        0,
+                        _b2s(duration * articulation),
+                    ),
+                    _b2s(next_start),
+                )
+            )
         # bump next_start to next start time (in beats)
         next_start += duration
 
     # Here, notes[] is a list of ProcessingElements, ready to mix
     mix_stream = GainPE(MixPE(*notes), 0.7)
-    pg.play(pg.GainPE(CropPE(mix_stream, 0, _b2s(next_start)), gain=0.84), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(mix_stream, 0, _b2s(next_start)), gain=0.84))
+
 
 # -----------------------------------------------------------------------------
 # Main

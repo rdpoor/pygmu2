@@ -8,32 +8,30 @@ Reflects the tau refactor:
 
 Run with:  pytest test_decaying_sine_pe.py -v
 """
+
 import math
 
 import numpy as np
 import pytest
 
+from pygmu2.config import set_sample_rate
 from pygmu2.decaying_sine_pe import DecayingSinePE
 from pygmu2.extent import Extent
-from pygmu2.source_pe import SourcePE
 
 SAMPLE_RATE = 48000
-BLOCK_SIZE  = 512
+BLOCK_SIZE = 512
 
 
 # ---------------------------------------------------------------------------
 # Fixtures and helpers
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(autouse=True)
-def set_sample_rate():
-    original = getattr(SourcePE, "sample_rate", None)
-    SourcePE.sample_rate = SAMPLE_RATE
+def _set_sample_rate():
+    set_sample_rate(SAMPLE_RATE)
     yield
-    if original is None:
-        del SourcePE.sample_rate
-    else:
-        SourcePE.sample_rate = original
+    set_sample_rate(44100)  # restore default
 
 
 def render_blocks(pe: DecayingSinePE, n_blocks: int) -> np.ndarray:
@@ -54,8 +52,8 @@ def expected_crop_samples(tau: float, db_floor: float = -60.0) -> int:
 # Construction
 # ---------------------------------------------------------------------------
 
-class TestConstruction:
 
+class TestConstruction:
     def test_valid_instantiation(self):
         assert DecayingSinePE(frequency=440.0, tau=0.5) is not None
 
@@ -113,8 +111,8 @@ class TestConstruction:
 # Rendering — shape, type, basic content
 # ---------------------------------------------------------------------------
 
-class TestRendering:
 
+class TestRendering:
     def test_output_shape_mono(self):
         audio = render_blocks(DecayingSinePE(frequency=440.0, tau=0.5), n_blocks=4)
         assert audio.shape == (BLOCK_SIZE * 4, 1)
@@ -136,8 +134,12 @@ class TestRendering:
         assert np.max(np.abs(audio)) > 1e-4
 
     def test_amplitude_scales_output(self):
-        loud = render_blocks(DecayingSinePE(frequency=440.0, tau=0.5, amplitude=0.6), n_blocks=2)
-        soft = render_blocks(DecayingSinePE(frequency=440.0, tau=0.5, amplitude=0.3), n_blocks=2)
+        loud = render_blocks(
+            DecayingSinePE(frequency=440.0, tau=0.5, amplitude=0.6), n_blocks=2
+        )
+        soft = render_blocks(
+            DecayingSinePE(frequency=440.0, tau=0.5, amplitude=0.3), n_blocks=2
+        )
         assert np.max(np.abs(loud)) > np.max(np.abs(soft))
 
     def test_stereo_channels_are_identical(self):
@@ -159,14 +161,16 @@ class TestRendering:
 # Decay envelope
 # ---------------------------------------------------------------------------
 
-class TestDecayEnvelope:
 
-    def _rms_near(self, audio: np.ndarray, center: int, half_window: int = 256) -> float:
+class TestDecayEnvelope:
+    def _rms_near(
+        self, audio: np.ndarray, center: int, half_window: int = 256
+    ) -> float:
         """RMS of channel 0 in a window of ±half_window samples around center."""
         lo = max(0, center - half_window)
         hi = min(audio.shape[0], center + half_window)
         chunk = audio[lo:hi, 0]
-        return float(np.sqrt(np.mean(chunk ** 2))) if len(chunk) else 0.0
+        return float(np.sqrt(np.mean(chunk**2))) if len(chunk) else 0.0
 
     def test_signal_decays_over_time(self):
         tau = 0.2
@@ -196,8 +200,12 @@ class TestDecayEnvelope:
     def test_larger_tau_decays_more_slowly(self):
         sample_offset = int(0.1 * SAMPLE_RATE)
         n_blocks = math.ceil((sample_offset + BLOCK_SIZE) / BLOCK_SIZE)
-        fast = render_blocks(DecayingSinePE(frequency=440.0, tau=0.1, amplitude=0.3), n_blocks)
-        slow = render_blocks(DecayingSinePE(frequency=440.0, tau=0.2, amplitude=0.3), n_blocks)
+        fast = render_blocks(
+            DecayingSinePE(frequency=440.0, tau=0.1, amplitude=0.3), n_blocks
+        )
+        slow = render_blocks(
+            DecayingSinePE(frequency=440.0, tau=0.2, amplitude=0.3), n_blocks
+        )
         assert self._rms_near(slow, sample_offset) > self._rms_near(fast, sample_offset)
 
 
@@ -205,8 +213,8 @@ class TestDecayEnvelope:
 # Crop and extent
 # ---------------------------------------------------------------------------
 
-class TestCropAndExtent:
 
+class TestCropAndExtent:
     def test_extent_is_finite_after_first_render(self):
         pe = DecayingSinePE(frequency=440.0, tau=0.1)
         pe._render(0, BLOCK_SIZE)
@@ -229,7 +237,7 @@ class TestCropAndExtent:
         tau, db_floor = 0.05, -60.0
         crop = expected_crop_samples(tau, db_floor)
         pe = DecayingSinePE(frequency=440.0, tau=tau, db_floor=db_floor)
-        pe._render(0, BLOCK_SIZE)                          # warm up
+        pe._render(0, BLOCK_SIZE)  # warm up
         snippet = pe._render(crop + BLOCK_SIZE, BLOCK_SIZE)
         assert np.all(snippet.data == 0.0)
 
@@ -242,7 +250,7 @@ class TestCropAndExtent:
     def test_crop_samples_proportional_to_tau(self):
         """Doubling tau should double crop_samples within rounding."""
         short = expected_crop_samples(0.1)
-        long  = expected_crop_samples(0.2)
+        long = expected_crop_samples(0.2)
         assert abs(long - 2 * short) <= 2
 
     def test_extent_is_finite_before_render(self):
@@ -257,12 +265,13 @@ class TestCropAndExtent:
         pe._reset_state()
         assert pe._compute_extent().end == expected_crop_samples(0.1)
 
+
 # ---------------------------------------------------------------------------
 # repr
 # ---------------------------------------------------------------------------
 
-class TestRepr:
 
+class TestRepr:
     def test_repr_contains_frequency(self):
         assert "440.0" in repr(DecayingSinePE(frequency=440.0, tau=0.5))
 

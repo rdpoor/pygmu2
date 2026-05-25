@@ -28,48 +28,49 @@ pg.set_sample_rate(SAMPLE_RATE)
 AUDIO_DIR = Path(__file__).parent / "audio"
 UKE_WAV = pg.WavReaderPE(str(AUDIO_DIR / "uke_54.wav"))
 VOX_WAV = pg.WavReaderPE(str(AUDIO_DIR / "spoken_voice44.wav"))
-SHORT_MAN = pg.SlicePE(VOX_WAV, 62604, 16964) # "man!"
+SHORT_MAN = pg.SlicePE(VOX_WAV, 62604, 16964)  # "man!"
+
 
 def demo_uke_dry():
     source = UKE_WAV
-    # pg.play_offline(source=source, sample_rate=SAMPLE_RATE, path='uke_dry.wav')
-    pg.play(pg.GainPE(source, gain=0.71), SAMPLE_RATE)
+    # pg.play_offline(source=source, path='uke_dry.wav')
+    pg.play(pg.GainPE(source, gain=0.71))
 
 
 def demo_uke_tralfam():
     source = UKE_WAV
     tralfam = pg.TralfamPE(source, seed=42, normalize_peak=0.33)
-    # pg.play_offline(source=tralfam, sample_rate=SAMPLE_RATE, path='tralfam.wav')
-    pg.play(pg.GainPE(tralfam, gain=1.52), SAMPLE_RATE)
+    # pg.play_offline(source=tralfam, path='tralfam.wav')
+    pg.play(pg.GainPE(tralfam, gain=1.52))
 
 
 def demo_uke_looped_tralfam():
     source = UKE_WAV
     tralfam = pg.TralfamPE(source, seed=42, normalize_peak=0.33)
     looped_tralfam = pg.LoopPE(tralfam, count=4)
-    # pg.play_offline(source=looped_tralfam, sample_rate=SAMPLE_RATE, path='looped_tralfam.wav')
-    pg.play(pg.GainPE(looped_tralfam, gain=1.52), SAMPLE_RATE)
+    # pg.play_offline(source=looped_tralfam, path='looped_tralfam.wav')
+    pg.play(pg.GainPE(looped_tralfam, gain=1.52))
 
 
 def demo_short_man_dry():
     source = SHORT_MAN
-    # pg.play_offline(source=source, sample_rate=SAMPLE_RATE, path='man_dry.wav')
-    pg.play(pg.GainPE(source, gain=2.83), SAMPLE_RATE)
+    # pg.play_offline(source=source, path='man_dry.wav')
+    pg.play(pg.GainPE(source, gain=2.83))
 
 
 def demo_short_man_tralfam():
     source = SHORT_MAN
     tralfam = pg.TralfamPE(source, seed=42, normalize_peak=0.33)
-    # pg.play_offline(source=tralfam, sample_rate=SAMPLE_RATE, path='short_man.wav')
-    pg.play(pg.GainPE(tralfam, gain=1.52), SAMPLE_RATE)
+    # pg.play_offline(source=tralfam, path='short_man.wav')
+    pg.play(pg.GainPE(tralfam, gain=1.52))
 
 
 def demo_short_man_looped_tralfam():
     source = SHORT_MAN
     tralfam = pg.TralfamPE(source, seed=42, normalize_peak=0.33)
     looped_tralfam = pg.LoopPE(tralfam, count=8)
-    # pg.play_offline(source=looped_tralfam, sample_rate=SAMPLE_RATE, path='looped_short_man.wav')
-    pg.play(pg.GainPE(looped_tralfam, gain=1.52), SAMPLE_RATE)
+    # pg.play_offline(source=looped_tralfam, path='looped_short_man.wav')
+    pg.play(pg.GainPE(looped_tralfam, gain=1.52))
 
 
 def demo_padded_man_tralfam():
@@ -78,9 +79,11 @@ def demo_padded_man_tralfam():
         SHORT_MAN,
         seed=42,
         padded_length=SHORT_MAN.extent().end + (SAMPLE_RATE * 2),
-        normalize_peak=0.33)
-    # pg.play_offline(source=tralfam, sample_rate=SAMPLE_RATE, path='padded_man.wav')
-    pg.play(pg.GainPE(tralfam, gain=1.52), SAMPLE_RATE)
+        normalize_peak=0.33,
+    )
+    # pg.play_offline(source=tralfam, path='padded_man.wav')
+    pg.play(pg.GainPE(tralfam, gain=1.52))
+
 
 def demo_padded_man_looped_tralfam():
     # Pad with two seconds of silence to the short snippet before processing
@@ -88,10 +91,11 @@ def demo_padded_man_looped_tralfam():
         SHORT_MAN,
         seed=42,
         padded_length=SHORT_MAN.extent().end + (SAMPLE_RATE * 2),
-        normalize_peak=0.33)
+        normalize_peak=0.33,
+    )
     looped_tralfam = pg.LoopPE(tralfam, count=5)
-    # pg.play_offline(source=looped_tralfam, sample_rate=SAMPLE_RATE, path='looped_padded_man.wav')
-    pg.play(pg.GainPE(looped_tralfam, gain=1.52), SAMPLE_RATE)
+    # pg.play_offline(source=looped_tralfam, path='looped_padded_man.wav')
+    pg.play(pg.GainPE(looped_tralfam, gain=1.52))
 
 
 DEMOS = [
@@ -100,7 +104,10 @@ DEMOS = [
     ("Looped TralfamPE(uke)", demo_uke_looped_tralfam),
     ("Short, Dry man", demo_short_man_dry),
     ("TralfamPE(man)", demo_short_man_tralfam),
-    ("Looped TralfamPE(man) - you can hear the loop points", demo_short_man_looped_tralfam),
+    (
+        "Looped TralfamPE(man) - you can hear the loop points",
+        demo_short_man_looped_tralfam,
+    ),
     ("TralfamPE(man) padded with 2 seconds of 0s", demo_padded_man_tralfam),
     ("Looped TralfamPE(padded man)", demo_padded_man_looped_tralfam),
 ]

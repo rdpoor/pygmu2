@@ -14,7 +14,6 @@ from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 from pygmu2.config import (
     get_sample_rate,
-    handle_error,
 )
 from pygmu2.diagnostics import (
     is_enabled,
@@ -28,23 +27,22 @@ from pygmu2.diagnostics import (
 class ProcessingElement(ABC):
     """
     Abstract base class for all audio processing elements.
-    
+
     A ProcessingElement generates audio samples on demand via render().
     Processing elements form a directed acyclic graph (DAG), where:
     - Sources (SourcePE subclasses) have no inputs
     - Processors have one or more input ProcessingElements
-    
+
     The render() method always returns a Snippet of the requested size,
     with samples outside the element's extent() zero-filled.
-    
-    Before rendering, the graph must be configured via configure() which
-    is called automatically by Renderer.set_source(). This injects the
-    sample rate into all PEs in the graph.
+
+    The global sample rate must be set via set_sample_rate() before any
+    ProcessingElement is constructed — enforced by __new__().
     """
-    
-    # Sample rate is injected by Renderer.set_source() via configure()
+
+    # Sample rate is captured from the global set_sample_rate() at construction time
     _sample_rate: int | None = None
-    
+
     # Cached extent (computed lazily on first access)
     _cached_extent: Extent | None = None
 
@@ -66,43 +64,20 @@ class ProcessingElement(ABC):
 
     @property
     def sample_rate(self) -> int | None:
-        """
-        The sample rate in Hz, if known.
+        """The sample rate in Hz, set at construction time from the global value."""
+        return self._sample_rate
 
-        Returns None if the rate has not been configured and cannot be inferred
-        from inputs.
-        """
-        if self._sample_rate is not None:
-            return self._sample_rate
-
-        inferred = None
-        for input_pe in self.inputs():
-            rate = input_pe.sample_rate
-            if rate is None:
-                continue
-            if inferred is None:
-                inferred = rate
-            elif inferred != rate:
-                handle_error(
-                    f"{self.__class__.__name__}.sample_rate inferred conflicting input rates: "
-                    f"{inferred} vs {rate}. Using {inferred}.",
-                    fatal=False,
-                )
-                break
-
-        return inferred
-    
     def render(self, start: int, duration: int) -> Snippet:
         """
         Generate audio samples for the given range.
-        
+
         This method ALWAYS returns a Snippet of exactly `duration` samples
         starting at `start`. Samples outside self.extent() are zero-filled.
-        
+
         Args:
             start: Starting sample index
             duration: Number of samples to generate (must be >= 0)
-        
+
         Returns:
             Snippet containing the requested audio data
 
@@ -138,111 +113,111 @@ class ProcessingElement(ABC):
     def _render(self, start: int, duration: int) -> Snippet:
         """
         Actual rendering logic, implemented by subclasses.
-        
+
         Called by render() when duration > 0.
-        
+
         Args:
             start: Starting sample index
             duration: Number of samples (> 0)
-            
+
         Returns:
             Snippet containing the audio data
         """
         pass
-    
+
     def extent(self) -> Extent:
         """
         Return the temporal bounds of this processing element.
-        
+
         The extent defines where this element has actual data.
         Requests outside the extent will return zeros.
-        
+
         Computed lazily and cached. Override _compute_extent() to
         customize (not this method).
-        
+
         Returns:
             Extent defining start and end bounds
         """
         if self._cached_extent is None:
             self._cached_extent = self._compute_extent()
         return self._cached_extent
-    
+
     def _compute_extent(self) -> Extent:
         """
         Compute the temporal extent of this PE.
-        
+
         Default: infinite extent (None, None).
-        
+
         Override for:
         - Finite sources (e.g., WavFileReaderPE)
         - PEs that compute extent from inputs (e.g., MixPE -> union)
-        
+
         Returns:
             Extent defining start and end bounds
         """
         return Extent(None, None)
-    
+
     @abstractmethod
     def inputs(self) -> list[ProcessingElement]:
         """
         Return the list of input ProcessingElements.
-        
+
         Returns:
             List of input PEs (empty for sources)
         """
         pass
-    
+
     def is_pure(self) -> bool:
         """
         Returns True if this PE is pure (arbitrary render times, multi-sink OK).
-        
+
         pure == True: render() may be called with arbitrary (start, duration)
         in any order; same (start, duration) always yields the same output.
         Multiple consumers (sinks) are allowed.
-        
+
         pure == False: the PE has state. After the first call, each
         render(start, duration) must have start equal to the end of the
         previous request (contiguous, no gaps, no out-of-order). The
         framework enforces this. Exactly one consumer (sink) is allowed.
-        
+
         Default: False (safe default for stateful PEs)
         """
         return False
-    
+
     def channel_count(self) -> int | None:
         """
         Number of output channels this PE produces.
-        
+
         Returns:
             int: Fixed channel count
             None: Same as primary input (pass-through)
-        
+
         Sources (PEs with no inputs) must return int, not None.
         """
         return None  # Default: pass-through
-    
+
     def required_input_channels(self) -> int | None:
         """
         Number of channels required from input(s).
-        
+
         Returns:
             int: Requires exactly this many input channels
             None: Accepts any channel count
         """
         return None  # Default: accept any
-    
+
     def resolve_channel_count(self, input_channel_counts: list[int]) -> int:
         """
         Resolve output channel count when channel_count() returns None.
-        
+
         Called by the graph validator when this PE has multiple inputs
         with potentially different channel counts.
-        
+
         Default: Return the first input's channel count.
-        
+
         Args:
             input_channel_counts: Channel counts of all inputs
-        
+
         Returns:
             The output channel count for this PE
         """
@@ -251,46 +226,46 @@ class ProcessingElement(ABC):
         raise ValueError(
             f"{self.__class__.__name__} has no inputs but channel_count() is None"
         )
-    
+
     def on_start(self) -> None:
         """
         Called once before first render, after configure().
-        
+
         Called by Renderer.start() in bottom-up order (inputs first).
         Calls _on_start() if the subclass implements it.
         Subclasses should override _on_start() (not this method).
         """
-        if hasattr(self, '_on_start'):
+        if hasattr(self, "_on_start"):
             self._on_start()
 
     def on_stop(self) -> None:
         """
         Called once after final render.
-        
+
         Called by Renderer.stop() in top-down order (outputs first).
         Calls _on_stop() if the subclass implements it.
         Subclasses should override _on_stop() (not this method).
         """
-        if hasattr(self, '_on_stop'):
+        if hasattr(self, "_on_stop"):
             self._on_stop()
-    
+
     def reset_state(self) -> None:
         """
         Reset this PE's internal state.
-        
+
         Calls _reset_state() if the subclass implements it. Pure PEs typically
         don't implement _reset_state() (no-op). Non-pure PEs can override
         _reset_state() to reset their state (e.g., oscillator phase, filter
         memory, envelope state).
-        
+
         Useful for:
         - Resetting oscillators on gate/trigger events (analog-like behavior)
         - Resetting state when scrubbing/jogging to different positions
         - Re-initializing stateful PEs during rendering
-        
+
         Default implementation calls _reset_state() if it exists.
         """
-        if hasattr(self, '_reset_state'):
+        if hasattr(self, "_reset_state"):
             self._reset_state()
 
     def _scalar_or_pe_values(
@@ -309,7 +284,7 @@ class ProcessingElement(ABC):
 
         Many processing elements accept either a scalar value or a ProcessingElement.
         This method handles this common case, returning a 1D array of constant values
-        (for a scalar parameter) or rendered data from the ProcessingElement (for a 
+        (for a scalar parameter) or rendered data from the ProcessingElement (for a
         ProcessingElement parameter).
 
         Conventions:
@@ -350,9 +325,13 @@ class ProcessingElement(ABC):
 
             # 1D control: use one channel (default 0)
             if data.ndim != 2 or data.shape[1] < 1:
-                raise ValueError(f"param PE returned invalid shape {getattr(data, 'shape', None)}")
+                raise ValueError(
+                    f"param PE returned invalid shape {getattr(data, 'shape', None)}"
+                )
             if channel < 0 or channel >= data.shape[1]:
-                raise ValueError(f"channel {channel} out of range for param with {data.shape[1]} channels")
+                raise ValueError(
+                    f"channel {channel} out of range for param with {data.shape[1]} channels"
+                )
             return data[:, channel].astype(dtype, copy=False)
 
         # Scalar value
@@ -361,4 +340,3 @@ class ProcessingElement(ABC):
             ch = channels if channels is not None else 1
             return np.full((duration, ch), value, dtype=dtype)
         return np.full((duration,), value, dtype=dtype)
-

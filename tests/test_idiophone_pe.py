@@ -7,9 +7,11 @@ for all four instrument definitions.
 Run with:
     pytest test_idiophone_pe.py -v
 """
+
 import numpy as np
 import pytest
 
+from pygmu2.config import set_sample_rate
 from pygmu2.idiophone_pe import (
     BALAFON,
     GLOCKENSPIEL,
@@ -25,28 +27,25 @@ from pygmu2.source_pe import SourcePE
 # ---------------------------------------------------------------------------
 
 SAMPLE_RATE = 48000
-BLOCK_SIZE  = 512
+BLOCK_SIZE = 512
 
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(autouse=True)
-def set_sample_rate():
-    """Pin sample_rate on SourcePE for every test, restore afterwards."""
-    original = getattr(SourcePE, "sample_rate", None)
-    SourcePE.sample_rate = SAMPLE_RATE
+def _set_sample_rate():
+    set_sample_rate(SAMPLE_RATE)
     yield
-    if original is None:
-        del SourcePE.sample_rate
-    else:
-        SourcePE.sample_rate = original
+    set_sample_rate(44100)  # restore default
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def render_blocks(pe: IdiophonePE, n_blocks: int) -> np.ndarray:
     """Render n_blocks contiguous blocks; return concatenated (samples, ch) array."""
@@ -61,8 +60,8 @@ def render_blocks(pe: IdiophonePE, n_blocks: int) -> np.ndarray:
 # Construction
 # ---------------------------------------------------------------------------
 
-class TestConstruction:
 
+class TestConstruction:
     @pytest.mark.parametrize("instr", INSTRUMENTS.values(), ids=INSTRUMENTS.keys())
     def test_instantiates(self, instr):
         pe = IdiophonePE(instr, frequency=440.0)
@@ -92,8 +91,8 @@ class TestConstruction:
 # Rendering — shape and content
 # ---------------------------------------------------------------------------
 
-class TestRendering:
 
+class TestRendering:
     @pytest.mark.parametrize("instr", INSTRUMENTS.values(), ids=INSTRUMENTS.keys())
     def test_output_shape_mono(self, instr):
         audio = render_blocks(IdiophonePE(instr, frequency=440.0), n_blocks=4)
@@ -105,7 +104,9 @@ class TestRendering:
 
     @pytest.mark.parametrize("instr", INSTRUMENTS.values(), ids=INSTRUMENTS.keys())
     def test_output_not_silent(self, instr):
-        audio = render_blocks(IdiophonePE(instr, frequency=440.0, amplitude=0.3), n_blocks=4)
+        audio = render_blocks(
+            IdiophonePE(instr, frequency=440.0, amplitude=0.3), n_blocks=4
+        )
         assert np.max(np.abs(audio)) > 1e-6
 
     def test_amplitude_scales_peak(self):
@@ -131,12 +132,12 @@ class TestRendering:
 # Decay behaviour
 # ---------------------------------------------------------------------------
 
-class TestDecay:
 
+class TestDecay:
     def test_fundamental_decays_to_near_silence(self):
-        """After 3× tau_mid the marimba fundamental should be well below -60 dB."""
-        # MARIMBA tau_mid = 1.0 s at A4; render 3 s worth of blocks.
-        n_blocks = int(np.ceil(3.0 * SAMPLE_RATE / BLOCK_SIZE))
+        """After 7× tau_mid the marimba fundamental should be below -60 dB."""
+        # MARIMBA tau_mid = 1.0 s at A4; -60 dB ≈ 7 τ.
+        n_blocks = int(np.ceil(7.0 * SAMPLE_RATE / BLOCK_SIZE))
         pe = IdiophonePE(MARIMBA, frequency=440.0, amplitude=0.3)
         audio = render_blocks(pe, n_blocks)
         tail_rms = float(np.sqrt(np.mean(audio[-BLOCK_SIZE:] ** 2)))
@@ -144,11 +145,11 @@ class TestDecay:
 
     def test_early_blocks_louder_than_late_blocks(self):
         """Onset should be louder than the tail — basic sanity check."""
-        n_blocks = int(np.ceil(2.0 * SAMPLE_RATE / BLOCK_SIZE))
+        n_blocks = int(np.ceil(3.0 * SAMPLE_RATE / BLOCK_SIZE))
         pe = IdiophonePE(MARIMBA, frequency=440.0, amplitude=0.3)
         audio = render_blocks(pe, n_blocks)[:, 0]
         onset_rms = float(np.sqrt(np.mean(audio[:BLOCK_SIZE] ** 2)))
-        tail_rms  = float(np.sqrt(np.mean(audio[-BLOCK_SIZE:] ** 2)))
+        tail_rms = float(np.sqrt(np.mean(audio[-BLOCK_SIZE:] ** 2)))
         assert onset_rms > tail_rms * 10
 
 
@@ -156,20 +157,20 @@ class TestDecay:
 # Register scaling
 # ---------------------------------------------------------------------------
 
-class TestRegisterScaling:
 
+class TestRegisterScaling:
     def _half_life_blocks(self, frequency: float, threshold: float = 0.02) -> int:
         """Return the block index at which RMS first falls below threshold."""
         pe = IdiophonePE(MARIMBA, frequency=frequency, amplitude=0.3)
         for i in range(int(10.0 * SAMPLE_RATE / BLOCK_SIZE)):
             snippet = pe._render(i * BLOCK_SIZE, BLOCK_SIZE)
-            if float(np.sqrt(np.mean(snippet.data ** 2))) < threshold:
+            if float(np.sqrt(np.mean(snippet.data**2))) < threshold:
                 return i
         return i  # did not fall below threshold within 10 s
 
     def test_low_note_outlasts_high_note(self):
         """A2 (110 Hz) should decay more slowly than A6 (1760 Hz)."""
-        low_blocks  = self._half_life_blocks(110.0)
+        low_blocks = self._half_life_blocks(110.0)
         high_blocks = self._half_life_blocks(1760.0)
         assert low_blocks > high_blocks, (
             f"low note ({low_blocks} blocks) should outlast high note ({high_blocks} blocks)"
@@ -177,9 +178,9 @@ class TestRegisterScaling:
 
     def test_ref_freq_matches_tau_mid(self):
         """At A4 the fundamental should reach -60 dB within ±20% of tau_mid (1.0 s)."""
-        tau_mid    = 1.0   # MARIMBA fundamental tau_mid at A4
-        tolerance  = 0.20
-        n_samples  = int(tau_mid * SAMPLE_RATE)
+        tau_mid = 1.0  # MARIMBA fundamental tau_mid at A4
+        tolerance = 0.20
+        n_samples = int(tau_mid * SAMPLE_RATE)
         pe = IdiophonePE(MARIMBA, frequency=440.0, amplitude=0.3)
         # Render to exactly tau_mid then check amplitude is near -60 dB (linear ≈ 0.001)
         n_blocks = int(np.ceil(n_samples / BLOCK_SIZE))

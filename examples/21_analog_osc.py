@@ -25,8 +25,8 @@ from pygmu2 import (
 )
 import pygmu2 as pg
 from examples_helper import run_demos
-pg.set_sample_rate(44100)
 
+pg.set_sample_rate(44100)
 
 
 SAMPLE_RATE = 44_100
@@ -50,7 +50,9 @@ def demo_pwm_rectangle():
     out = GainPE(osc, gain=0.25)
     out = CropPE(out, 0, (dur_samples) - (0))
 
-    pg.play(out, SAMPLE_RATE)
+    pg.play(out)
+
+
 def demo_morphing_saw_triangle():
     """
     Duty-controlled saw/triangle morph:
@@ -67,7 +69,9 @@ def demo_morphing_saw_triangle():
     out = GainPE(osc, gain=0.35)
     out = CropPE(out, 0, (dur_samples) - (0))
 
-    pg.play(pg.GainPE(out, gain=0.50), SAMPLE_RATE)
+    pg.play(pg.GainPE(out, gain=0.50))
+
+
 def demo_subtractive_patch():
     """
     A simple subtractive synth patch: oscillator -> ladder lowpass.
@@ -98,7 +102,9 @@ def demo_subtractive_patch():
     out = GainPE(filtered, gain=0.25)
     out = CropPE(out, 0, (dur_samples) - (0))
 
-    pg.play(pg.GainPE(out, gain=2.54), SAMPLE_RATE)
+    pg.play(pg.GainPE(out, gain=2.54))
+
+
 DEMOS = [
     ("PWM Rectangle", demo_pwm_rectangle),
     ("Morphing Saw/Triangle", demo_morphing_saw_triangle),

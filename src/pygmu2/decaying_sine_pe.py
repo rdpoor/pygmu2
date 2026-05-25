@@ -15,6 +15,7 @@ at which the envelope reaches db_floor.
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
+
 from __future__ import annotations
 import math
 import numpy as np
@@ -25,6 +26,7 @@ from pygmu2.snippet import Snippet
 # ---------------------------------------------------------------------------
 # PE
 # ---------------------------------------------------------------------------
+
 
 class DecayingSinePE(SourcePE):
     """
@@ -61,9 +63,9 @@ class DecayingSinePE(SourcePE):
         self,
         frequency: float,
         amplitude: float = 0.3,
-        tau:       float = 1.0,
-        channels:  int   = 1,
-        db_floor:  float = -60.0,
+        tau: float = 1.0,
+        channels: int = 1,
+        db_floor: float = -60.0,
     ):
         super().__init__()
         if frequency <= 0:
@@ -77,20 +79,19 @@ class DecayingSinePE(SourcePE):
 
         self._frequency = float(frequency)
         self._amplitude = float(amplitude)
-        self._tau       = float(tau)
-        self._channels  = channels
-        self._db_floor  = float(db_floor)
+        self._tau = float(tau)
+        self._channels = channels
+        self._db_floor = float(db_floor)
 
         self._crop_samples = math.ceil(
             -self._tau * self.sample_rate * (self._db_floor / 20.0) * math.log(10)
         )
         # Recurrence state (initialised on first render)
-        self._x_prev:       float = 0.0
-        self._x_prev2:      float = 0.0
-        self._coeff:        float = 0.0
-        self._rho2:         float = 0.0
-        self._crop_samples: int   = 0
-        self._ready:        bool  = False
+        self._x_prev: float = 0.0
+        self._x_prev2: float = 0.0
+        self._coeff: float = 0.0
+        self._rho2: float = 0.0
+        self._ready: bool = False
 
     # ------------------------------------------------------------------
     # SourcePE interface
@@ -101,11 +102,11 @@ class DecayingSinePE(SourcePE):
         return Extent(0, self._crop_samples)
 
     def _reset_state(self) -> None:
-        self._x_prev       = 0.0
-        self._x_prev2      = 0.0
-        self._coeff        = 0.0
-        self._rho2         = 0.0
-        self._ready        = False
+        self._x_prev = 0.0
+        self._x_prev2 = 0.0
+        self._coeff = 0.0
+        self._rho2 = 0.0
+        self._ready = False
 
     def _on_start(self) -> None:
         self._reset_state()
@@ -120,19 +121,19 @@ class DecayingSinePE(SourcePE):
         data = np.zeros((duration, self._channels), dtype=np.float32)
 
         ks_start = max(0, start)
-        ks_end   = max(0, start + duration)
+        ks_end = max(0, start + duration)
         need = ks_end - ks_start
         if need <= 0:
             return Snippet(start, data)
 
         if not self._ready:
             sr = self.sample_rate
-            rho   = math.exp(-1.0 / (self._tau * sr))
+            rho = math.exp(-1.0 / (self._tau * sr))
             omega = 2.0 * math.pi * self._frequency / sr
 
-            self._coeff  = 2.0 * rho * math.cos(omega)
-            self._rho2   = rho * rho
-            self._x_prev  = 0.0
+            self._coeff = 2.0 * rho * math.cos(omega)
+            self._rho2 = rho * rho
+            self._x_prev = 0.0
             self._x_prev2 = -self._amplitude * math.sin(omega) / rho
 
             # crop_samples: solve exp(−n / (tau·sr)) = 10^(db_floor/20)
@@ -145,13 +146,13 @@ class DecayingSinePE(SourcePE):
 
         # No output past the crop point.
         ks_end = min(ks_end, self._crop_samples)
-        need   = max(0, ks_end - ks_start)
+        need = max(0, ks_end - ks_start)
         if need == 0:
             return Snippet(start, data)
 
-        coeff  = np.float32(self._coeff)
-        rho2   = np.float32(self._rho2)
-        x_prev  = np.float32(self._x_prev)
+        coeff = np.float32(self._coeff)
+        rho2 = np.float32(self._rho2)
+        x_prev = np.float32(self._x_prev)
         x_prev2 = np.float32(self._x_prev2)
 
         # ----------------------------------------------------------------
@@ -159,12 +160,12 @@ class DecayingSinePE(SourcePE):
         # ----------------------------------------------------------------
         out = np.empty(need, dtype=np.float32)
         for i in range(need):
-            out[i]  = x_prev
-            x_new   = coeff * x_prev - rho2 * x_prev2
+            out[i] = x_prev
+            x_new = coeff * x_prev - rho2 * x_prev2
             x_prev2 = x_prev
-            x_prev  = x_new
+            x_prev = x_new
 
-        self._x_prev  = float(x_prev)
+        self._x_prev = float(x_prev)
         self._x_prev2 = float(x_prev2)
 
         offset = ks_start - start
