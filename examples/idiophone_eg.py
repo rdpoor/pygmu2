@@ -4,7 +4,7 @@ Struck bar idiophone synthesis using IdiophonePE.
 
 Each instrument is modelled as a sum of DecayingSinePE partials whose decay
 times register-scale with pitch (bass notes ring longer than treble notes).
-Instruments: marimba, xylophone, glockenspiel, balafon.
+Instruments: marimba, xylophone, glockenspiel, balafon, celeste.
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
@@ -18,6 +18,7 @@ from pygmu2 import (
 import pygmu2 as pg
 from pygmu2.idiophone_pe import (
     BALAFON,
+    CELESTE,
     GLOCKENSPIEL,
     MARIMBA,
     XYLOPHONE,
@@ -179,6 +180,34 @@ def demo_balafon_arpeggio():
     )
     pg.play(mix)
 
+def demo_celeste_low_high():
+    """Celeste: lowest note (C5) then highest note (C7), sequential."""
+    midi_notes = [m + 24 for m in [48, 72]]
+    pg.play(
+        _make_low_high(
+            CELESTE,
+            midi_low=midi_notes[0],
+            midi_high=midi_notes[1],
+            amplitude=0.25,
+        )
+    )
+
+
+def demo_celeste_arpeggio():
+    """
+    Celeste: C diatonic, C5–C7.
+    Long tau_mid (3 s) and inharmonic overtones (2.756 f0) give the
+    characteristic bright shimmer; notes overlap heavily.
+    """
+    print("=== Celeste: C diatonic arpeggio (C5–C7) ===")
+    midi_notes = [m + 24 for m in C_DIATONIC_2OCT]  # shift up two octaves
+    mix = _make_arpeggio(
+        CELESTE,
+        midi_notes=midi_notes,
+        note_spacing=0.12,
+        amplitude=0.2,
+    )
+    pg.play_offline(mix)
 
 # ---------------------------------------------------------------------------
 # Demo registry
@@ -193,6 +222,8 @@ DEMOS = [
     ("Glockenspiel arpeggio (C diatonic, C5–C7)", demo_glockenspiel_arpeggio),
     ("Balafon: low->high", demo_balafon_low_high),
     ("Balafon arpeggio (C pentatonic, C3–C5)", demo_balafon_arpeggio),
+    ("Celeste: low->high", demo_celeste_low_high),
+    ("Celeste arpeggio (C diatonic, C5–C7)", demo_celeste_arpeggio),
 ]
 
 if __name__ == "__main__":
