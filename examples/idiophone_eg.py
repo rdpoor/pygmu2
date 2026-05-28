@@ -156,7 +156,7 @@ def demo_glockenspiel_arpeggio():
         note_spacing=0.12,
         amplitude=0.2,
     )
-    pg.play(mix)
+    pg.play_offline(mix)
 
 
 def demo_balafon_low_high():
