@@ -185,13 +185,13 @@ def demo_balafon_arpeggio():
 # ---------------------------------------------------------------------------
 
 DEMOS = [
-    ("Marimba: low→high", demo_marimba_low_high),
+    ("Marimba: low->high", demo_marimba_low_high),
     ("Marimba arpeggio (C diatonic, C3–C5)", demo_marimba_arpeggio),
-    ("Xylophone: low→high", demo_xylophone_low_high),
+    ("Xylophone: low->high", demo_xylophone_low_high),
     ("Xylophone arpeggio (C diatonic, C4–C6)", demo_xylophone_arpeggio),
-    ("Glockenspiel: low→high", demo_glockenspiel_low_high),
+    ("Glockenspiel: low->high", demo_glockenspiel_low_high),
     ("Glockenspiel arpeggio (C diatonic, C5–C7)", demo_glockenspiel_arpeggio),
-    ("Balafon: low→high", demo_balafon_low_high),
+    ("Balafon: low->high", demo_balafon_low_high),
     ("Balafon arpeggio (C pentatonic, C3–C5)", demo_balafon_arpeggio),
 ]
 
