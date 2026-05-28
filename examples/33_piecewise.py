@@ -58,31 +58,31 @@ def _make_triad(transition_type: TransitionType):
 def demo_step():
     """Step: instant pitch changes (no glide)."""
     print("=== Piecewise 33: STEP (instant pitch changes) ===")
-    pg.play(pg.GainPE(CropPE(_make_triad(TransitionType.STEP), 0, DURATION_SAMPLES), gain=2.00), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(_make_triad(TransitionType.STEP), 0, DURATION_SAMPLES), gain=2.00))
 
 
 def demo_linear():
     """Linear: constant-rate glide between notes."""
     print("=== Piecewise 33: LINEAR (constant glide between notes) ===")
-    pg.play(pg.GainPE(CropPE(_make_triad(TransitionType.LINEAR), 0, DURATION_SAMPLES), gain=2.00), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(_make_triad(TransitionType.LINEAR), 0, DURATION_SAMPLES), gain=2.00))
 
 
 def demo_exponential():
     """Exponential: pitch glides with exponential curve."""
     print("=== Piecewise 33: EXPONENTIAL (exponential pitch glide) ===")
-    pg.play(pg.GainPE(CropPE(_make_triad(TransitionType.EXPONENTIAL), 0, DURATION_SAMPLES), gain=2.00), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(_make_triad(TransitionType.EXPONENTIAL), 0, DURATION_SAMPLES), gain=2.00))
 
 
 def demo_sigmoid():
     """Sigmoid: S-curve glide (slow at note boundaries)."""
     print("=== Piecewise 33: SIGMOID (S-curve glide) ===")
-    pg.play(pg.GainPE(CropPE(_make_triad(TransitionType.SIGMOID), 0, DURATION_SAMPLES), gain=2.00), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(_make_triad(TransitionType.SIGMOID), 0, DURATION_SAMPLES), gain=2.00))
 
 
 def demo_constant_power():
     """Constant-power: sin/cos-style curve between notes."""
     print("=== Piecewise 33: CONSTANT_POWER (sin/cos-style glide) ===")
-    pg.play(pg.GainPE(CropPE(_make_triad(TransitionType.CONSTANT_POWER), 0, DURATION_SAMPLES), gain=2.00), SAMPLE_RATE)
+    pg.play(pg.GainPE(CropPE(_make_triad(TransitionType.CONSTANT_POWER), 0, DURATION_SAMPLES), gain=2.00))
 
 
 DEMOS = [

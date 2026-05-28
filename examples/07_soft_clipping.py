@@ -53,7 +53,7 @@ def clean_signal():
     clean = GainPE(source, gain=0.5)
     clean_out = CropPE(clean, 0, (DURATION_SAMPLES) - (0))
 
-    pg.play(pg.GainPE(clean_out, gain=0.90), SAMPLE_RATE)
+    pg.play(pg.GainPE(clean_out, gain=0.90))
 
 def light_saturation():
     # --- Part 2: Light saturation ---
@@ -66,7 +66,7 @@ def light_saturation():
     output_light = GainPE(saturated_light, gain=0.6)
     output_light = CropPE(output_light, 0, (DURATION_SAMPLES) - (0))
 
-    pg.play(pg.GainPE(output_light, gain=0.90), SAMPLE_RATE)
+    pg.play(pg.GainPE(output_light, gain=0.90))
 
 def heavy_saturation():
     # --- Part 3: Heavy saturation ---
@@ -77,7 +77,7 @@ def heavy_saturation():
     output_heavy = GainPE(saturated_heavy, gain=0.5)
     output_heavy = CropPE(output_heavy, 0, (DURATION_SAMPLES) - (0))
 
-    pg.play(pg.GainPE(output_heavy, gain=1.00), SAMPLE_RATE)
+    pg.play(pg.GainPE(output_heavy, gain=1.00))
 
 def asymmetric_clipping():
     # --- Part 4: Asymmetric clipping (more "character") ---
@@ -97,7 +97,7 @@ def asymmetric_clipping():
     output_asym = GainPE(saturated_asym, gain=0.6)
     output_asym = CropPE(output_asym, 0, (DURATION_SAMPLES) - (0))
 
-    pg.play(pg.GainPE(output_asym, gain=0.84), SAMPLE_RATE)
+    pg.play(pg.GainPE(output_asym, gain=0.84))
 
 DEMOS = [
     ("Clean signal", clean_signal),

@@ -53,6 +53,7 @@ def demo_sidechain_ducking():
     
     bass_stream = WavReaderPE(str(BASS_FILE))
     sample_rate = bass_stream.file_sample_rate
+    pg.set_sample_rate(sample_rate)
     kick_stream = WavReaderPE(str(KICK_FILE))
 
     # loop the kick to keep time with the bass
@@ -91,7 +92,6 @@ def demo_sidechain_ducking():
     extent = bass_stream.extent()
     pg.play(
         pg.GainPE(CropPE(mix_stream, extent.start or 0, extent.end - (extent.start or 0)), gain=0.85),
-        sample_rate=sample_rate,
     )
     print()
 
@@ -109,7 +109,8 @@ def demo_sidechain_ducking_voice():
     music_stream = WavReaderPE(str(MUSIC_FILE))
     voice_stream = WavReaderPE(str(VOICE_FILE))
     sample_rate = voice_stream.file_sample_rate
-    
+    pg.set_sample_rate(sample_rate)
+
     # Create envelope from voice
     voice_detector_stream = EnvelopePE(
         voice_stream,
@@ -137,7 +138,7 @@ def demo_sidechain_ducking_voice():
     print("Music ducks during voice portions.")
     print()
     
-    pg.play(pg.GainPE(mix_stream, gain=4.73), sample_rate)
+    pg.play(pg.GainPE(mix_stream, gain=4.73))
     print()
 
 
@@ -153,7 +154,8 @@ def demo_expander():
 
     source_stream = WavReaderPE(str(BASS_FILE))
     sample_rate = source_stream.file_sample_rate
-    
+    pg.set_sample_rate(sample_rate)
+
     # Create envelope follower
     env_stream = EnvelopePE(source_stream, attack=0.01, release=0.1)
     
@@ -171,7 +173,7 @@ def demo_expander():
     print("Quiet parts become even quieter.")
     print()
     
-    pg.play(pg.GainPE(expanded_stream, gain=0.67), sample_rate)
+    pg.play(pg.GainPE(expanded_stream, gain=0.67))
     print()
 
 
@@ -188,7 +190,8 @@ def demo_custom_envelope():
     
     pad_stream = WavReaderPE(str(MUSIC_FILE))
     sample_rate = pad_stream.file_sample_rate
-    
+    pg.set_sample_rate(sample_rate)
+
     # Custom control signal: slow triangle-ish LFO
     # This creates rhythmic "breathing" independent of input level
     lfo_freq = 3
@@ -212,7 +215,7 @@ def demo_custom_envelope():
     print("Creates rhythmic 'breathing' effect")
     print()
     
-    pg.play(pg.GainPE(rhythmic_stream, gain=4.95), sample_rate)
+    pg.play(pg.GainPE(rhythmic_stream, gain=4.95))
     print()
 
 

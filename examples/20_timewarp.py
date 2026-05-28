@@ -45,10 +45,13 @@ def demo_original():
 
     spoken_stream = WavReaderPE(str(SPOKEN_PATH))
     sample_rate = spoken_stream.file_sample_rate
+    pg.set_sample_rate(sample_rate)
 
     output_stream = GainPE(spoken_stream, gain=0.8)
 
-    pg.play(pg.GainPE(output_stream, gain=2.67), sample_rate)
+    pg.play(pg.GainPE(output_stream, gain=2.67))
+
+
 def demo_fixed_rate():
     """
     Play a spoken sample at a fixed rate (1.5x).
@@ -59,11 +62,14 @@ def demo_fixed_rate():
 
     spoken_stream = WavReaderPE(str(SPOKEN_PATH))
     sample_rate = spoken_stream.file_sample_rate
+    pg.set_sample_rate(sample_rate)
 
     warped_stream = TimeWarpPE(spoken_stream, rate=1.5)
     output_stream = GainPE(warped_stream, gain=0.8)
 
-    pg.play(pg.GainPE(output_stream, gain=2.67), sample_rate)
+    pg.play(pg.GainPE(output_stream, gain=2.67))
+
+
 def demo_accelerating_loop():
     """
     Loop the spoken sample and accelerate from 0.5x to 5.0x over 10 seconds.
@@ -74,6 +80,7 @@ def demo_accelerating_loop():
 
     spoken_stream = WavReaderPE(str(SPOKEN_PATH))
     sample_rate = spoken_stream.file_sample_rate
+    pg.set_sample_rate(sample_rate)
 
     # Loop the entire sample forever (with a small crossfade to reduce clicks)
     looped_stream = LoopPE(spoken_stream, crossfade_seconds=0.01)
@@ -87,7 +94,9 @@ def demo_accelerating_loop():
     output_stream = GainPE(warped_stream, gain=0.8)
     output_stream = CropPE(output_stream, 0, (dur_samples) - (0))
 
-    pg.play(pg.GainPE(output_stream, gain=2.67), sample_rate)
+    pg.play(pg.GainPE(output_stream, gain=2.67))
+
+
 def demo_jog_shuttle():
     """
     Play at decreasing speeds, eventually going negative.
@@ -98,6 +107,7 @@ def demo_jog_shuttle():
 
     drums_stream = WavReaderPE(str(DRUMS_PATH))
     sample_rate = drums_stream.file_sample_rate
+    pg.set_sample_rate(sample_rate)
 
     # Rate ramp is a PE, so TimeWarpPE's extent becomes finite (matches the rate extent).
     demo_length = int(seconds_to_samples(10, sample_rate))
@@ -107,7 +117,9 @@ def demo_jog_shuttle():
     output_stream = GainPE(warped_stream, gain=0.8)
     output_stream = CropPE(output_stream, 0, (demo_length) - (0))
 
-    pg.play(pg.GainPE(output_stream, gain=1.11), sample_rate)
+    pg.play(pg.GainPE(output_stream, gain=1.11))
+
+
 DEMOS = [
     ("Original", demo_original),
     ("Fixed Rate (1.5x)", demo_fixed_rate),

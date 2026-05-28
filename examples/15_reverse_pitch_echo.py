@@ -30,6 +30,9 @@ print(f"Loading: {WAV_FILE}", flush=True)
 
 source_stream = WavReaderPE(str(WAV_FILE))
 sample_rate = source_stream.file_sample_rate or 44100
+# Align the global rate to the file's native rate before any downstream
+# PEs are constructed (CropPE, GainPE, ReversePitchEchoPE, ...).
+pg.set_sample_rate(sample_rate)
 duration_samples = int(DURATION_SECONDS * sample_rate)
 
 def original_signal():
@@ -37,7 +40,7 @@ def original_signal():
     print(f"\nPart 1: Dry signal - {DURATION_SECONDS}s", flush=True)
     dry_stream = CropPE(source_stream, 0, (duration_samples) - (0))
 
-    pg.play(pg.GainPE(dry_stream, gain=2.14), sample_rate)
+    pg.play(pg.GainPE(dry_stream, gain=2.14))
 
 def wet_only():
     # --- Part 2: Wet only ---
@@ -52,7 +55,7 @@ def wet_only():
     wet_stream = GainPE(wet_stream, gain=0.8)
     wet_out_stream = CropPE(wet_stream, 0, (duration_samples) - (0))
 
-    pg.play(pg.GainPE(wet_out_stream, gain=2.28), sample_rate)
+    pg.play(pg.GainPE(wet_out_stream, gain=2.28))
 
 def wet_plus_dry():
     # --- Part 3: Dry + wet mix ---
@@ -67,7 +70,7 @@ def wet_plus_dry():
     mixed_stream = MixPE(GainPE(source_stream, gain=0.5), GainPE(wet_mix_stream, gain=0.5))
     mixed_out_stream = CropPE(mixed_stream, 0, (duration_samples) - (0))
 
-    pg.play(pg.GainPE(mixed_out_stream, gain=2.83), sample_rate)
+    pg.play(pg.GainPE(mixed_out_stream, gain=2.83))
 
 DEMOS = [
     ("Original signal", original_signal),

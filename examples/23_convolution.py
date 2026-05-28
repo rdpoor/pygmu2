@@ -142,7 +142,7 @@ def _demo_dry(source_path: Path, *, gain: float = 0.8, norm_gain: float = 1.0) -
     print("IR:     (dry)")
     print()
 
-    pg.play(pg.GainPE(out_stream, gain=norm_gain), sample_rate)
+    pg.play(pg.GainPE(out_stream, gain=norm_gain))
 
 
 def _demo_wet(
@@ -200,7 +200,7 @@ def _demo_wet(
     print(f"Wet gain: {wet_gain:.2f} (effective: {wet_gain / ir_energy:.4f})")
     print()
 
-    pg.play(pg.GainPE(out_stream, gain=norm_gain), sample_rate)
+    pg.play(pg.GainPE(out_stream, gain=norm_gain))
 
 
 def _demo_wet_chorus_on_wet(
@@ -254,7 +254,7 @@ def _demo_wet_chorus_on_wet(
     )
     print()
 
-    pg.play_offline(pg.GainPE(out_stream, gain=norm_gain), sample_rate)
+    pg.play_offline(pg.GainPE(out_stream, gain=norm_gain))
 
 def demo_spoken_dry():
     print("=== Demo: spoken voice (dry) ===")
