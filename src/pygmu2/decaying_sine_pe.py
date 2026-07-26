@@ -131,14 +131,11 @@ class DecayingSinePE(SourcePE):
             rho = math.exp(-1.0 / (self._tau * sr))
             omega = 2.0 * math.pi * self._frequency / sr
 
-            self._coeff = 2.0 * rho * math.cos(omega)
-            self._rho2 = rho * rho
-            self._x_prev = 0.0
-            self._x_prev2 = -self._amplitude * math.sin(omega) / rho
+            self._coeff = np.float32(2.0 * rho * math.cos(omega))
+            self._rho2 = np.float32(rho * rho)
+            self._x_prev = np.float32(0.0)
+            self._x_prev2 = np.float32(-self._amplitude * math.sin(omega) / rho)
 
-            # crop_samples: solve exp(−n / (tau·sr)) = 10^(db_floor/20)
-            #   −n / (tau·sr) = db_floor/20 · ln 10
-            #   n = −tau · sr · db_floor/20 · ln 10
             self._crop_samples = math.ceil(
                 -self._tau * sr * (self._db_floor / 20.0) * math.log(10)
             )
@@ -150,10 +147,10 @@ class DecayingSinePE(SourcePE):
         if need == 0:
             return Snippet(start, data)
 
-        coeff = np.float32(self._coeff)
-        rho2 = np.float32(self._rho2)
-        x_prev = np.float32(self._x_prev)
-        x_prev2 = np.float32(self._x_prev2)
+        coeff = self._coeff
+        rho2 = self._rho2
+        x_prev = self._x_prev
+        x_prev2 = self._x_prev2
 
         # ----------------------------------------------------------------
         # Inner loop — recurrence relation
@@ -165,8 +162,8 @@ class DecayingSinePE(SourcePE):
             x_prev2 = x_prev
             x_prev = x_new
 
-        self._x_prev = float(x_prev)
-        self._x_prev2 = float(x_prev2)
+        self._x_prev = x_prev
+        self._x_prev2 = x_prev2
 
         offset = ks_start - start
         data[offset : offset + need] = np.broadcast_to(
