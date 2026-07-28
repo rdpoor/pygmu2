@@ -22,6 +22,7 @@ from pygmu2.idiophone_pe import (
     GLOCKENSPIEL,
     MARIMBA,
     XYLOPHONE,
+    SINGING_BOWL,
     IdiophonePE,
 )
 from examples_helper import run_demos
@@ -209,6 +210,14 @@ def demo_celeste_arpeggio():
     )
     pg.play_offline(mix)
 
+def demo_singing_bowl():
+    print("=== Singing Bowl @ 166 Hz")
+    t = 0.0
+    note = IdiophonePE(
+            SINGING_BOWL, frequency=166.0, amplitude=1.0
+        )
+    pg.play(pg.CropPE(note, 0, SR*10))
+
 # ---------------------------------------------------------------------------
 # Demo registry
 # ---------------------------------------------------------------------------
@@ -224,6 +233,7 @@ DEMOS = [
     ("Balafon arpeggio (C pentatonic, C3–C5)", demo_balafon_arpeggio),
     ("Celeste: low->high", demo_celeste_low_high),
     ("Celeste arpeggio (C diatonic, C5–C7)", demo_celeste_arpeggio),
+    ("Singing Bowl", demo_singing_bowl),
 ]
 
 if __name__ == "__main__":

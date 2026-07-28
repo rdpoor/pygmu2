@@ -136,8 +136,21 @@ CELESTE = InstrumentDef(
         PartialDef(freq_ratio=5.404, tau_mid=0.03, tau_scale=1.1, amp_ratio=0.1),
     ],
 )
+
+SINGING_BOWL = InstrumentDef(
+    name="singing bowl",
+    partials=[
+        PartialDef(freq_ratio=1.0, tau_mid=20.0, tau_scale=1.0, amp_ratio=0.7),
+        PartialDef(freq_ratio=1.017, tau_mid=20.0, tau_scale=1.0, amp_ratio=0.7),
+        PartialDef(freq_ratio=2.9, tau_mid=20.0, tau_scale=1.0, amp_ratio=0.5),
+        PartialDef(freq_ratio=5.44, tau_mid=20.0, tau_scale=1.0, amp_ratio=0.8),
+        PartialDef(freq_ratio=8.56, tau_mid=20.0, tau_scale=1.0, amp_ratio=0.5),
+        PartialDef(freq_ratio=12.22, tau_mid=20.0, tau_scale=1.0, amp_ratio=0.3),
+    ],
+)
+
 INSTRUMENTS: dict[str, InstrumentDef] = {
-    i.name: i for i in [MARIMBA, XYLOPHONE, GLOCKENSPIEL, BALAFON, CELESTE]
+    i.name: i for i in [MARIMBA, XYLOPHONE, GLOCKENSPIEL, BALAFON, CELESTE, SINGING_BOWL]
 }
 
 # ---------------------------------------------------------------------------

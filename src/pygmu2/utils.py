@@ -68,14 +68,14 @@ def render_to_file(
             pos += chunk
 
 
-def play(source: ProcessingElement) -> None:
+def play(source: ProcessingElement, device=None) -> None:
     """
     Play a PE in real time using AudioRenderer.
     """
     sr = get_sample_rate()
     if sr is None:
         raise RuntimeError("Sample rate not set. Call pg.set_sample_rate() first.")
-    renderer = AudioRenderer(sample_rate=sr)
+    renderer = AudioRenderer(sample_rate=sr, device=device)
     renderer.set_source(source)
     with renderer:
         renderer.start()

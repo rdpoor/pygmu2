@@ -35,4 +35,4 @@ def make_tralfam(extent):
 # Use python's "list comprehensions" to make the complete mix
 mix = pg.MixPE(*[make_tralfam(extent) for extent in EXTENTS])
 
-pg.play_offline(mix, path="bbwwvv1007.wav")
+pg.play_offline(mix)
