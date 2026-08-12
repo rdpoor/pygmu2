@@ -17,6 +17,9 @@ def _build_sources():
     choir_path = audio_dir / "choir.wav"
     source = pg.WavReaderPE(str(choir_path))
     sample_rate = source.file_sample_rate or 44100
+    # Align the global rate to the file's native rate before building
+    # downstream PEs.
+    pg.set_sample_rate(sample_rate)
 
     # Original choir
     choir = source
@@ -43,7 +46,7 @@ def demo_overlap():
         (choir_up, int(2.0 * sample_rate)),
         mode=pg.SequenceMode.OVERLAP,
     )
-    pg.play(pg.GainPE(pg.CropPE(seq, 0, int(3.5 * sample_rate)), gain=2.54), sample_rate)
+    pg.play(pg.GainPE(pg.CropPE(seq, 0, int(3.5 * sample_rate)), gain=2.54))
 
 
 def demo_non_overlap():
@@ -57,7 +60,7 @@ def demo_non_overlap():
         (choir_up, int(2.0 * sample_rate)),
         mode=pg.SequenceMode.NON_OVERLAP,
     )
-    pg.play(pg.GainPE(pg.CropPE(seq, 0, int(3.5 * sample_rate)), gain=4.07), sample_rate)
+    pg.play(pg.GainPE(pg.CropPE(seq, 0, int(3.5 * sample_rate)), gain=4.07))
 
 
 DEMOS = [

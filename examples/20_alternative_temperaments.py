@@ -250,7 +250,7 @@ def play_chord_comparison(chord_name, notes, gain=1.0):
     print("Listen for the differences in consonance and beating.")
     print(f"{'='*60}\n")
     
-    pg.play(pg.GainPE(mixed, gain=gain), sample_rate=SAMPLE_RATE)
+    pg.play(pg.GainPE(mixed, gain=gain))
 
     print("\n✅ Playback complete!\n")
 
@@ -331,7 +331,7 @@ def demo_reference_frequency():
         print(f"\nPlaying {total_duration:.1f} seconds...")
         print("Listen for the subtle pitch difference.\n")
         
-        pg.play(pg.GainPE(mixed, gain=2.51), sample_rate=SAMPLE_RATE)
+        pg.play(pg.GainPE(mixed, gain=2.51))
 
         print("\n✅ Playback complete!\n")
 

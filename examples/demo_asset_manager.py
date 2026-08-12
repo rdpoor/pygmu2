@@ -22,6 +22,7 @@ from pathlib import Path
 from examples_helper import run_demos
 
 from pygmu2.asset_manager import (
+    AssetLoadFailed,
     AssetManager,
     GoogleDriveAssetLoader,
     GithubUserContentAssetLoader,
@@ -47,14 +48,17 @@ def demo_google_drive_giant_fish():
     manager = AssetManager(asset_loader=loader)
 
     asset_spec = "GiantFish/SegmentedVoice/N2_1?.wav"
-    # List all matching assets (returns cache-relative paths)
-    remote_assets = manager.list_remote_assets(asset_spec)
-    print(f"Google Drive matches for {asset_spec!r}: {len(remote_assets)}")
-    for asset in remote_assets:
-        print(f"  - {asset}")
-    # Return the first matching asset, reload even if in cache.
-    path = manager.load_asset(asset_spec, force=True)
-    print(f"Google Drive Giant Fish selected asset: {path}")
+    try:
+        # List all matching assets (returns cache-relative paths)
+        remote_assets = manager.list_remote_assets(asset_spec)
+        print(f"Google Drive matches for {asset_spec!r}: {len(remote_assets)}")
+        for asset in remote_assets:
+            print(f"  - {asset}")
+        # Return the first matching asset, reload even if in cache.
+        path = manager.load_asset(asset_spec, force=True)
+        print(f"Google Drive Giant Fish selected asset: {path}")
+    except AssetLoadFailed as exc:
+        print(f"Skipping Google Drive demo: {exc}")
 
 def demo_google_drive():
     # TODO: Fill in your Google Drive folder ID.
@@ -81,14 +85,17 @@ def demo_google_drive():
     manager = AssetManager(asset_loader=loader)
 
     asset_spec = "multi_samples/Anklung_Hit/Anklung_Hit*.wav"
-    # List all matching assets (returns cache-relative paths)
-    remote_assets = manager.list_remote_assets(asset_spec)
-    print(f"Google Drive matches for {asset_spec!r}: {len(remote_assets)}")
-    for asset in remote_assets:
-        print(f"  - {asset}")
-    # Return the first matching asset, loading and caching as needed.
-    path = manager.load_asset(asset_spec)
-    print(f"Google Drive selected asset: {path}")
+    try:
+        # List all matching assets (returns cache-relative paths)
+        remote_assets = manager.list_remote_assets(asset_spec)
+        print(f"Google Drive matches for {asset_spec!r}: {len(remote_assets)}")
+        for asset in remote_assets:
+            print(f"  - {asset}")
+        # Return the first matching asset, loading and caching as needed.
+        path = manager.load_asset(asset_spec)
+        print(f"Google Drive selected asset: {path}")
+    except AssetLoadFailed as exc:
+        print(f"Skipping Google Drive demo: {exc}")
 
 
 def demo_github():
@@ -107,14 +114,17 @@ def demo_github():
     manager = AssetManager(asset_loader=loader)
 
     asset_spec = "SOBR_136_Full_Drum_Loop_*.wav"
-    # List all matching assets
-    remote_assets = manager.list_remote_assets(asset_spec)
-    print(f"GitHub matches for {asset_spec!r}: {len(remote_assets)}")
-    for asset in remote_assets:
-        print(f"  - {asset}")
-    # Return the first matching asset, loading and caching as needed.
-    path = manager.load_asset(asset_spec)
-    print(f"GitHub selected asset: {path}")
+    try:
+        # List all matching assets
+        remote_assets = manager.list_remote_assets(asset_spec)
+        print(f"GitHub matches for {asset_spec!r}: {len(remote_assets)}")
+        for asset in remote_assets:
+            print(f"  - {asset}")
+        # Return the first matching asset, loading and caching as needed.
+        path = manager.load_asset(asset_spec)
+        print(f"GitHub selected asset: {path}")
+    except AssetLoadFailed as exc:
+        print(f"Skipping GitHub demo: {exc}")
 
 DEMOS = [
     ("Google Drive Giant Fish Demo", demo_google_drive_giant_fish),

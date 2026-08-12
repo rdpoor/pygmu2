@@ -38,19 +38,19 @@ def _load_sources():
 
 
 def demo_dry_only():
-    source, _ir, sample_rate = _load_sources()
-    pg.play(pg.GainPE(source, gain=0.81), sample_rate)
+    source, _ir, _sample_rate = _load_sources()
+    pg.play(pg.GainPE(source, gain=0.81))
 
 
 def demo_fixed_mix():
-    source, ir, sample_rate = _load_sources()
+    source, ir, _sample_rate = _load_sources()
 
     reverb = pg.ReverbPE(source, ir, mix=0.4, normalize_ir=True)
-    pg.play(pg.GainPE(reverb, gain=1.31), sample_rate)
+    pg.play(pg.GainPE(reverb, gain=1.31))
 
 
 def demo_ramp_mix():
-    source, ir, sample_rate = _load_sources()
+    source, ir, _sample_rate = _load_sources()
 
     extent = source.extent()
     if extent.start is None or extent.end is None:
@@ -63,7 +63,7 @@ def demo_ramp_mix():
         extend_mode=pg.ExtendMode.HOLD_LAST,
     )
     reverb = pg.ReverbPE(source, ir, mix=mix_ramp, normalize_ir=True)
-    pg.play(pg.GainPE(reverb, gain=1.08), sample_rate)
+    pg.play(pg.GainPE(reverb, gain=1.08))
 
 
 DEMOS = [

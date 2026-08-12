@@ -28,19 +28,23 @@ print(f"Resolved '{LOOP_PATTERN}': {loop_path}", flush=True)
 
 source_stream = WavReaderPE(sound_path)
 loop_source_stream = WavReaderPE(loop_path)
+
+# Align the global rate to the file's native rate before building downstream PEs.
+file_sr = source_stream.file_sample_rate
+pg.set_sample_rate(file_sr)
+
 looped_stream = LoopPE(loop_source_stream, count=LOOP_COUNT)
 mixed_stream = MixPE(
-    source_stream, 
-    DelayPE(source_stream, delay=loop_source_stream.extent().end), 
-    DelayPE(source_stream, delay=2 * loop_source_stream.extent().end), 
-    DelayPE(source_stream, delay=3 * loop_source_stream.extent().end), 
+    source_stream,
+    DelayPE(source_stream, delay=loop_source_stream.extent().end),
+    DelayPE(source_stream, delay=2 * loop_source_stream.extent().end),
+    DelayPE(source_stream, delay=3 * loop_source_stream.extent().end),
     looped_stream)
-file_sr = source_stream.file_sample_rate
 
 extent = mixed_stream.extent()
 duration_samples = extent.end - extent.start
 duration_seconds = duration_samples / file_sr
 print(f"Playing {duration_seconds:.2f} seconds...", flush=True)
-pg.play(mixed_stream, sample_rate=file_sr)
+pg.play(mixed_stream)
 
 print("Done!", flush=True)

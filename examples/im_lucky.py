@@ -233,10 +233,10 @@ cropped_hi = pg.CropPE(stem_hi, 0, duration)
 lo_path = str(stem_dir / "im_lucky_supersaw_lo.wav")
 hi_path = str(stem_dir / "im_lucky_supersaw_hi.wav")
 print(f"Rendering supersaw lo stem → {lo_path}")
-pg.render_to_file(cropped_lo, lo_path, sample_rate=SRATE)
+pg.render_to_file(cropped_lo, lo_path)
 print(f"Rendering supersaw hi stem → {hi_path}")
-pg.render_to_file(cropped_hi, hi_path, sample_rate=SRATE)
+pg.render_to_file(cropped_hi, hi_path)
 print("Stems written.")
 
 # Render and play the full mix...
-pg.browse(source=wet_mix, sample_rate=SRATE)
+pg.browse(source=wet_mix)

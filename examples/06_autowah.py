@@ -41,9 +41,10 @@ def demo_original():
     print(f"Part 1: Original signal (looped djembe) - {DURATION_SECONDS}s", flush=True)
     source_stream = WavReaderPE(str(WAV_FILE))
     sample_rate = source_stream.file_sample_rate
+    pg.set_sample_rate(sample_rate)
     duration_samples = int(DURATION_SECONDS * sample_rate)
     looped_stream = LoopPE(source_stream, crossfade_seconds=0.01)
-    pg.play(pg.GainPE(CropPE(looped_stream, 0, duration_samples), gain=0.89), sample_rate)
+    pg.play(pg.GainPE(CropPE(looped_stream, 0, duration_samples), gain=0.89))
 
 
 def demo_autowah():
@@ -61,6 +62,7 @@ def demo_autowah():
 
     source_stream = WavReaderPE(str(WAV_FILE))
     sample_rate = source_stream.file_sample_rate
+    pg.set_sample_rate(sample_rate)
     duration_samples = int(DURATION_SECONDS * sample_rate)
     looped_stream = LoopPE(source_stream, crossfade_seconds=0.01)
 
@@ -80,7 +82,7 @@ def demo_autowah():
         mode=BiquadMode.LOWPASS
     )
     output_stream = GainPE(filtered_stream, gain=1.0)
-    pg.play(pg.GainPE(CropPE(output_stream, 0, duration_samples), gain=0.50), sample_rate)
+    pg.play(pg.GainPE(CropPE(output_stream, 0, duration_samples), gain=0.50))
 
 
 def demo_svfilter_autowah():
@@ -98,6 +100,7 @@ def demo_svfilter_autowah():
 
     source_stream = WavReaderPE(str(WAV_FILE))
     sample_rate = source_stream.file_sample_rate
+    pg.set_sample_rate(sample_rate)
     duration_samples = int(DURATION_SECONDS * sample_rate)
     looped_stream = LoopPE(source_stream, crossfade_seconds=0.01)
 
@@ -117,7 +120,7 @@ def demo_svfilter_autowah():
         mode=BiquadMode.LOWPASS
     )
     output_stream = GainPE(filtered_stream, gain=1.0)
-    pg.play(pg.GainPE(CropPE(output_stream, 0, duration_samples), gain=0.50), sample_rate)
+    pg.play(pg.GainPE(CropPE(output_stream, 0, duration_samples), gain=0.50))
 
 
 DEMOS = [
