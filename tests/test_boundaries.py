@@ -16,6 +16,34 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
+# Files disabled before the overhaul, grandfathered until resolved (P3.4).
+# Fix or delete — do NOT add to this list (change protocol: disabling a
+# consumer is not a resolution).
+_GRANDFATHERED_DISABLED = {
+    "examples/13_random.py-disabled",
+    "examples/14_trigger.py-disabled",
+    "examples/18_adsr.py-disabled",
+    "examples/19_sequence.py-disabled",
+    "examples/21_sequence_with_durations.py-disabled",
+    "examples/24_slice.py-disabled",
+    "examples/25_gating.py-disabled",
+    "examples/31_trigger.py-disabled",
+    "scripts/toy_midi_sampler.py-disabled",
+}
+
+
+def test_no_new_disabled_files():
+    """Renaming a broken file to .py-disabled hides breakage from every
+    gate; fix it or delete it instead."""
+    found = {
+        str(p.relative_to(REPO_ROOT))
+        for p in REPO_ROOT.rglob("*.py-disabled")
+        if ".venv" not in p.parts
+    }
+    new = found - _GRANDFATHERED_DISABLED
+    assert not new, f"New .py-disabled files (fix or delete instead): {sorted(new)}"
+
+
 def test_benchmark_suite_discovers():
     """`benchmark_pes.py --list` runs to completion (imports and config
     construction both work). This rotted once (RandomPE rename); this

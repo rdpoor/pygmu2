@@ -1,0 +1,29 @@
+# CI — the gates that make consumer breakage loud (DESIGN_PHILOSOPHY.md §8).
+# An un-propagated rename of a public symbol must fail here; that is the
+# acceptance test for the whole overhaul (philosophy §10).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Format check (black)
+        run: uv run black --check src tests examples benchmarks scripts
+
+      - name: Test suite (unit + examples smoke + boundary gates)
+        run: uv run pytest -q

@@ -213,6 +213,7 @@ stereo_mix = pg.SpatialPE(eq_mix, method=pg.SpatialAdapter(channels=2))
 # add plate reverb
 wet_mix = pg.ReverbPE(source=stereo_mix, ir=IR, mix=0.3)
 
+
 def main():
     # Render supersaw stems to separate files
     stem_dir = Path(__file__).parent / "audio"
