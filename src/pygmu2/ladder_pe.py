@@ -17,13 +17,16 @@ import numpy as np
 # Try to import numba for JIT compilation (optional optimization)
 try:
     from numba import jit
+
     NUMBA_AVAILABLE = True
 except ImportError:
     NUMBA_AVAILABLE = False
+
     # Dummy decorator when numba isn't available
     def jit(*args, **kwargs):
         def decorator(func):
             return func
+
         return decorator
 
 
@@ -144,7 +147,9 @@ def _ladder_process_numba(
 
                 # Feedback path with tanh saturation (the "Moog sound")
                 # passband_gain compensates for signal loss through the ladder
-                u = np.tanh(in_interp - (z1[c, 3] - passband_gain * in_interp) * k * q_adjust)
+                u = np.tanh(
+                    in_interp - (z1[c, 3] - passband_gain * in_interp) * k * q_adjust
+                )
 
                 # --- Four cascaded one-pole lowpass stages ---
                 # Each stage: y = alpha * (weighted_input - prev_out) + prev_out
@@ -202,6 +207,7 @@ def _ladder_process_numba(
 
     return y, z0, z1, old_input
 
+
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
@@ -209,6 +215,7 @@ from pygmu2.snippet import Snippet
 
 class LadderMode(Enum):
     """Ladder filter response modes."""
+
     LP24 = "lp24"
     LP12 = "lp12"
     BP24 = "bp24"
@@ -519,13 +526,19 @@ class LadderPE(ProcessingElement):
         self._ensure_state(channels)
 
         # Get frequency values (either constant or from PE)
-        freq_values = self._scalar_or_pe_values(self._frequency, start, duration, dtype=np.float64)
+        freq_values = self._scalar_or_pe_values(
+            self._frequency, start, duration, dtype=np.float64
+        )
 
         # Get resonance values (either constant or from PE)
-        res_values = self._scalar_or_pe_values(self._resonance, start, duration, dtype=np.float64)
+        res_values = self._scalar_or_pe_values(
+            self._resonance, start, duration, dtype=np.float64
+        )
 
         # Get drive values (either constant or from PE)
-        drive_values = self._scalar_or_pe_values(self._drive, start, duration, dtype=np.float64)
+        drive_values = self._scalar_or_pe_values(
+            self._drive, start, duration, dtype=np.float64
+        )
 
         # Use Numba-accelerated path when available
         if NUMBA_AVAILABLE:
@@ -593,7 +606,12 @@ class LadderPE(ProcessingElement):
                     in_interp = interp * old_input[ch] + (1.0 - interp) * input_sample
 
                     # Apply tanh saturation in feedback path (the "Moog sound")
-                    u = np.tanh(in_interp - (self._z1[ch, 3] - self._passband_gain * in_interp) * k * q_adjust)
+                    u = np.tanh(
+                        in_interp
+                        - (self._z1[ch, 3] - self._passband_gain * in_interp)
+                        * k
+                        * q_adjust
+                    )
 
                     # Four cascaded one-pole stages
                     stage1 = self._lpf(u, ch, 0, alpha)
@@ -614,9 +632,21 @@ class LadderPE(ProcessingElement):
         return Snippet(start, output.astype(np.float32))
 
     def __repr__(self) -> str:
-        freq_repr = self._frequency if not self._freq_is_pe else f"{self._frequency.__class__.__name__}(...)"
-        res_repr = self._resonance if not self._res_is_pe else f"{self._resonance.__class__.__name__}(...)"
-        drive_repr = self._drive if not self._drive_is_pe else f"{self._drive.__class__.__name__}(...)"
+        freq_repr = (
+            self._frequency
+            if not self._freq_is_pe
+            else f"{self._frequency.__class__.__name__}(...)"
+        )
+        res_repr = (
+            self._resonance
+            if not self._res_is_pe
+            else f"{self._resonance.__class__.__name__}(...)"
+        )
+        drive_repr = (
+            self._drive
+            if not self._drive_is_pe
+            else f"{self._drive.__class__.__name__}(...)"
+        )
         return (
             f"LadderPE(source={self._source.__class__.__name__}, "
             f"frequency={freq_repr}, resonance={res_repr}, "

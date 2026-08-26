@@ -12,12 +12,14 @@ from pathlib import Path
 from pygmu2 import WavReaderPE
 import pygmu2 as pg
 from examples_helper import run_demos
+
 pg.set_sample_rate(44100)
 
 
 # Path to audio file (relative to this script)
 AUDIO_DIR = Path(__file__).parent / "audio"
 WAV_FILE = AUDIO_DIR / "faun.wav"
+
 
 def play_wav():
     print("=== pygmu2 Example 02: Play WAV ===", flush=True)
@@ -35,12 +37,16 @@ def play_wav():
     extent = source_stream.extent()
     duration_samples = extent.end - extent.start
     duration_seconds = duration_samples / file_sr
-    print(f"  Duration: {duration_seconds:.2f} seconds ({duration_samples} samples)", flush=True)
+    print(
+        f"  Duration: {duration_seconds:.2f} seconds ({duration_samples} samples)",
+        flush=True,
+    )
 
     print(f"Playing...", flush=True)
     pg.play(pg.GainPE(source_stream, gain=1.67), sample_rate=file_sr)
 
     print("Done!", flush=True)
+
 
 DEMOS = [
     ("Play .wav file", play_wav),

@@ -13,7 +13,6 @@ import pytest
 import pygmu2 as pg
 from pygmu2.mag_freq_pe import MagFreqPE
 
-
 # ── Fixtures / helpers ────────────────────────────────────────────────────────
 
 N = 64  # default signal length for most tests
@@ -49,6 +48,7 @@ def sine_signal(n=N, freq=4):
 
 # ── Construction ──────────────────────────────────────────────────────────────
 
+
 class TestMagFreqPEConstruction:
 
     def test_basic_construction(self):
@@ -65,21 +65,27 @@ class TestMagFreqPEConstruction:
 
     def test_normalize_peak_inf_raises(self):
         with pytest.raises(ValueError, match="normalize_peak"):
-            MagFreqPE(make_source(sine_signal()), identity_mangler,
-                      normalize_peak=float("inf"))
+            MagFreqPE(
+                make_source(sine_signal()),
+                identity_mangler,
+                normalize_peak=float("inf"),
+            )
 
     def test_normalize_peak_nan_raises(self):
         with pytest.raises(ValueError, match="normalize_peak"):
-            MagFreqPE(make_source(sine_signal()), identity_mangler,
-                      normalize_peak=float("nan"))
+            MagFreqPE(
+                make_source(sine_signal()),
+                identity_mangler,
+                normalize_peak=float("nan"),
+            )
 
     def test_normalize_peak_valid(self):
-        pe = MagFreqPE(make_source(sine_signal()), identity_mangler,
-                       normalize_peak=0.5)
+        pe = MagFreqPE(make_source(sine_signal()), identity_mangler, normalize_peak=0.5)
         assert pe is not None
 
 
 # ── PE interface ──────────────────────────────────────────────────────────────
+
 
 class TestMagFreqPEInterface:
 
@@ -133,6 +139,7 @@ class TestMagFreqPEInterface:
 
 
 # ── DSP correctness ───────────────────────────────────────────────────────────
+
 
 class TestMagFreqPEDSP:
 
@@ -238,6 +245,7 @@ class TestMagFreqPEDSP:
 
 # ── Caching ───────────────────────────────────────────────────────────────────
 
+
 class TestMagFreqPECaching:
 
     def test_mangler_called_only_once(self):
@@ -267,6 +275,7 @@ class TestMagFreqPECaching:
 
 
 # ── Render boundary behaviour ─────────────────────────────────────────────────
+
 
 class TestMagFreqPERenderBoundaries:
 
@@ -320,7 +329,7 @@ class TestMagFreqPERenderBoundaries:
         full = pe.render(0, N).data[:, 0]
         # Render [N-10, N+10): signal[N-10:N] then 10 zeros
         out = pe.render(N - 10, 20).data[:, 0]
-        np.testing.assert_allclose(out[:10], full[N - 10:N], atol=1e-6)
+        np.testing.assert_allclose(out[:10], full[N - 10 : N], atol=1e-6)
         np.testing.assert_array_equal(out[10:], np.zeros(10, dtype=np.float32))
 
     def test_render_output_shape_matches_duration(self):
@@ -328,7 +337,10 @@ class TestMagFreqPERenderBoundaries:
         pe = self._make_pe()
         for start, dur in [(-5, 10), (0, N), (10, 5), (N, 8)]:
             out = pe.render(start, dur)
-            assert out.data.shape == (dur, 1), f"shape mismatch for start={start}, dur={dur}"
+            assert out.data.shape == (
+                dur,
+                1,
+            ), f"shape mismatch for start={start}, dur={dur}"
 
     def test_render_zero_duration(self):
         """Requesting 0 samples returns an empty snippet."""
@@ -338,6 +350,7 @@ class TestMagFreqPERenderBoundaries:
 
 
 # ── Infinite-extent source ─────────────────────────────────────────────────────
+
 
 class TestMagFreqPEInfiniteSource:
 

@@ -26,6 +26,7 @@ def random_to_frequency(r):
 # Demos
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def demo_fixed_rates():
     """Use RandomValuePE to control filter cutoff with selected values for rate."""
     for rate in [1, 3, 10, 30, 100]:
@@ -33,48 +34,49 @@ def demo_fixed_rates():
         f0 = pg.TransformPE(random_value, func=random_to_frequency)
         note = pg.SuperSawPE(frequency=110)
         filtered_note = pg.BiquadPE(
-            source=note,
-            frequency=f0,
-            q=7.0,
-            mode=pg.BiquadMode.LOWPASS)
+            source=note, frequency=f0, q=7.0, mode=pg.BiquadMode.LOWPASS
+        )
         cropped_note = pg.CropPE(filtered_note, 0, s(4))
         print(f"  rate = {rate}", flush=True)
         pg.play(source=pg.GainPE(pad_clip(pg.GainPE(cropped_note, 0.1)), gain=0.98))
+
 
 def demo_ramped_rate():
     """Play notes with rate ramping exponentially from 100 to 1."""
     duration_samples = s(10)
     rate_ramp = pg.PiecewisePE(
         [(0, 100.0), (duration_samples, 1.0)],
-        transition_type=pg.TransitionType.EXPONENTIAL
+        transition_type=pg.TransitionType.EXPONENTIAL,
     )
     random_value = pg.RandomValuePE(rate=rate_ramp)
     f0 = pg.TransformPE(random_value, func=random_to_frequency)
     note = pg.SuperSawPE(frequency=110)
     filtered_note = pg.BiquadPE(
-        source=note,
-        frequency=f0,
-        q=7.0,
-        mode=pg.BiquadMode.LOWPASS)
+        source=note, frequency=f0, q=7.0, mode=pg.BiquadMode.LOWPASS
+    )
     cropped_note = pg.CropPE(filtered_note, 0, duration_samples)
     pg.play(source=pg.GainPE(pad_clip(pg.GainPE(cropped_note, 0.1)), gain=0.80))
 
+
 def demo_drunken_hypnotoad():
     """3-resonator filter vocal-tract model with wandering formants."""
+
     def map(x0, x1, y0, y1):
         """Return a function f(x) that maps [x0, x1] → [y0, y1]."""
+
         def f(x):
             return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+
         return f
 
     duration_samples = s(20)
-    fo1 = pg.TransformPE(pg.RandomValuePE(rate=8),  map(0, 1, 250, 900))
+    fo1 = pg.TransformPE(pg.RandomValuePE(rate=8), map(0, 1, 250, 900))
     fo2 = pg.TransformPE(pg.RandomValuePE(rate=10), map(0, 1, 700, 2500))
     fo3 = pg.TransformPE(pg.RandomValuePE(rate=12), map(0, 1, 1700, 3500))
     src = pg.CachePE(pg.SuperSawPE(frequency=pg.pitch_to_freq(30)))
     raw_mix = pg.MixPE(
-        pg.BiquadPE(src, frequency=fo1, q=5,  mode=pg.BiquadMode.BANDPASS),
-        pg.BiquadPE(src, frequency=fo2, q=8,  mode=pg.BiquadMode.BANDPASS),
+        pg.BiquadPE(src, frequency=fo1, q=5, mode=pg.BiquadMode.BANDPASS),
+        pg.BiquadPE(src, frequency=fo2, q=8, mode=pg.BiquadMode.BANDPASS),
         pg.BiquadPE(src, frequency=fo3, q=12, mode=pg.BiquadMode.BANDPASS),
     )
     mix = pg.GainPE(pg.CropPE(raw_mix, 0, duration_samples), 0.5)
@@ -83,22 +85,23 @@ def demo_drunken_hypnotoad():
 
 def demo_drunken_robot():
     """3-resonator filter vocal-tract model with wandering formants."""
+
     def map(x0, x1, y0, y1):
         """Return a function f(x) that maps [x0, x1] → [y0, y1]."""
+
         def f(x):
             return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+
         return f
 
     duration_samples = s(20)
-    fo1 = pg.TransformPE(pg.RandomValuePE(rate=8),  map(0, 1, 250, 900))
+    fo1 = pg.TransformPE(pg.RandomValuePE(rate=8), map(0, 1, 250, 900))
     fo2 = pg.TransformPE(pg.RandomValuePE(rate=10), map(0, 1, 700, 2500))
     fo3 = pg.TransformPE(pg.RandomValuePE(rate=12), map(0, 1, 1700, 3500))
-    src = pg.CachePE(pg.FunctionGenPE(
-        frequency=pg.pitch_to_freq(42),
-        duty_cycle=0.1))
+    src = pg.CachePE(pg.FunctionGenPE(frequency=pg.pitch_to_freq(42), duty_cycle=0.1))
     raw_mix = pg.MixPE(
-        pg.BiquadPE(src, frequency=fo1, q=5,  mode=pg.BiquadMode.BANDPASS),
-        pg.BiquadPE(src, frequency=fo2, q=8,  mode=pg.BiquadMode.BANDPASS),
+        pg.BiquadPE(src, frequency=fo1, q=5, mode=pg.BiquadMode.BANDPASS),
+        pg.BiquadPE(src, frequency=fo2, q=8, mode=pg.BiquadMode.BANDPASS),
         pg.BiquadPE(src, frequency=fo3, q=12, mode=pg.BiquadMode.BANDPASS),
     )
     mix = pg.GainPE(pg.CropPE(raw_mix, 0, duration_samples), 0.5)

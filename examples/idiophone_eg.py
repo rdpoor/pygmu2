@@ -181,6 +181,7 @@ def demo_balafon_arpeggio():
     )
     pg.play(mix)
 
+
 def demo_celeste_low_high():
     """Celeste: lowest note (C5) then highest note (C7), sequential."""
     midi_notes = [m + 24 for m in [48, 72]]
@@ -210,13 +211,13 @@ def demo_celeste_arpeggio():
     )
     pg.play_offline(mix)
 
+
 def demo_singing_bowl():
     print("=== Singing Bowl @ 166 Hz")
     t = 0.0
-    note = IdiophonePE(
-            SINGING_BOWL, frequency=166.0, amplitude=1.0
-        )
-    pg.play(pg.CropPE(note, 0, SR*10))
+    note = IdiophonePE(SINGING_BOWL, frequency=166.0, amplitude=1.0)
+    pg.play(pg.CropPE(note, 0, SR * 10))
+
 
 # ---------------------------------------------------------------------------
 # Demo registry

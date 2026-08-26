@@ -17,6 +17,7 @@ from pygmu2 import (
 )
 import pygmu2 as pg
 from examples_helper import run_demos
+
 pg.set_sample_rate(44100)
 
 
@@ -32,12 +33,14 @@ source_stream = WavReaderPE(str(WAV_FILE))
 sample_rate = source_stream.file_sample_rate or 44100
 duration_samples = int(DURATION_SECONDS * sample_rate)
 
+
 def original_signal():
     # --- Part 1: Dry ---
     print(f"\nPart 1: Dry signal - {DURATION_SECONDS}s", flush=True)
     dry_stream = CropPE(source_stream, 0, (duration_samples) - (0))
 
     pg.play(pg.GainPE(dry_stream, gain=2.14), sample_rate)
+
 
 def wet_only():
     # --- Part 2: Wet only ---
@@ -54,6 +57,7 @@ def wet_only():
 
     pg.play(pg.GainPE(wet_out_stream, gain=2.28), sample_rate)
 
+
 def wet_plus_dry():
     # --- Part 3: Dry + wet mix ---
     print("\nPart 3: Reverse pitch echo mixed with dry", flush=True)
@@ -64,10 +68,13 @@ def wet_plus_dry():
         feedback=0.6,
         alternate_direction=1.0,
     )
-    mixed_stream = MixPE(GainPE(source_stream, gain=0.5), GainPE(wet_mix_stream, gain=0.5))
+    mixed_stream = MixPE(
+        GainPE(source_stream, gain=0.5), GainPE(wet_mix_stream, gain=0.5)
+    )
     mixed_out_stream = CropPE(mixed_stream, 0, (duration_samples) - (0))
 
     pg.play(pg.GainPE(mixed_out_stream, gain=2.83), sample_rate)
+
 
 DEMOS = [
     ("Original signal", original_signal),

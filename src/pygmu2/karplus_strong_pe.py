@@ -115,8 +115,14 @@ class KarplusStrongPE(SourcePE):
 
         self._frequency = float(frequency)
         self._rho = float(rho)
-        self._duration_param: int | None = duration if (duration is not None and rho_damping is not None) else None
-        self._rho_damping: float | None = float(rho_damping) if (duration is not None and rho_damping is not None) else None
+        self._duration_param: int | None = (
+            duration if (duration is not None and rho_damping is not None) else None
+        )
+        self._rho_damping: float | None = (
+            float(rho_damping)
+            if (duration is not None and rho_damping is not None)
+            else None
+        )
         self._amplitude = float(amplitude)
         self._seed = seed
         self._channels = channels

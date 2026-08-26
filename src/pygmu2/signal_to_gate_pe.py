@@ -71,26 +71,26 @@ class SignalToGatePE(GateSignal):
     def _render_gate(self, start: int, duration: int) -> Snippet:
         src_data = self._source.render(start, duration).data[:, 0]
 
-        open_thr  = self._high_threshold + self._hysteresis
-        close_thr = self._low_threshold  - self._hysteresis
+        open_thr = self._high_threshold + self._hysteresis
+        close_thr = self._low_threshold - self._hysteresis
 
         out = np.zeros((duration, 1), dtype=np.float32)
-        gate      = self._gate_open
-        holdoff   = self._holdoff_remaining
+        gate = self._gate_open
+        holdoff = self._holdoff_remaining
         holdoff_n = self._holdoff_count
 
         for i in range(duration):
             if holdoff > 0:
                 holdoff -= 1
             elif not gate and src_data[i] > open_thr:
-                gate    = True
+                gate = True
                 holdoff = holdoff_n
             elif gate and src_data[i] < close_thr:
-                gate    = False
+                gate = False
                 holdoff = holdoff_n
             out[i, 0] = 1.0 if gate else 0.0
 
-        self._gate_open         = gate
+        self._gate_open = gate
         self._holdoff_remaining = holdoff
         return Snippet(start, out)
 

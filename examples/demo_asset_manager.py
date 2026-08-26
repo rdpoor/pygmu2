@@ -28,17 +28,17 @@ from pygmu2.asset_manager import (
     _default_config_base,
 )
 import pygmu2 as pg
+
 pg.set_sample_rate(44100)
 
 # ------------------------------------------------------------------------------
 # Demos
 # ------------------------------------------------------------------------------
 
+
 def demo_google_drive_giant_fish():
     folder_id = "1qX5s1KCxAodHIA2sxxiHgybAHY_52LQn"
-    oauth_client_secrets = (
-        _default_config_base() / "pygmu2" / "client_secrets.json"
-    )
+    oauth_client_secrets = _default_config_base() / "pygmu2" / "client_secrets.json"
     loader = GoogleDriveAssetLoader(
         folder_id=folder_id,
         oauth_client_secrets=oauth_client_secrets,
@@ -56,6 +56,7 @@ def demo_google_drive_giant_fish():
     path = manager.load_asset(asset_spec, force=True)
     print(f"Google Drive Giant Fish selected asset: {path}")
 
+
 def demo_google_drive():
     # TODO: Fill in your Google Drive folder ID.
     folder_id = "1idxVO258Lbs_5c97MGnal8W3mdp6T2YL"
@@ -70,9 +71,7 @@ def demo_google_drive():
     # If OAuth libraries are missing, install: google-auth, google-auth-oauthlib, requests
     # You can omit this parameter if you store the secrets at:
     #   _default_config_base()/pygmu2/client_secrets.json
-    oauth_client_secrets = (
-        _default_config_base() / "pygmu2" / "client_secrets.json"
-    )
+    oauth_client_secrets = _default_config_base() / "pygmu2" / "client_secrets.json"
     loader = GoogleDriveAssetLoader(
         folder_id=folder_id,
         oauth_client_secrets=oauth_client_secrets,
@@ -116,10 +115,11 @@ def demo_github():
     path = manager.load_asset(asset_spec)
     print(f"GitHub selected asset: {path}")
 
+
 DEMOS = [
     ("Google Drive Giant Fish Demo", demo_google_drive_giant_fish),
     ("Google Drive Demo", demo_google_drive),
-    ("GitHub Demo", demo_github)
+    ("GitHub Demo", demo_github),
 ]
 
 # ------------------------------------------------------------------------------

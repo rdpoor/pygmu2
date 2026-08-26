@@ -88,8 +88,8 @@ class RingModulatorPE(ProcessingElement):
         Returns:
             Snippet with ring modulation applied
         """
-        carrier_data = self._carrier.render(start, duration).data    # (N, ch)
-        mod_data = self._modulator.render(start, duration).data      # (N, 1) or (N, ch)
+        carrier_data = self._carrier.render(start, duration).data  # (N, ch)
+        mod_data = self._modulator.render(start, duration).data  # (N, 1) or (N, ch)
 
         # Broadcast mono modulator to match stereo carrier
         if mod_data.shape[1] == 1 and carrier_data.shape[1] > 1:
@@ -97,12 +97,20 @@ class RingModulatorPE(ProcessingElement):
 
         # Get bias and mix as (N, 1) arrays for broadcasting across channels
         bias_data = self._scalar_or_pe_values(
-            self._bias, start, duration,
-            dtype=np.float32, allow_multichannel=True, channels=1,
+            self._bias,
+            start,
+            duration,
+            dtype=np.float32,
+            allow_multichannel=True,
+            channels=1,
         )
         mix_data = self._scalar_or_pe_values(
-            self._mix, start, duration,
-            dtype=np.float32, allow_multichannel=True, channels=1,
+            self._mix,
+            start,
+            duration,
+            dtype=np.float32,
+            allow_multichannel=True,
+            channels=1,
         )
 
         wet = carrier_data * (mod_data + bias_data)
@@ -122,11 +130,13 @@ class RingModulatorPE(ProcessingElement):
     def __repr__(self) -> str:
         bias_str = (
             f"{self._bias.__class__.__name__}(...)"
-            if self._bias_is_pe else str(self._bias)
+            if self._bias_is_pe
+            else str(self._bias)
         )
         mix_str = (
             f"{self._mix.__class__.__name__}(...)"
-            if self._mix_is_pe else str(self._mix)
+            if self._mix_is_pe
+            else str(self._mix)
         )
         return (
             f"RingModulatorPE("

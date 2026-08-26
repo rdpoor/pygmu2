@@ -19,6 +19,7 @@ from pygmu2 import (
 )
 import pygmu2 as pg
 from examples_helper import run_demos
+
 pg.set_sample_rate(44100)
 
 
@@ -46,6 +47,7 @@ sines = [
 
 source = MixPE(*sines)
 
+
 def clean_signal():
     # --- Part 1: Clean signal ---
     print(f"\nPart 1: Clean signal (no clipping) - {DURATION_SECONDS}s", flush=True)
@@ -55,9 +57,13 @@ def clean_signal():
 
     pg.play(pg.GainPE(clean_out, gain=0.90), SAMPLE_RATE)
 
+
 def light_saturation():
     # --- Part 2: Light saturation ---
-    print(f"\nPart 2: Light saturation (1.5x drive into tanh) - {DURATION_SECONDS}s", flush=True)
+    print(
+        f"\nPart 2: Light saturation (1.5x drive into tanh) - {DURATION_SECONDS}s",
+        flush=True,
+    )
 
     # Drive the signal harder, then soft clip
     driven_light = GainPE(source, gain=1.5)
@@ -68,9 +74,13 @@ def light_saturation():
 
     pg.play(pg.GainPE(output_light, gain=0.90), SAMPLE_RATE)
 
+
 def heavy_saturation():
     # --- Part 3: Heavy saturation ---
-    print(f"\nPart 3: Heavy saturation (4x drive into tanh) - {DURATION_SECONDS}s", flush=True)
+    print(
+        f"\nPart 3: Heavy saturation (4x drive into tanh) - {DURATION_SECONDS}s",
+        flush=True,
+    )
 
     driven_heavy = GainPE(source, gain=4.0)
     saturated_heavy = TransformPE(driven_heavy, func=np.tanh, name="tanh")
@@ -78,6 +88,7 @@ def heavy_saturation():
     output_heavy = CropPE(output_heavy, 0, (DURATION_SAMPLES) - (0))
 
     pg.play(pg.GainPE(output_heavy, gain=1.00), SAMPLE_RATE)
+
 
 def asymmetric_clipping():
     # --- Part 4: Asymmetric clipping (more "character") ---
@@ -91,13 +102,13 @@ def asymmetric_clipping():
         neg = np.tanh(x * 5.0)  # Much harder negative clipping
         return np.where(x >= 0, pos, neg)
 
-
     driven_asym = GainPE(source, gain=3.0)
     saturated_asym = TransformPE(driven_asym, func=asymmetric_clip, name="asymmetric")
     output_asym = GainPE(saturated_asym, gain=0.6)
     output_asym = CropPE(output_asym, 0, (DURATION_SAMPLES) - (0))
 
     pg.play(pg.GainPE(output_asym, gain=0.84), SAMPLE_RATE)
+
 
 DEMOS = [
     ("Clean signal", clean_signal),
@@ -112,4 +123,3 @@ DEMOS = [
 
 if __name__ == "__main__":
     run_demos(DEMOS)
-

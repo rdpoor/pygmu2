@@ -59,7 +59,7 @@ def _segment_curve(
         if v0 <= 0 or v1 <= 0 or (v0 > 0) != (v1 > 0):
             return v0 + (v1 - v0) * t
         ratio = v1 / v0
-        return v0 * (ratio ** t)
+        return v0 * (ratio**t)
     if mode == TransitionType.SIGMOID:
         k = 6.0
         x = k * (2.0 * t - 1.0)
@@ -79,9 +79,9 @@ class PiecewisePE(SourcePE):
     """
     A SourcePE that outputs a piecewise curve defined by (sample_index, value) points.
 
-    `points` determine where transitions occur.     
-    `transition_type` controls how values change between points (step, linear, 
-    exponential, sigmoid, or constant_power). 
+    `points` determine where transitions occur.
+    `transition_type` controls how values change between points (step, linear,
+    exponential, sigmoid, or constant_power).
     `extend_mode` controls behavior before the first point and after the last point.
 
     A ramp from 0 to 1 over 100 samples is
@@ -186,9 +186,7 @@ class PiecewisePE(SourcePE):
         if req_end > t_last:
             # Single point occupies [t_last, t_last+1); "after" is only beyond that
             n_after = (
-                max(0, req_end - (t_last + 1))
-                if self._n == 1
-                else req_end - t_last
+                max(0, req_end - (t_last + 1)) if self._n == 1 else req_end - t_last
             )
             after_start = duration - n_after
             if n_after > 0 and self._extend_mode in (

@@ -14,10 +14,10 @@ from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 from pygmu2.sample_hold_pe import SampleHoldPE
 
-
 # ---------------------------------------------------------------------------
 # Test helpers
 # ---------------------------------------------------------------------------
+
 
 class _ArrayTrigger(TriggerSignal):
     """Minimal TriggerSignal backed by a fixed array for testing."""
@@ -46,6 +46,7 @@ class _ArrayTrigger(TriggerSignal):
 # ---------------------------------------------------------------------------
 # Construction tests
 # ---------------------------------------------------------------------------
+
 
 class TestSampleHoldPEConstruction:
 
@@ -87,6 +88,7 @@ class TestSampleHoldPEConstruction:
 # ---------------------------------------------------------------------------
 # Rendering tests
 # ---------------------------------------------------------------------------
+
 
 class TestSampleHoldPERender:
 
@@ -189,6 +191,7 @@ class TestSampleHoldPERender:
 # Integration: with PeriodicTrigger and NoisePE
 # ---------------------------------------------------------------------------
 
+
 class TestSampleHoldPEIntegration:
 
     def test_with_periodic_trigger_produces_steps(self):
@@ -208,10 +211,10 @@ class TestSampleHoldPEIntegration:
         # Window 0-9: latched at sample 0
         # Window 10-19: latched at sample 10, etc.
         for window_start in range(0, 50, 10):
-            window = out[window_start:window_start + 10]
-            assert np.all(window == window[0]), (
-                f"Window at {window_start} not constant: {window}"
-            )
+            window = out[window_start : window_start + 10]
+            assert np.all(
+                window == window[0]
+            ), f"Window at {window_start} not constant: {window}"
 
         pg.set_sample_rate(44100)
 

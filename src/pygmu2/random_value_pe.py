@@ -74,7 +74,7 @@ class RandomValuePE(ProcessingElement):
     def _on_start(self) -> None:
         self._rng = np.random.default_rng(self._seed)
         self._target = float(self._rng.random())
-        self._current = self._target   # start at target — no initial transient
+        self._current = self._target  # start at target — no initial transient
 
     def _on_stop(self) -> None:
         self._rng = None
@@ -100,7 +100,7 @@ class RandomValuePE(ProcessingElement):
 
         for i in range(duration):
             p = min(float(rate_data[i]) / sr, 1.0)
-            if rng.random() < p:               # Poisson jump: pick new target
+            if rng.random() < p:  # Poisson jump: pick new target
                 target = float(rng.random())
             current += p * (target - current)  # exponential approach
             out[i] = current

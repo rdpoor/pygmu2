@@ -62,8 +62,16 @@ class SlicePE(ProcessingElement):
         crop = CropPE(self._source, self._start, self._duration)
         self._base = DelayPE(crop, delay=-self._start)
 
-        self._fade_in = int(round(self._fade_in_seconds * self.sample_rate)) if self._fade_in_seconds is not None else 0
-        self._fade_out = int(round(self._fade_out_seconds * self.sample_rate)) if self._fade_out_seconds is not None else 0
+        self._fade_in = (
+            int(round(self._fade_in_seconds * self.sample_rate))
+            if self._fade_in_seconds is not None
+            else 0
+        )
+        self._fade_out = (
+            int(round(self._fade_out_seconds * self.sample_rate))
+            if self._fade_out_seconds is not None
+            else 0
+        )
 
         # Build envelope if needed
         if self._duration > 0 and (self._fade_in > 0 or self._fade_out > 0):

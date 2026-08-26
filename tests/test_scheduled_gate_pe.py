@@ -28,6 +28,7 @@ def gate(notes, start=0, duration=None):
 # Construction / properties
 # ---------------------------------------------------------------------------
 
+
 class TestScheduledGatePEConstruction:
 
     def test_inputs_is_empty(self):
@@ -50,6 +51,7 @@ class TestScheduledGatePEConstruction:
 # ---------------------------------------------------------------------------
 # Extent
 # ---------------------------------------------------------------------------
+
 
 class TestScheduledGatePEExtent:
 
@@ -80,6 +82,7 @@ class TestScheduledGatePEExtent:
 # Output shape and GateSignal contract
 # ---------------------------------------------------------------------------
 
+
 class TestScheduledGatePEOutput:
 
     def test_shape_is_N_by_1(self):
@@ -109,6 +112,7 @@ class TestScheduledGatePEOutput:
 # ---------------------------------------------------------------------------
 # Gate logic — separated notes
 # ---------------------------------------------------------------------------
+
 
 class TestScheduledGatePEGateLogic:
 
@@ -167,6 +171,7 @@ class TestScheduledGatePEGateLogic:
 # Note merging
 # ---------------------------------------------------------------------------
 
+
 class TestScheduledGatePEMerging:
 
     def test_overlapping_notes_merged(self):
@@ -214,6 +219,7 @@ class TestScheduledGatePEMerging:
 # ---------------------------------------------------------------------------
 # Buffer boundary conditions
 # ---------------------------------------------------------------------------
+
 
 class TestScheduledGatePEBufferBoundaries:
 

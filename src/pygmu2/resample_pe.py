@@ -98,12 +98,8 @@ class ResamplePE(ProcessingElement):
         [floor(s / rate), ceil(e / rate)] in output-sample space.
         """
         src = self._source.extent()
-        start = (
-            None if src.start is None else int(np.floor(src.start / self._rate))
-        )
-        end = (
-            None if src.end is None else int(np.ceil(src.end / self._rate))
-        )
+        start = None if src.start is None else int(np.floor(src.start / self._rate))
+        end = None if src.end is None else int(np.ceil(src.end / self._rate))
         return Extent(start, end)
 
     def _render(self, start: int, duration: int) -> Snippet:

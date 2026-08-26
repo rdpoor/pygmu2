@@ -23,8 +23,10 @@ pg.AudioRenderer.list_devices()
 pg.set_sample_rate(44100)
 SAMPLE_RATE = 44100
 
+
 def s2s(seconds):
     return int(round(seconds * SAMPLE_RATE))
+
 
 EXAMPLE_FREQUENCY = 220
 EXAMPLE_DURATION = s2s(10)
@@ -36,68 +38,63 @@ EXAMPLE_DURATION = s2s(10)
 
 def demo_sine_wave():
     print("=== Sine Wave, 220 Hz ===")
-    tone = SinePE(
-        frequency=EXAMPLE_FREQUENCY, 
-        amplitude=0.5)
+    tone = SinePE(frequency=EXAMPLE_FREQUENCY, amplitude=0.5)
     pg.play(CropPE(tone, 0, EXAMPLE_DURATION))
+
 
 def demo_sine_wave_440():
     print("=== Sine Wave, 440 Hz ===")
-    tone = SinePE(
-        frequency=EXAMPLE_FREQUENCY * 2, 
-        amplitude=0.5)
+    tone = SinePE(frequency=EXAMPLE_FREQUENCY * 2, amplitude=0.5)
     pg.play(CropPE(tone, 0, EXAMPLE_DURATION))
+
 
 def demo_sine_wave_half_amp():
     print("=== Sine Wave, 220 Hz, half amplitude ===")
-    tone = SinePE(
-        frequency=EXAMPLE_FREQUENCY, 
-        amplitude=0.25)
+    tone = SinePE(frequency=EXAMPLE_FREQUENCY, amplitude=0.25)
     pg.play(CropPE(tone, 0, EXAMPLE_DURATION))
+
 
 def demo_triangle_wave():
     print("=== Triangle Wave, 220 Hz ===")
     tone = FunctionGenPE(
-        frequency=EXAMPLE_FREQUENCY, 
-        waveform="sawtooth", 
-        duty_cycle=0.5)
+        frequency=EXAMPLE_FREQUENCY, waveform="sawtooth", duty_cycle=0.5
+    )
     pg.play(CropPE(GainPE(tone, gain=0.5), 0, EXAMPLE_DURATION))
+
 
 def demo_square_wave():
     print("=== Square Wave, 220 Hz ===")
     tone = FunctionGenPE(
-        frequency=EXAMPLE_FREQUENCY, 
-        waveform="rectangle", 
-        duty_cycle=0.5)
+        frequency=EXAMPLE_FREQUENCY, waveform="rectangle", duty_cycle=0.5
+    )
     pg.play(CropPE(GainPE(tone, gain=0.5), 0, EXAMPLE_DURATION))
+
 
 def demo_sawtooth_wave():
     print("=== Sawtooth Wave, 220 Hz ===")
     tone = FunctionGenPE(
-        frequency=EXAMPLE_FREQUENCY, 
-        waveform="sawtooth", 
-        duty_cycle=0.0)
+        frequency=EXAMPLE_FREQUENCY, waveform="sawtooth", duty_cycle=0.0
+    )
     pg.play(CropPE(GainPE(tone, gain=0.5), 0, EXAMPLE_DURATION))
+
 
 def demo_pulse_wave():
     print("=== Pulse Wave, 220 Hz, 5% ===")
     tone = FunctionGenPE(
-        frequency=EXAMPLE_FREQUENCY, 
-        waveform="rectangle", 
-        duty_cycle=0.05)
+        frequency=EXAMPLE_FREQUENCY, waveform="rectangle", duty_cycle=0.05
+    )
     pg.play(CropPE(GainPE(tone, gain=0.5), 0, EXAMPLE_DURATION))
 
+
 def set_headphone_output():
-    tone = SinePE(
-    frequency=EXAMPLE_FREQUENCY, 
-    amplitude=0.5)
+    tone = SinePE(frequency=EXAMPLE_FREQUENCY, amplitude=0.5)
     pg.play(CropPE(tone, 0, s2s(0.5)), device=0)
 
+
 def set_macbook_output():
-    tone = SinePE(
-    frequency=EXAMPLE_FREQUENCY, 
-    amplitude=0.5)
+    tone = SinePE(frequency=EXAMPLE_FREQUENCY, amplitude=0.5)
     pg.play(CropPE(tone, 0, s2s(0.5)), device=None)
+
 
 # ---------------------------------------------------------------------------
 # Demo registry

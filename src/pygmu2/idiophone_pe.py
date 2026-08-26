@@ -124,7 +124,7 @@ CELESTE = InstrumentDef(
         # Fundamental: resonators sustain it well; tau_mid slightly below
         # glockenspiel (3.0 s) because the felt hammer and enclosed cabinet
         # damp the bar itself a little faster.
-        PartialDef(freq_ratio=1.000, tau_mid=2.5,  tau_scale=1.7, amp_ratio=1.00),
+        PartialDef(freq_ratio=1.000, tau_mid=2.5, tau_scale=1.7, amp_ratio=1.00),
         # First overtone: same ratio as glockenspiel (free-free bar), but
         # amp_ratio drops from 0.55 → 0.30 because the felt hammer excites
         # high-frequency modes much less than a hard mallet.
@@ -150,7 +150,8 @@ SINGING_BOWL = InstrumentDef(
 )
 
 INSTRUMENTS: dict[str, InstrumentDef] = {
-    i.name: i for i in [MARIMBA, XYLOPHONE, GLOCKENSPIEL, BALAFON, CELESTE, SINGING_BOWL]
+    i.name: i
+    for i in [MARIMBA, XYLOPHONE, GLOCKENSPIEL, BALAFON, CELESTE, SINGING_BOWL]
 }
 
 # ---------------------------------------------------------------------------

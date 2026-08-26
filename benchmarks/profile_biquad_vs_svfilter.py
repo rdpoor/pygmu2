@@ -40,8 +40,9 @@ BLOCK_SIZE = 1024
 def envelope_to_freq(env):
     """Map envelope (0-1) to frequency (100-3000 Hz)."""
     import numpy as np
+
     env = np.clip(env, 0, 1)
-    return 100.0 + (3000.0 - 100.0) * (env ** 0.5)
+    return 100.0 + (3000.0 - 100.0) * (env**0.5)
 
 
 def make_biquad_graph():
@@ -92,7 +93,9 @@ def main():
     renderer = NullRenderer(sample_rate=SAMPLE_RATE)
 
     print("Profiling BiquadPE vs SVFilterPE (autowah-style graph)")
-    print(f"  Sample rate: {SAMPLE_RATE}, duration: {DURATION_SECONDS}s, block size: {BLOCK_SIZE}")
+    print(
+        f"  Sample rate: {SAMPLE_RATE}, duration: {DURATION_SECONDS}s, block size: {BLOCK_SIZE}"
+    )
     print()
 
     # --- BiquadPE ---

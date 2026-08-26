@@ -90,7 +90,9 @@ def run_render_benchmark(
         realtime_s = length_samples / sample_rate
         ratio = realtime_s / mean_s if mean_s > 0 else 0
         mean_ms = mean_s * 1000
-        print(f"  block_size={block_size:4d}  mean={mean_ms:7.2f} ms  realtime_ratio={ratio:.2f}x")
+        print(
+            f"  block_size={block_size:4d}  mean={mean_ms:7.2f} ms  realtime_ratio={ratio:.2f}x"
+        )
 
     print()
     print("(realtime_ratio > 1 = faster than realtime)")
@@ -98,6 +100,7 @@ def run_render_benchmark(
 
 def main() -> int:
     import argparse
+
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[1].strip())
     parser.add_argument(
         "soundfont",
@@ -106,16 +109,22 @@ def main() -> int:
         help="Path to .sf2 (default: examples/audio/TimGM6mb.sf2 if present)",
     )
     parser.add_argument("--runs", type=int, default=5, help="Number of timed runs")
-    parser.add_argument("--warmup", type=int, default=2, help="Warmup runs per block size")
+    parser.add_argument(
+        "--warmup", type=int, default=2, help="Warmup runs per block size"
+    )
     parser.add_argument(
         "--blocks",
         default="64,256,1024",
         help="Comma-separated block sizes (default: 64,256,1024)",
     )
-    parser.add_argument("--duration", type=float, default=3.0, help="Render duration in seconds")
+    parser.add_argument(
+        "--duration", type=float, default=3.0, help="Render duration in seconds"
+    )
     args = parser.parse_args()
 
-    soundfont = args.soundfont if args.soundfont is not None else _default_soundfont_path()
+    soundfont = (
+        args.soundfont if args.soundfont is not None else _default_soundfont_path()
+    )
     block_sizes = [int(x.strip()) for x in args.blocks.split(",")]
 
     run_render_benchmark(

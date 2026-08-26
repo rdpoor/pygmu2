@@ -19,20 +19,22 @@ from pygmu2.gain_pe import GainPE
 from pygmu2.cache_pe import CachePE
 
 from pygmu2.logger import get_logger
+
 logger = get_logger(__name__)
 logger.setLevel("WARN")
+
 
 class SuperSawPE(ProcessingElement):
     """
     Detuned unison sawtooth oscillator for warm, analog-like sounds.
-    
+
     Creates multiple BlitSawPE oscillators spread symmetrically around
     the center frequency. The result is a thick, chorused sound that's
     a staple of trance, EDM, and modern synth pads.
-    
-    The detune spread follows a symmetric pattern: voices are spread evenly 
-    above and below the target frequency by up to ±detune_cents.  
-    
+
+    The detune spread follows a symmetric pattern: voices are spread evenly
+    above and below the target frequency by up to ±detune_cents.
+
     Args:
         frequency: Center frequency in Hz, or PE for modulation
         amplitude: Overall amplitude, or PE for modulation (default: 1.0)
@@ -45,22 +47,22 @@ class SuperSawPE(ProcessingElement):
         channels: Number of output channels (default: 1)
         randomize_phase: If true, randomize phase on each call to on_start
         seed: Seed to feed to random number generator
-    
+
     Example:
         # Classic supersaw lead
         lead_stream = SuperSawPE(frequency=440.0, detune_cents=15.0)
-        
+
         # Thick pad with more voices and detune
         pad_stream = SuperSawPE(frequency=220.0, voices=9, detune_cents=30.0)
-        
+
         # With pitch modulation (vibrato)
         vibrato_stream = SinePE(frequency=5.0, amplitude=10.0)  # ±10 Hz
         lead_stream = SuperSawPE(frequency=vibrato_stream + ConstantPE(440.0))
-        
+
         # With filter for classic trance sound
         saw = SuperSawPE(frequency=440.0, detune_cents=20.0)
         filtered = BiquadPE(saw, mode=LOWPASS, frequency=2000.0, q=0.7)
-    
+
     Notes:
         - Odd voice counts work best for symmetry (center + equal spread)
         - Even voice counts will have no center voice (all detuned)
@@ -68,26 +70,26 @@ class SuperSawPE(ProcessingElement):
         - Higher voice counts increase CPU load linearly
         - The mix is normalized to prevent clipping
     """
-    
+
     # Mix mode constants
-    MIX_EQUAL = 'equal'
-    MIX_CENTER_HEAVY = 'center_heavy'
-    MIX_LINEAR = 'linear'
-    
+    MIX_EQUAL = "equal"
+    MIX_CENTER_HEAVY = "center_heavy"
+    MIX_LINEAR = "linear"
+
     def __init__(
         self,
         frequency: float | ProcessingElement,
         amplitude: float | ProcessingElement = 1.0,
         voices: int = 7,
         detune_cents: float = 20.0,
-        mix_mode: str = 'center_heavy',
+        mix_mode: str = "center_heavy",
         channels: int = 1,
         randomize_phase: bool = True,
         seed: int | None = None,
     ):
         if voices < 1:
             voices = 1
-        
+
         self._frequency = frequency
         self._amplitude = amplitude
         self._voices = voices
@@ -96,57 +98,56 @@ class SuperSawPE(ProcessingElement):
         self._channels = channels
         self._randomize_phase = bool(randomize_phase)
         self._rng = np.random.default_rng(seed)
-        
+
         # Compute detune ratios and mix gains for each voice
         self._detune_ratios = self._compute_detune_ratios()
         self._mix_gains = self._compute_mix_gains()
-        
+
         # Create internal oscillators (sample_rate is globally available)
         self._oscillators: list[BlitSawPE] = self._create_oscillators()
-    
+
     @property
     def frequency(self) -> float | ProcessingElement:
         """Center frequency in Hz (constant or PE)."""
         return self._frequency
-    
+
     @property
     def amplitude(self) -> float | ProcessingElement:
         """Overall amplitude (constant or PE)."""
         return self._amplitude
-    
+
     @property
     def voices(self) -> int:
         """Number of oscillators."""
         return self._voices
-    
+
     @property
     def detune_cents(self) -> float:
         """Maximum detune in cents."""
         return self._detune_cents
-    
+
     @property
     def mix_mode(self) -> str:
         """Voice mixing mode."""
         return self._mix_mode
-    
+
     def _compute_detune_ratios(self) -> np.ndarray:
         """
         Compute frequency ratios for each voice.
-        
+
         Returns array of ratios to multiply with center frequency.
         Center voice = 1.0, others spread symmetrically.
         """
         if self._voices == 1 or self._detune_cents == 0:
             return np.array([1.0])
-        
+
         # Spread voices evenly from -detune_cents to detune_cents
         cents = np.linspace(-self._detune_cents, self._detune_cents, self._voices)
         ratios = 2 ** (cents / 1200.0)
-        logger.debug(f'Detune cents: {cents}')
-        logger.debug(f'Detune ratios: {ratios}')
+        logger.debug(f"Detune cents: {cents}")
+        logger.debug(f"Detune ratios: {ratios}")
 
         return ratios
-
 
     def _compute_mix_gains(self) -> np.ndarray:
         """
@@ -217,13 +218,13 @@ class SuperSawPE(ProcessingElement):
 
         logger.debug(f"n={n}, mode={mode}, gains={gains}")
 
-        normalized_gains = gains / np.sqrt(np.sum(gains ** 2))
+        normalized_gains = gains / np.sqrt(np.sum(gains**2))
         return normalized_gains
-    
+
     def _create_oscillators(self) -> list[BlitSawPE]:
         """Create the internal BlitSawPE oscillators."""
         oscillators = []
-        
+
         if isinstance(self._frequency, ProcessingElement):
             # Wrap shared frequency PE in CachePE so it renders once per block
             freq_src: float | ProcessingElement = CachePE(self._frequency)
@@ -232,7 +233,7 @@ class SuperSawPE(ProcessingElement):
 
         for i, ratio in enumerate(self._detune_ratios):
             gain = self._mix_gains[i]
-            
+
             # Create frequency source for this voice
             if isinstance(self._frequency, ProcessingElement):
                 # For PE frequency, apply detune ratio via GainPE
@@ -240,17 +241,17 @@ class SuperSawPE(ProcessingElement):
                 freq = GainPE(self._frequency, gain=ratio)
             else:
                 freq = self._frequency * ratio
-            
+
             osc = BlitSawPE(
                 frequency=freq,
                 amplitude=gain,  # Individual voice gain
                 channels=1,  # Mix to mono first, then expand
-                initial_phase = self._rng.random(1) if self._randomize_phase else 0.0
+                initial_phase=self._rng.random(1) if self._randomize_phase else 0.0,
             )
             oscillators.append(osc)
-        
+
         return oscillators
-    
+
     def inputs(self) -> list[ProcessingElement]:
         """Return list of PE inputs (frequency and amplitude if PEs)."""
         result = []
@@ -259,17 +260,17 @@ class SuperSawPE(ProcessingElement):
         if isinstance(self._amplitude, ProcessingElement):
             result.append(self._amplitude)
         return result
-    
+
     def is_pure(self) -> bool:
         """
         SuperSawPE is not pure due to internal oscillator state.
         """
         return False
-    
+
     def channel_count(self) -> int:
         """Return the number of output channels."""
         return self._channels
-    
+
     def _on_start(self) -> None:
         """Start all internal oscillators."""
         self._reset_state()
@@ -278,49 +279,51 @@ class SuperSawPE(ProcessingElement):
         """Stop all internal oscillators."""
         for osc in self._oscillators:
             osc.on_stop()
-    
+
     def _reset_state(self) -> None:
         """Reset state of all internal oscillators."""
         for osc in self._oscillators:
             osc.reset_state()
-    
+
     def _render(self, start: int, duration: int) -> Snippet:
         """
         Render the supersaw by mixing all voices.
-        
+
         Args:
             start: Starting sample index
             duration: Number of samples to generate (> 0)
-        
+
         Returns:
             Snippet containing mixed sawtooth data
         """
         # Get amplitude values (1D control vector)
-        amp = self._scalar_or_pe_values(self._amplitude, start, duration, dtype=np.float64)
-        
+        amp = self._scalar_or_pe_values(
+            self._amplitude, start, duration, dtype=np.float64
+        )
+
         # Render all oscillators and mix
         # Each oscillator already has the correct detuned frequency
         # (either constant * ratio, or GainPE(freq_pe, ratio))
         result = np.zeros(duration, dtype=np.float64)
-        
+
         for osc in self._oscillators:
             snippet = osc.render(start, duration)
             result += snippet.data[:, 0]
-        
+
         # Apply overall amplitude
         result = result * amp
-        
+
         # Reshape to (duration, channels)
         samples = result.reshape(-1, 1).astype(np.float32)
         if self._channels > 1:
             samples = np.tile(samples, (1, self._channels))
-        
+
         return Snippet(start, samples)
-    
+
     def _compute_extent(self) -> Extent:
         """
         Compute extent from PE inputs.
-        
+
         If all inputs are constants: infinite extent.
         If any input is a PE: intersection of input extents.
         """
@@ -329,7 +332,7 @@ class SuperSawPE(ProcessingElement):
             input_extent = pe_input.extent()
             result = result.intersection(input_extent)
         return result
-    
+
     def __repr__(self) -> str:
         freq_str = (
             f"{self._frequency.__class__.__name__}"

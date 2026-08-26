@@ -142,4 +142,3 @@ def interpolated_lookup(
         result[out_of_bounds_mask] = 0.0
 
     return Snippet(out_start, result.astype(out_dtype, copy=False))
-

@@ -87,7 +87,13 @@ from pygmu2.annotations import (
 logger = logging.getLogger("jogshuttle")
 
 AUDIO_DIR = Path(__file__).resolve().parent.parent / "examples" / "audio"
-APP_ICON_PATH = Path(__file__).resolve().parent.parent / "src" / "pygmu2" / "assets" / "target2_icon_black.png"
+APP_ICON_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "src"
+    / "pygmu2"
+    / "assets"
+    / "target2_icon_black.png"
+)
 
 MAX_ANNOTATION_ROWS = 28
 
@@ -118,6 +124,7 @@ a position in the audio file.
 # Waveform peak cache
 # ---------------------------------------------------------------------------
 
+
 def compute_peaks(path: str, target_width: int = 2000) -> np.ndarray:
     """Return (target_width, 2) array of [min, max] peaks for waveform display.
 
@@ -145,6 +152,7 @@ def compute_peaks(path: str, target_width: int = 2000) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Stem detection
 # ---------------------------------------------------------------------------
+
 
 def find_stems(wav_path: str) -> list[tuple[str, str]]:
     """Detect stem files alongside *wav_path* and return [(path, name), ...].
@@ -269,6 +277,7 @@ def _draw_timeline_annotations(
 # Waveform widget
 # ---------------------------------------------------------------------------
 
+
 class WaveformWidget(QWidget):
     """Custom widget that draws a waveform and supports click/drag scrubbing."""
 
@@ -305,7 +314,9 @@ class WaveformWidget(QWidget):
         self._playhead_frac = max(0.0, min(1.0, frac))
         self.update()
 
-    def set_annotations(self, annotations: list[FrameAnnotation], total_frames: int) -> None:
+    def set_annotations(
+        self, annotations: list[FrameAnnotation], total_frames: int
+    ) -> None:
         self._annotations = list(annotations)
         self._total_frames = max(0, int(total_frames))
         self._bg_cache = None
@@ -350,7 +361,9 @@ class WaveformWidget(QWidget):
         p.drawLine(QPointF(0, mid), QPointF(w, mid))
 
         _draw_timeline_annotations(
-            p, width=w, height=h,
+            p,
+            width=w,
+            height=h,
             annotations=self._annotations,
             total_frames=self._total_frames,
             style=self.ANNOTATION_STYLE,
@@ -463,7 +476,9 @@ class SpectrogramWidget(QWidget):
         self._playhead_frac = max(0.0, min(1.0, frac))
         self.update()
 
-    def set_annotations(self, annotations: list[FrameAnnotation], total_frames: int) -> None:
+    def set_annotations(
+        self, annotations: list[FrameAnnotation], total_frames: int
+    ) -> None:
         self._annotations = list(annotations)
         self._total_frames = max(0, int(total_frames))
         self._bg_cache = None
@@ -509,7 +524,9 @@ class SpectrogramWidget(QWidget):
             p.drawImage(pix.rect(), self._image)
 
         _draw_timeline_annotations(
-            p, width=w, height=h,
+            p,
+            width=w,
+            height=h,
             annotations=self._annotations,
             total_frames=self._total_frames,
             style=self.ANNOTATION_STYLE,
@@ -553,12 +570,13 @@ class SpectrogramWidget(QWidget):
 # Stems mixer widgets
 # ---------------------------------------------------------------------------
 
+
 class StemRowWidget(QWidget):
     """One row in the stems mixer: Mute, Solo, Volume, Name."""
 
-    mute_changed = Signal(int, bool)    # (stem_index, muted)
-    solo_changed = Signal(int, bool)    # (stem_index, soloed)
-    volume_changed = Signal(int, float) # (stem_index, 0.0..1.0)
+    mute_changed = Signal(int, bool)  # (stem_index, muted)
+    solo_changed = Signal(int, bool)  # (stem_index, soloed)
+    volume_changed = Signal(int, float)  # (stem_index, 0.0..1.0)
 
     _SS_MUTE_OFF = (
         "QPushButton { background:#3a3a4e; color:#ccc; border:1px solid #555;"
@@ -700,6 +718,7 @@ class StemsWidget(QWidget):
 # Shuttle slider with float mapping
 # ---------------------------------------------------------------------------
 
+
 class RateSlider(QSlider):
     """QSlider with an oversized handle that displays the playback rate."""
 
@@ -766,7 +785,7 @@ class ShuttleSlider(QWidget):
         self._label_max = QLabel("8x")
 
         self._slider = RateSlider(Qt.Horizontal)
-        self._jump_style = JumpSliderStyle()   # prevent GC; no-arg uses app style
+        self._jump_style = JumpSliderStyle()  # prevent GC; no-arg uses app style
         self._slider.setStyle(self._jump_style)
         self._slider.setMinimum(self.INT_MIN)
         self._slider.setMaximum(self.INT_MAX)
@@ -799,6 +818,7 @@ class ShuttleSlider(QWidget):
 # ---------------------------------------------------------------------------
 # Main application
 # ---------------------------------------------------------------------------
+
 
 class JogShuttleApp(QMainWindow):
     """PySide6 jog/shuttle audio player backed by pygmu2."""
@@ -979,18 +999,10 @@ class JogShuttleApp(QMainWindow):
         QShortcut(QKeySequence(Qt.Key_Space), self).activated.connect(
             self._toggle_play_pause
         )
-        QShortcut(QKeySequence(Qt.Key_Home), self).activated.connect(
-            self._on_beginning
-        )
-        QShortcut(QKeySequence(Qt.Key_End), self).activated.connect(
-            self._on_end
-        )
-        QShortcut(QKeySequence(Qt.Key_Escape), self).activated.connect(
-            self._on_stop
-        )
-        QShortcut(QKeySequence(Qt.Key_F1), self).activated.connect(
-            self._on_show_help
-        )
+        QShortcut(QKeySequence(Qt.Key_Home), self).activated.connect(self._on_beginning)
+        QShortcut(QKeySequence(Qt.Key_End), self).activated.connect(self._on_end)
+        QShortcut(QKeySequence(Qt.Key_Escape), self).activated.connect(self._on_stop)
+        QShortcut(QKeySequence(Qt.Key_F1), self).activated.connect(self._on_show_help)
 
     def _on_view_changed(self, view_name: str) -> None:
         self._active_view = view_name
@@ -1018,7 +1030,9 @@ class JogShuttleApp(QMainWindow):
             max_db=self.NOFFT_MAX_DB,
         )
 
-    def _compute_spectrogram(self, path: str, target_width: int) -> NoFFTSpectrogramResult:
+    def _compute_spectrogram(
+        self, path: str, target_width: int
+    ) -> NoFFTSpectrogramResult:
         mtime = Path(path).stat().st_mtime
         cache_key = (path, target_width, self._sample_rate, mtime)
         cached = self._spec_cache.get(cache_key)
@@ -1103,7 +1117,9 @@ class JogShuttleApp(QMainWindow):
         self._stem_solo = [False] * len(self._stem_paths)
         self._stem_volumes = [1.0] * len(self._stem_paths)
         if self._stem_paths:
-            logger.debug("Found %d stem(s): %s", len(self._stem_paths), self._stem_names)
+            logger.debug(
+                "Found %d stem(s): %s", len(self._stem_paths), self._stem_names
+            )
 
         # --- Update view combo (suppress signal during rebuild) ---
         self._view_select.blockSignals(True)
@@ -1208,7 +1224,9 @@ class JogShuttleApp(QMainWindow):
             self._stem_gain_controls.append(gain_ctl)
             stem_outputs.append(stem_out)
 
-        self._rate_control = self._stem_rate_controls[0] if self._stem_rate_controls else None
+        self._rate_control = (
+            self._stem_rate_controls[0] if self._stem_rate_controls else None
+        )
 
         # Use the first stem timewarp as the primary for position tracking
         self._timewarp = self._stem_timewarps[0] if self._stem_timewarps else None
@@ -1255,7 +1273,7 @@ class JogShuttleApp(QMainWindow):
         self._rate = rate
         if rate != 0.0:
             self._spring_timer.stop()
-        if hasattr(self, '_stem_rate_controls') and self._stem_rate_controls:
+        if hasattr(self, "_stem_rate_controls") and self._stem_rate_controls:
             for rc in self._stem_rate_controls:
                 rc.set_value(rate)
         elif self._rate_control is not None:
@@ -1263,7 +1281,9 @@ class JogShuttleApp(QMainWindow):
         if rate != 0.0 and not self._playing:
             self._renderer.stream_start(start=self._resume_from)
             self._playing = True
-            logger.debug("STREAM_START: rate=%.2f, resume_from=%s", rate, self._resume_from)
+            logger.debug(
+                "STREAM_START: rate=%.2f, resume_from=%s", rate, self._resume_from
+            )
         elif rate == 0.0 and self._playing:
             self._renderer.stream_stop()
             self._resume_from = self._renderer.stream_position
@@ -1321,7 +1341,7 @@ class JogShuttleApp(QMainWindow):
             return 0.0
         sign = 1.0 if val > 0 else -1.0
         normalized = abs(val) / self.SHUTTLE_MAX
-        return sign * (normalized ** self.SHUTTLE_CURVE) * self.SHUTTLE_MAX
+        return sign * (normalized**self.SHUTTLE_CURVE) * self.SHUTTLE_MAX
 
     def _rate_to_slider(self, rate: float) -> float:
         """Map playback rate to slider position (inverse of _slider_to_rate)."""
@@ -1360,7 +1380,9 @@ class JogShuttleApp(QMainWindow):
     # ------------------------------------------------------------------
 
     def _on_scrub_start(self, frac: float) -> None:
-        if self._total_frames == 0 or (self._timewarp is None and not self._stem_timewarps):
+        if self._total_frames == 0 or (
+            self._timewarp is None and not self._stem_timewarps
+        ):
             return
         target = int(frac * self._total_frames)
         if not self._playing:
@@ -1421,9 +1443,7 @@ class JogShuttleApp(QMainWindow):
             self._shuttle.set_rate_display(self._rate)
             pos_str = self._format_time(max(0, pos))
             samples = int(max(0, pos))
-            self._pos_label.setText(
-                f"Position: {pos_str} ({samples} samples)"
-            )
+            self._pos_label.setText(f"Position: {pos_str} ({samples} samples)")
 
     # ------------------------------------------------------------------
     # Stems helpers
@@ -1500,14 +1520,20 @@ class JogShuttleApp(QMainWindow):
 # Entry point
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="pygmu2 Jog/Shuttle Player (Qt)")
-    parser.add_argument("file", nargs="?", default=None,
-                        help="Path to a WAV file to open on startup")
-    parser.add_argument("--debug", action="store_true",
-                        help="Enable DEBUG logging to stderr")
-    parser.add_argument("--delete-on-close", action="store_true",
-                        help="Delete the WAV file when the player closes")
+    parser.add_argument(
+        "file", nargs="?", default=None, help="Path to a WAV file to open on startup"
+    )
+    parser.add_argument(
+        "--debug", action="store_true", help="Enable DEBUG logging to stderr"
+    )
+    parser.add_argument(
+        "--delete-on-close",
+        action="store_true",
+        help="Delete the WAV file when the player closes",
+    )
     args = parser.parse_args()
 
     level = logging.DEBUG if args.debug else logging.WARNING
@@ -1526,8 +1552,7 @@ def main() -> None:
         app.setWindowIcon(icon)
     else:
         icon = None
-    window = JogShuttleApp(initial_path=args.file,
-                           delete_on_close=args.delete_on_close)
+    window = JogShuttleApp(initial_path=args.file, delete_on_close=args.delete_on_close)
     if icon is not None:
         window.setWindowIcon(icon)
     window.show()

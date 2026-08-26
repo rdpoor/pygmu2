@@ -11,10 +11,10 @@ import pytest
 import pygmu2 as pg
 from pygmu2.random_gate_pe import RandomGatePE
 
-
 # ---------------------------------------------------------------------------
 # Construction
 # ---------------------------------------------------------------------------
+
 
 class TestRandomGatePEConstruction:
 
@@ -51,6 +51,7 @@ class TestRandomGatePEConstruction:
 # ---------------------------------------------------------------------------
 # Output values and shape
 # ---------------------------------------------------------------------------
+
 
 class TestRandomGatePEOutput:
 
@@ -114,9 +115,7 @@ class TestRandomGatePEOutput:
         n = 2000
         toggles_low = int(np.sum(np.diff(rg_low.render(0, n).data[:, 0]) != 0))
         toggles_high = int(np.sum(np.diff(rg_high.render(0, n).data[:, 0]) != 0))
-        assert toggles_low < toggles_high, (
-            f"low={toggles_low}, high={toggles_high}"
-        )
+        assert toggles_low < toggles_high, f"low={toggles_low}, high={toggles_high}"
 
     def test_toggle_rate_approximately_correct(self):
         """Observed toggle rate ≈ rate/sr."""
@@ -128,14 +127,15 @@ class TestRandomGatePEOutput:
         out = rg.render(0, n).data[:, 0]
         toggles = int(np.sum(np.diff(out) != 0))
         expected = n * rate / sr
-        assert expected * 0.5 < toggles < expected * 1.5, (
-            f"toggles={toggles}, expected≈{expected:.0f}"
-        )
+        assert (
+            expected * 0.5 < toggles < expected * 1.5
+        ), f"toggles={toggles}, expected≈{expected:.0f}"
 
 
 # ---------------------------------------------------------------------------
 # Reproducibility
 # ---------------------------------------------------------------------------
+
 
 class TestRandomGatePEReproducibility:
 
@@ -150,9 +150,7 @@ class TestRandomGatePEReproducibility:
         rg2 = RandomGatePE(rate=10.0, seed=99)
         rg1.on_start()
         rg2.on_start()
-        np.testing.assert_array_equal(
-            rg1.render(0, 200).data, rg2.render(0, 200).data
-        )
+        np.testing.assert_array_equal(rg1.render(0, 200).data, rg2.render(0, 200).data)
 
     def test_on_start_replays_sequence(self):
         rg = RandomGatePE(rate=10.0, seed=7)
@@ -166,8 +164,8 @@ class TestRandomGatePEReproducibility:
         """on_start() must reset gate to initial_state, not leave it mid-sequence."""
         rg = RandomGatePE(rate=10.0, seed=7, initial_state=0)
         rg.on_start()
-        rg.render(0, 200)        # run some samples to advance state
-        rg.on_start()            # reset
+        rg.render(0, 200)  # run some samples to advance state
+        rg.on_start()  # reset
         out = rg.render(0, 1).data[0, 0]
         # With rate=0 after reset, first sample equals initial_state
         rg0 = RandomGatePE(rate=0.0, seed=7, initial_state=0)
@@ -179,6 +177,7 @@ class TestRandomGatePEReproducibility:
 # ---------------------------------------------------------------------------
 # PE rate
 # ---------------------------------------------------------------------------
+
 
 class TestRandomGatePEPERate:
 

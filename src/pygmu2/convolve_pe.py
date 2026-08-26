@@ -166,10 +166,14 @@ class ConvolvePE(ProcessingElement):
 
         # Validate filter extent contract (without rendering)
         if filt_ext.start is not None and filt_ext.start != 0:
-            raise ValueError(f"ConvolvePE filter extent must start at 0, got {filt_ext}")
+            raise ValueError(
+                f"ConvolvePE filter extent must start at 0, got {filt_ext}"
+            )
         if filt_ext.start is None:
             # Treat unknown start as invalid for a filter definition.
-            raise ValueError(f"ConvolvePE filter extent must be finite and start at 0, got {filt_ext}")
+            raise ValueError(
+                f"ConvolvePE filter extent must be finite and start at 0, got {filt_ext}"
+            )
         if filt_ext.end is None:
             raise ValueError(f"ConvolvePE filter extent must be finite, got {filt_ext}")
 
@@ -190,7 +194,9 @@ class ConvolvePE(ProcessingElement):
 
         filt_ext = self._fir.extent()
         if filt_ext.start != 0 or filt_ext.end is None:
-            raise ValueError(f"ConvolvePE filter must have extent Extent(0, N), got {filt_ext}")
+            raise ValueError(
+                f"ConvolvePE filter must have extent Extent(0, N), got {filt_ext}"
+            )
 
         filt_len = int(filt_ext.end)
         if filt_len < 1:
@@ -199,7 +205,9 @@ class ConvolvePE(ProcessingElement):
         # Render the FIR once
         h = self._fir.render(0, filt_len).data.astype(np.float64, copy=False)
         if h.ndim != 2 or h.shape[0] != filt_len:
-            raise ValueError(f"ConvolvePE filter returned invalid shape {getattr(h, 'shape', None)}")
+            raise ValueError(
+                f"ConvolvePE filter returned invalid shape {getattr(h, 'shape', None)}"
+            )
 
         src_ch = self._src.channel_count()
         if src_ch is None:
@@ -230,7 +238,9 @@ class ConvolvePE(ProcessingElement):
             # This gives low latency for small filters but remains efficient for larger FIRs.
             self._fft_size = _next_pow2(max(2048, filt_len))
         if self._fft_size < filt_len:
-            raise ValueError(f"fft_size ({self._fft_size}) must be >= filter length ({filt_len})")
+            raise ValueError(
+                f"fft_size ({self._fft_size}) must be >= filter length ({filt_len})"
+            )
 
         nfft = int(self._fft_size)
 
@@ -251,7 +261,9 @@ class ConvolvePE(ProcessingElement):
 
     def _render(self, start: int, duration: int) -> Snippet:
         self._ensure_filter_prepared()
-        assert self._fir_len is not None and self._H is not None and self._tail is not None
+        assert (
+            self._fir_len is not None and self._H is not None and self._tail is not None
+        )
 
         # Handle non-contiguous render: clear history
         if self._last_render_end is None or start != self._last_render_end:
@@ -262,12 +274,16 @@ class ConvolvePE(ProcessingElement):
         tail_len = filt_len - 1
         hop = nfft - tail_len
         if hop < 1:
-            raise ValueError(f"fft_size ({nfft}) too small for filter length ({filt_len})")
+            raise ValueError(
+                f"fft_size ({nfft}) too small for filter length ({filt_len})"
+            )
 
         # Source input
         x = self._src.render(start, duration).data.astype(np.float64, copy=False)
         if x.ndim != 2:
-            raise ValueError(f"ConvolvePE src returned invalid shape {getattr(x, 'shape', None)}")
+            raise ValueError(
+                f"ConvolvePE src returned invalid shape {getattr(x, 'shape', None)}"
+            )
 
         src_ch = x.shape[1]
 
@@ -290,7 +306,7 @@ class ConvolvePE(ProcessingElement):
         in_pos = 0
         while in_pos < duration:
             n = min(hop, duration - in_pos)
-            x_seg = x[in_pos:in_pos + n, :]
+            x_seg = x[in_pos : in_pos + n, :]
 
             # Build FFT input block: [tail, x_seg, zeros]
             x_block = np.zeros((nfft, out_ch), dtype=np.float64)
@@ -302,14 +318,14 @@ class ConvolvePE(ProcessingElement):
             # Current segment: copy/match/fan-out channels
             if out_ch == src_ch:
                 # 1:1 channel mapping
-                x_block[tail_len:tail_len + n, :] = x_seg
+                x_block[tail_len : tail_len + n, :] = x_seg
             elif src_ch == 1:
                 # Mono source, multi-channel filter: fan out mono channel
-                x_block[tail_len:tail_len + n, :] = np.repeat(x_seg, out_ch, axis=1)
+                x_block[tail_len : tail_len + n, :] = np.repeat(x_seg, out_ch, axis=1)
             else:
                 # Multi-channel source, fewer/equal output channels (should only happen
                 # when filter channels <= src channels and were validated earlier).
-                x_block[tail_len:tail_len + n, :] = x_seg[:, :out_ch]
+                x_block[tail_len : tail_len + n, :] = x_seg[:, :out_ch]
 
             # FFT -> multiply -> IFFT
             X = np.fft.rfft(x_block, axis=0)
@@ -320,13 +336,15 @@ class ConvolvePE(ProcessingElement):
             y_block = np.fft.irfft(Y, n=nfft, axis=0)
 
             # Overlap-save: discard first tail_len samples
-            y_seg = y_block[tail_len:tail_len + n, :]
-            y[out_pos:out_pos + n, :] = y_seg
+            y_seg = y_block[tail_len : tail_len + n, :]
+            y[out_pos : out_pos + n, :] = y_seg
 
             # Update tail = last tail_len samples of [tail, x_seg]
             if tail_len > 0:
                 if n >= tail_len:
-                    self._tail = x_block[tail_len + n - tail_len:tail_len + n, :].copy()
+                    self._tail = x_block[
+                        tail_len + n - tail_len : tail_len + n, :
+                    ].copy()
                 else:
                     if out_ch == src_ch:
                         new_seg = x_seg
@@ -348,4 +366,3 @@ class ConvolvePE(ProcessingElement):
             f"ConvolvePE(src={self._src.__class__.__name__}, "
             f"fir={self._fir.__class__.__name__}, fft_size={self._fft_size})"
         )
-

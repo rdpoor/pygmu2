@@ -18,6 +18,7 @@ from pygmu2.gate_signal import GateSignal
 from pygmu2.trigger_signal import TriggerSignal
 
 from pygmu2.logger import get_logger
+
 logger = get_logger(__name__)
 logger.setLevel("WARN")
 
@@ -42,7 +43,7 @@ def _generate_ramp(
 
     output[offset + i] = starting_value + i * slope   for i in 0..length-1
     """
-    output[offset:offset + length] = (
+    output[offset : offset + length] = (
         starting_value + np.arange(length, dtype=np.float64) * slope
     ).astype(np.float32)
     return (offset + length, starting_value + slope * length)
@@ -82,7 +83,7 @@ class AdsrGatedPE(ProcessingElement):
         attack_time: float = 0.1,
         decay_time: float = 0.1,
         sustain_level: float = 0.5,
-        release_time: float = 0.1
+        release_time: float = 0.1,
     ):
         self._gate = gate
         self._attack_time = float(attack_time)
@@ -139,7 +140,7 @@ class AdsrGatedPE(ProcessingElement):
 
     def _update_state(self, now, new_state):
         # Debug helper to log state transitions with absolute sample index.
-        logger.debug(f'{now}: {self._state} => {new_state}')
+        logger.debug(f"{now}: {self._state} => {new_state}")
         self._state = new_state
 
     def _render(self, start: int, duration: int) -> Snippet:
@@ -226,13 +227,15 @@ class AdsrGatedPE(ProcessingElement):
 
         return cursor
 
-    def _next_gate_event(self, cursor: int, duration: int, gate_data: np.ndarray) -> int:
+    def _next_gate_event(
+        self, cursor: int, duration: int, gate_data: np.ndarray
+    ) -> int:
         """
         Return the index of the first gate transition strictly after `cursor`,
         or `duration` if the gate value is constant for the rest of the buffer.
         """
         current = gate_data[cursor]
-        changes = np.where(gate_data[cursor + 1:] != current)[0]
+        changes = np.where(gate_data[cursor + 1 :] != current)[0]
         return cursor + 1 + int(changes[0]) if len(changes) > 0 else duration
 
 
@@ -264,7 +267,7 @@ class AdsrTriggeredPE(ProcessingElement):
         decay_time: float = 0.1,
         sustain_time: float = 0.5,
         sustain_level: float = 0.5,
-        release_time: float = 0.1
+        release_time: float = 0.1,
     ):
         self._trigger = trigger
         self._attack_time = float(attack_time)
@@ -313,7 +316,7 @@ class AdsrTriggeredPE(ProcessingElement):
         self._sustain_ends_at = 0
 
     def _update_state(self, now, new_state):
-        logger.debug(f'{now}: {self._state} => {new_state}')
+        logger.debug(f"{now}: {self._state} => {new_state}")
         self._state = new_state
 
     def _render(self, start: int, duration: int) -> Snippet:
@@ -346,7 +349,7 @@ class AdsrTriggeredPE(ProcessingElement):
         """
         if cursor + 1 >= duration:
             return duration
-        hits = np.where(trigger_data[cursor + 1:] > 0.0)[0]
+        hits = np.where(trigger_data[cursor + 1 :] > 0.0)[0]
         return cursor + 1 + int(hits[0]) if len(hits) > 0 else duration
 
     def _render_segment(

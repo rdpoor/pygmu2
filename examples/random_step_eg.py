@@ -30,6 +30,7 @@ def random_to_frequency(r):
 # Demos
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def demo_fixed_rates():
     """Use RandomStepPE to control pitch with selected values for rate."""
     for rate in [1, 3, 10, 30, 100]:
@@ -38,14 +39,17 @@ def demo_fixed_rates():
         note = pg.BlitSawPE(frequency=freq)
         cropped_note = pg.CropPE(note, 0, s(4))
         print(f"  rate = {rate}", flush=True)
-        pg.play_offline(source=pg.GainPE(pad_clip(pg.GainPE(cropped_note, 0.1)), gain=2.29))
+        pg.play_offline(
+            source=pg.GainPE(pad_clip(pg.GainPE(cropped_note, 0.1)), gain=2.29)
+        )
+
 
 def demo_ramped_rate():
     """Play notes with rate ramping exponentially from 1 to 100."""
     duration_samples = s(8)
     rate_ramp = pg.PiecewisePE(
         [(0, 1.0), (duration_samples, 100.0)],
-        transition_type=pg.TransitionType.EXPONENTIAL
+        transition_type=pg.TransitionType.EXPONENTIAL,
     )
     step_value = pg.RandomStepPE(rate=rate_ramp)
     freq = pg.TransformPE(step_value, func=random_to_frequency)

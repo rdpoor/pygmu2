@@ -13,6 +13,7 @@ from pygmu2.snippet import Snippet
 from pygmu2.trigger_signal import TriggerSignal
 from pygmu2.config import get_sample_rate
 
+
 class PeriodicTrigger(TriggerSignal):
     """
     A TriggerSignal that emits +1 impulses periodically.
@@ -26,7 +27,13 @@ class PeriodicTrigger(TriggerSignal):
     When hz is a ProcessingElement, a phase accumulator tracks the
     instantaneous frequency (impure, stateful).
     """
-    def __init__(self, hz: float | ProcessingElement = 1.0, phase: float = 0.0, amplitude: int = 1):
+
+    def __init__(
+        self,
+        hz: float | ProcessingElement = 1.0,
+        phase: float = 0.0,
+        amplitude: int = 1,
+    ):
         self._phase_init = float(phase) % 1.0
         self._amp = int(amplitude)
 
@@ -42,7 +49,9 @@ class PeriodicTrigger(TriggerSignal):
 
             self._period = int(round(get_sample_rate() / self._hz))
             if self._period <= 0:
-                raise ValueError("PeriodicTrigger computed period <= 0; check sample rate / hz")
+                raise ValueError(
+                    "PeriodicTrigger computed period <= 0; check sample rate / hz"
+                )
 
             # Convert phase (cycles) to an offset in samples
             self._phase_samples = int(round(self._phase_init * self._period))
@@ -69,7 +78,9 @@ class PeriodicTrigger(TriggerSignal):
         out = np.zeros((duration, 1), dtype=np.float32)
 
         if self._hz_is_pe:
-            hz_data = self._scalar_or_pe_values(self._hz, start, duration, dtype=np.float64)
+            hz_data = self._scalar_or_pe_values(
+                self._hz, start, duration, dtype=np.float64
+            )
             sr = float(self._sample_rate)
             phase = self._phase_accum
             for i in range(duration):

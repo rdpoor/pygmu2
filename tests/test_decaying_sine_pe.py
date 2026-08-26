@@ -193,9 +193,9 @@ class TestDecayEnvelope:
         audio = render_blocks(pe, n_blocks)
         measured = self._rms_near(audio, n_tau, half_window=512)
         expected = amplitude * math.exp(-1) / math.sqrt(2)
-        assert abs(measured - expected) / expected < 0.20, (
-            f"envelope at tau: expected RMS {expected:.4f}, got {measured:.4f}"
-        )
+        assert (
+            abs(measured - expected) / expected < 0.20
+        ), f"envelope at tau: expected RMS {expected:.4f}, got {measured:.4f}"
 
     def test_larger_tau_decays_more_slowly(self):
         sample_offset = int(0.1 * SAMPLE_RATE)

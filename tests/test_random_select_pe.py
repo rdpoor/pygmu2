@@ -4,7 +4,9 @@ import pytest
 import pygmu2 as pg
 
 
-@pytest.mark.skip(reason="requires TriggerMode.RETRIGGER (rising-edge detection) not yet implemented")
+@pytest.mark.skip(
+    reason="requires TriggerMode.RETRIGGER (rising-edge detection) not yet implemented"
+)
 def test_random_select_retrigger_resets_on_trigger():
     sample_rate = 10  # small for easy reasoning
     pg.set_sample_rate(sample_rate)
@@ -32,15 +34,16 @@ def test_random_select_retrigger_resets_on_trigger():
     out = snippet.data[:, 0]
 
     expected = np.array(
-        [3, 4, 5, 6, 7, 0, 0, 0, 0, 0,
-         3, 4, 5, 6, 7, 0, 0, 0, 0, 0],
+        [3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0],
         dtype=np.float32,
     )
 
     assert np.allclose(out, expected)
 
 
-@pytest.mark.skip(reason="requires TriggerMode.RETRIGGER (rising-edge detection) not yet implemented")
+@pytest.mark.skip(
+    reason="requires TriggerMode.RETRIGGER (rising-edge detection) not yet implemented"
+)
 def test_random_select_dirac_low_sample_retrigger():
     sample_rate = 10  # small for easy reasoning
     period = sample_rate  # 1 Hz
@@ -66,12 +69,12 @@ def test_random_select_dirac_low_sample_retrigger():
     out = snippet.data[:, 0]
 
     expected = np.array(
-        [0, 3, 4, 5, 6, 7, 0, 0, 0, 0,
-         0, 3, 4, 5, 6, 7, 0, 0, 0, 0],
+        [0, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 3, 4, 5, 6, 7, 0, 0, 0, 0],
         dtype=np.float32,
     )
 
     assert np.allclose(out, expected)
+
 
 def test_random_select_verify_trigger():
     sample_rate = 44100
@@ -88,13 +91,36 @@ def test_random_select_verify_trigger():
 
     snippet = trigger.render(0, 20)
     out = snippet.data[:, 0]
-    expected = np.array([
-        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-        ])
+    expected = np.array(
+        [
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+        ]
+    )
     assert np.allclose(out, expected)
 
-@pytest.mark.skip(reason="requires TriggerMode.RETRIGGER (rising-edge detection) not yet implemented")
+
+@pytest.mark.skip(
+    reason="requires TriggerMode.RETRIGGER (rising-edge detection) not yet implemented"
+)
 def test_random_select_slice_shorter_than_retrigger():
     sample_rate = 44100
     pg.set_sample_rate(sample_rate)
@@ -103,10 +129,30 @@ def test_random_select_slice_shorter_than_retrigger():
         pg.SlicePE(pg.IdentityPE(), 10, 5),  # start at 10, end before 15, dur = 5
     ]
 
-    trigger = pg.ArrayPE([
-        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-    ])
+    trigger = pg.ArrayPE(
+        [
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+        ]
+    )
 
     chooser = pg.RandomSelectPE(
         trigger=trigger,
@@ -117,13 +163,37 @@ def test_random_select_slice_shorter_than_retrigger():
 
     snippet = chooser.render(0, 20)
     out = snippet.data[:, 0]
-    expected = np.array([
-        0, 10, 11, 12, 13, 14, 0, 0, 0, 0,
-        0, 10, 11, 12, 13, 14, 0, 0, 0, 0,
-    ], dtype=np.float32)
+    expected = np.array(
+        [
+            0,
+            10,
+            11,
+            12,
+            13,
+            14,
+            0,
+            0,
+            0,
+            0,
+            0,
+            10,
+            11,
+            12,
+            13,
+            14,
+            0,
+            0,
+            0,
+            0,
+        ],
+        dtype=np.float32,
+    )
     assert np.allclose(out, expected)
 
-@pytest.mark.skip(reason="requires TriggerMode.RETRIGGER (rising-edge detection) not yet implemented")
+
+@pytest.mark.skip(
+    reason="requires TriggerMode.RETRIGGER (rising-edge detection) not yet implemented"
+)
 def test_random_select_slice_longer_than_retrigger():
     sample_rate = 44100
     pg.set_sample_rate(sample_rate)
@@ -132,10 +202,30 @@ def test_random_select_slice_longer_than_retrigger():
         pg.SlicePE(pg.IdentityPE(), 10, 15),  # start at 10, end before 25, dur = 15
     ]
 
-    trigger = pg.ArrayPE([
-        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-    ])
+    trigger = pg.ArrayPE(
+        [
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+        ]
+    )
 
     chooser = pg.RandomSelectPE(
         trigger=trigger,
@@ -146,11 +236,33 @@ def test_random_select_slice_longer_than_retrigger():
 
     snippet = chooser.render(0, 20)
     out = snippet.data[:, 0]
-    expected = np.array([
-        0, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-        0, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-    ], dtype=np.float32)
+    expected = np.array(
+        [
+            0,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            0,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+        ],
+        dtype=np.float32,
+    )
     assert np.allclose(out, expected)
+
 
 def test_random_select_crop():
     sample_rate = 44100
@@ -158,9 +270,21 @@ def test_random_select_crop():
 
     cropped = pg.SlicePE(pg.IdentityPE(), 10, 5)  # start at 10, end before 15, dur = 5
 
-    snippet = cropped.render(0, 10)     # render from 0 to 10
+    snippet = cropped.render(0, 10)  # render from 0 to 10
     out = snippet.data[:, 0]
-    expected = np.array([
-        10, 11, 12, 13, 14, 0, 0, 0, 0, 0,
-    ], dtype=np.float32)
+    expected = np.array(
+        [
+            10,
+            11,
+            12,
+            13,
+            14,
+            0,
+            0,
+            0,
+            0,
+            0,
+        ],
+        dtype=np.float32,
+    )
     assert np.allclose(out, expected)

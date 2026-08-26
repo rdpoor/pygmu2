@@ -123,7 +123,9 @@ class RandomSelectPE(ProcessingElement):
         self._trigger = trigger
         self._sources = list(inputs)
 
-        self._selector = _RandomSelectSourcePE(self._sources, weights=weights, seed=seed)
+        self._selector = _RandomSelectSourcePE(
+            self._sources, weights=weights, seed=seed
+        )
         self._impl = TriggerRestartPE(self._trigger, self._selector)
 
     def inputs(self) -> list[ProcessingElement]:

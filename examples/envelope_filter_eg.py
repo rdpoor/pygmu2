@@ -51,14 +51,15 @@ pg.set_sample_rate(SRATE)
 AUDIO = Path(__file__).parent / "audio"
 
 CLAPS_FILE = AUDIO / "claps.wav"
-CHOIR_FILE  = AUDIO / "choir.wav"
+CHOIR_FILE = AUDIO / "choir.wav"
 
-RELEASE   = 0.2      # seconds — envelope release time
-LOW_FREQ  = 200.0    # Hz — dark (soft clap / envelope near 0)
-HIGH_FREQ = 4000.0   # Hz — bright (loud clap / envelope near 1)
+RELEASE = 0.2  # seconds — envelope release time
+LOW_FREQ = 200.0  # Hz — dark (soft clap / envelope near 0)
+HIGH_FREQ = 4000.0  # Hz — bright (loud clap / envelope near 1)
 
 
 # ── Demos ─────────────────────────────────────────────────────────────────────
+
 
 def demo_claps():
     """Play claps.wav unmodified."""
@@ -82,10 +83,8 @@ def demo_envelope_filter():
     # Trigger branch: retrigger choir on each rising edge of the gate.  CachePE
     # lets it fan out to two branches (GateToTriggerPE and GainPE).
     gate = pg.CachePE(
-        pg.SignalToGatePE(
-            envelope,
-            low_threshold=0.02,
-            high_threshold=0.05))
+        pg.SignalToGatePE(envelope, low_threshold=0.02, high_threshold=0.05)
+    )
 
     # Restart choir on each positive going edge of the gate singal
     retriggered = pg.TriggerRestartPE(pg.GateToTriggerPE(gate), choir)
@@ -100,18 +99,15 @@ def demo_envelope_filter():
         name="env_to_freq",
     )
 
-    filtered = pg.BiquadPE(
-        gated, 
-        frequency=freq_pe, 
-        q=3.0,
-        mode=pg.BiquadMode.LOWPASS)
+    filtered = pg.BiquadPE(gated, frequency=freq_pe, q=3.0, mode=pg.BiquadMode.LOWPASS)
 
     # Extend by release tail so the last clap decays fully before the file ends
     claps_end = claps.extent().end
     release_samples = int((RELEASE + 0.4) * SRATE)
 
-    output = pg.SetExtentPE(pg.GainPE(filtered, 0.5),
-                            start=0, duration=claps_end + release_samples)
+    output = pg.SetExtentPE(
+        pg.GainPE(filtered, 0.5), start=0, duration=claps_end + release_samples
+    )
 
     pg.play(output, SRATE)
 
@@ -119,8 +115,8 @@ def demo_envelope_filter():
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 DEMOS = [
-    ("Claps — source audio unmodified",          demo_claps),
-    ("Choir — source audio unmodified",          demo_choir),
+    ("Claps — source audio unmodified", demo_claps),
+    ("Choir — source audio unmodified", demo_choir),
     ("Envelope filter: clap-driven choir retrigger + brightness", demo_envelope_filter),
 ]
 

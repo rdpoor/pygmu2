@@ -64,6 +64,7 @@ def run_demos(demos: dict, readme: str | None = None) -> None:
     """
 
     import os
+
     # Enable DEBUG via PYGMU_EXAMPLES_DEBUG=1 environment variable
     if os.environ.get("PYGMU_EXAMPLES_DEBUG"):
         logging.basicConfig(level=logging.DEBUG)
@@ -88,12 +89,12 @@ def run_demos(demos: dict, readme: str | None = None) -> None:
     def run_one_demo(choice, name, fn):
         banner = f"Demo {choice}: {name}"
         print(banner)
-        print("-"*len(banner), flush=True)
+        print("-" * len(banner), flush=True)
         fn()
 
-    def run_all(): 
+    def run_all():
         for choice, (name, fn) in enumerate(demos):
-            run_one_demo(choice+1, name, fn)
+            run_one_demo(choice + 1, name, fn)
 
     def choose_and_play():
         while True:

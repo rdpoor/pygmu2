@@ -58,7 +58,9 @@ class AnalogOscPE(ProcessingElement):
         self._channels = int(channels)
 
         if self._waveform not in (self.WAVE_RECTANGLE, self.WAVE_SAWTOOTH):
-            raise ValueError(f"waveform must be 'rectangle' or 'sawtooth', got {waveform!r}")
+            raise ValueError(
+                f"waveform must be 'rectangle' or 'sawtooth', got {waveform!r}"
+            )
         if self._channels < 1:
             raise ValueError(f"channels must be >= 1, got {channels}")
 
@@ -133,7 +135,7 @@ class AnalogOscPE(ProcessingElement):
             x[m] = t[m] / dt[m]
 
             u = 2.0 - x
-            y[m] += (u[m] ** 4)
+            y[m] += u[m] ** 4
 
             m2 = t < dt
             if np.any(m2):
@@ -179,8 +181,12 @@ class AnalogOscPE(ProcessingElement):
 
     def _render(self, start: int, duration: int) -> Snippet:
         # Parameter streams
-        freq = self._scalar_or_pe_values(self._frequency, start, duration, dtype=np.float64)
-        duty = self._scalar_or_pe_values(self._duty_cycle, start, duration, dtype=np.float64)
+        freq = self._scalar_or_pe_values(
+            self._frequency, start, duration, dtype=np.float64
+        )
+        duty = self._scalar_or_pe_values(
+            self._duty_cycle, start, duration, dtype=np.float64
+        )
 
         # Phase increment per sample (can be negative for negative freq)
         dt = freq / float(self.sample_rate)
@@ -223,8 +229,8 @@ class AnalogOscPE(ProcessingElement):
                 u
                 # polyBLEP residual is normalized for a ±1 step (height=2),
                 # so scale by step_height/2.
-                + (-0.5 * delta) * self._blep_residual(phase, dt_blep)          # wrap at 0
-                + (0.5 * delta) * self._blep_residual(phase - a, dt_blep)       # corner at a
+                + (-0.5 * delta) * self._blep_residual(phase, dt_blep)  # wrap at 0
+                + (0.5 * delta) * self._blep_residual(phase - a, dt_blep)  # corner at a
             )
 
             dy = u_corr * dt
@@ -264,4 +270,3 @@ class AnalogOscPE(ProcessingElement):
             f"AnalogOscPE(frequency={freq_str}, duty_cycle={duty_str}, "
             f"waveform={self._waveform!r}, channels={self._channels})"
         )
-

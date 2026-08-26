@@ -46,6 +46,7 @@ class TestFunctionGenPEBasics:
 class TestFunctionGenPERender:
     def setup_method(self):
         import pygmu2 as pg
+
         pg.set_sample_rate(10_000)
         self.renderer = NullRenderer(sample_rate=10_000)
 
@@ -91,11 +92,15 @@ class TestFunctionGenPERender:
         n = 200
         freq_values = np.linspace(80.0, 220.0, n, dtype=np.float32)
 
-        pe_full = FunctionGenPE(frequency=ArrayPE(freq_values), duty_cycle=0.3, waveform="rectangle")
+        pe_full = FunctionGenPE(
+            frequency=ArrayPE(freq_values), duty_cycle=0.3, waveform="rectangle"
+        )
         self.renderer.set_source(pe_full)
         y_full = pe_full.render(0, n).data[:, 0]
 
-        pe_chunk = FunctionGenPE(frequency=ArrayPE(freq_values), duty_cycle=0.3, waveform="rectangle")
+        pe_chunk = FunctionGenPE(
+            frequency=ArrayPE(freq_values), duty_cycle=0.3, waveform="rectangle"
+        )
         self.renderer.set_source(pe_chunk)
         y1 = pe_chunk.render(0, 80).data[:, 0]
         y2 = pe_chunk.render(80, n - 80).data[:, 0]

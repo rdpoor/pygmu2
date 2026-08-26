@@ -14,6 +14,7 @@ MIT License
 from pathlib import Path
 import pygmu2 as pg
 from examples_helper import run_demos
+
 pg.set_sample_rate(44100)
 
 from pygmu2 import (
@@ -41,56 +42,60 @@ KICK_FILE = AUDIO_DIR / "kick.wav"
 MUSIC_FILE = AUDIO_DIR / "choir.wav"
 VOICE_FILE = AUDIO_DIR / "spoken_voice.wav"
 
+
 def demo_sidechain_ducking():
     """
     Demonstrate sidechain compression (ducking).
-    
+
     Classic EDM technique: bass ducks when kick hits.
     """
     print("=== Sidechain Compression (Ducking) ===")
     print("Bass ducks when 'kick' hits - classic EDM pumping effect.")
     print()
-    
+
     bass_stream = WavReaderPE(str(BASS_FILE))
     sample_rate = bass_stream.file_sample_rate
     kick_stream = WavReaderPE(str(KICK_FILE))
 
     # loop the kick to keep time with the bass
-    samples_per_beat = (60/BASS_BPM) * sample_rate
+    samples_per_beat = (60 / BASS_BPM) * sample_rate
     kick_pulse_stream = LoopPE(kick_stream, loop_end=int(samples_per_beat))
-        
+
     # Create envelope follower from kick
     # Fast attack to catch transients, moderate release for pumping
     kick_env_stream = EnvelopePE(
         kick_pulse_stream,
-        attack=0.001,   # 1ms - instant attack
-        release=0.15,   # 150ms - creates the "pump"
+        attack=0.001,  # 1ms - instant attack
+        release=0.15,  # 150ms - creates the "pump"
     )
-    
+
     # Sidechain compress: bass is ducked by kick envelope
     ducked_bass_stream = DynamicsPE(
-        bass_stream,           # Audio to process
-        kick_env_stream,       # Control signal (from kick)
+        bass_stream,  # Audio to process
+        kick_env_stream,  # Control signal (from kick)
         threshold=-20,  # Start ducking at -20dB
-        ratio=8,        # Strong ducking
+        ratio=8,  # Strong ducking
         makeup_gain=0,
         mode=DynamicsMode.COMPRESS,
     )
-    
+
     # Mix kick and ducked bass
     mix_stream = MixPE(
         GainPE(kick_pulse_stream, gain=0.2),  # Kick (quieter)
-        GainPE(ducked_bass_stream, gain=0.8),   # Ducked bass
+        GainPE(ducked_bass_stream, gain=0.8),  # Ducked bass
     )
-    
+
     print("Kick triggers compression on bass")
     print("Threshold: -20dB, Ratio: 8:1, Release: 150ms")
     print("Listen for the 'pumping' effect on the bass.")
     print()
-    
+
     extent = bass_stream.extent()
     pg.play(
-        pg.GainPE(CropPE(mix_stream, extent.start or 0, extent.end - (extent.start or 0)), gain=0.85),
+        pg.GainPE(
+            CropPE(mix_stream, extent.start or 0, extent.end - (extent.start or 0)),
+            gain=0.85,
+        ),
         sample_rate=sample_rate,
     )
     print()
@@ -99,44 +104,44 @@ def demo_sidechain_ducking():
 def demo_sidechain_ducking_voice():
     """
     Voice ducking - music ducks when voice is present.
-    
+
     Common in podcasts, radio, and announcements.
     """
     print("=== Voice Ducking (Podcast Style) ===")
     print("Music ducks when 'voice' is present.")
     print()
-    
+
     music_stream = WavReaderPE(str(MUSIC_FILE))
     voice_stream = WavReaderPE(str(VOICE_FILE))
     sample_rate = voice_stream.file_sample_rate
-    
+
     # Create envelope from voice
     voice_detector_stream = EnvelopePE(
         voice_stream,
-        attack=0.05,    # 50ms attack (not too fast)
-        release=0.15,    # 150ms release (smooth return)
+        attack=0.05,  # 50ms attack (not too fast)
+        release=0.15,  # 150ms release (smooth return)
     )
-    
+
     # Duck music when voice is present
     ducked_music_stream = DynamicsPE(
         music_stream,
         voice_detector_stream,
         threshold=-40,
-        ratio=4,        # Moderate ducking
+        ratio=4,  # Moderate ducking
         makeup_gain=0,
     )
-    
+
     # Mix voice and ducked music
     mix_stream = MixPE(
         GainPE(voice_stream, gain=0.4),
         GainPE(ducked_music_stream, gain=0.6),
     )
-    
+
     print("Voice detector controls music level")
     print("Attack: 50ms, Release: 150ms (smooth transitions)")
     print("Music ducks during voice portions.")
     print()
-    
+
     pg.play(pg.GainPE(mix_stream, gain=4.73), sample_rate)
     print()
 
@@ -144,7 +149,7 @@ def demo_sidechain_ducking_voice():
 def demo_expander():
     """
     Demonstrate expansion (opposite of compression).
-    
+
     Makes quiet parts quieter, increasing dynamic range.
     """
     print("=== Expander ===")
@@ -153,42 +158,41 @@ def demo_expander():
 
     source_stream = WavReaderPE(str(BASS_FILE))
     sample_rate = source_stream.file_sample_rate
-    
+
     # Create envelope follower
     env_stream = EnvelopePE(source_stream, attack=0.01, release=0.1)
-    
+
     # Expand: reduce gain below threshold
     expanded_stream = DynamicsPE(
         source_stream,
         env_stream,
-        threshold=-6,      # Expand below -6dB
-        ratio=4.0,         # 4:1 expansion (1dB below threshold -> 4dB reduction)
+        threshold=-6,  # Expand below -6dB
+        ratio=4.0,  # 4:1 expansion (1dB below threshold -> 4dB reduction)
         mode=DynamicsMode.EXPAND,
         makeup_gain=0,
     )
-    
+
     print("Threshold: -6dB, Ratio: 4:1 expansion")
     print("Quiet parts become even quieter.")
     print()
-    
+
     pg.play(pg.GainPE(expanded_stream, gain=0.67), sample_rate)
     print()
-
 
 
 def demo_custom_envelope():
     """
     Demonstrate using a custom envelope shape for compression.
-    
+
     Instead of following the input, use a completely separate control signal.
     """
     print("=== Custom Envelope Control ===")
     print("Using an LFO as the control signal for rhythmic compression.")
     print()
-    
+
     pad_stream = WavReaderPE(str(MUSIC_FILE))
     sample_rate = pad_stream.file_sample_rate
-    
+
     # Custom control signal: slow triangle-ish LFO
     # This creates rhythmic "breathing" independent of input level
     lfo_freq = 3
@@ -198,7 +202,7 @@ def demo_custom_envelope():
         GainPE(SinePE(frequency=lfo_freq), gain=0.4),
         ConstantPE(0.5),  # Keep it positive
     )
-    
+
     # Apply compression driven by LFO, not by input
     rhythmic_stream = DynamicsPE(
         pad_stream,
@@ -207,11 +211,11 @@ def demo_custom_envelope():
         ratio=4,
         makeup_gain=0,
     )
-    
+
     print(f"Control signal: {lfo_freq} Hz LFO (not the audio input)")
     print("Creates rhythmic 'breathing' effect")
     print()
-    
+
     pg.play(pg.GainPE(rhythmic_stream, gain=4.95), sample_rate)
     print()
 

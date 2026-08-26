@@ -13,7 +13,6 @@ from typing import Any
 
 import yaml
 
-
 ANNOTATION_SCHEMA_VERSION = 1
 ANNOTATION_TIMEBASE_SECONDS = "seconds"
 
@@ -44,7 +43,9 @@ class FrameAnnotation:
     meta: dict[str, Any]
 
 
-def resolve_annotation_sidecar_path(audio_path: str | Path, sidecar_path: str | Path | None = None) -> Path:
+def resolve_annotation_sidecar_path(
+    audio_path: str | Path, sidecar_path: str | Path | None = None
+) -> Path:
     """Resolve sidecar path, defaulting to <audio_basename>.annotations.yaml."""
     if sidecar_path is not None:
         return Path(sidecar_path)
@@ -122,7 +123,9 @@ def load_annotation_sidecar(path: str | Path) -> list[AnnotationRecord]:
     records: list[AnnotationRecord] = []
     for index, entry in enumerate(annotations_payload):
         if not isinstance(entry, dict):
-            raise ValueError("Invalid annotation sidecar: each annotation must be a mapping.")
+            raise ValueError(
+                "Invalid annotation sidecar: each annotation must be a mapping."
+            )
         records.append(_annotation_from_dict(entry, index=index))
     return records
 

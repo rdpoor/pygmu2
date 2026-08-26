@@ -29,6 +29,7 @@ from pygmu2 import (
     setup_logging,
     set_sample_rate,
 )
+
 logger = get_logger("meltysynth_midi_demo")
 
 SAMPLE_RATE = 44100
@@ -95,6 +96,7 @@ def make_meltysynth_midi_demo(soundfont_path: str, program: int | None = None):
     midi_2ch = SpatialPE(midi_in_pe, method=SpatialAdapter(channels=2))
     return MixPE(midi_2ch, synth_pe)
 
+
 def print_preset_name(synth, patch):
     # channel 0 in your example
     ch = 0
@@ -131,7 +133,9 @@ def main():
     args = parser.parse_args()
 
     setup_logging(level="INFO")
-    soundfont = args.soundfont if args.soundfont is not None else _default_soundfont_path()
+    soundfont = (
+        args.soundfont if args.soundfont is not None else _default_soundfont_path()
+    )
     if not Path(soundfont).exists():
         print(f"SoundFont not found: {soundfont}", file=sys.stderr)
         parser.print_help(sys.stderr)
@@ -142,7 +146,10 @@ def main():
         try:
             program = int(args.program)
         except ValueError:
-            print(f"Invalid --program: {args.program!r}; must be an integer 0-127", file=sys.stderr)
+            print(
+                f"Invalid --program: {args.program!r}; must be an integer 0-127",
+                file=sys.stderr,
+            )
             return 1
         if not 0 <= program <= 127:
             print(f"Program must be 0-127, got {program}", file=sys.stderr)
@@ -150,7 +157,10 @@ def main():
 
     logger.info(
         "soundfont=%s program=%s sample_rate=%s blocksize=%s",
-        soundfont, program, SAMPLE_RATE, BLOCK_SIZE,
+        soundfont,
+        program,
+        SAMPLE_RATE,
+        BLOCK_SIZE,
     )
     print("MIDI → Meltysynth SoundFont. Press keys; Ctrl+C to quit.")
     if program is not None:

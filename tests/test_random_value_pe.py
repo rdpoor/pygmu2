@@ -11,10 +11,10 @@ import pytest
 import pygmu2 as pg
 from pygmu2.random_value_pe import RandomValuePE
 
-
 # ---------------------------------------------------------------------------
 # Construction
 # ---------------------------------------------------------------------------
+
 
 class TestRandomValuePEConstruction:
 
@@ -53,6 +53,7 @@ class TestRandomValuePEConstruction:
 # Output range
 # ---------------------------------------------------------------------------
 
+
 class TestRandomValuePERange:
 
     @pytest.fixture(autouse=True)
@@ -84,6 +85,7 @@ class TestRandomValuePERange:
 # ---------------------------------------------------------------------------
 # Wandering behaviour
 # ---------------------------------------------------------------------------
+
 
 class TestRandomValuePEWanderingBehaviour:
 
@@ -121,14 +123,15 @@ class TestRandomValuePEWanderingBehaviour:
 
         max_delta_slow = float(np.abs(np.diff(out_slow.astype(np.float64))).max())
         max_delta_fast = float(np.abs(np.diff(out_fast.astype(np.float64))).max())
-        assert max_delta_fast > max_delta_slow, (
-            f"Fast rate delta {max_delta_fast:.4f} not > slow rate delta {max_delta_slow:.4f}"
-        )
+        assert (
+            max_delta_fast > max_delta_slow
+        ), f"Fast rate delta {max_delta_fast:.4f} not > slow rate delta {max_delta_slow:.4f}"
 
 
 # ---------------------------------------------------------------------------
 # Reproducibility
 # ---------------------------------------------------------------------------
+
 
 class TestRandomValuePEReproducibility:
 
@@ -161,6 +164,7 @@ class TestRandomValuePEReproducibility:
 # ---------------------------------------------------------------------------
 # PE rate
 # ---------------------------------------------------------------------------
+
 
 class TestRandomValuePEPERate:
 

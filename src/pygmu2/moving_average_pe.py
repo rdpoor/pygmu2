@@ -71,12 +71,13 @@ def window_for_cutoff(
     """
     if isinstance(cutoff_hz, ProcessingElement):
         from pygmu2.transform_pe import TransformPE
+
         _sr = float(sample_rate)
         scale = 0.443 * _sr
 
         def _freq_to_window(freq_data: np.ndarray) -> np.ndarray:
             # freq_data shape: (duration, channels) — use channel 0, broadcast
-            hz = np.maximum(freq_data[:, 0:1], 1e-6)   # avoid div-by-zero
+            hz = np.maximum(freq_data[:, 0:1], 1e-6)  # avoid div-by-zero
             w = np.round(scale / hz)
             return np.clip(w, 1.0, float(_MAX_WINDOW)).astype(np.float32)
 
@@ -210,8 +211,8 @@ class MovingAveragePE(ProcessingElement):
 
         # --- fancy-index the prefix sum ---
         i = np.arange(duration, dtype=np.int64)
-        high = i + max_N                # end of each window (exclusive) in padded
-        low  = i + max_N - N_vals       # start of each window in padded
+        high = i + max_N  # end of each window (exclusive) in padded
+        low = i + max_N - N_vals  # start of each window in padded
 
         result = (padded[high] - padded[low]) / N_vals.reshape(-1, 1)
         return Snippet(start, result.astype(np.float32, copy=False))

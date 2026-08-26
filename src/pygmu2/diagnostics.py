@@ -121,7 +121,9 @@ def get_block_report() -> str:
             count = by_class[cls]["count"]
             total_ms = total_ns / 1_000_000
             avg_ms = total_ms / count if count else 0
-            lines.append(f"  {cls}: total={total_ms:.2f} count={count} avg={avg_ms:.4f}")
+            lines.append(
+                f"  {cls}: total={total_ms:.2f} count={count} avg={avg_ms:.4f}"
+            )
         lines.append("")
 
     if not lines:

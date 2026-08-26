@@ -23,32 +23,36 @@ pg.set_sample_rate(44100)
 def ping():
     return pg.KarplusStrongPE(frequency=440.0)
 
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Demos
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def demo_fixed_rates():
     """Use RandomTriggerPE selected values for rate"""
 
     for rate in [1, 3, 10, 30, 100]:
         trigger_signal = pg.RandomTriggerPE(rate=rate)
-        ding = pg.TriggerRestartPE(trigger = trigger_signal, src = ping())
+        ding = pg.TriggerRestartPE(trigger=trigger_signal, src=ping())
         print(f"  rate = {rate}", flush=True)
         cropped_ding = pg.CropPE(ding, 0, s(4))
         pg.play(pg.GainPE(pad_clip(cropped_ding), gain=1.58))
-        
+
+
 def demo_ramped_rate():
     """Play notes with rate ramping from 1 to 100"""
 
     duration_samples = s(8)
     rate_ramp = pg.PiecewisePE(
         [(0, 1.0), (duration_samples, 100.0)],
-        transition_type=pg.TransitionType.EXPONENTIAL
+        transition_type=pg.TransitionType.EXPONENTIAL,
     )
     trigger_signal = pg.RandomTriggerPE(rate=rate_ramp)
     ding = pg.TriggerRestartPE(trigger=trigger_signal, src=ping())
     cropped_ding = pg.CropPE(ding, 0, duration_samples)
     pg.play(pg.GainPE(pad_clip(cropped_ding), gain=1.74))
+
 
 DEMOS = [
     ("Random Trigger with different fixed rate values", demo_fixed_rates),
@@ -72,4 +76,3 @@ Demo 2: rate ramps exponentially from 1 to 100 Hz over 8 seconds.
 
 if __name__ == "__main__":
     run_demos(DEMOS, readme=README)
-

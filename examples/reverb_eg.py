@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pygmu2 as pg
 from examples_helper import run_demos
+
 pg.set_sample_rate(44100)
 
 

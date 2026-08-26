@@ -19,7 +19,6 @@ import pygmu2 as pg
 from pygmu2.mag_freq_pe import MagFreqPE
 from pygmu2.tralfam_pe import TralfamPE
 
-
 N = 128  # signal length for most tests
 
 
@@ -37,6 +36,7 @@ def magnitude_spectrum(signal_1d):
 
 # ── Subclass relationship ─────────────────────────────────────────────────────
 
+
 class TestTralfamPEIsSubclass:
 
     def test_is_subclass_of_mag_freq_pe(self):
@@ -49,6 +49,7 @@ class TestTralfamPEIsSubclass:
 
 
 # ── repr ──────────────────────────────────────────────────────────────────────
+
 
 class TestTralfamPERepr:
 
@@ -72,13 +73,16 @@ class TestTralfamPERepr:
         assert "padded_length=256" in r
 
     def test_repr_all_params(self):
-        r = repr(TralfamPE(make_source(), seed=7, normalize_peak=0.3, padded_length=512))
+        r = repr(
+            TralfamPE(make_source(), seed=7, normalize_peak=0.3, padded_length=512)
+        )
         assert "seed=7" in r
         assert "normalize_peak=0.3" in r
         assert "padded_length=512" in r
 
 
 # ── Seed / reproducibility ────────────────────────────────────────────────────
+
 
 class TestTralfamPESeed:
 
@@ -104,6 +108,7 @@ class TestTralfamPESeed:
 
 # ── DSP correctness ───────────────────────────────────────────────────────────
 
+
 class TestTralfamPEDSP:
 
     def test_output_uses_source_magnitudes_and_random_phases(self):
@@ -121,7 +126,7 @@ class TestTralfamPEDSP:
         src = make_source()
 
         # Mirror what MagFreqPE._mogrify() does internally
-        source_frames = src.render(0, N).data           # (N, 1), float32
+        source_frames = src.render(0, N).data  # (N, 1), float32
         magnitudes = np.abs(np.fft.fft(source_frames, axis=0))
         random_phases = np.random.default_rng(SEED).random((N, 1)) * 2.0 * np.pi
         expected = np.real(
@@ -135,7 +140,7 @@ class TestTralfamPEDSP:
         """Random phases produce a different time-domain signal."""
         src = make_source()
         original = src.render(0, N).data
-        output   = TralfamPE(src, seed=0).render(0, N).data
+        output = TralfamPE(src, seed=0).render(0, N).data
         assert not np.allclose(output, original)
 
     def test_output_decorrelated_from_input(self):
@@ -145,12 +150,13 @@ class TestTralfamPEDSP:
         """
         src = make_source()
         original = src.render(0, N).data[:, 0]
-        output   = TralfamPE(src, seed=99).render(0, N).data[:, 0]
+        output = TralfamPE(src, seed=99).render(0, N).data[:, 0]
         corr = np.corrcoef(original, output)[0, 1]
-        assert abs(corr) < 0.5   # very loose; random phases decorrelate
+        assert abs(corr) < 0.5  # very loose; random phases decorrelate
 
 
 # ── padded_length ─────────────────────────────────────────────────────────────
+
 
 class TestTralfamPEPaddedLength:
 

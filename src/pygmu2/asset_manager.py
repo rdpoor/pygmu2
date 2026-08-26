@@ -28,6 +28,8 @@ Windows: LOCALAPPDATA
 macOS: ~/Library/Caches
 Linux: ~/.cache
 """
+
+
 def _default_cache_base() -> Path:
     if os.name == "nt":
         local_app_data = os.environ.get("LOCALAPPDATA", str(Path.home()))
@@ -43,6 +45,8 @@ Windows: LOCALAPPDATA
 macOS: ~/Library/Application Support
 Linux: ~/.config
 """
+
+
 def _default_config_base() -> Path:
     if os.name == "nt":
         local_app_data = os.environ.get("LOCALAPPDATA", str(Path.home()))
@@ -50,6 +54,7 @@ def _default_config_base() -> Path:
     if os.name == "posix" and "darwin" in os.uname().sysname.lower():
         return Path.home() / "Library" / "Application Support"
     return Path.home() / ".config"
+
 
 class AssetLoadFailed(RuntimeError):
     pass
@@ -78,6 +83,7 @@ class AssetLoader(ABC):
         """
         try:
             import certifi
+
             context = ssl.create_default_context(cafile=certifi.where())
             logger.debug("Using certifi certificate bundle")
             return context
@@ -153,16 +159,15 @@ class AssetManager:
             if self._asset_loader is not None:
                 # raises AssetLoadFailed on system error
                 resolved_name = self._asset_loader.load_remote_asset(
-                    asset_specification,
-                    self._cache_dir)
+                    asset_specification, self._cache_dir
+                )
             else:
                 raise AssetLoadFailed(
                     "remote asset loading is not configured for this AssetManager"
                 )
         if resolved_name is None:
             # failed to find named asset
-            raise AssetNotFound(
-                f"could not find asset named {asset_specification}")
+            raise AssetNotFound(f"could not find asset named {asset_specification}")
         return resolved_name
 
     def list_remote_assets(self, asset_specification: str) -> list[Path]:
@@ -265,6 +270,7 @@ class GoogleDriveAssetLoader(AssetLoader):
                 https://drive.google.com/drive/folders/1AbCDeFgHiJKlMnOp
             The folder ID is the long token after "/folders/".
     """
+
     def __init__(
         self,
         folder_id: str,
@@ -292,10 +298,10 @@ class GoogleDriveAssetLoader(AssetLoader):
             default_secrets = _default_config_base() / "pygmu2" / "client_secrets.json"
             if default_secrets.exists():
                 self._oauth_client_secrets = default_secrets
-        self._token_path = token_path or (self._default_token_dir() / "gdrive_token.json")
-        self._scopes = scopes or [
-            "https://www.googleapis.com/auth/drive.readonly"
-        ]
+        self._token_path = token_path or (
+            self._default_token_dir() / "gdrive_token.json"
+        )
+        self._scopes = scopes or ["https://www.googleapis.com/auth/drive.readonly"]
         self._api_key_env_var = api_key_env_var
 
         if self._oauth_client_secrets is None and self._api_key_env_var is None:
@@ -555,6 +561,7 @@ class GoogleDriveAssetLoader(AssetLoader):
     def _default_token_dir() -> Path:
         """Get OS-specific default token directory."""
         return _default_config_base() / "pygmu2" / "gdrive_oauth"
+
 
 class GithubUserContentAssetLoader(AssetLoader):
     def __init__(

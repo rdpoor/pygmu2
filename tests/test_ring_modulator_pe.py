@@ -74,7 +74,7 @@ class TestRingModulatorPEExtent:
         assert extent.end is None
 
     def test_extent_intersection_of_carrier_and_modulator(self):
-        carrier = PiecewisePE([(0, 1.0), (1000, 1.0)])   # extent (0, 1000)
+        carrier = PiecewisePE([(0, 1.0), (1000, 1.0)])  # extent (0, 1000)
         modulator = PiecewisePE([(0, 0.5), (500, 0.5)])  # extent (0, 500)
         rm = RingModulatorPE(carrier, modulator)
         extent = rm.extent()
@@ -84,7 +84,7 @@ class TestRingModulatorPEExtent:
     def test_extent_with_pe_bias(self):
         carrier = PiecewisePE([(0, 1.0), (1000, 1.0)])
         modulator = ConstantPE(0.5)
-        bias_pe = PiecewisePE([(0, 0.0), (200, 1.0)])    # extent (0, 200)
+        bias_pe = PiecewisePE([(0, 0.0), (200, 1.0)])  # extent (0, 200)
         rm = RingModulatorPE(carrier, modulator, bias=bias_pe)
         extent = rm.extent()
         assert extent.end == 200
@@ -92,7 +92,7 @@ class TestRingModulatorPEExtent:
     def test_extent_with_pe_mix(self):
         carrier = PiecewisePE([(0, 1.0), (1000, 1.0)])
         modulator = ConstantPE(0.5)
-        mix_pe = PiecewisePE([(0, 0.0), (300, 1.0)])     # extent (0, 300)
+        mix_pe = PiecewisePE([(0, 0.0), (300, 1.0)])  # extent (0, 300)
         rm = RingModulatorPE(carrier, modulator, mix=mix_pe)
         extent = rm.extent()
         assert extent.end == 300
@@ -145,7 +145,7 @@ class TestRingModulatorPERender:
     def test_mono_modulator_stereo_carrier(self):
         """Mono modulator is broadcast to match stereo carrier."""
         carrier = ConstantPE(1.0, channels=2)
-        modulator = ConstantPE(0.5)   # mono
+        modulator = ConstantPE(0.5)  # mono
         rm = RingModulatorPE(carrier, modulator, bias=0.0, mix=1.0)
         renderer = self._setup(rm)
         snippet = rm.render(0, 100)

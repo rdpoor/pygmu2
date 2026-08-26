@@ -71,7 +71,9 @@ def test_sequence_auto_start_none_after_infinite_extent_raises():
     except ValueError as exc:
         assert "infinite extent" in str(exc).lower()
     else:
-        raise AssertionError("Expected ValueError for auto-advance after infinite extent")
+        raise AssertionError(
+            "Expected ValueError for auto-advance after infinite extent"
+        )
 
 
 def test_sequence_auto_start_none_overlap_mode():

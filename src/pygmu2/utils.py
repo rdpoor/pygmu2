@@ -21,7 +21,6 @@ from pygmu2.null_renderer import NullRenderer
 from pygmu2.wav_reader_pe import WavReaderPE
 from pygmu2.wav_writer_pe import WavWriterPE
 
-
 _DEFAULT_CHUNK_FRAMES = 8192
 
 

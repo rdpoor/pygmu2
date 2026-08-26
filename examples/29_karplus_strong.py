@@ -29,7 +29,6 @@ pg.set_sample_rate(44100)
 from pygmu2.karplus_strong_pe import rho_for_decay_db
 from typing import Optional
 
-
 SAMPLE_RATE = 44100
 
 

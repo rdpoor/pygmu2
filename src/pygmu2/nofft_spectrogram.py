@@ -13,7 +13,6 @@ from typing import Literal
 import numpy as np
 import soundfile as sf
 
-
 FrequencyScale = Literal["musical", "logarithmic", "linear", "mel"]
 
 
@@ -76,12 +75,16 @@ def _generate_log_frequencies(
     return np.asarray(freqs, dtype=np.float32)
 
 
-def _generate_linear_frequencies(min_freq: float, max_freq: float, num_bins: int) -> np.ndarray:
+def _generate_linear_frequencies(
+    min_freq: float, max_freq: float, num_bins: int
+) -> np.ndarray:
     num_bins = max(2, num_bins)
     return np.linspace(min_freq, max_freq, num_bins, dtype=np.float32)
 
 
-def _generate_mel_frequencies(min_freq: float, max_freq: float, num_bins: int) -> np.ndarray:
+def _generate_mel_frequencies(
+    min_freq: float, max_freq: float, num_bins: int
+) -> np.ndarray:
     num_bins = max(2, num_bins)
 
     def hz_to_mel(hz: float) -> float:
@@ -93,7 +96,9 @@ def _generate_mel_frequencies(min_freq: float, max_freq: float, num_bins: int) -
     min_mel = hz_to_mel(min_freq)
     max_mel = hz_to_mel(max_freq)
     mel_values = np.linspace(min_mel, max_mel, num_bins, dtype=np.float32)
-    hz_values = np.asarray([mel_to_hz(float(mel)) for mel in mel_values], dtype=np.float32)
+    hz_values = np.asarray(
+        [mel_to_hz(float(mel)) for mel in mel_values], dtype=np.float32
+    )
     return hz_values
 
 
@@ -103,7 +108,9 @@ def generate_frequencies(config: NoFFTSpectrogramConfig) -> np.ndarray:
     min_freq = max(1.0, float(config.min_freq))
     max_freq = max(min_freq + 1.0, float(config.max_freq))
     bins_per_semitone = max(0.25, float(config.bins_per_semitone))
-    estimated_bins = int(np.ceil(12.0 * bins_per_semitone * np.log2(max_freq / min_freq)))
+    estimated_bins = int(
+        np.ceil(12.0 * bins_per_semitone * np.log2(max_freq / min_freq))
+    )
     estimated_bins = max(24, min(estimated_bins, 512))
 
     if config.frequency_scale == "linear":
@@ -115,7 +122,9 @@ def generate_frequencies(config: NoFFTSpectrogramConfig) -> np.ndarray:
     return _generate_musical_frequencies(min_freq, max_freq, bins_per_semitone)
 
 
-def _alpha_from_frequency(freq_hz: np.ndarray, sample_rate: int, cycles_for_decay: float) -> np.ndarray:
+def _alpha_from_frequency(
+    freq_hz: np.ndarray, sample_rate: int, cycles_for_decay: float
+) -> np.ndarray:
     tau = np.maximum(1e-5, cycles_for_decay / np.maximum(freq_hz, 1e-5))
     return 1.0 - np.exp(-1.0 / (tau * sample_rate))
 
@@ -195,7 +204,9 @@ def compute_nofft_spectrogram(
         resonator_imag = one_minus_alpha * resonator_imag + alpha * sample * phasor_imag
 
         if (idx + 1) % hop_size == 0:
-            amps = np.sqrt(resonator_real * resonator_real + resonator_imag * resonator_imag)
+            amps = np.sqrt(
+                resonator_real * resonator_real + resonator_imag * resonator_imag
+            )
             matrix[:, frame_idx] = amps
             frame_idx += 1
             if frame_idx >= n_frames:

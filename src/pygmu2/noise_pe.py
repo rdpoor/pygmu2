@@ -104,13 +104,13 @@ class NoisePE(SourcePE):
         if self._min_value == -1.0 and self._max_value == 1.0:
             return x
         span = self._max_value - self._min_value
-        return ((x + 1.0) * 0.5 * span + self._min_value).astype(
-            np.float32, copy=False
-        )
+        return ((x + 1.0) * 0.5 * span + self._min_value).astype(np.float32, copy=False)
 
     def _render_white(self, duration: int) -> np.ndarray:
         # Uniform in [-1, 1]
-        return self._rng.uniform(-1.0, 1.0, size=duration).astype(np.float32, copy=False)
+        return self._rng.uniform(-1.0, 1.0, size=duration).astype(
+            np.float32, copy=False
+        )
 
     def _render_pink(self, duration: int) -> np.ndarray:
         # Paul Kellet's filter for pink noise

@@ -40,21 +40,23 @@ from pygmu2.wav_reader_pe import WavReaderPE
 
 logger = get_logger(__name__)
 
+
 def _create_ssl_context() -> ssl.SSLContext:
     """
     Create an SSL context for HTTPS requests.
-    
+
     Tries to use certifi's certificate bundle if available,
     otherwise falls back to system defaults.
     """
     try:
         import certifi
+
         context = ssl.create_default_context(cafile=certifi.where())
         logger.debug("Using certifi certificate bundle")
         return context
     except ImportError:
         pass
-    
+
     # Fall back to default context (uses system certificates)
     return ssl.create_default_context()
 
@@ -64,7 +66,7 @@ def _format_ssl_error_message(url: str, exc: Exception) -> str:
     Format a helpful error message for SSL certificate errors.
     """
     base_msg = f"SSL certificate verification failed for {url!r}: {exc}"
-    
+
     if platform.system() == "Darwin":
         # macOS-specific instructions
         return (
@@ -95,6 +97,7 @@ def _format_ssl_error_message(url: str, exc: Exception) -> str:
             "   - Debian/Ubuntu: sudo apt install ca-certificates\n"
             "   - Fedora/RHEL: sudo dnf install ca-certificates"
         )
+
 
 SoundValue = str | List[str]
 
@@ -232,9 +235,7 @@ class AudioLibrary:
 
         if self._is_remote(base):
             if not self._allow_remote:
-                handle_error(
-                    f"Remote base not allowed: {self._base!r}", fatal=True
-                )
+                handle_error(f"Remote base not allowed: {self._base!r}", fatal=True)
             url = base + quote(rel_posix, safe="/:@!$&'()*+,;=")
             cached = self._cache_path(base, rel_posix)
             local_path = self._ensure_downloaded(url, cached)
@@ -410,7 +411,10 @@ class AudioLibrary:
         logger.info(f"Downloading sound: {url}")
         try:
             ssl_context = _create_ssl_context()
-            with request.urlopen(url, context=ssl_context) as response, tmp_path.open("wb") as out:
+            with (
+                request.urlopen(url, context=ssl_context) as response,
+                tmp_path.open("wb") as out,
+            ):
                 while True:
                     chunk = response.read(1024 * 1024)
                     if not chunk:
@@ -419,16 +423,10 @@ class AudioLibrary:
             tmp_path.replace(dest)
         except URLError as exc:
             if isinstance(exc.reason, ssl.SSLCertVerificationError):
-                handle_error(
-                    _format_ssl_error_message(url, exc.reason), fatal=True
-                )
-            handle_error(
-                f"Failed to download sound {url!r}: {exc}", fatal=True
-            )
+                handle_error(_format_ssl_error_message(url, exc.reason), fatal=True)
+            handle_error(f"Failed to download sound {url!r}: {exc}", fatal=True)
         except Exception as exc:
-            handle_error(
-                f"Failed to download sound {url!r}: {exc}", fatal=True
-            )
+            handle_error(f"Failed to download sound {url!r}: {exc}", fatal=True)
         return dest
 
     def _maybe_convert_to_wav(self, path: Path) -> str:
@@ -448,9 +446,7 @@ class AudioLibrary:
             logger.info(f"Converted {path} to {wav_path}")
             return str(wav_path)
         except Exception as exc:
-            if handle_error(
-                f"Failed to convert {path} to WAV: {exc}", fatal=False
-            ):
+            if handle_error(f"Failed to convert {path} to WAV: {exc}", fatal=False):
                 return str(path)
             return str(path)
 
@@ -479,7 +475,10 @@ class AudioLibrary:
         logger.info(f"Downloading Strudel map: {url}")
         try:
             ssl_context = _create_ssl_context()
-            with request.urlopen(url, context=ssl_context) as response, tmp_path.open("wb") as out:
+            with (
+                request.urlopen(url, context=ssl_context) as response,
+                tmp_path.open("wb") as out,
+            ):
                 while True:
                     chunk = response.read(1024 * 1024)
                     if not chunk:
@@ -488,16 +487,10 @@ class AudioLibrary:
             tmp_path.replace(json_path)
         except URLError as exc:
             if isinstance(exc.reason, ssl.SSLCertVerificationError):
-                handle_error(
-                    _format_ssl_error_message(url, exc.reason), fatal=True
-                )
-            handle_error(
-                f"Failed to download Strudel map {url!r}: {exc}", fatal=True
-            )
+                handle_error(_format_ssl_error_message(url, exc.reason), fatal=True)
+            handle_error(f"Failed to download Strudel map {url!r}: {exc}", fatal=True)
         except Exception as exc:
-            handle_error(
-                f"Failed to download Strudel map {url!r}: {exc}", fatal=True
-            )
+            handle_error(f"Failed to download Strudel map {url!r}: {exc}", fatal=True)
         return json_path
 
     @staticmethod

@@ -14,10 +14,10 @@ from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 from pygmu2.track_hold_pe import TrackHoldPE
 
-
 # ---------------------------------------------------------------------------
 # Test helpers
 # ---------------------------------------------------------------------------
+
 
 class _ArrayGate(GateSignal):
     """Minimal GateSignal backed by a fixed array (values must be 0 or 1)."""
@@ -46,6 +46,7 @@ class _ArrayGate(GateSignal):
 # ---------------------------------------------------------------------------
 # Construction tests
 # ---------------------------------------------------------------------------
+
 
 class TestTrackHoldPEConstruction:
 
@@ -87,6 +88,7 @@ class TestTrackHoldPEConstruction:
 # ---------------------------------------------------------------------------
 # Rendering tests
 # ---------------------------------------------------------------------------
+
 
 class TestTrackHoldPERender:
 
@@ -205,6 +207,7 @@ class TestTrackHoldPERender:
 # Integration: with PeriodicGate
 # ---------------------------------------------------------------------------
 
+
 class TestTrackHoldPEIntegration:
 
     def test_with_periodic_gate_tracks_and_holds(self):
@@ -228,8 +231,8 @@ class TestTrackHoldPEIntegration:
         gate_data = gate.render(0, 100).data[:, 0]
         for i in range(1, 100):
             if gate_data[i] == 0 and gate_data[i - 1] == 0:
-                assert out[i] == pytest.approx(out[i - 1], abs=1e-6), (
-                    f"Hold broken at sample {i}: {out[i-1]} → {out[i]}"
-                )
+                assert out[i] == pytest.approx(
+                    out[i - 1], abs=1e-6
+                ), f"Hold broken at sample {i}: {out[i-1]} → {out[i]}"
 
         pg.set_sample_rate(44100)

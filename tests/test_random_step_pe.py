@@ -11,10 +11,10 @@ import pytest
 import pygmu2 as pg
 from pygmu2.random_step_pe import RandomStepPE
 
-
 # ---------------------------------------------------------------------------
 # Construction
 # ---------------------------------------------------------------------------
+
 
 class TestRandomStepPEConstruction:
 
@@ -53,6 +53,7 @@ class TestRandomStepPEConstruction:
 # Output range and shape
 # ---------------------------------------------------------------------------
 
+
 class TestRandomStepPERange:
 
     @pytest.fixture(autouse=True)
@@ -85,6 +86,7 @@ class TestRandomStepPERange:
 # Step (sample-and-hold) behaviour
 # ---------------------------------------------------------------------------
 
+
 class TestRandomStepPEBehaviour:
 
     @pytest.fixture(autouse=True)
@@ -108,7 +110,9 @@ class TestRandomStepPEBehaviour:
         rs = RandomStepPE(rate=10.0, seed=1)
         rs.on_start()
         out = rs.render(0, 500).data[:, 0]
-        assert out.max() - out.min() > 0.01, "Output appears constant — no jumps occurred"
+        assert (
+            out.max() - out.min() > 0.01
+        ), "Output appears constant — no jumps occurred"
 
     def test_low_rate_fewer_jumps(self):
         """Low rate produces fewer value transitions than high rate."""
@@ -123,9 +127,9 @@ class TestRandomStepPEBehaviour:
 
         jumps_low = int(np.sum(np.diff(out_low.astype(np.float64)) != 0.0))
         jumps_high = int(np.sum(np.diff(out_high.astype(np.float64)) != 0.0))
-        assert jumps_low < jumps_high, (
-            f"Low-rate jumps ({jumps_low}) not < high-rate jumps ({jumps_high})"
-        )
+        assert (
+            jumps_low < jumps_high
+        ), f"Low-rate jumps ({jumps_low}) not < high-rate jumps ({jumps_high})"
 
     def test_jump_distribution_is_poisson_like(self):
         """
@@ -144,14 +148,15 @@ class TestRandomStepPEBehaviour:
 
         jumps = int(np.sum(np.diff(out.astype(np.float64)) != 0.0))
         expected = n * rate / sr
-        assert expected * 0.5 < jumps < expected * 1.5, (
-            f"Jump count {jumps} far from expected {expected:.1f}"
-        )
+        assert (
+            expected * 0.5 < jumps < expected * 1.5
+        ), f"Jump count {jumps} far from expected {expected:.1f}"
 
 
 # ---------------------------------------------------------------------------
 # Reproducibility
 # ---------------------------------------------------------------------------
+
 
 class TestRandomStepPEReproducibility:
 
@@ -184,6 +189,7 @@ class TestRandomStepPEReproducibility:
 # ---------------------------------------------------------------------------
 # PE rate
 # ---------------------------------------------------------------------------
+
 
 class TestRandomStepPEPERate:
 

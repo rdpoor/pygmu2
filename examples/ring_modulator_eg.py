@@ -55,6 +55,7 @@ def make_voice():
 # Demos
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def demo_dry_voice():
     """Play the unprocessed voice for reference."""
     pg.play(pg.GainPE(make_voice(), gain=2.14))
@@ -149,7 +150,10 @@ def demo_dynamic_bias():
 
 DEMOS = [
     ("Dry voice (reference)", demo_dry_voice),
-    ("Modulator frequency sweep — pure ring mod (bias=0, mix=1)", demo_modulator_frequency),
+    (
+        "Modulator frequency sweep — pure ring mod (bias=0, mix=1)",
+        demo_modulator_frequency,
+    ),
     ("Static bias steps  (mix=1.0  |  modulator=440 Hz)", demo_static_bias),
     ("Static mix steps  (bias=0.0  |  modulator=440 Hz)", demo_static_mix),
     ("Dynamic mix ramp — dry -> full ring mod", demo_dynamic_mix),

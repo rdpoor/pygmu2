@@ -29,12 +29,15 @@ from pygmu2.biquad_pe import BiquadMode
 # Try to import numba for JIT compilation (optional optimization)
 try:
     from numba import jit
+
     NUMBA_AVAILABLE = True
 except ImportError:
     NUMBA_AVAILABLE = False
+
     def jit(*args, **kwargs):
         def decorator(func):
             return func
+
         return decorator
 
 
@@ -78,7 +81,12 @@ def _svf_varying_numba(
     duration, ch = x.shape
     y_out = np.empty_like(x)
     for n in range(duration):
-        a00, a01, a10, a11 = A_arr[n, 0, 0], A_arr[n, 0, 1], A_arr[n, 1, 0], A_arr[n, 1, 1]
+        a00, a01, a10, a11 = (
+            A_arr[n, 0, 0],
+            A_arr[n, 0, 1],
+            A_arr[n, 1, 0],
+            A_arr[n, 1, 1],
+        )
         b0, b1 = B_arr[n, 0], B_arr[n, 1]
         c0, c1, c2 = C_arr[n, 0], C_arr[n, 1], C_arr[n, 2]
         for c in range(ch):
@@ -252,10 +260,13 @@ def _svf_coefficients(
     a2 = g * a1
     a3 = g * a2
 
-    A = np.array([
-        [2.0 * a1 - 1.0, -2.0 * a2],
-        [2.0 * a2, 1.0 - 2.0 * a3],
-    ], dtype=np.float64)
+    A = np.array(
+        [
+            [2.0 * a1 - 1.0, -2.0 * a2],
+            [2.0 * a2, 1.0 - 2.0 * a3],
+        ],
+        dtype=np.float64,
+    )
     B = np.array([2.0 * a2, 2.0 * a3], dtype=np.float64)
 
     C_v0 = np.array([1.0, 0.0, 0.0], dtype=np.float64)
@@ -415,9 +426,7 @@ class SVFilterPE(ProcessingElement):
         freq_values = self._scalar_or_pe_values(
             self._frequency, start, duration, dtype=np.float64
         )
-        q_values = self._scalar_or_pe_values(
-            self._q, start, duration, dtype=np.float64
-        )
+        q_values = self._scalar_or_pe_values(self._q, start, duration, dtype=np.float64)
 
         sr = self.sample_rate
         if not self._freq_is_pe and not self._q_is_pe:
@@ -473,8 +482,14 @@ class SVFilterPE(ProcessingElement):
         if NUMBA_AVAILABLE:
             mode_int = _MODE_TO_INT[self._mode]
             _svf_coefficients_batch_numba(
-                freq_values, q_values, mode_int, self._gain_db, sample_rate,
-                A_arr, B_arr, C_arr,
+                freq_values,
+                q_values,
+                mode_int,
+                self._gain_db,
+                sample_rate,
+                A_arr,
+                B_arr,
+                C_arr,
             )
             return _svf_varying_numba(x, A_arr, B_arr, C_arr, self._state)
         # Fallback: Python loop over samples
@@ -504,12 +519,10 @@ class SVFilterPE(ProcessingElement):
     def __repr__(self) -> str:
         freq_str = (
             f"{self._frequency.__class__.__name__}(...)"
-            if self._freq_is_pe else str(self._frequency)
+            if self._freq_is_pe
+            else str(self._frequency)
         )
-        q_str = (
-            f"{self._q.__class__.__name__}(...)"
-            if self._q_is_pe else str(self._q)
-        )
+        q_str = f"{self._q.__class__.__name__}(...)" if self._q_is_pe else str(self._q)
         return (
             f"SVFilterPE(source={self._source.__class__.__name__}, "
             f"frequency={freq_str}, q={q_str}, mode={self._mode.value})"

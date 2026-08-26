@@ -71,7 +71,9 @@ class TestReversePitchEchoPERender:
 
     def test_render_output_shape(self):
         source = ConstantPE(0.5, channels=2)
-        rpe = ReversePitchEchoPE(source, block_seconds=0.01, pitch_ratio=1.0, feedback=0.0)
+        rpe = ReversePitchEchoPE(
+            source, block_seconds=0.01, pitch_ratio=1.0, feedback=0.0
+        )
 
         self.renderer.set_source(rpe)
         with self.renderer:
@@ -83,7 +85,9 @@ class TestReversePitchEchoPERender:
 
     def test_produces_wet_signal_after_block(self):
         source = ConstantPE(0.5)
-        rpe = ReversePitchEchoPE(source, block_seconds=0.01, pitch_ratio=1.0, feedback=0.0)
+        rpe = ReversePitchEchoPE(
+            source, block_seconds=0.01, pitch_ratio=1.0, feedback=0.0
+        )
 
         self.renderer.set_source(rpe)
         with self.renderer:
@@ -108,7 +112,9 @@ class TestReversePitchEchoPERender:
     def test_pitch_shift_up(self):
         """Pitch ratio > 1 should still produce output."""
         source = ConstantPE(0.5)
-        rpe = ReversePitchEchoPE(source, block_seconds=0.01, pitch_ratio=2.0, feedback=0.0)
+        rpe = ReversePitchEchoPE(
+            source, block_seconds=0.01, pitch_ratio=2.0, feedback=0.0
+        )
 
         self.renderer.set_source(rpe)
         with self.renderer:
@@ -121,7 +127,9 @@ class TestReversePitchEchoPERender:
     def test_pitch_shift_down(self):
         """Pitch ratio < 1 should still produce output."""
         source = ConstantPE(0.5)
-        rpe = ReversePitchEchoPE(source, block_seconds=0.01, pitch_ratio=0.5, feedback=0.0)
+        rpe = ReversePitchEchoPE(
+            source, block_seconds=0.01, pitch_ratio=0.5, feedback=0.0
+        )
 
         self.renderer.set_source(rpe)
         with self.renderer:
@@ -134,7 +142,9 @@ class TestReversePitchEchoPERender:
     def test_feedback_accumulates(self):
         """With feedback, output should build over multiple blocks."""
         source = ConstantPE(0.5)
-        rpe = ReversePitchEchoPE(source, block_seconds=0.01, pitch_ratio=1.0, feedback=0.8)
+        rpe = ReversePitchEchoPE(
+            source, block_seconds=0.01, pitch_ratio=1.0, feedback=0.8
+        )
 
         self.renderer.set_source(rpe)
         with self.renderer:

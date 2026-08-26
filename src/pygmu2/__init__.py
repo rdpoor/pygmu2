@@ -140,13 +140,16 @@ _lazy_imports = {
     "SVFilterPE": ("pygmu2.svfilter_pe", "SVFilterPE"),
 }
 
+
 def __getattr__(name):
     if name in _lazy_imports:
         module_name, attr_name = _lazy_imports[name]
         import importlib
+
         module = importlib.import_module(module_name)
         return getattr(module, attr_name)
     raise AttributeError(f"module 'pygmu2' has no attribute {name!r}")
+
 
 __all__ = [
     # Configuration

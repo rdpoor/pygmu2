@@ -29,7 +29,9 @@ class TestTimeWarpPEBasics:
         self.renderer.start()
 
         snip = tw.render(0, 5)
-        np.testing.assert_allclose(snip.data[:, 0], np.array([0, 2, 4, 6, 8], dtype=np.float32))
+        np.testing.assert_allclose(
+            snip.data[:, 0], np.array([0, 2, 4, 6, 8], dtype=np.float32)
+        )
 
         self.renderer.stop()
 
@@ -39,7 +41,9 @@ class TestTimeWarpPEBasics:
         self.renderer.start()
 
         snip = tw.render(0, 4)
-        np.testing.assert_allclose(snip.data[:, 0], np.array([0.0, 0.5, 1.0, 1.5], dtype=np.float32))
+        np.testing.assert_allclose(
+            snip.data[:, 0], np.array([0.0, 0.5, 1.0, 1.5], dtype=np.float32)
+        )
 
         self.renderer.stop()
 
@@ -51,7 +55,9 @@ class TestTimeWarpPEBasics:
 
         snip = tw.render(0, 4)
         # indices: 0, 1, 2, 4
-        np.testing.assert_allclose(snip.data[:, 0], np.array([0, 1, 2, 4], dtype=np.float32))
+        np.testing.assert_allclose(
+            snip.data[:, 0], np.array([0, 1, 2, 4], dtype=np.float32)
+        )
 
         self.renderer.stop()
 
@@ -75,7 +81,9 @@ class TestTimeWarpPEBasics:
         _ = tw.render(0, 3)
         tw.reset_state()
         snip = tw.render(0, 3)
-        np.testing.assert_allclose(snip.data[:, 0], np.array([0, 1, 2], dtype=np.float32))
+        np.testing.assert_allclose(
+            snip.data[:, 0], np.array([0, 1, 2], dtype=np.float32)
+        )
 
         self.renderer.stop()
 
@@ -88,7 +96,9 @@ class TestTimeWarpPEBasics:
 
         snip = tw.render(0, 4)
         # indices: 0, -1, -2, -3 => only first in-bounds
-        np.testing.assert_allclose(snip.data[:, 0], np.array([10, 0, 0, 0], dtype=np.float32))
+        np.testing.assert_allclose(
+            snip.data[:, 0], np.array([10, 0, 0, 0], dtype=np.float32)
+        )
 
         self.renderer.stop()
 
@@ -103,4 +113,3 @@ class TestTimeWarpPEBasics:
         tw = TimeWarpPE(IdentityPE(), rate=rate)
         ext = tw.extent()
         assert ext == Extent(0, 7)
-

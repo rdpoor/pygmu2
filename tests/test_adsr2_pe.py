@@ -45,9 +45,7 @@ def setup_renderer():
 
 def gate_array(*segments):
     """Build a 1-D float32 gate from (value, count) pairs."""
-    return np.concatenate(
-        [np.full(n, v, dtype=np.float32) for v, n in segments]
-    )
+    return np.concatenate([np.full(n, v, dtype=np.float32) for v, n in segments])
 
 
 def trigger_array(length, *positions):
@@ -61,6 +59,7 @@ def trigger_array(length, *positions):
 # ---------------------------------------------------------------------------
 # _generate_ramp  (module-level helper)
 # ---------------------------------------------------------------------------
+
 
 class TestGenerateRamp:
 
@@ -93,12 +92,13 @@ class TestGenerateRamp:
         out = np.zeros(10, dtype=np.float32)
         cursor, env = _generate_ramp(out, 1.0, -0.1, 2, 5)
         assert cursor == 7
-        assert abs(env - 0.5) < 1e-6   # 1.0 + 5 * (-0.1)
+        assert abs(env - 0.5) < 1e-6  # 1.0 + 5 * (-0.1)
 
 
 # ---------------------------------------------------------------------------
 # AdsrGatedPE — properties
 # ---------------------------------------------------------------------------
+
 
 class TestAdsrGatedPEBasics:
 
@@ -135,6 +135,7 @@ class TestAdsrGatedPEBasics:
 # AdsrGatedPE — envelope shape (loose tolerance)
 # ---------------------------------------------------------------------------
 
+
 class TestAdsrGatedPERender:
 
     def setup_method(self):
@@ -144,8 +145,8 @@ class TestAdsrGatedPERender:
         gate = ArrayPE(gate_data)
         adsr = AdsrGatedPE(
             gate,
-            attack_time=0.010,   # 10 samples
-            decay_time=0.020,    # 20 samples
+            attack_time=0.010,  # 10 samples
+            decay_time=0.020,  # 20 samples
             sustain_level=0.5,
             release_time=0.030,  # 30 samples
         )
@@ -173,7 +174,7 @@ class TestAdsrGatedPERender:
         """Sustain phase holds at sustain_level while gate is high."""
         adsr = self._make_adsr(gate_array((1, 200)))
         out = self._out(adsr, 0, 200)
-        assert abs(out[50]  - 0.5) < 0.01
+        assert abs(out[50] - 0.5) < 0.01
         assert abs(out[100] - 0.5) < 0.01
         assert abs(out[199] - 0.5) < 0.01
 
@@ -181,15 +182,15 @@ class TestAdsrGatedPERender:
         """Release phase falls from sustain_level to zero."""
         adsr = self._make_adsr(gate_array((1, 50), (0, 50)))
         out = self._out(adsr, 0, 100)
-        assert abs(out[50] - 0.5) < 0.01   # release start
+        assert abs(out[50] - 0.5) < 0.01  # release start
         assert abs(out[65] - 0.25) < 0.05  # midpoint
-        assert abs(out[80]) < 0.01         # complete
+        assert abs(out[80]) < 0.01  # complete
 
     def test_idle_after_release(self):
         """Envelope stays at zero after release completes."""
         adsr = self._make_adsr(gate_array((1, 50), (0, 100)))
         out = self._out(adsr, 0, 150)
-        assert abs(out[90])  < 0.01
+        assert abs(out[90]) < 0.01
         assert abs(out[149]) < 0.01
 
     def test_complete_adsr_cycle(self):
@@ -197,11 +198,11 @@ class TestAdsrGatedPERender:
         adsr = self._make_adsr(gate_array((1, 50), (0, 80)))
         out = self._out(adsr, 0, 130)
         assert np.all(out >= 0.0) and np.all(out <= 1.0)
-        assert abs(out[10] - 1.0) < 0.01   # attack peak → decay starts
-        assert abs(out[30] - 0.5) < 0.01   # sustain starts
-        assert abs(out[50] - 0.5) < 0.01   # gate falls here
+        assert abs(out[10] - 1.0) < 0.01  # attack peak → decay starts
+        assert abs(out[30] - 0.5) < 0.01  # sustain starts
+        assert abs(out[50] - 0.5) < 0.01  # gate falls here
         assert abs(out[65] - 0.25) < 0.05  # release midpoint
-        assert out[85] < 0.01              # idle
+        assert out[85] < 0.01  # idle
 
     def test_early_release_during_attack(self):
         """Gate falls during attack; release starts from partial attack level."""
@@ -238,8 +239,13 @@ class TestAdsrGatedPERender:
     def test_output_always_in_range(self):
         """Output never leaves [0, 1] under rapid gate changes."""
         gate = ArrayPE(np.tile([1.0, 0.0], 25).astype(np.float32))
-        adsr = AdsrGatedPE(gate, attack_time=0.010, decay_time=0.020,
-                            sustain_level=0.5, release_time=0.010)
+        adsr = AdsrGatedPE(
+            gate,
+            attack_time=0.010,
+            decay_time=0.020,
+            sustain_level=0.5,
+            release_time=0.010,
+        )
         self.renderer.set_source(adsr)
         self.renderer.start()
         out = adsr.render(0, 50).data
@@ -250,21 +256,22 @@ class TestAdsrGatedPERender:
         # gate high for 100 samples, then low for 50
         adsr = self._make_adsr(gate_array((1, 100), (0, 50)))
 
-        out_a = self._out(adsr, 0,   50)   # attack + decay + sustain start
-        out_b = self._out(adsr, 50,  50)   # sustain continues (gate still high)
-        out_c = self._out(adsr, 100, 30)   # gate falls → release
+        out_a = self._out(adsr, 0, 50)  # attack + decay + sustain start
+        out_b = self._out(adsr, 50, 50)  # sustain continues (gate still high)
+        out_c = self._out(adsr, 100, 30)  # gate falls → release
 
-        assert abs(out_a[30] - 0.5) < 0.01   # sustain reached
-        assert abs(out_b[0]  - 0.5) < 0.01   # still sustaining
-        assert abs(out_b[49] - 0.5) < 0.01   # still sustaining at buffer end
+        assert abs(out_a[30] - 0.5) < 0.01  # sustain reached
+        assert abs(out_b[0] - 0.5) < 0.01  # still sustaining
+        assert abs(out_b[49] - 0.5) < 0.01  # still sustaining at buffer end
         # release starts at sample 100 (out_c cursor 0)
-        assert abs(out_c[0]  - 0.5) < 0.01   # release just started
+        assert abs(out_c[0] - 0.5) < 0.01  # release just started
         assert abs(out_c[15] - 0.25) < 0.05  # midpoint
 
 
 # ---------------------------------------------------------------------------
 # AdsrGatedPE — sample-accurate values (arange-based semantics)
 # ---------------------------------------------------------------------------
+
 
 class TestAdsrGatedPESampleAccurate:
     """
@@ -282,8 +289,13 @@ class TestAdsrGatedPESampleAccurate:
 
     def _adsr(self, gate_data):
         gate = ArrayPE(gate_data)
-        adsr = AdsrGatedPE(gate, attack_time=0.010, decay_time=0.020,
-                            sustain_level=0.5, release_time=0.030)
+        adsr = AdsrGatedPE(
+            gate,
+            attack_time=0.010,
+            decay_time=0.020,
+            sustain_level=0.5,
+            release_time=0.030,
+        )
         self.renderer.set_source(adsr)
         self.renderer.start()
         return adsr
@@ -304,8 +316,9 @@ class TestAdsrGatedPESampleAccurate:
         out = self._adsr(gate_array((1, 35))).render(0, 35).data.ravel()
         for k in range(20):
             expected = 1.0 - k * 0.025
-            assert abs(out[10 + k] - expected) < 1e-5, \
-                f"out[{10+k}]={out[10+k]}, expected {expected}"
+            assert (
+                abs(out[10 + k] - expected) < 1e-5
+            ), f"out[{10+k}]={out[10+k]}, expected {expected}"
 
     def test_first_sustain_sample(self):
         """Decay completes at sample 30; out[30] = 0.5 exactly."""
@@ -323,19 +336,21 @@ class TestAdsrGatedPESampleAccurate:
         dvdt = 0.5 / 30
         for k in range(30):
             expected = 0.5 - k * dvdt
-            assert abs(out[50 + k] - expected) < 1e-5, \
-                f"out[{50+k}]={out[50+k]}, expected {expected}"
+            assert (
+                abs(out[50 + k] - expected) < 1e-5
+            ), f"out[{50+k}]={out[50+k]}, expected {expected}"
 
     def test_idle_starts_at_sample_80(self):
         """Release completes at sample 80; output is 0.0 from there on."""
         out = self._adsr(gate_array((1, 50), (0, 60))).render(0, 110).data.ravel()
-        assert abs(out[80])  < 1e-5
+        assert abs(out[80]) < 1e-5
         assert abs(out[109]) < 1e-5
 
 
 # ---------------------------------------------------------------------------
 # AdsrGatedPE — edge cases
 # ---------------------------------------------------------------------------
+
 
 class TestAdsrGatedPEEdgeCases:
 
@@ -345,19 +360,29 @@ class TestAdsrGatedPEEdgeCases:
     def test_zero_sustain_level(self):
         """sustain_level=0: decay ramps all the way to zero."""
         gate = ArrayPE(gate_array((1, 50)))
-        adsr = AdsrGatedPE(gate, attack_time=0.010, decay_time=0.020,
-                            sustain_level=0.0, release_time=0.030)
+        adsr = AdsrGatedPE(
+            gate,
+            attack_time=0.010,
+            decay_time=0.020,
+            sustain_level=0.0,
+            release_time=0.030,
+        )
         self.renderer.set_source(adsr)
         self.renderer.start()
         out = adsr.render(0, 50).data.ravel()
-        assert abs(out[30]) < 0.01   # decay complete → 0
+        assert abs(out[30]) < 0.01  # decay complete → 0
         assert abs(out[49]) < 0.01
 
     def test_unit_sustain_level(self):
         """sustain_level=1.0: decay is a no-op; output stays at 1.0."""
         gate = ArrayPE(gate_array((1, 50)))
-        adsr = AdsrGatedPE(gate, attack_time=0.010, decay_time=0.020,
-                            sustain_level=1.0, release_time=0.030)
+        adsr = AdsrGatedPE(
+            gate,
+            attack_time=0.010,
+            decay_time=0.020,
+            sustain_level=1.0,
+            release_time=0.030,
+        )
         self.renderer.set_source(adsr)
         self.renderer.start()
         out = adsr.render(0, 50).data.ravel()
@@ -368,8 +393,13 @@ class TestAdsrGatedPEEdgeCases:
     def test_single_sample_gate_high(self):
         """Gate high for exactly one sample; no crash, output in [0, 1]."""
         gate = ArrayPE(gate_array((1, 1), (0, 60)))
-        adsr = AdsrGatedPE(gate, attack_time=0.010, decay_time=0.020,
-                            sustain_level=0.5, release_time=0.030)
+        adsr = AdsrGatedPE(
+            gate,
+            attack_time=0.010,
+            decay_time=0.020,
+            sustain_level=0.5,
+            release_time=0.030,
+        )
         self.renderer.set_source(adsr)
         self.renderer.start()
         out = adsr.render(0, 61).data
@@ -378,8 +408,13 @@ class TestAdsrGatedPEEdgeCases:
     def test_rapid_gate_changes(self):
         """Rapid alternating gate doesn't crash; output stays in [0, 1]."""
         gate = ArrayPE(np.tile([1.0, 0.0], 25).astype(np.float32))
-        adsr = AdsrGatedPE(gate, attack_time=0.010, decay_time=0.020,
-                            sustain_level=0.5, release_time=0.010)
+        adsr = AdsrGatedPE(
+            gate,
+            attack_time=0.010,
+            decay_time=0.020,
+            sustain_level=0.5,
+            release_time=0.010,
+        )
         self.renderer.set_source(adsr)
         self.renderer.start()
         out = adsr.render(0, 50).data
@@ -389,6 +424,7 @@ class TestAdsrGatedPEEdgeCases:
 # ---------------------------------------------------------------------------
 # AdsrTriggeredPE — properties
 # ---------------------------------------------------------------------------
+
 
 class TestAdsrTriggeredPEBasics:
 
@@ -420,6 +456,7 @@ class TestAdsrTriggeredPEBasics:
 # AdsrTriggeredPE — envelope shape (loose tolerance)
 # ---------------------------------------------------------------------------
 
+
 class TestAdsrTriggeredPERender:
 
     def setup_method(self):
@@ -429,11 +466,11 @@ class TestAdsrTriggeredPERender:
         trigger = ArrayPE(trig_data)
         adsr = AdsrTriggeredPE(
             trigger,
-            attack_time=0.010,       # 10 samples
-            decay_time=0.020,        # 20 samples
+            attack_time=0.010,  # 10 samples
+            decay_time=0.020,  # 20 samples
             sustain_time=sustain_time,
             sustain_level=0.5,
-            release_time=0.030,      # 30 samples
+            release_time=0.030,  # 30 samples
         )
         self.renderer.set_source(adsr)
         self.renderer.start()
@@ -452,29 +489,29 @@ class TestAdsrTriggeredPERender:
         adsr = self._make_adsr(trigger_array(120, 0))
         out = self._out(adsr, 0, 120)
         assert np.all(out >= 0.0) and np.all(out <= 1.0)
-        assert abs(out[10] - 1.0) < 0.01    # decay starts
-        assert abs(out[30] - 0.5) < 0.01    # sustain starts
-        assert abs(out[39] - 0.5) < 0.01    # sustain still held
-        assert abs(out[40] - 0.5) < 0.01    # release starts (env₀=0.5)
-        assert abs(out[55] - 0.25) < 0.05   # release midpoint
-        assert out[70] < 0.01               # idle
+        assert abs(out[10] - 1.0) < 0.01  # decay starts
+        assert abs(out[30] - 0.5) < 0.01  # sustain starts
+        assert abs(out[39] - 0.5) < 0.01  # sustain still held
+        assert abs(out[40] - 0.5) < 0.01  # release starts (env₀=0.5)
+        assert abs(out[55] - 0.25) < 0.05  # release midpoint
+        assert out[70] < 0.01  # idle
 
     def test_sustain_is_timed(self):
         """Sustain expires automatically (no gate required)."""
         # sustain_time=20ms → sustain samples 30-49, release at 50
         adsr = self._make_adsr(trigger_array(100, 0), sustain_time=0.020)
         out = self._out(adsr, 0, 100)
-        assert abs(out[35] - 0.5) < 0.01    # mid-sustain
-        assert abs(out[50] - 0.5) < 0.01    # release starts
-        assert abs(out[65] - 0.25) < 0.05   # release midpoint
-        assert out[80] < 0.01               # idle
+        assert abs(out[35] - 0.5) < 0.01  # mid-sustain
+        assert abs(out[50] - 0.5) < 0.01  # release starts
+        assert abs(out[65] - 0.25) < 0.05  # release midpoint
+        assert out[80] < 0.01  # idle
 
     def test_retrigger_during_release(self):
         """Trigger during release restarts attack from current env level."""
         # First trigger at 0; second at 60 (20 samples into 30-sample release)
         adsr = self._make_adsr(trigger_array(150, 0, 60))
         out = self._out(adsr, 0, 150)
-        assert out[60] < 0.5                # was releasing
+        assert out[60] < 0.5  # was releasing
         # after retrigger, attack rises: expect a peak ≈ 1.0 within 10 more samples
         assert np.max(out[60:75]) > 0.9
 
@@ -492,7 +529,7 @@ class TestAdsrTriggeredPERender:
         # sustain runs 30-39; retrigger at 35 → attack from env=0.5
         adsr = self._make_adsr(trigger_array(150, 0, 35))
         out = self._out(adsr, 0, 150)
-        assert abs(out[35] - 0.5) < 0.05   # env at retrigger
+        assert abs(out[35] - 0.5) < 0.05  # env at retrigger
         # attack from 0.5, T=5 → decay starts at sample 40
         assert abs(out[40] - 1.0) < 0.1
         assert np.all(out >= 0.0) and np.all(out <= 1.0)
@@ -506,11 +543,11 @@ class TestAdsrTriggeredPERender:
     def test_state_persists_across_buffers(self):
         """Envelope state carries correctly across multiple render calls."""
         adsr = self._make_adsr(trigger_array(200, 0))
-        out_a = self._out(adsr, 0,  50)   # attack + decay + sustain start
-        out_b = self._out(adsr, 50, 50)   # release (sustain ends at 40)
+        out_a = self._out(adsr, 0, 50)  # attack + decay + sustain start
+        out_b = self._out(adsr, 50, 50)  # release (sustain ends at 40)
 
-        assert abs(out_a[10] - 1.0) < 0.01    # attack peak
-        assert abs(out_a[30] - 0.5) < 0.01    # sustain starts
+        assert abs(out_a[10] - 1.0) < 0.01  # attack peak
+        assert abs(out_a[30] - 0.5) < 0.01  # sustain starts
         # Buffer B starts at sample 50, which is 10 samples into release
         # env = 0.5 - 10*(0.5/30) ≈ 0.333
         assert 0.2 < out_b[0] < 0.5
@@ -519,6 +556,7 @@ class TestAdsrTriggeredPERender:
 # ---------------------------------------------------------------------------
 # AdsrTriggeredPE — sample-accurate values
 # ---------------------------------------------------------------------------
+
 
 class TestAdsrTriggeredPESampleAccurate:
     """
@@ -539,8 +577,11 @@ class TestAdsrTriggeredPESampleAccurate:
         trigger = ArrayPE(trig_data)
         adsr = AdsrTriggeredPE(
             trigger,
-            attack_time=0.010, decay_time=0.020,
-            sustain_time=0.010, sustain_level=0.5, release_time=0.030,
+            attack_time=0.010,
+            decay_time=0.020,
+            sustain_time=0.010,
+            sustain_level=0.5,
+            release_time=0.030,
         )
         self.renderer.set_source(adsr)
         self.renderer.start()
@@ -549,8 +590,7 @@ class TestAdsrTriggeredPESampleAccurate:
     def test_attack_sample_values(self):
         out = self._adsr(trigger_array(15, 0)).render(0, 15).data.ravel()
         for k in range(10):
-            assert abs(out[k] - k * 0.1) < 1e-5, \
-                f"out[{k}]={out[k]}, expected {k*0.1}"
+            assert abs(out[k] - k * 0.1) < 1e-5, f"out[{k}]={out[k]}, expected {k*0.1}"
 
     def test_first_decay_sample(self):
         out = self._adsr(trigger_array(15, 0)).render(0, 15).data.ravel()
@@ -560,8 +600,9 @@ class TestAdsrTriggeredPESampleAccurate:
         out = self._adsr(trigger_array(35, 0)).render(0, 35).data.ravel()
         for k in range(20):
             expected = 1.0 - k * 0.025
-            assert abs(out[10 + k] - expected) < 1e-5, \
-                f"out[{10+k}]={out[10+k]}, expected {expected}"
+            assert (
+                abs(out[10 + k] - expected) < 1e-5
+            ), f"out[{10+k}]={out[10+k]}, expected {expected}"
 
     def test_sustain_sample_values(self):
         out = self._adsr(trigger_array(45, 0)).render(0, 45).data.ravel()
@@ -572,8 +613,9 @@ class TestAdsrTriggeredPESampleAccurate:
         dvdt = 0.5 / 30
         for k in range(30):
             expected = 0.5 - k * dvdt
-            assert abs(out[40 + k] - expected) < 1e-5, \
-                f"out[{40+k}]={out[40+k]}, expected {expected}"
+            assert (
+                abs(out[40 + k] - expected) < 1e-5
+            ), f"out[{40+k}]={out[40+k]}, expected {expected}"
 
     def test_idle_starts_at_sample_70(self):
         out = self._adsr(trigger_array(100, 0)).render(0, 100).data.ravel()
@@ -585,6 +627,7 @@ class TestAdsrTriggeredPESampleAccurate:
 # AdsrTriggeredPE — edge cases
 # ---------------------------------------------------------------------------
 
+
 class TestAdsrTriggeredPEEdgeCases:
 
     def setup_method(self):
@@ -593,9 +636,14 @@ class TestAdsrTriggeredPEEdgeCases:
     def test_zero_sustain_time(self):
         """sustain_time=0: sustain phase is skipped; release follows decay."""
         trigger = ArrayPE(trigger_array(80, 0))
-        adsr = AdsrTriggeredPE(trigger, attack_time=0.010, decay_time=0.020,
-                                sustain_time=0.0, sustain_level=0.5,
-                                release_time=0.030)
+        adsr = AdsrTriggeredPE(
+            trigger,
+            attack_time=0.010,
+            decay_time=0.020,
+            sustain_time=0.0,
+            sustain_level=0.5,
+            release_time=0.030,
+        )
         self.renderer.set_source(adsr)
         self.renderer.start()
         out = adsr.render(0, 80).data
@@ -607,9 +655,14 @@ class TestAdsrTriggeredPEEdgeCases:
         """Triggers every 5 samples; no crash, output stays in [0, 1]."""
         trig = trigger_array(50, *range(0, 50, 5))
         trigger = ArrayPE(trig)
-        adsr = AdsrTriggeredPE(trigger, attack_time=0.010, decay_time=0.020,
-                                sustain_time=0.010, sustain_level=0.5,
-                                release_time=0.010)
+        adsr = AdsrTriggeredPE(
+            trigger,
+            attack_time=0.010,
+            decay_time=0.020,
+            sustain_time=0.010,
+            sustain_level=0.5,
+            release_time=0.010,
+        )
         self.renderer.set_source(adsr)
         self.renderer.start()
         out = adsr.render(0, 50).data
@@ -619,9 +672,14 @@ class TestAdsrTriggeredPEEdgeCases:
         """Trigger at the last sample of a buffer doesn't crash."""
         trig = trigger_array(50, 49)
         trigger = ArrayPE(trig)
-        adsr = AdsrTriggeredPE(trigger, attack_time=0.010, decay_time=0.020,
-                                sustain_time=0.010, sustain_level=0.5,
-                                release_time=0.010)
+        adsr = AdsrTriggeredPE(
+            trigger,
+            attack_time=0.010,
+            decay_time=0.020,
+            sustain_time=0.010,
+            sustain_level=0.5,
+            release_time=0.010,
+        )
         self.renderer.set_source(adsr)
         self.renderer.start()
         out = adsr.render(0, 50).data

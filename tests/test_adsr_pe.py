@@ -23,6 +23,7 @@ class TestAdsrGatedPEBasics:
 
     def setup_method(self):
         import pygmu2 as pg
+
         pg.set_sample_rate(1000)
         self.renderer = NullRenderer(sample_rate=1000)  # 1kHz for easy math
 
@@ -38,8 +39,8 @@ class TestAdsrGatedPEBasics:
         gate = ConstantPE(1.0)
         adsr = AdsrGatedPE(
             gate,
-            attack_time=0.050,   # 50 samples at 1kHz
-            decay_time=0.200,    # 200 samples at 1kHz
+            attack_time=0.050,  # 50 samples at 1kHz
+            decay_time=0.200,  # 200 samples at 1kHz
             sustain_level=0.5,
             release_time=0.300,  # 300 samples at 1kHz
         )
@@ -76,8 +77,13 @@ class TestAdsrGatedPEBasics:
     def test_state_reset_on_start(self):
         """Test that state resets on _on_start()."""
         gate = ArrayPE([0.0, 1.0, 1.0, 0.0])
-        adsr = AdsrGatedPE(gate, attack_time=0.010, decay_time=0.010,
-                           sustain_level=0.5, release_time=0.010)
+        adsr = AdsrGatedPE(
+            gate,
+            attack_time=0.010,
+            decay_time=0.010,
+            sustain_level=0.5,
+            release_time=0.010,
+        )
         self.renderer.set_source(adsr)
         self.renderer.start()
 
@@ -88,8 +94,13 @@ class TestAdsrGatedPEBasics:
     def test_repr(self):
         """Test string representation contains class name."""
         gate = ConstantPE(1.0)
-        adsr = AdsrGatedPE(gate, attack_time=0.010, decay_time=0.100,
-                           sustain_level=0.7, release_time=0.200)
+        adsr = AdsrGatedPE(
+            gate,
+            attack_time=0.010,
+            decay_time=0.100,
+            sustain_level=0.7,
+            release_time=0.200,
+        )
         assert "AdsrGatedPE" in repr(adsr)
 
 
@@ -98,16 +109,19 @@ class TestAdsrGatedPERender:
 
     def setup_method(self):
         import pygmu2 as pg
+
         pg.set_sample_rate(1000)
         self.renderer = NullRenderer(sample_rate=1000)  # 1kHz for easy math
 
     def test_complete_adsr_cycle(self):
         """Test complete ADSR cycle: gate high -> attack -> decay -> sustain -> gate low -> release."""
         # Gate: high for 500 samples, then low
-        gate_data = np.concatenate([
-            np.ones(500, dtype=np.float32),
-            np.zeros(500, dtype=np.float32),
-        ])
+        gate_data = np.concatenate(
+            [
+                np.ones(500, dtype=np.float32),
+                np.zeros(500, dtype=np.float32),
+            ]
+        )
         gate = ArrayPE(gate_data)
 
         # ADSR: 10-sample attack, 20-sample decay, 0.5 sustain, 30-sample release
@@ -126,12 +140,12 @@ class TestAdsrGatedPERender:
         output = snippet.data[:, 0]
 
         # Attack phase (samples 0-10): ramp from 0 to 1
-        assert abs(output[5] - 0.5) < 0.1    # midpoint
-        assert abs(output[10] - 1.0) < 0.1   # peak
+        assert abs(output[5] - 0.5) < 0.1  # midpoint
+        assert abs(output[10] - 1.0) < 0.1  # peak
 
         # Decay phase (samples 10-30): ramp from 1.0 to 0.5
         assert abs(output[20] - 0.75) < 0.1  # halfway
-        assert abs(output[30] - 0.5) < 0.1   # sustain reached
+        assert abs(output[30] - 0.5) < 0.1  # sustain reached
 
         # Sustain phase (samples 30-500): hold at 0.5
         assert abs(output[100] - 0.5) < 0.01
@@ -150,10 +164,12 @@ class TestAdsrGatedPERender:
     def test_early_release_during_attack(self):
         """Test early release: gate falls during attack phase."""
         # Gate: high for 5 samples (mid-attack), then low
-        gate_data = np.concatenate([
-            np.ones(5, dtype=np.float32),
-            np.zeros(100, dtype=np.float32),
-        ])
+        gate_data = np.concatenate(
+            [
+                np.ones(5, dtype=np.float32),
+                np.zeros(100, dtype=np.float32),
+            ]
+        )
         gate = ArrayPE(gate_data)
 
         # 10-sample attack, 20-sample release, sustain_level=0.5
@@ -178,7 +194,7 @@ class TestAdsrGatedPERender:
         # release_dvdt = -sustain_level / release_samples = -0.5/20 = -0.025
         # Releasing from 0.5 (== sustain_level), so standard timing applies.
         assert abs(output[15] - 0.25) < 0.1  # 10 samples into release
-        assert abs(output[25]) < 0.1          # 20 samples into release → 0
+        assert abs(output[25]) < 0.1  # 20 samples into release → 0
 
     def test_early_release_during_decay(self):
         """Test early release: gate falls during decay phase.
@@ -187,10 +203,12 @@ class TestAdsrGatedPERender:
         of the actual envelope value when release starts.
         """
         # Gate: high for 15 samples (attack done, mid-decay), then low
-        gate_data = np.concatenate([
-            np.ones(15, dtype=np.float32),
-            np.zeros(100, dtype=np.float32),
-        ])
+        gate_data = np.concatenate(
+            [
+                np.ones(15, dtype=np.float32),
+                np.zeros(100, dtype=np.float32),
+            ]
+        )
         gate = ArrayPE(gate_data)
 
         adsr = AdsrGatedPE(
@@ -229,11 +247,13 @@ class TestAdsrGatedPERender:
         of the envelope value at the re-trigger point.
         """
         # Gate: high (0-50), low (50-65), high again (65-115)
-        gate_data = np.concatenate([
-            np.ones(50, dtype=np.float32),
-            np.zeros(15, dtype=np.float32),
-            np.ones(50, dtype=np.float32),
-        ])
+        gate_data = np.concatenate(
+            [
+                np.ones(50, dtype=np.float32),
+                np.zeros(15, dtype=np.float32),
+                np.ones(50, dtype=np.float32),
+            ]
+        )
         gate = ArrayPE(gate_data)
 
         adsr = AdsrGatedPE(
@@ -268,8 +288,13 @@ class TestAdsrGatedPERender:
     def test_idle_state(self):
         """Test that output is zero when gate is always low."""
         gate = ArrayPE([0.0] * 100)
-        adsr = AdsrGatedPE(gate, attack_time=0.010, decay_time=0.020,
-                           sustain_level=0.5, release_time=0.030)
+        adsr = AdsrGatedPE(
+            gate,
+            attack_time=0.010,
+            decay_time=0.020,
+            sustain_level=0.5,
+            release_time=0.030,
+        )
 
         self.renderer.set_source(adsr)
         self.renderer.start()
@@ -307,6 +332,7 @@ class TestAdsrGatedPESampleAccurate:
 
     def setup_method(self):
         import pygmu2 as pg
+
         pg.set_sample_rate(1000)
         self.renderer = NullRenderer(sample_rate=1000)  # 1kHz for easy math
 
@@ -328,9 +354,9 @@ class TestAdsrGatedPESampleAccurate:
         output = snippet.data[:, 0]
 
         # Linear ramp from 0 to 1 over 10 samples (dvdt = 0.1/sample)
-        assert abs(output[0]) < 0.01         # starts at 0
+        assert abs(output[0]) < 0.01  # starts at 0
         assert abs(output[5] - 0.5) < 0.01  # midpoint
-        assert abs(output[10] - 1.0) < 0.01 # peak
+        assert abs(output[10] - 1.0) < 0.01  # peak
 
     def test_precise_decay_ramp(self):
         """Test precise decay ramp values."""
@@ -352,16 +378,18 @@ class TestAdsrGatedPESampleAccurate:
         # Attack completes at cursor 10 (arange-based, exact); decay runs from cursor 10.
         # out[k] = k * 0.1 for k=0..9; out[10+k] = 1.0 - k * 0.025 for k=0..19.
         assert abs(output[10] - 1.0) < 0.01  # first decay sample (k=0)
-        assert abs(output[11] - 0.975) < 0.01 # decay k=1
-        assert abs(output[20] - 0.75) < 0.01 # midpoint (decay k=10 → cursor 20)
+        assert abs(output[11] - 0.975) < 0.01  # decay k=1
+        assert abs(output[20] - 0.75) < 0.01  # midpoint (decay k=10 → cursor 20)
         assert abs(output[30] - 0.5) < 0.01  # sustain reached (decay k=20 → cursor 30)
 
     def test_precise_release_ramp(self):
         """Test precise release ramp values."""
-        gate_data = np.concatenate([
-            np.ones(50, dtype=np.float32),
-            np.zeros(50, dtype=np.float32),
-        ])
+        gate_data = np.concatenate(
+            [
+                np.ones(50, dtype=np.float32),
+                np.zeros(50, dtype=np.float32),
+            ]
+        )
         gate = ArrayPE(gate_data)
         adsr = AdsrGatedPE(
             gate,
@@ -379,8 +407,8 @@ class TestAdsrGatedPESampleAccurate:
 
         # Release: 0.5 → 0.0 over 30 samples starting at sample 50
         assert abs(output[50] - 0.5) < 0.01  # release starts
-        assert abs(output[65] - 0.25) < 0.01 # midpoint (15/30)
-        assert abs(output[80]) < 0.01         # release complete
+        assert abs(output[65] - 0.25) < 0.01  # midpoint (15/30)
+        assert abs(output[80]) < 0.01  # release complete
 
 
 class TestAdsrGatedPEEdgeCases:
@@ -388,6 +416,7 @@ class TestAdsrGatedPEEdgeCases:
 
     def setup_method(self):
         import pygmu2 as pg
+
         pg.set_sample_rate(1000)
         self.renderer = NullRenderer(sample_rate=1000)
 
@@ -457,9 +486,9 @@ class TestAdsrGatedPEEdgeCases:
 
     def test_rapid_gate_changes(self):
         """Test rapid gate on/off changes don't crash and stay in [0,1]."""
-        gate_data = np.array([
-            1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0
-        ], dtype=np.float32)
+        gate_data = np.array(
+            [1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0], dtype=np.float32
+        )
         gate = ArrayPE(gate_data)
         adsr = AdsrGatedPE(
             gate,

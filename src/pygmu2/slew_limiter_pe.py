@@ -111,7 +111,9 @@ class SlewLimiterPE(ProcessingElement):
 
     def _render(self, start: int, duration: int) -> Snippet:
         src = self._source.render(start, duration).data[:, 0]
-        rate_data = self._scalar_or_pe_values(self._rate, start, duration, dtype=np.float32)
+        rate_data = self._scalar_or_pe_values(
+            self._rate, start, duration, dtype=np.float32
+        )
 
         sr = float(self._sample_rate)
         out = np.empty(duration, dtype=np.float32)
@@ -136,13 +138,14 @@ class SlewLimiterPE(ProcessingElement):
                 out[i] = current
         else:  # LOGARITHMIC — slew in octave space, signal stays in Hz
             import math
+
             for i in range(duration):
                 target = float(src[i])
                 if current <= 0.0 or target <= 0.0:
                     # Can't take log of non-positive; jump immediately.
                     current = target if target > 0.0 else current
                 else:
-                    max_oct = float(rate_data[i]) / sr   # octaves per sample
+                    max_oct = float(rate_data[i]) / sr  # octaves per sample
                     delta_oct = math.log2(target) - math.log2(current)
                     if delta_oct > max_oct:
                         delta_oct = max_oct
@@ -155,6 +158,4 @@ class SlewLimiterPE(ProcessingElement):
         return Snippet(start, out.reshape(-1, 1))
 
     def __repr__(self) -> str:
-        return (
-            f"SlewLimiterPE(rate={self._rate!r}, mode={self._mode.value})"
-        )
+        return f"SlewLimiterPE(rate={self._rate!r}, mode={self._mode.value})"

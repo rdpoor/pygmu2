@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pygmu2 as pg
 from examples_helper import run_demos
+
 pg.set_sample_rate(44100)
 
 AUDIO_DIR = Path(__file__).parent / "audio"
@@ -26,10 +27,11 @@ AUDIO_DIR = Path(__file__).parent / "audio"
 # Demos
 # ------------------------------------------------------------------------------
 
+
 def demo_wav():
     """Play a WAV file via AudioReaderPE."""
     audio_file = str(AUDIO_DIR / "djembe_hit.wav")
-    source = pg.AudioReaderPE(audio_file, max_level_db = -3.0)
+    source = pg.AudioReaderPE(audio_file, max_level_db=-3.0)
     print(f"  file: {audio_file}")
     print(f"  native rate : {source.file_sample_rate} Hz")
     print(f"  channels    : {source.channel_count()}")
@@ -40,7 +42,7 @@ def demo_wav():
 def demo_mp3():
     """Play an MP3 file via AudioReaderPE (resampled to 44100 Hz if needed)."""
     audio_file = str(AUDIO_DIR / "clown_horn.mp3")
-    source = pg.AudioReaderPE(audio_file, max_level_db = -3.0)
+    source = pg.AudioReaderPE(audio_file, max_level_db=-3.0)
     print(f"  file: {audio_file}")
     print(f"  native rate : {source.file_sample_rate} Hz")
     print(f"  channels    : {source.channel_count()}")

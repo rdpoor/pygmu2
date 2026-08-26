@@ -32,28 +32,45 @@ SILENCE_DUR = 1.0
 # ------------------------------------------------------------------------------
 # write your demos here, list demo names and demo functions in DEMOS
 
+
 def demo_voice_count():
     for n_voices in [1, 2, 3, 6, 9, 12]:
         ss = pg.SuperSawPE(
             frequency=pg.pitch_to_freq(45),
             amplitude=0.5,
             voices=n_voices,
-            seed = RANDOM_SEED,
+            seed=RANDOM_SEED,
         )
         print(f"n voices = {n_voices}...", flush=True)
-        pg.play(pg.GainPE(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR), gain=0.50))
+        pg.play(
+            pg.GainPE(
+                pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR),
+                gain=0.50,
+            )
+        )
+
 
 def demo_mix_mode():
-    for mix_mode in [pg.SuperSawPE.MIX_EQUAL, pg.SuperSawPE.MIX_LINEAR, pg.SuperSawPE.MIX_CENTER_HEAVY]:
+    for mix_mode in [
+        pg.SuperSawPE.MIX_EQUAL,
+        pg.SuperSawPE.MIX_LINEAR,
+        pg.SuperSawPE.MIX_CENTER_HEAVY,
+    ]:
         ss = pg.SuperSawPE(
             frequency=pg.pitch_to_freq(46),
             amplitude=0.5,
             voices=7,
-            mix_mode = mix_mode,
-            seed = RANDOM_SEED,
+            mix_mode=mix_mode,
+            seed=RANDOM_SEED,
         )
         print(f"mix_mode = {mix_mode}...", flush=True)
-        pg.play(pg.GainPE(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR), gain=0.50))
+        pg.play(
+            pg.GainPE(
+                pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR),
+                gain=0.50,
+            )
+        )
+
 
 def demo_detune_amounts():
     for detune_cents in [3, 12, 25, 40]:
@@ -61,12 +78,18 @@ def demo_detune_amounts():
             frequency=pg.pitch_to_freq(47),
             amplitude=0.5,
             voices=7,
-            detune_cents = detune_cents,
-            mix_mode = pg.SuperSawPE.MIX_CENTER_HEAVY,
-            seed = RANDOM_SEED,
+            detune_cents=detune_cents,
+            mix_mode=pg.SuperSawPE.MIX_CENTER_HEAVY,
+            seed=RANDOM_SEED,
         )
         print(f"detune_cents = {detune_cents}...", flush=True)
-        pg.play(pg.GainPE(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR), gain=0.51))
+        pg.play(
+            pg.GainPE(
+                pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR),
+                gain=0.51,
+            )
+        )
+
 
 def demo_randomize_phase():
     for randomize_phase in [True, False]:
@@ -74,13 +97,19 @@ def demo_randomize_phase():
             frequency=pg.pitch_to_freq(48),
             amplitude=0.5,
             voices=7,
-            detune_cents = 20,
-            mix_mode = pg.SuperSawPE.MIX_CENTER_HEAVY,
-            randomize_phase = randomize_phase,
-            seed = RANDOM_SEED,
+            detune_cents=20,
+            mix_mode=pg.SuperSawPE.MIX_CENTER_HEAVY,
+            randomize_phase=randomize_phase,
+            seed=RANDOM_SEED,
         )
         print(f"randomize_phase = {randomize_phase}...", flush=True)
-        pg.play(pg.GainPE(pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR), gain=0.50))
+        pg.play(
+            pg.GainPE(
+                pad_clip(pg.CropPE(ss, 0, s(PLAY_DUR)), silence_secs=SILENCE_DUR),
+                gain=0.50,
+            )
+        )
+
 
 DEMOS = [
     ("Demo SuperSawPE with varying voice count", demo_voice_count),

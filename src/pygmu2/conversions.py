@@ -22,26 +22,26 @@ def pitch_to_freq(
     pitch: ArrayLike,
     temperament: Temperament | None = None,
     reference_pitch: float | None = None,
-    reference_freq: float | None = None
+    reference_freq: float | None = None,
 ) -> np.ndarray:
     """
     Convert pitch number to frequency in Hz.
-    
+
     By default uses 12-tone equal temperament with A4 = 440 Hz.
     Alternative temperaments can be specified via the temperament parameter
     or by setting a global default with set_temperament().
     Reference frequency can be changed globally with set_reference_frequency().
-    
+
     Args:
         pitch: Pitch number(s). Can be fractional.
                In 12-ET: A4 = 69, Middle C (C4) = 60
         temperament: Temperament to use (default: uses global temperament)
         reference_pitch: Reference pitch number (default: global, typically 69.0 for A4)
         reference_freq: Reference frequency in Hz (default: global, typically 440.0)
-    
+
     Returns:
         Frequency in Hz
-    
+
     Example:
         >>> pitch_to_freq(69)  # A4 in 12-ET
         440.0
@@ -49,7 +49,7 @@ def pitch_to_freq(
         261.6255653...
         >>> pitch_to_freq([60, 64, 67])  # C major chord in 12-ET
         array([261.626, 329.628, 391.995])
-        
+
         >>> # Using alternative tuning (A4 = 432 Hz)
         >>> from pygmu2 import set_reference_frequency
         >>> set_reference_frequency(432.0)
@@ -57,13 +57,15 @@ def pitch_to_freq(
         432.0
     """
     temp = temperament if temperament is not None else get_temperament()
-    
+
     # Get global reference if not specified
     if reference_freq is None or reference_pitch is None:
         global_freq, global_pitch = get_reference_frequency()
         reference_freq = reference_freq if reference_freq is not None else global_freq
-        reference_pitch = reference_pitch if reference_pitch is not None else global_pitch
-    
+        reference_pitch = (
+            reference_pitch if reference_pitch is not None else global_pitch
+        )
+
     return temp.pitch_to_freq(pitch, reference_pitch, reference_freq)
 
 
@@ -71,25 +73,25 @@ def freq_to_pitch(
     freq: ArrayLike,
     temperament: Temperament | None = None,
     reference_pitch: float | None = None,
-    reference_freq: float | None = None
+    reference_freq: float | None = None,
 ) -> np.ndarray:
     """
     Convert frequency in Hz to pitch number.
-    
+
     By default uses 12-tone equal temperament with A4 = 440 Hz.
     Alternative temperaments can be specified via the temperament parameter
     or by setting a global default with set_temperament().
     Reference frequency can be changed globally with set_reference_frequency().
-    
+
     Args:
         freq: Frequency in Hz. Must be positive.
         temperament: Temperament to use (default: uses global temperament)
         reference_pitch: Reference pitch number (default: global, typically 69.0 for A4)
         reference_freq: Reference frequency in Hz (default: global, typically 440.0)
-    
+
     Returns:
         Pitch number (can be fractional for microtones)
-    
+
     Example:
         >>> freq_to_pitch(440.0)  # A4 in 12-ET
         69.0
@@ -99,29 +101,31 @@ def freq_to_pitch(
         array([60., 64., 67.])
     """
     temp = temperament if temperament is not None else get_temperament()
-    
+
     # Get global reference if not specified
     if reference_freq is None or reference_pitch is None:
         global_freq, global_pitch = get_reference_frequency()
         reference_freq = reference_freq if reference_freq is not None else global_freq
-        reference_pitch = reference_pitch if reference_pitch is not None else global_pitch
-    
+        reference_pitch = (
+            reference_pitch if reference_pitch is not None else global_pitch
+        )
+
     return temp.freq_to_pitch(freq, reference_pitch, reference_freq)
 
 
 def ratio_to_db(ratio: ArrayLike) -> np.ndarray:
     """
     Convert linear amplitude ratio to decibels.
-    
+
     Uses the formula: dB = 20 * log10(ratio)
-    
+
     Args:
         ratio: Linear amplitude ratio. Must be positive.
                1.0 = 0 dB, 2.0 ≈ 6.02 dB, 0.5 ≈ -6.02 dB
-    
+
     Returns:
         Value in decibels
-    
+
     Example:
         >>> ratio_to_db(1.0)
         0.0
@@ -141,16 +145,16 @@ def ratio_to_db(ratio: ArrayLike) -> np.ndarray:
 def db_to_ratio(db: ArrayLike) -> np.ndarray:
     """
     Convert decibels to linear amplitude ratio.
-    
+
     Uses the formula: ratio = 10^(dB / 20)
-    
+
     Args:
         db: Value in decibels
             0 dB = 1.0, 6 dB ≈ 2.0, -6 dB ≈ 0.5
-    
+
     Returns:
         Linear amplitude ratio
-    
+
     Example:
         >>> db_to_ratio(0.0)
         1.0
@@ -166,24 +170,23 @@ def db_to_ratio(db: ArrayLike) -> np.ndarray:
 
 
 def semitones_to_ratio(
-    semitones: ArrayLike,
-    temperament: Temperament | None = None
+    semitones: ArrayLike, temperament: Temperament | None = None
 ) -> np.ndarray:
     """
     Convert interval (in scale degrees) to frequency ratio.
-    
+
     By default uses 12-tone equal temperament where 12 semitones = octave.
     In alternative temperaments, the interval is interpreted as scale degrees
     of that temperament.
-    
+
     Args:
         semitones: Interval in scale degrees (semitones in 12-ET).
                    In 12-ET: 12 semitones = octave (ratio 2.0)
         temperament: Temperament to use (default: uses global temperament)
-    
+
     Returns:
         Frequency ratio
-    
+
     Example:
         >>> semitones_to_ratio(12)  # Octave in 12-ET
         2.0
@@ -191,7 +194,7 @@ def semitones_to_ratio(
         1.4983...
         >>> semitones_to_ratio(-12) # Octave down in 12-ET
         0.5
-        
+
         >>> # In 19-ET, 19 scale degrees = octave
         >>> from pygmu2 import EqualTemperament
         >>> et19 = EqualTemperament(19)
@@ -203,24 +206,23 @@ def semitones_to_ratio(
 
 
 def ratio_to_semitones(
-    ratio: ArrayLike,
-    temperament: Temperament | None = None
+    ratio: ArrayLike, temperament: Temperament | None = None
 ) -> np.ndarray:
     """
     Convert frequency ratio to interval (in scale degrees).
-    
+
     By default uses 12-tone equal temperament where octave = 12 semitones.
     In alternative temperaments, returns the interval in scale degrees
     of that temperament.
-    
+
     Args:
         ratio: Frequency ratio. Must be positive.
                2.0 = octave
         temperament: Temperament to use (default: uses global temperament)
-    
+
     Returns:
         Interval in scale degrees (semitones in 12-ET)
-    
+
     Example:
         >>> ratio_to_semitones(2.0)  # Octave in 12-ET
         12.0
@@ -228,7 +230,7 @@ def ratio_to_semitones(
         7.0195...
         >>> ratio_to_semitones(0.5)  # Octave down in 12-ET
         -12.0
-        
+
         >>> # In 19-ET, octave = 19 scale degrees
         >>> from pygmu2 import EqualTemperament
         >>> et19 = EqualTemperament(19)
@@ -242,14 +244,14 @@ def ratio_to_semitones(
 def samples_to_seconds(samples: ArrayLike, sample_rate: float) -> np.ndarray:
     """
     Convert sample count to seconds.
-    
+
     Args:
         samples: Number of samples
         sample_rate: Sample rate in Hz
-    
+
     Returns:
         Duration in seconds
-    
+
     Example:
         >>> samples_to_seconds(44100, 44100)
         1.0
@@ -263,14 +265,14 @@ def samples_to_seconds(samples: ArrayLike, sample_rate: float) -> np.ndarray:
 def seconds_to_samples(seconds: ArrayLike, sample_rate: float) -> np.ndarray:
     """
     Convert seconds to sample count.
-    
+
     Args:
         seconds: Duration in seconds
         sample_rate: Sample rate in Hz
-    
+
     Returns:
         Number of samples (float, caller may want to round)
-    
+
     Example:
         >>> seconds_to_samples(1.0, 44100)
         44100.0

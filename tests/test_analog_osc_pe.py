@@ -57,6 +57,7 @@ class TestAnalogOscPEBasics:
 class TestAnalogOscPERender:
     def setup_method(self):
         import pygmu2 as pg
+
         pg.set_sample_rate(10_000)
         self.renderer = NullRenderer(sample_rate=10_000)
 
@@ -69,7 +70,9 @@ class TestAnalogOscPERender:
         assert snip.channels == 1
 
     def test_render_stereo_channels_are_identical(self):
-        osc = AnalogOscPE(frequency=100.0, duty_cycle=0.25, waveform="rectangle", channels=2)
+        osc = AnalogOscPE(
+            frequency=100.0, duty_cycle=0.25, waveform="rectangle", channels=2
+        )
         self.renderer.set_source(osc)
         snip = osc.render(0, 256)
         assert snip.channels == 2
@@ -85,7 +88,7 @@ class TestAnalogOscPERender:
 
         # With sr=10k and f=100Hz => dt=0.01, BLEP window = 2dt = 0.02.
         # Choose phases comfortably away from edges.
-        assert y[10] == pytest.approx(1.0, abs=1e-3)   # phase=0.10, high
+        assert y[10] == pytest.approx(1.0, abs=1e-3)  # phase=0.10, high
         assert y[40] == pytest.approx(-1.0, abs=1e-3)  # phase=0.40, low
 
     def test_sawtooth_mode_triangle_at_half_duty(self):
@@ -117,12 +120,16 @@ class TestAnalogOscPERender:
         freq_values = np.linspace(80.0, 220.0, n, dtype=np.float32)
 
         # Full render
-        osc_full = AnalogOscPE(frequency=ArrayPE(freq_values), duty_cycle=0.3, waveform="rectangle")
+        osc_full = AnalogOscPE(
+            frequency=ArrayPE(freq_values), duty_cycle=0.3, waveform="rectangle"
+        )
         self.renderer.set_source(osc_full)
         y_full = osc_full.render(0, n).data[:, 0]
 
         # Chunked render (fresh instance)
-        osc_chunk = AnalogOscPE(frequency=ArrayPE(freq_values), duty_cycle=0.3, waveform="rectangle")
+        osc_chunk = AnalogOscPE(
+            frequency=ArrayPE(freq_values), duty_cycle=0.3, waveform="rectangle"
+        )
         self.renderer.set_source(osc_chunk)
         y1 = osc_chunk.render(0, 80).data[:, 0]
         y2 = osc_chunk.render(80, n - 80).data[:, 0]

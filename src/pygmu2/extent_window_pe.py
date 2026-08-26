@@ -110,9 +110,11 @@ class _ExtentWindowPE(ProcessingElement):
                 return source_snippet
 
         # No overlap
-        if (overlap_start >= overlap_end or
-            (crop_start is not None and end <= crop_start) or
-            (crop_end is not None and start >= crop_end)):
+        if (
+            overlap_start >= overlap_end
+            or (crop_start is not None and end <= crop_start)
+            or (crop_end is not None and start >= crop_end)
+        ):
             data = np.zeros((duration, channels), dtype=np.float32)
 
             if crop_start is not None and end <= crop_start:

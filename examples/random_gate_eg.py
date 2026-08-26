@@ -31,9 +31,11 @@ def make_voice():
     """Return a fresh WavReaderPE for the voice file."""
     return pg.WavReaderPE(str(CHOIR_FILE))
 
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Demos
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def demo_fixed_rates():
     """Play gated choir with varying values for rate"""
@@ -44,13 +46,14 @@ def demo_fixed_rates():
         print(f"  rate = {rate}", flush=True)
         pg.play(pg.GainPE(pad_clip(gated_choir), gain=4.95))
 
+
 def demo_ramped_rate():
     """Play gated choir with rate ramping from 1 to 100"""
 
-    looped_choir = pg.LoopPE(make_voice(), count=4) # extend choir
+    looped_choir = pg.LoopPE(make_voice(), count=4)  # extend choir
     rate_ramp = pg.PiecewisePE(
         [(0, 1.0), (looped_choir.extent().end, 100.0)],
-        transition_type=pg.TransitionType.EXPONENTIAL
+        transition_type=pg.TransitionType.EXPONENTIAL,
     )
 
     gate = pg.RandomGatePE(rate=rate_ramp, seed=SEED)
@@ -80,4 +83,3 @@ Demo 2: rate ramps exponentially from 1 to 100 Hz over a looped choir.
 
 if __name__ == "__main__":
     run_demos(DEMOS, readme=README)
-

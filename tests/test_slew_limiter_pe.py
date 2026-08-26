@@ -11,10 +11,10 @@ import pytest
 import pygmu2 as pg
 from pygmu2.slew_limiter_pe import SlewLimiterPE, SlewMode
 
-
 # ---------------------------------------------------------------------------
 # Construction tests
 # ---------------------------------------------------------------------------
+
 
 class TestSlewLimiterPEConstruction:
 
@@ -73,6 +73,7 @@ class TestSlewLimiterPEConstruction:
 # ---------------------------------------------------------------------------
 # Linear mode rendering
 # ---------------------------------------------------------------------------
+
 
 class TestSlewLimiterPELinear:
 
@@ -166,6 +167,7 @@ class TestSlewLimiterPELinear:
 # Exponential mode rendering
 # ---------------------------------------------------------------------------
 
+
 class TestSlewLimiterPEExponential:
 
     @pytest.fixture(autouse=True)
@@ -210,6 +212,7 @@ class TestSlewLimiterPEExponential:
 # ---------------------------------------------------------------------------
 # PE rate input tests
 # ---------------------------------------------------------------------------
+
 
 class TestSlewLimiterPEWithPERate:
 
@@ -265,6 +268,7 @@ class TestSlewLimiterPEWithPERate:
 # Integration: composed stepped random LFO
 # ---------------------------------------------------------------------------
 
+
 class TestSlewLimiterPEComposed:
 
     def test_slew_smooths_stepped_signal(self):
@@ -287,8 +291,8 @@ class TestSlewLimiterPEComposed:
         # The output should be smooth: max difference between consecutive samples
         # is at most 5/100 = 0.05 (the slew limit)
         diffs = np.abs(np.diff(out.astype(np.float64)))
-        assert np.all(diffs <= 0.05 + 1e-6), (
-            f"Max diff {diffs.max():.6f} exceeds slew limit 0.05"
-        )
+        assert np.all(
+            diffs <= 0.05 + 1e-6
+        ), f"Max diff {diffs.max():.6f} exceeds slew limit 0.05"
 
         pg.set_sample_rate(44100)

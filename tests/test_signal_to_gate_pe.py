@@ -22,6 +22,7 @@ def make_source(samples):
 # Construction
 # ---------------------------------------------------------------------------
 
+
 class TestSignalToGatePEConstruction:
 
     def test_is_not_pure(self):
@@ -40,8 +41,13 @@ class TestSignalToGatePEConstruction:
 
     def test_repr(self):
         source = pg.ConstantPE(0.5)
-        pe = SignalToGatePE(source, low_threshold=0.1, high_threshold=0.9,
-                            hysteresis=0.05, holdoff_time=0.01)
+        pe = SignalToGatePE(
+            source,
+            low_threshold=0.1,
+            high_threshold=0.9,
+            hysteresis=0.05,
+            holdoff_time=0.01,
+        )
         r = repr(pe)
         assert "SignalToGatePE" in r
         assert "0.1" in r
@@ -53,6 +59,7 @@ class TestSignalToGatePEConstruction:
 # ---------------------------------------------------------------------------
 # Output shape and value constraints
 # ---------------------------------------------------------------------------
+
 
 class TestSignalToGatePEShape:
 
@@ -70,8 +77,7 @@ class TestSignalToGatePEShape:
     def test_values_exactly_zero_or_one(self):
         """GateSignal constraint: values must be exactly 0.0 or 1.0."""
         signal = np.sin(np.linspace(0, 4 * np.pi, 1000)).astype(np.float32)
-        pe = SignalToGatePE(make_source(signal), low_threshold=-0.5,
-                            high_threshold=0.5)
+        pe = SignalToGatePE(make_source(signal), low_threshold=-0.5, high_threshold=0.5)
         pe.on_start()
         out = pe.render(0, 1000).data[:, 0]
         assert set(out.tolist()).issubset({0.0, 1.0})
@@ -80,6 +86,7 @@ class TestSignalToGatePEShape:
 # ---------------------------------------------------------------------------
 # Threshold logic
 # ---------------------------------------------------------------------------
+
 
 class TestSignalToGatePEThresholds:
 
@@ -151,6 +158,7 @@ class TestSignalToGatePEThresholds:
 # Hysteresis
 # ---------------------------------------------------------------------------
 
+
 class TestSignalToGatePEHysteresis:
 
     @pytest.fixture(autouse=True)
@@ -164,8 +172,9 @@ class TestSignalToGatePEHysteresis:
         Signal at high_threshold + 0.05 (below effective) should not open gate."""
         # high=0.5, hys=0.1 → effective open = 0.6
         source = make_source([0.55, 0.55, 0.65, 0.65])
-        pe = SignalToGatePE(source, low_threshold=0.2, high_threshold=0.5,
-                            hysteresis=0.1)
+        pe = SignalToGatePE(
+            source, low_threshold=0.2, high_threshold=0.5, hysteresis=0.1
+        )
         pe.on_start()
         out = pe.render(0, 4).data[:, 0]
         # 0.55 < 0.6 → gate stays closed; 0.65 > 0.6 → gate opens
@@ -178,8 +187,9 @@ class TestSignalToGatePEHysteresis:
         # Once open, signal at 0.15 is above 0.1 → gate stays open
         # Signal at 0.05 is below 0.1 → gate closes
         source = make_source([0.65, 0.15, 0.15, 0.05, 0.05])
-        pe = SignalToGatePE(source, low_threshold=0.2, high_threshold=0.5,
-                            hysteresis=0.1)
+        pe = SignalToGatePE(
+            source, low_threshold=0.2, high_threshold=0.5, hysteresis=0.1
+        )
         pe.on_start()
         out = pe.render(0, 5).data[:, 0]
         # i=0: 0.65 > 0.6 → opens gate
@@ -190,8 +200,9 @@ class TestSignalToGatePEHysteresis:
     def test_zero_hysteresis_is_default(self):
         """Default hysteresis=0 matches a plain two-threshold Schmitt trigger."""
         source = make_source([1.1, -0.1, 1.1])
-        pe_hys = SignalToGatePE(source, high_threshold=1.0, low_threshold=0.0,
-                                hysteresis=0.0)
+        pe_hys = SignalToGatePE(
+            source, high_threshold=1.0, low_threshold=0.0, hysteresis=0.0
+        )
         pe_hys.on_start()
         out = pe_hys.render(0, 3).data[:, 0]
         np.testing.assert_array_equal(out, [1.0, 0.0, 1.0])
@@ -200,6 +211,7 @@ class TestSignalToGatePEHysteresis:
 # ---------------------------------------------------------------------------
 # Holdoff
 # ---------------------------------------------------------------------------
+
 
 class TestSignalToGatePEHoldoff:
 
@@ -219,14 +231,15 @@ class TestSignalToGatePEHoldoff:
         """
         signal = [1.1] + [-0.1] * 20
         source = make_source(signal)
-        pe = SignalToGatePE(source, high_threshold=1.0, low_threshold=0.0,
-                            holdoff_time=0.005)
+        pe = SignalToGatePE(
+            source, high_threshold=1.0, low_threshold=0.0, holdoff_time=0.005
+        )
         pe.on_start()
         out = pe.render(0, 21).data[:, 0]
 
-        assert out[0] == 1.0              # gate opened
-        assert all(out[1:6] == 1.0)       # samples 1-5: holdoff active
-        assert out[6] == 0.0              # sample 6: holdoff expired, gate closes
+        assert out[0] == 1.0  # gate opened
+        assert all(out[1:6] == 1.0)  # samples 1-5: holdoff active
+        assert out[6] == 0.0  # sample 6: holdoff expired, gate closes
 
     def test_holdoff_suppresses_immediate_open(self):
         """After close transition, holdoff also prevents immediate re-open.
@@ -237,28 +250,32 @@ class TestSignalToGatePEHoldoff:
         - i=7..11: holdoff counts to 0, gate stays closed (even with 1.1)
         - i=12: holdoff=0, 1.1 > 1.0 → gate opens again
         """
-        signal = ([1.1] +          # i=0: open
-                  [-0.1] * 5 +     # i=1-5: holdoff counting
-                  [-0.1] +         # i=6: close
-                  [1.1] * 5 +      # i=7-11: holdoff counting, ignored
-                  [1.1] * 5)       # i=12-16: holdoff expired, re-opens
+        signal = (
+            [1.1]  # i=0: open
+            + [-0.1] * 5  # i=1-5: holdoff counting
+            + [-0.1]  # i=6: close
+            + [1.1] * 5  # i=7-11: holdoff counting, ignored
+            + [1.1] * 5
+        )  # i=12-16: holdoff expired, re-opens
         source = make_source(signal)
-        pe = SignalToGatePE(source, high_threshold=1.0, low_threshold=0.0,
-                            holdoff_time=0.005)
+        pe = SignalToGatePE(
+            source, high_threshold=1.0, low_threshold=0.0, holdoff_time=0.005
+        )
         pe.on_start()
         out = pe.render(0, 17).data[:, 0]
 
-        assert out[0] == 1.0              # gate opened at i=0
-        assert all(out[1:6] == 1.0)       # holdoff active (still open)
-        assert out[6] == 0.0              # gate closes at i=6
-        assert all(out[7:12] == 0.0)      # holdoff active (stays closed)
-        assert out[12] == 1.0             # gate re-opens at i=12
+        assert out[0] == 1.0  # gate opened at i=0
+        assert all(out[1:6] == 1.0)  # holdoff active (still open)
+        assert out[6] == 0.0  # gate closes at i=6
+        assert all(out[7:12] == 0.0)  # holdoff active (stays closed)
+        assert out[12] == 1.0  # gate re-opens at i=12
 
     def test_zero_holdoff_allows_immediate_retrigger(self):
         """Default holdoff_time=0 → transitions happen every sample."""
         source = make_source([1.1, -0.1, 1.1, -0.1])
-        pe = SignalToGatePE(source, high_threshold=1.0, low_threshold=0.0,
-                            holdoff_time=0.0)
+        pe = SignalToGatePE(
+            source, high_threshold=1.0, low_threshold=0.0, holdoff_time=0.0
+        )
         pe.on_start()
         out = pe.render(0, 4).data[:, 0]
         np.testing.assert_array_equal(out, [1.0, 0.0, 1.0, 0.0])
@@ -267,6 +284,7 @@ class TestSignalToGatePEHoldoff:
 # ---------------------------------------------------------------------------
 # State persistence and lifecycle
 # ---------------------------------------------------------------------------
+
 
 class TestSignalToGatePEState:
 
@@ -303,15 +321,17 @@ class TestSignalToGatePEState:
     def test_on_start_resets_holdoff(self):
         """on_start() clears any in-progress holdoff from a previous run."""
         source = make_source([1.1] + [-0.1] * 3)
-        pe = SignalToGatePE(source, high_threshold=1.0, low_threshold=0.0,
-                            holdoff_time=0.010)
+        pe = SignalToGatePE(
+            source, high_threshold=1.0, low_threshold=0.0, holdoff_time=0.010
+        )
         pe.on_start()
         pe.render(0, 4)  # opens gate; holdoff_remaining > 0 after this chunk
 
         # Fresh start: gate is closed, holdoff_remaining is 0
         source2 = make_source([-0.5, -0.5])
-        pe2 = SignalToGatePE(source2, high_threshold=1.0, low_threshold=0.0,
-                             holdoff_time=0.010)
+        pe2 = SignalToGatePE(
+            source2, high_threshold=1.0, low_threshold=0.0, holdoff_time=0.010
+        )
         pe2.on_start()
         out = pe2.render(0, 2).data[:, 0]
         np.testing.assert_array_equal(out, [0.0, 0.0])
@@ -320,6 +340,7 @@ class TestSignalToGatePEState:
 # ---------------------------------------------------------------------------
 # Extent
 # ---------------------------------------------------------------------------
+
 
 class TestSignalToGatePEExtent:
 

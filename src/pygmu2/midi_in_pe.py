@@ -74,9 +74,7 @@ class MidiInPE(SourcePE):
         callback: MidiMessageCallback = None,
     ):
         if mido is None:
-            raise RuntimeError(
-                "MidiInPE requires mido. Install with: pip install mido"
-            )
+            raise RuntimeError("MidiInPE requires mido. Install with: pip install mido")
         self._port_name = port_name
         self._callback = callback
         self._message_queue: queue.Queue = queue.Queue()
@@ -88,9 +86,7 @@ class MidiInPE(SourcePE):
 
     def _on_start(self) -> None:
         """Open the MIDI input connection with callback."""
-        self._port = mido.open_input(
-            name=self._port_name, callback=self._mido_callback
-        )
+        self._port = mido.open_input(name=self._port_name, callback=self._mido_callback)
 
     def _on_stop(self) -> None:
         """Close the MIDI input connection."""

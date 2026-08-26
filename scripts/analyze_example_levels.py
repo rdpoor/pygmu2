@@ -69,13 +69,14 @@ pg.browse = _fake_play
 
 # ── Level analysis ────────────────────────────────────────────────────────────
 
+
 def analyze_wav(path: str) -> tuple[float, float]:
     """Return (peak_dBFS, rms_dBFS) for a WAV file."""
     data, _ = sf.read(path, dtype="float32")
     if data.ndim == 1:
         data = data[:, None]
     peak = float(np.max(np.abs(data)))
-    rms = float(np.sqrt(np.mean(data ** 2)))
+    rms = float(np.sqrt(np.mean(data**2)))
     peak = max(peak, 1e-10)
     rms = max(rms, 1e-10)
     return 20 * math.log10(peak), 20 * math.log10(rms)
@@ -103,6 +104,7 @@ def load_module(py_file: Path):
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
+
 
 def run_all(target_db: float = -6.0) -> list[tuple]:
     """

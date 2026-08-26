@@ -71,7 +71,9 @@ class GateSignal(ProcessingElement, ABC):
             raise TypeError(f"GateSignal must render a numpy array, got {type(arr)}")
 
         if arr.ndim != 2 or arr.shape[1] != 1:
-            raise ValueError(f"GateSignal must be mono with shape (N,1); got {arr.shape}")
+            raise ValueError(
+                f"GateSignal must be mono with shape (N,1); got {arr.shape}"
+            )
 
         if arr.dtype.kind not in ("f", "i", "u"):
             raise TypeError(f"GateSignal must render numeric dtype; got {arr.dtype}")

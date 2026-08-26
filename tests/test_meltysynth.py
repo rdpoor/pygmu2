@@ -122,7 +122,12 @@ class TestArrayMath:
 # ---------------------------------------------------------------------------
 class TestBinaryReaderEx:
     def test_read_int32_little_endian(self):
-        data = (0x01).to_bytes(1, "little") + (0x02).to_bytes(1, "little") + (0x03).to_bytes(1, "little") + (0x04).to_bytes(1, "little")
+        data = (
+            (0x01).to_bytes(1, "little")
+            + (0x02).to_bytes(1, "little")
+            + (0x03).to_bytes(1, "little")
+            + (0x04).to_bytes(1, "little")
+        )
         r = io.BytesIO(data)
         assert BinaryReaderEx.read_int32(r) == 0x04030201
 
@@ -144,7 +149,7 @@ class TestBinaryReaderEx:
         assert BinaryReaderEx.read_fixed_length_string(r, 8) == "hello"
 
     def test_read_int_variable_length_single_byte(self):
-        r = io.BytesIO(bytes([0x7f]))
+        r = io.BytesIO(bytes([0x7F]))
         assert BinaryReaderEx.read_int_variable_length(r) == 0x7F
 
     def test_read_int_variable_length_two_bytes(self):

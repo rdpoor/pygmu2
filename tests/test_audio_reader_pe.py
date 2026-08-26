@@ -18,10 +18,10 @@ import pytest
 
 import pygmu2 as pg
 
-
 # ---------------------------------------------------------------------------
 # Fake miniaudio module
 # ---------------------------------------------------------------------------
+
 
 def _make_fake_miniaudio(
     nchannels: int = 2,
@@ -58,7 +58,11 @@ def _make_fake_miniaudio(
 
     ma.SampleFormat = SampleFormat
     ma.get_file_info = lambda path: FileInfo()
-    ma.decode_file = lambda path, output_format, nchannels, sample_rate: DecodedSoundFile(decoded_data)
+    ma.decode_file = (
+        lambda path, output_format, nchannels, sample_rate: DecodedSoundFile(
+            decoded_data
+        )
+    )
 
     return ma
 
@@ -76,6 +80,7 @@ def _inject_fake_miniaudio():
 # ---------------------------------------------------------------------------
 # Construction
 # ---------------------------------------------------------------------------
+
 
 class TestAudioReaderPEConstruction:
 
@@ -116,6 +121,7 @@ class TestAudioReaderPEConstruction:
 # Extent
 # ---------------------------------------------------------------------------
 
+
 class TestAudioReaderPEExtent:
 
     def test_extent_matches_frame_count_at_same_rate(self):
@@ -143,6 +149,7 @@ class TestAudioReaderPEExtent:
 # ---------------------------------------------------------------------------
 # Rendering
 # ---------------------------------------------------------------------------
+
 
 class TestAudioReaderPERender:
 
@@ -231,12 +238,13 @@ class TestAudioReaderPERender:
 # Lifecycle
 # ---------------------------------------------------------------------------
 
+
 class TestAudioReaderPELifecycle:
 
     def test_on_stop_releases_buffer(self):
         sys.modules["miniaudio"] = _make_fake_miniaudio(num_frames=100)
         pe = pg.AudioReaderPE("song.mp3")
-        pe.render(0, 10)          # triggers decode
+        pe.render(0, 10)  # triggers decode
         assert pe._data is not None
         pe.on_stop()
         assert pe._data is None
@@ -264,6 +272,7 @@ class TestAudioReaderPELifecycle:
 # ---------------------------------------------------------------------------
 # Gain / normalization
 # ---------------------------------------------------------------------------
+
 
 class TestAudioReaderPEGain:
 
@@ -321,6 +330,7 @@ class TestAudioReaderPEGain:
 # Missing dependency
 # ---------------------------------------------------------------------------
 
+
 class TestAudioReaderPEMissingDep:
 
     def test_missing_miniaudio_raises_import_error(self):
@@ -328,8 +338,11 @@ class TestAudioReaderPEMissingDep:
         # Remove the fake module to simulate miniaudio being absent
         sys.modules.pop("miniaudio", None)
         # Also make import fail
-        real_import = __builtins__.__import__ if hasattr(__builtins__, "__import__") else None
+        real_import = (
+            __builtins__.__import__ if hasattr(__builtins__, "__import__") else None
+        )
         import builtins
+
         original = builtins.__import__
 
         def _block_miniaudio(name, *args, **kwargs):

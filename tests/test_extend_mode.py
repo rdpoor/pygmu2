@@ -18,6 +18,7 @@ from pygmu2 import (
     CropPE,
 )
 
+
 class TestArrayExtendMode:
     def setup_method(self):
         self.renderer = NullRenderer(sample_rate=44100)
@@ -30,7 +31,9 @@ class TestArrayExtendMode:
 
         self.renderer.set_source(array_stream)
         snippet = array_stream.render(-2, 8)
-        expected = np.array([[0], [0], [10], [11], [12], [13], [0], [0]], dtype=np.float32)
+        expected = np.array(
+            [[0], [0], [10], [11], [12], [13], [0], [0]], dtype=np.float32
+        )
         np.testing.assert_array_almost_equal(snippet.data, expected)
 
         # extend_mode = HOLD_FIRST
@@ -40,7 +43,9 @@ class TestArrayExtendMode:
 
         self.renderer.set_source(array_stream)
         snippet = array_stream.render(-2, 8)
-        expected = np.array([[10], [10], [10], [11], [12], [13], [0], [0]], dtype=np.float32)
+        expected = np.array(
+            [[10], [10], [10], [11], [12], [13], [0], [0]], dtype=np.float32
+        )
         np.testing.assert_array_almost_equal(snippet.data, expected)
 
         # extend_mode = HOLD_LAST
@@ -50,7 +55,9 @@ class TestArrayExtendMode:
 
         self.renderer.set_source(array_stream)
         snippet = array_stream.render(-2, 8)
-        expected = np.array([[0], [0], [10], [11], [12], [13], [13], [13]], dtype=np.float32)
+        expected = np.array(
+            [[0], [0], [10], [11], [12], [13], [13], [13]], dtype=np.float32
+        )
         np.testing.assert_array_almost_equal(snippet.data, expected)
 
         # extend_mode = HOLD_BOTH
@@ -60,7 +67,9 @@ class TestArrayExtendMode:
 
         self.renderer.set_source(array_stream)
         snippet = array_stream.render(-2, 8)
-        expected = np.array([[10], [10], [10], [11], [12], [13], [13], [13]], dtype=np.float32)
+        expected = np.array(
+            [[10], [10], [10], [11], [12], [13], [13], [13]], dtype=np.float32
+        )
         np.testing.assert_array_almost_equal(snippet.data, expected)
 
 
@@ -77,37 +86,55 @@ class TestRampExtendMode:
 
         self.renderer.set_source(ramp_stream)
         snippet = ramp_stream.render(-2, 8)
-        expected = np.array([[0.0], [0.0], [10.0], [12.5], [15.0], [17.5], [0.0], [0.0]], dtype=np.float32)
+        expected = np.array(
+            [[0.0], [0.0], [10.0], [12.5], [15.0], [17.5], [0.0], [0.0]],
+            dtype=np.float32,
+        )
         np.testing.assert_array_almost_equal(snippet.data, expected, decimal=4)
 
         # extend_mode = HOLD_FIRST
         # sample index:     -2   -1    0     1     2     3   4  5
         # values:           10.0, 10.0, 10.0, 12.5, 15.0, 17.5, 0, 0
-        ramp_stream = PiecewisePE([(0, 10.0), (4, 20.0)], extend_mode=ExtendMode.HOLD_FIRST)
+        ramp_stream = PiecewisePE(
+            [(0, 10.0), (4, 20.0)], extend_mode=ExtendMode.HOLD_FIRST
+        )
 
         self.renderer.set_source(ramp_stream)
         snippet = ramp_stream.render(-2, 8)
-        expected = np.array([[10.0], [10.0], [10.0], [12.5], [15.0], [17.5], [0.0], [0.0]], dtype=np.float32)
+        expected = np.array(
+            [[10.0], [10.0], [10.0], [12.5], [15.0], [17.5], [0.0], [0.0]],
+            dtype=np.float32,
+        )
         np.testing.assert_array_almost_equal(snippet.data, expected, decimal=4)
 
         # extend_mode = HOLD_LAST (hold last *point* value 20.0 after segment, not last sample 17.5)
         # sample index:     -2 -1   0     1     2     3     4     5
         # values:            0, 0, 10.0, 12.5, 15.0, 17.5, 20.0, 20.0
-        ramp_stream = PiecewisePE([(0, 10.0), (4, 20.0)], extend_mode=ExtendMode.HOLD_LAST)
+        ramp_stream = PiecewisePE(
+            [(0, 10.0), (4, 20.0)], extend_mode=ExtendMode.HOLD_LAST
+        )
 
         self.renderer.set_source(ramp_stream)
         snippet = ramp_stream.render(-2, 8)
-        expected = np.array([[0.0], [0.0], [10.0], [12.5], [15.0], [17.5], [20.0], [20.0]], dtype=np.float32)
+        expected = np.array(
+            [[0.0], [0.0], [10.0], [12.5], [15.0], [17.5], [20.0], [20.0]],
+            dtype=np.float32,
+        )
         np.testing.assert_array_almost_equal(snippet.data, expected, decimal=4)
 
         # extend_mode = HOLD_BOTH (hold last point value 20.0 after segment)
         # sample index:     -2   -1    0     1     2     3     4     5
         # values:           10.0, 10.0, 10.0, 12.5, 15.0, 17.5, 20.0, 20.0
-        ramp_stream = PiecewisePE([(0, 10.0), (4, 20.0)], extend_mode=ExtendMode.HOLD_BOTH)
+        ramp_stream = PiecewisePE(
+            [(0, 10.0), (4, 20.0)], extend_mode=ExtendMode.HOLD_BOTH
+        )
 
         self.renderer.set_source(ramp_stream)
         snippet = ramp_stream.render(-2, 8)
-        expected = np.array([[10.0], [10.0], [10.0], [12.5], [15.0], [17.5], [20.0], [20.0]], dtype=np.float32)
+        expected = np.array(
+            [[10.0], [10.0], [10.0], [12.5], [15.0], [17.5], [20.0], [20.0]],
+            dtype=np.float32,
+        )
         np.testing.assert_array_almost_equal(snippet.data, expected, decimal=4)
 
 
@@ -127,7 +154,9 @@ class TestCropExtendMode:
 
         self.renderer.set_source(cropped)
         snippet = cropped.render(-2, 8)
-        expected = np.array([[0], [0], [0], [11], [12], [0], [0], [0]], dtype=np.float32)
+        expected = np.array(
+            [[0], [0], [0], [11], [12], [0], [0], [0]], dtype=np.float32
+        )
         np.testing.assert_array_almost_equal(snippet.data, expected)
 
         # extend_mode = HOLD_FIRST
@@ -137,7 +166,9 @@ class TestCropExtendMode:
 
         self.renderer.set_source(cropped)
         snippet = cropped.render(-2, 8)
-        expected = np.array([[11], [11], [11], [11], [12], [0], [0], [0]], dtype=np.float32)
+        expected = np.array(
+            [[11], [11], [11], [11], [12], [0], [0], [0]], dtype=np.float32
+        )
         np.testing.assert_array_almost_equal(snippet.data, expected)
 
         # extend_mode = HOLD_LAST
@@ -147,7 +178,9 @@ class TestCropExtendMode:
 
         self.renderer.set_source(cropped)
         snippet = cropped.render(-2, 8)
-        expected = np.array([[0], [0], [0], [11], [12], [12], [12], [12]], dtype=np.float32)
+        expected = np.array(
+            [[0], [0], [0], [11], [12], [12], [12], [12]], dtype=np.float32
+        )
         np.testing.assert_array_almost_equal(snippet.data, expected)
 
         # extend_mode = HOLD_BOTH
@@ -157,6 +190,7 @@ class TestCropExtendMode:
 
         self.renderer.set_source(cropped)
         snippet = cropped.render(-2, 8)
-        expected = np.array([[11], [11], [11], [11], [12], [12], [12], [12]], dtype=np.float32)
+        expected = np.array(
+            [[11], [11], [11], [11], [12], [12], [12], [12]], dtype=np.float32
+        )
         np.testing.assert_array_almost_equal(snippet.data, expected)
-

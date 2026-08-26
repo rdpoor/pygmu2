@@ -78,7 +78,11 @@ def main() -> int:
         "--output",
         "-o",
         type=Path,
-        default=Path(__file__).resolve().parent.parent / "src" / "pygmu2" / "assets" / "kemar",
+        default=Path(__file__).resolve().parent.parent
+        / "src"
+        / "pygmu2"
+        / "assets"
+        / "kemar",
         help="Output directory for .wav files (default: src/pygmu2/assets/kemar)",
     )
     parser.add_argument(

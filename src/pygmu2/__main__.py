@@ -16,13 +16,13 @@ def main():
     # Set up logging
     logger = set_global_logging(level="INFO")
     logger.info(f"pygmu2 v{__version__} starting...")
-    
+
     # Example usage
     if len(sys.argv) > 1:
         name = sys.argv[1]
     else:
         name = "World"
-    
+
     message = hello(name)
     print(message)
     logger.info("Application completed successfully")

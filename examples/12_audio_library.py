@@ -10,6 +10,7 @@ MIT License
 
 from pygmu2 import AudioLibrary, WavReaderPE, LoopPE, MixPE, DelayPE
 import pygmu2 as pg
+
 pg.set_sample_rate(44100)
 
 
@@ -30,11 +31,12 @@ source_stream = WavReaderPE(sound_path)
 loop_source_stream = WavReaderPE(loop_path)
 looped_stream = LoopPE(loop_source_stream, count=LOOP_COUNT)
 mixed_stream = MixPE(
-    source_stream, 
-    DelayPE(source_stream, delay=loop_source_stream.extent().end), 
-    DelayPE(source_stream, delay=2 * loop_source_stream.extent().end), 
-    DelayPE(source_stream, delay=3 * loop_source_stream.extent().end), 
-    looped_stream)
+    source_stream,
+    DelayPE(source_stream, delay=loop_source_stream.extent().end),
+    DelayPE(source_stream, delay=2 * loop_source_stream.extent().end),
+    DelayPE(source_stream, delay=3 * loop_source_stream.extent().end),
+    looped_stream,
+)
 file_sr = source_stream.file_sample_rate
 
 extent = mixed_stream.extent()

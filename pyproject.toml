@@ -88,6 +88,8 @@ addopts = [
 [tool.black]
 line-length = 88
 target-version = ['py312', 'py313']
+# Vendored third-party code is not ours to reformat
+extend-exclude = 'src/pygmu2/meltysynth/'
 
 [tool.mypy]
 python_version = "3.12"

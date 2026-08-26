@@ -73,7 +73,9 @@ class ReverbPE(ProcessingElement):
             if not (0.0 <= mix <= 1.0):
                 raise ValueError(f"mix must be in [0.0, 1.0], got {mix}")
 
-        self._ir_energy = ConvolvePE.ir_energy_norm(self._ir) if self._normalize_ir else 1.0
+        self._ir_energy = (
+            ConvolvePE.ir_energy_norm(self._ir) if self._normalize_ir else 1.0
+        )
 
         # Build internal graph
         self._wet_stream = ConvolvePE(self._source, self._ir, fft_size=self._fft_size)
@@ -130,7 +132,11 @@ class ReverbPE(ProcessingElement):
         return self._out.render(start, duration)
 
     def __repr__(self) -> str:
-        mix_name = self._mix.__class__.__name__ if isinstance(self._mix, ProcessingElement) else str(self._mix)
+        mix_name = (
+            self._mix.__class__.__name__
+            if isinstance(self._mix, ProcessingElement)
+            else str(self._mix)
+        )
         return (
             f"ReverbPE(source={self._source.__class__.__name__}, "
             f"ir={self._ir.__class__.__name__}, mix={mix_name}, "

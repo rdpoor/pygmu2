@@ -147,7 +147,9 @@ class TimeWarpPE(ProcessingElement):
     def _render(self, start: int, duration: int) -> Snippet:
         # Rate is mono control (channel 0). We intentionally do not attempt
         # to handle per-channel rate in this PE.
-        rate_values = self._scalar_or_pe_values(self._rate, start, duration, dtype=np.float64)
+        rate_values = self._scalar_or_pe_values(
+            self._rate, start, duration, dtype=np.float64
+        )
 
         # Compute read indices for each output sample:
         # indices[0] = pos
@@ -155,7 +157,9 @@ class TimeWarpPE(ProcessingElement):
         if duration == 1:
             indices = np.array([self._pos], dtype=np.float64)
         else:
-            prefix = np.concatenate(([0.0], np.cumsum(rate_values[:-1], dtype=np.float64)))
+            prefix = np.concatenate(
+                ([0.0], np.cumsum(rate_values[:-1], dtype=np.float64))
+            )
             indices = self._pos + prefix
 
         # Update state for next render
@@ -193,4 +197,3 @@ class TimeWarpPE(ProcessingElement):
             f"TimeWarpPE(source={self._source.__class__.__name__}, "
             f"rate={rate_str}, interpolation={self._interpolation.value})"
         )
-

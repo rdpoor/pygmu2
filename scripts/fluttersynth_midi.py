@@ -54,7 +54,7 @@ from pygmu2 import (
 # ── Audio engine ───────────────────────────────────────────────────────────────
 
 SAMPLE_RATE = 22050
-BLOCK_SIZE  = 512
+BLOCK_SIZE = 512
 
 set_sample_rate(SAMPLE_RATE)
 
@@ -62,62 +62,63 @@ logger = get_logger("fluttersynth_midi")
 
 # ── Polyphony ──────────────────────────────────────────────────────────────────
 
-MAX_POLYPHONY       = 8   # simultaneous notes (slots); oldest stolen when full
-NUM_SYNTHS_PER_NOTE = 3   # independent filter voices per slot (different seeds)
+MAX_POLYPHONY = 8  # simultaneous notes (slots); oldest stolen when full
+NUM_SYNTHS_PER_NOTE = 3  # independent filter voices per slot (different seeds)
 
 # ── Filter harmonic table ──────────────────────────────────────────────────────
 
 # Multipliers applied to the played note to generate cutoff candidates.
 # Every entry is a harmonic, so all targets are spectrally related to the pitch.
-FILTER_RATIOS = np.array([0.75,1,2, 4, 6, 8, 10, 12, 16, 20, 24, 32], dtype=float)
+FILTER_RATIOS = np.array([0.75, 1, 2, 4, 6, 8, 10, 12, 16, 20, 24, 32], dtype=float)
 
-LPF_MIN_HZ =    90.0   # absolute floor clamped on computed cutoff values
+LPF_MIN_HZ = 90.0  # absolute floor clamped on computed cutoff values
 LPF_MAX_HZ = 9_000.0  # absolute ceiling clamped on computed cutoff values
 
 # ── Randomness — filter step rate ─────────────────────────────────────────────
 
-MAX_RANDOMNESS = 84.0   # RandomStepPE rate (steps/s) at velocity=127, onset
-MIN_RANDOMNESS =  2.0   # rate at settle end (0 = filter frozen)
+MAX_RANDOMNESS = 84.0  # RandomStepPE rate (steps/s) at velocity=127, onset
+MIN_RANDOMNESS = 2.0  # rate at settle end (0 = filter frozen)
 
 # ── Filter harmonic range ──────────────────────────────────────────────────────
 
-MAX_RANGE = 1.00   # fraction of table at velocity=127 onset (all harmonics)
-MIN_RANGE = 0.25   # fraction of table at settle end (≈ 3 lowest harmonics)
+MAX_RANGE = 1.00  # fraction of table at velocity=127 onset (all harmonics)
+MIN_RANGE = 0.25  # fraction of table at settle end (≈ 3 lowest harmonics)
 
 # ── Envelope ───────────────────────────────────────────────────────────────────
 
-SETTLE_TIME              = 0.45    # seconds for filter to decay to resting values
+SETTLE_TIME = 0.45  # seconds for filter to decay to resting values
 ENVELOPE_UPDATE_INTERVAL = 0.015  # seconds between envelope thread steps (~10 ms)
 
 # ── Signal chain ───────────────────────────────────────────────────────────────
 
-PITCH_SLEW_RATE  = 12_000.0   # Hz/s     — portamento glide between notes
-FILTER_SLEW_RATE =      3.0   # octaves/s — cutoff glide between discrete harmonics
-                               #   e.g. 3 oct/s: 200→400 Hz in ~0.33 s, 400→800 Hz in ~0.33 s
-AMP_SLEW_RATE    =    200.0   # amp units/s — ~5 ms attack/release ramp (de-click)
+PITCH_SLEW_RATE = 12_000.0  # Hz/s     — portamento glide between notes
+FILTER_SLEW_RATE = 3.0  # octaves/s — cutoff glide between discrete harmonics
+#   e.g. 3 oct/s: 200→400 Hz in ~0.33 s, 400→800 Hz in ~0.33 s
+AMP_SLEW_RATE = 200.0  # amp units/s — ~5 ms attack/release ramp (de-click)
 
-RESONANCE   = 0.85   # Moog ladder resonance (0..1; >0.8 approaches self-oscillation)
-OUTPUT_GAIN = 0.90   # target total loudness; divided across all voices and slots
+RESONANCE = 0.85  # Moog ladder resonance (0..1; >0.8 approaches self-oscillation)
+OUTPUT_GAIN = 0.90  # target total loudness; divided across all voices and slots
 
 # ── Stereo panning ─────────────────────────────────────────────────────────────
 
 # Voices within each note are spread evenly across ±PAN_WIDTH degrees.
 # With NUM_SYNTHS_PER_NOTE=2: voice 0 → -PAN_WIDTH, voice 1 → +PAN_WIDTH.
-PAN_WIDTH = 75.0   # degrees (0 = centre, 90 = hard left/right)
+PAN_WIDTH = 75.0  # degrees (0 = centre, 90 = hard left/right)
 
 # ── Delay / echo ───────────────────────────────────────────────────────────────
 
-DELAY_TIME_SECS = 0.375   # echo delay in seconds (3/8 s — musical at most tempos)
-DELAY_FEEDBACK  = 0.40    # echo return level (0 = no echo, 1 = infinite repeat)
+DELAY_TIME_SECS = 0.375  # echo delay in seconds (3/8 s — musical at most tempos)
+DELAY_FEEDBACK = 0.40  # echo return level (0 = no echo, 1 = infinite repeat)
 
 # Initial values for shared control signals
 INITIAL_FREQ_HZ = 440.0
-INITIAL_AMP     = 0.0
+INITIAL_AMP = 0.0
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Flutter envelope
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class FlutterEnvelope:
     """
@@ -135,9 +136,9 @@ class FlutterEnvelope:
         settle_time: float = SETTLE_TIME,
     ):
         self._filter_rate_ctrl = filter_rate_ctrl
-        self._range_ctrl       = range_ctrl
-        self._settle_time      = settle_time
-        self._cancel           = threading.Event()
+        self._range_ctrl = range_ctrl
+        self._settle_time = settle_time
+        self._cancel = threading.Event()
 
     def trigger(self, velocity_norm: float) -> None:
         """Fire from the given normalised velocity (0..1).
@@ -148,8 +149,8 @@ class FlutterEnvelope:
         """
         self._cancel.set()
 
-        peak_rate  = MIN_RANDOMNESS + (MAX_RANDOMNESS - MIN_RANDOMNESS) * velocity_norm
-        peak_range = MIN_RANGE      + (MAX_RANGE      - MIN_RANGE)      * velocity_norm
+        peak_rate = MIN_RANDOMNESS + (MAX_RANDOMNESS - MIN_RANDOMNESS) * velocity_norm
+        peak_range = MIN_RANGE + (MAX_RANGE - MIN_RANGE) * velocity_norm
 
         # Settle time: long for soft notes, short for loud ones
         actual_settle = self._settle_time * (1.0 + 2.0 * (velocity_norm))
@@ -166,7 +167,9 @@ class FlutterEnvelope:
             daemon=True,
         ).start()
 
-    def _decay(self, peak_rate, peak_range, settle_time, cancel: threading.Event) -> None:
+    def _decay(
+        self, peak_rate, peak_range, settle_time, cancel: threading.Event
+    ) -> None:
         steps = max(1, int(settle_time / ENVELOPE_UPDATE_INTERVAL))
         for i in range(1, steps + 1):
             if cancel.is_set():
@@ -174,16 +177,15 @@ class FlutterEnvelope:
             time.sleep(ENVELOPE_UPDATE_INTERVAL)
             t = i / steps
             self._filter_rate_ctrl.set_value(
-                MIN_RANDOMNESS + (peak_rate  - MIN_RANDOMNESS) * (1.0 - t)
+                MIN_RANDOMNESS + (peak_rate - MIN_RANDOMNESS) * (1.0 - t)
             )
-            self._range_ctrl.set_value(
-                MIN_RANGE      + (peak_range - MIN_RANGE)      * (1.0 - t)
-            )
+            self._range_ctrl.set_value(MIN_RANGE + (peak_range - MIN_RANGE) * (1.0 - t))
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Voice builder
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def make_voice(
     freq_ctrl: ControlPE,
@@ -213,7 +215,7 @@ def make_voice(
     """
     # Per-voice filter controls owned exclusively by this voice
     filter_rate_ctrl = ControlPE(initial_value=MIN_RANDOMNESS)
-    range_ctrl       = ControlPE(initial_value=MIN_RANGE)
+    range_ctrl = ControlPE(initial_value=MIN_RANGE)
     envelope = FlutterEnvelope(filter_rate_ctrl, range_ctrl, settle_time=settle_time)
 
     # Oscillator: driven by the slot-shared slewed frequency
@@ -221,21 +223,24 @@ def make_voice(
 
     # Filter CV: step × range_ctrl → quantise to harmonics of the played note
     filter_step = RandomStepPE(rate=filter_rate_ctrl, seed=seed)
-    scaled_cv   = RingModulatorPE(filter_step, range_ctrl, bias=0.0, mix=1.0)
+    scaled_cv = RingModulatorPE(filter_step, range_ctrl, bias=0.0, mix=1.0)
 
     def filter_freq_func(r: np.ndarray) -> np.ndarray:
         # freq_ctrl.value gives the slot's target pitch (one block lag, inaudible)
         note_hz = freq_ctrl.value
-        freqs   = np.clip(note_hz * FILTER_RATIOS, LPF_MIN_HZ, LPF_MAX_HZ)
-        n   = len(freqs)
+        freqs = np.clip(note_hz * FILTER_RATIOS, LPF_MIN_HZ, LPF_MAX_HZ)
+        n = len(freqs)
         idx = np.clip(np.floor(r * n).astype(int), 0, n - 1)
         return freqs[idx].astype(np.float32)
 
     cutoff_stepped = TransformPE(scaled_cv, func=filter_freq_func)
-    cutoff = SlewLimiterPE(cutoff_stepped, rate=FILTER_SLEW_RATE, mode=SlewMode.LOGARITHMIC)
+    cutoff = SlewLimiterPE(
+        cutoff_stepped, rate=FILTER_SLEW_RATE, mode=SlewMode.LOGARITHMIC
+    )
 
-    filtered = LadderPE(osc, frequency=cutoff, resonance=resonance,
-                        mode=LadderMode.LP24)
+    filtered = LadderPE(
+        osc, frequency=cutoff, resonance=resonance, mode=LadderMode.LP24
+    )
 
     # amp_cached gates on/off; voice_gain normalises for full polyphony
     gained = GainPE(GainPE(filtered, amp_cached), voice_gain)
@@ -249,6 +254,7 @@ def make_voice(
 # ──────────────────────────────────────────────────────────────────────────────
 # Polyphony slot
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class NoteSlot:
     """
@@ -268,10 +274,10 @@ class NoteSlot:
         settle_time: float,
         voice_gain: float,
     ):
-        self.note: int | None = None   # MIDI note number currently held, or None
+        self.note: int | None = None  # MIDI note number currently held, or None
 
         self.freq_ctrl = ControlPE(initial_value=INITIAL_FREQ_HZ)
-        self.amp_ctrl  = ControlPE(initial_value=INITIAL_AMP)
+        self.amp_ctrl = ControlPE(initial_value=INITIAL_AMP)
 
         # One portamento stage shared by all voices; CachePE makes it pure so
         # multiple voice oscillators can consume it without triggering the
@@ -292,7 +298,8 @@ class NoteSlot:
         # Single voice → centre; two voices → hard left / hard right; etc.
         n = NUM_SYNTHS_PER_NOTE
         pan_angles = (
-            [0.0] if n == 1
+            [0.0]
+            if n == 1
             else [-PAN_WIDTH + 2 * PAN_WIDTH * i / (n - 1) for i in range(n)]
         )
 
@@ -332,6 +339,7 @@ class NoteSlot:
 # Voice pool (polyphony manager)
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class VoicePool:
     """
     Manages MAX_POLYPHONY note slots with oldest-note voice stealing.
@@ -356,11 +364,11 @@ class VoicePool:
             NoteSlot(i, base_seed, resonance, settle_time, voice_gain)
             for i in range(MAX_POLYPHONY)
         ]
-        self._ages  = [0] * MAX_POLYPHONY   # lower = older = first to steal
+        self._ages = [0] * MAX_POLYPHONY  # lower = older = first to steal
         self._clock = 0
 
-        self._sustain_held:    bool      = False
-        self._sustained_notes: set[int]  = set()   # notes released while pedal held
+        self._sustain_held: bool = False
+        self._sustained_notes: set[int] = set()  # notes released while pedal held
 
     def note_on(self, note: int, velocity: int) -> None:
         # If the note was being sustained, it is being re-struck — remove it
@@ -416,6 +424,7 @@ class VoicePool:
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
@@ -451,15 +460,21 @@ def main() -> int:
     base_seed = random.randrange(2**31)
     logger.info(
         "polyphony=%d voices/note=%d resonance=%.2f settle=%.2fs seed=%d",
-        MAX_POLYPHONY, NUM_SYNTHS_PER_NOTE, args.resonance, args.settle, base_seed,
+        MAX_POLYPHONY,
+        NUM_SYNTHS_PER_NOTE,
+        args.resonance,
+        args.settle,
+        base_seed,
     )
 
     print(
         f"FlutterSynth — {MAX_POLYPHONY}-note × {NUM_SYNTHS_PER_NOTE}-voice "
         "polyphonic saw + Moog flutter filter."
     )
-    print(f"  resonance={args.resonance:.2f}  settle={args.settle:.2f}s  "
-          f"base_seed={base_seed}")
+    print(
+        f"  resonance={args.resonance:.2f}  settle={args.settle:.2f}s  "
+        f"base_seed={base_seed}"
+    )
     print("  Play notes — harder velocity = wider, faster filter flutter at onset.")
     print("  Ctrl+C to quit.")
     print()
@@ -471,25 +486,31 @@ def main() -> int:
     )
 
     def _callback(sample_index: int, msg) -> None:
-        note     = getattr(msg, "note",     None)
+        note = getattr(msg, "note", None)
         velocity = getattr(msg, "velocity", 0)
         logger.debug("midi type=%s note=%s vel=%s", msg.type, note, velocity)
 
         if msg.type == "note_on" and velocity > 0:
             pool.note_on(note, velocity)
-            logger.info("note_on  note=%d  hz=%.1f  vel=%d",
-                        note, float(pitch_to_freq(note)), velocity)
+            logger.info(
+                "note_on  note=%d  hz=%.1f  vel=%d",
+                note,
+                float(pitch_to_freq(note)),
+                velocity,
+            )
         elif msg.type == "note_off" or (msg.type == "note_on" and velocity == 0):
             pool.note_off(note)
             logger.info("note_off note=%d", note)
         elif msg.type == "control_change" and msg.control == 64:
             pool.sustain(msg.value)
-            logger.info("sustain  %s  (CC64 value=%d)",
-                        "pedal_down" if msg.value >= 64 else "pedal_up", msg.value)
+            logger.info(
+                "sustain  %s  (CC64 value=%d)",
+                "pedal_down" if msg.value >= 64 else "pedal_up",
+                msg.value,
+            )
 
     # Mix all slot stereo outputs (voices already panned inside each slot)
     mixed = MixPE(*pool.stereo_outputs)
-
 
     # MidiInPE outputs zeros; mixed at gain 0 so the renderer pulls it
     # (firing callbacks) without adding audio.

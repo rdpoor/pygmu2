@@ -43,10 +43,10 @@ from pygmu2.delay_pe import DelayPE
 from pygmu2.gain_pe import GainPE
 from pygmu2.resample_pe import ResamplePE
 
-
 # ---------------------------------------------------------------------------
 # Note data class
 # ---------------------------------------------------------------------------
+
 
 class Note:
     """
@@ -91,9 +91,7 @@ class Note:
         release_secs: float = 0.0,
     ) -> int:
         """Return note duration in samples (optionally extended by a release tail)."""
-        return int(
-            (self._duration_beats * 60.0 / tempo + release_secs) * sample_rate
-        )
+        return int((self._duration_beats * 60.0 / tempo + release_secs) * sample_rate)
 
     def extent(
         self,
@@ -146,6 +144,7 @@ class Note:
 # ---------------------------------------------------------------------------
 # NotesPE
 # ---------------------------------------------------------------------------
+
 
 class NotesPE(ProcessingElement):
     """
@@ -225,10 +224,12 @@ class NotesPE(ProcessingElement):
 
         sr = self.sample_rate
         max_src_frames = max(
-            int(math.ceil(
-                note.duration_samples(self._tempo, sr, self._release_secs)
-                * note.rate(self._native_pitch)
-            ))
+            int(
+                math.ceil(
+                    note.duration_samples(self._tempo, sr, self._release_secs)
+                    * note.rate(self._native_pitch)
+                )
+            )
             for note in self._note_list
         )
         # Add one extra sample as an interpolation margin.
@@ -316,6 +317,7 @@ class NotesPE(ProcessingElement):
 # MIDI file parsing
 # ---------------------------------------------------------------------------
 
+
 def get_notes_from_midi(midi_path: str) -> list[Note]:
     """
     Parse all notes from a MIDI file and return them as a list of Note objects.
@@ -343,8 +345,7 @@ def get_notes_from_midi(midi_path: str) -> list[Note]:
         import mido
     except ImportError as exc:
         raise ImportError(
-            "mido is required to parse MIDI files. "
-            "Install it with: pip install mido"
+            "mido is required to parse MIDI files. " "Install it with: pip install mido"
         ) from exc
 
     mid = mido.MidiFile(midi_path)
@@ -364,7 +365,9 @@ def get_notes_from_midi(midi_path: str) -> list[Note]:
                 # Re-trigger: close any already-open note at this pitch
                 if key in active:
                     start_tick, vel = active.pop(key)
-                    _add_note(notes, start_tick, abs_tick, msg.note, vel, ticks_per_beat)
+                    _add_note(
+                        notes, start_tick, abs_tick, msg.note, vel, ticks_per_beat
+                    )
                 active[key] = (abs_tick, msg.velocity)
 
             elif msg.type == "note_off" or (
@@ -373,7 +376,9 @@ def get_notes_from_midi(midi_path: str) -> list[Note]:
                 key = (msg.channel, msg.note)
                 if key in active:
                     start_tick, vel = active.pop(key)
-                    _add_note(notes, start_tick, abs_tick, msg.note, vel, ticks_per_beat)
+                    _add_note(
+                        notes, start_tick, abs_tick, msg.note, vel, ticks_per_beat
+                    )
 
         # Close any notes still open at end of track (malformed MIDI)
         for (channel, pitch), (start_tick, vel) in active.items():

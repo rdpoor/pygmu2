@@ -17,38 +17,36 @@ def set_global_logging(
 ) -> logging.Logger:
     """
     Configure logging for the application.
-    
+
     Args:
         level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         format_string: Custom format string for log messages
         log_file: Optional file path to write logs to
-        
+
     Returns:
         Configured logger instance
     """
     if format_string is None:
-        format_string = (
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-    
+        format_string = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
     log_level = getattr(logging, level.upper(), logging.INFO)
-    
+
     # Configure root logger
     handlers = [logging.StreamHandler(sys.stdout)]
-    
+
     if log_file:
         handlers.append(logging.FileHandler(log_file))
-    
+
     logging.basicConfig(
         level=log_level,
         format=format_string,
         handlers=handlers,
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-    
+
     logger = logging.getLogger("pygmu2")
     logger.setLevel(log_level)
-    
+
     return logger
 
 
@@ -58,17 +56,18 @@ def setup_logging(
     log_file: str | None = None,
 ) -> logging.Logger:
     """Alias for set_global_logging — configure pygmu2 logging."""
-    return set_global_logging(level=level, format_string=format_string,
-                              log_file=log_file)
+    return set_global_logging(
+        level=level, format_string=format_string, log_file=log_file
+    )
 
 
 def get_logger(name: str | None = None) -> logging.Logger:
     """
     Get a logger instance for the given name.
-    
+
     Args:
         name: Logger name (defaults to 'pygmu2')
-        
+
     Returns:
         Logger instance
     """

@@ -124,7 +124,9 @@ class MagFreqPE(ProcessingElement):
         # Request fully inside extent: return slice
         if ext.spans(start, duration):
             local_start = start - ext.start
-            return Snippet(start, mogrified[local_start : local_start + duration].copy())
+            return Snippet(
+                start, mogrified[local_start : local_start + duration].copy()
+            )
 
         # Partial overlap: build output with zeros and fill mogrified slice
         out = np.zeros((duration, channels), dtype=np.float32)

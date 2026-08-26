@@ -42,8 +42,8 @@ from pygmu2 import (
 )
 import pygmu2 as pg
 from examples_helper import run_demos
-pg.set_sample_rate(44100)
 
+pg.set_sample_rate(44100)
 
 
 AUDIO_DIR = Path(__file__).parent / "audio"
@@ -72,22 +72,20 @@ def create_pingpong_ir_pe(sample_rate: int, beats_per_minute: float = 92):
     seconds_per_beat = 60.0 / beats_per_minute
     impulse = DiracPE(channels=1)
     delay_1_beat = int(round(float(seconds_to_samples(seconds_per_beat, sample_rate))))
-    delay_2_beats = int(round(float(seconds_to_samples(2 * seconds_per_beat, sample_rate))))
+    delay_2_beats = int(
+        round(float(seconds_to_samples(2 * seconds_per_beat, sample_rate)))
+    )
     logger.debug(
         "create_pingpong_ir_pe: delay_1_beat=%s, delay_2_beats=%s",
         delay_1_beat,
         delay_2_beats,
     )
     beat_1_impulse = DelayPE(impulse, delay=delay_1_beat)
-    beat_1_impulse = SpatialPE(
-        beat_1_impulse, method=SpatialLinear(azimuth=-90.0)
-    )
+    beat_1_impulse = SpatialPE(beat_1_impulse, method=SpatialLinear(azimuth=-90.0))
     beat_2_impulse = DelayPE(impulse, delay=delay_2_beats)
-    beat_2_impulse = SpatialPE(
-        beat_2_impulse, method=SpatialLinear(azimuth=90.0)
-    )
+    beat_2_impulse = SpatialPE(beat_2_impulse, method=SpatialLinear(azimuth=90.0))
     mix_stream = MixPE(beat_1_impulse, beat_2_impulse)
-    pe = CropPE(mix_stream, 0, (delay_2_beats+1) - (0))
+    pe = CropPE(mix_stream, 0, (delay_2_beats + 1) - (0))
     ext = pe.extent()
     logger.debug(
         "create_pingpong_ir_pe: channels=%s, extent=(%s, %s)",
@@ -164,7 +162,9 @@ def _demo_wet(
         raise ValueError("Provide either ir_path or ir_pe")
     source_stream = _load_wav(source_path)
     ir_stream = _load_wav(ir_path) if ir_path is not None else ir_pe
-    logger.debug("_demo_wet: ir_stream from %s", "ir_path" if ir_path is not None else "ir_pe")
+    logger.debug(
+        "_demo_wet: ir_stream from %s", "ir_path" if ir_path is not None else "ir_pe"
+    )
     if ir_path is not None:
         _assert_sample_rate_match(source_stream, ir_stream)
 
@@ -186,8 +186,8 @@ def _demo_wet(
     dry_stream = GainPE(source_stream, gain=dry_gain)
     # coerce dry_stream to have the same # of channels as wet_stream
     dry_stream = SpatialPE(
-        dry_stream, 
-        method=SpatialAdapter(channels=wet_stream.channel_count()))
+        dry_stream, method=SpatialAdapter(channels=wet_stream.channel_count())
+    )
 
     # Mix dry and wet signals
     out_stream = MixPE(dry_stream, wet_stream)
@@ -235,10 +235,7 @@ def _demo_wet_chorus_on_wet(
         dry_stream,
         method=SpatialAdapter(channels=wet_stream.channel_count()),
     )
-    out_stream = MixPE(
-        dry_stream, 
-        wet_stream
-        )
+    out_stream = MixPE(dry_stream, wet_stream)
 
     print(f"Source: {source_path.name}")
     print(f"IR:     {ir_path.name} (chorus applied to wet only)")
@@ -256,6 +253,7 @@ def _demo_wet_chorus_on_wet(
 
     pg.play_offline(pg.GainPE(out_stream, gain=norm_gain), sample_rate)
 
+
 def demo_spoken_dry():
     print("=== Demo: spoken voice (dry) ===")
     _demo_dry(SPOKEN_PATH, gain=0.8, norm_gain=2.67)
@@ -270,17 +268,21 @@ def demo_spoken_long():
     print("=== Demo: spoken voice * long_ir ===")
     _demo_wet(SPOKEN_PATH, LONG_IR_PATH, wet_gain=0.30, norm_gain=2.41)
 
+
 def demo_drums_dry():
     print("=== Demo: drums (dry) ===")
     _demo_dry(DRUMS_PATH, gain=0.8, norm_gain=1.29)
+
 
 def demo_drums_short():
     print("=== Demo: drums * plate_ir ===")
     _demo_wet(DRUMS_PATH, PLATE_IR_PATH, wet_gain=0.35, norm_gain=1.47)
 
+
 def demo_drums_long():
     print("=== Demo: drums * long_ir ===")
     _demo_wet(DRUMS_PATH, LONG_IR_PATH, wet_gain=0.20, norm_gain=1.33)
+
 
 def demo_spoken_long_chorus_on_wet():
     print("=== Demo: spoken voice * long_ir (chorus on wet only) ===")
@@ -294,9 +296,11 @@ def demo_spoken_long_chorus_on_wet():
         chorus_center_ms=2.0,
     )
 
+
 def demo_drums_mono_dry():
     print("=== Demo: mono drums (dry) ===")
     _demo_dry(DRUMS_MONO_PATH, gain=0.8, norm_gain=1.45)
+
 
 def demo_drums_mono_to_stereo():
     print("=== Demo: drums (mono) spread to stereo via ping-pong IR (PE) ===")
@@ -304,6 +308,7 @@ def demo_drums_mono_to_stereo():
     sample_rate = int(source_stream.file_sample_rate)
     ir_pe = create_pingpong_ir_pe(sample_rate, beats_per_minute=91)
     _demo_wet(DRUMS_MONO_PATH, ir_pe=ir_pe, wet_gain=0.65, norm_gain=2.13)
+
 
 DEMOS = [
     ("spoken voice, dry", demo_spoken_dry),

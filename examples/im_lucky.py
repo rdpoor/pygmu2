@@ -1,5 +1,5 @@
 """
-I'm Lucky -- a pygmu2 re-creation of Thomas Dolby's synth part in Joan 
+I'm Lucky -- a pygmu2 re-creation of Thomas Dolby's synth part in Joan
 Armatrading's "I'm Lucky".  See https://www.youtube.com/watch?v=HxQSfuGTCdM
 
 The goal of this was to put pygmu2 through its paces to validate the design
@@ -36,7 +36,7 @@ As4, Cs4, Ds4, Fs4, Gs4 = [Bf4, Df4, Ef4, Gf4, Af4]
 As5, Cs5, Ds5, Fs5, Gs5 = [Bf5, Df5, Ef5, Gf5, Af5]
 As6, Cs6, Ds6, Fs6, Gs6 = [Bf6, Df6, Ef6, Gf6, Af6]
 
-REST = -1 # an out-of-band note value
+REST = -1  # an out-of-band note value
 
 # ===== Durations, expressed as beats
 WHOLE = 4.0
@@ -45,26 +45,29 @@ QUARTER = 1.0
 EIGHTH = 0.5
 SIXTEENTH = 0.25
 THIRTY_SECOND = 0.125
-DOTTED = 1.5           # multiplicative modifier
-TRIPLET = (2.0/3.0)    # multiplicative modifier
+DOTTED = 1.5  # multiplicative modifier
+TRIPLET = 2.0 / 3.0  # multiplicative modifier
 
-# ===== Articulation, modifies durations 
+# ===== Articulation, modifies durations
 
-LEGATO = 1.2     # mild overlap
+LEGATO = 1.2  # mild overlap
 CONNECTED = 1.0  # notes directly abut one another, no overlap
-DETACHED = 0.7   # slight space between notes
-STACCATO = 0.5   # shortened notes
+DETACHED = 0.7  # slight space between notes
+STACCATO = 0.5  # shortened notes
 
 BPM = 114
+
 
 def _b2sam(beat):
     """convert beat to samples"""
     seconds = beat * 60.0 / BPM
     return _sec2sam(seconds)
 
+
 def _sec2sam(seconds):
     """convert seconds to samples"""
     return int(round(seconds * SRATE))
+
 
 PORTAMENTO_SECONDS = 0.05
 PORTAMENTO_SAMPLES = _sec2sam(PORTAMENTO_SECONDS)
@@ -79,61 +82,46 @@ im_lucky_synth = [
     (Ef2, QUARTER, DETACHED),
     (F2, EIGHTH, DETACHED),
     (Fs2, EIGHTH, DETACHED),
-
     (Bf1, QUARTER, DETACHED),
     (Bf2, HALF * DOTTED, DETACHED),
-
     (Bf1, QUARTER, DETACHED),
     (Bf2, QUARTER, DETACHED),
     (Ef2, QUARTER, DETACHED),
     (F2, EIGHTH, DETACHED),
     (Fs2, EIGHTH, DETACHED),
-
     (Bf1, QUARTER, DETACHED),
     (Bf2, QUARTER, DETACHED),
     (Ef4, EIGHTH, DETACHED),
     (D4, EIGHTH, DETACHED),
     (Ef4, EIGHTH, DETACHED),
-    (F4, EIGHTH +
-
-        HALF, DETACHED),
+    (F4, EIGHTH + HALF, DETACHED),
     (Ef2, QUARTER, DETACHED),
     (F2, QUARTER, DETACHED),
-
     (Bf1, HALF * DOTTED, DETACHED),
     (F4, QUARTER, DETACHED),
-
     (G4, QUARTER, DETACHED),
     (F4, HALF * DOTTED - EIGHTH, DETACHED),
-    (Bf1, EIGHTH +
-
-        WHOLE, DETACHED),
-
+    (Bf1, EIGHTH + WHOLE, DETACHED),
     (Bf4, QUARTER * DOTTED, DETACHED),
     (A4, QUARTER, DETACHED),
     (F4, EIGHTH, DETACHED),
     (D4, QUARTER, DETACHED),
-
     (G4, QUARTER * DOTTED, DETACHED),
     (F4, QUARTER, DETACHED),
     (D4, EIGHTH, DETACHED),
     (Bf3, QUARTER, DETACHED),
-
     (Bf1, QUARTER, DETACHED),
     (Bf2, QUARTER, DETACHED),
     (Ef2, QUARTER, DETACHED),
     (F2, EIGHTH, DETACHED),
     (Fs2, EIGHTH, DETACHED),
-
     (Bf1, QUARTER, DETACHED),
     (Bf2, HALF * DOTTED, DETACHED),
-
     (Bf1, QUARTER, DETACHED),
     (Bf2, QUARTER, DETACHED),
     (Ef2, QUARTER, DETACHED),
     (F2, EIGHTH, DETACHED),
     (Fs2, EIGHTH, DETACHED),
-
     (Bf1, WHOLE, DETACHED),
 ]
 
@@ -157,7 +145,7 @@ prev_pitch = None
 
 for pitch, duration, articulation in im_lucky_synth:
     if pitch != REST:
-        pitch = pitch - 0.48     # Match the pitch of Thomas Dolby's synth...
+        pitch = pitch - 0.48  # Match the pitch of Thomas Dolby's synth...
         # Apply portamento to all notes except for the first:
         if prev_pitch is None:
             # first point starts at the target pitch...
@@ -165,10 +153,10 @@ for pitch, duration, articulation in im_lucky_synth:
         else:
             # subsequent points: gliss from previous pitch to current pitch
             pitch_points.append((_b2sam(beat), prev_pitch))
-            pitch_points.append((_b2sam(beat)+PORTAMENTO_SAMPLES, pitch))
+            pitch_points.append((_b2sam(beat) + PORTAMENTO_SAMPLES, pitch))
         prev_pitch = pitch
         # Now hold the pitch flat for the duration of the note
-        pitch_points.append((_b2sam(beat+duration), pitch))
+        pitch_points.append((_b2sam(beat + duration), pitch))
     beat += duration
 
 # print(f'beat_points = {beat_points}')
@@ -179,29 +167,28 @@ gates = pg.ScheduledGatePE(beat_points)
 # pitches (for portamento), appropriate since we're using pitches and not
 # frequencies.
 pitches = pg.PiecewisePE(pitch_points)
-                                                
+
 # pitch_points => TransformPE => SuperSaw.freq => GainPE.source
 #                     gate_signals => adsrGate => GainPE.gain
 
+
 def make_synth(gates, pitches):
     # Generate ADSR ramps
-    adsr = pg.CachePE(pg.AdsrGatedPE(
-        gates,
-        attack_time = 0.02,
-        decay_time = 0.05,
-        sustain_level = 0.75,
-        release_time = 0.5,
-        ))
+    adsr = pg.CachePE(
+        pg.AdsrGatedPE(
+            gates,
+            attack_time=0.02,
+            decay_time=0.05,
+            sustain_level=0.75,
+            release_time=0.5,
+        )
+    )
 
     # Mix two SuperSaws running an octave apart
     f_lo = pg.CachePE(pg.TransformPE(pitches, func=pg.pitch_to_freq))
-    synth_lo = pg.SuperSawPE(
-        frequency = f_lo, 
-        detune_cents = 8)
-    f_hi = pg.TransformPE(f_lo, func=lambda x: x*2)
-    synth_hi = pg.SuperSawPE(
-        frequency = f_hi, 
-        detune_cents = 8)
+    synth_lo = pg.SuperSawPE(frequency=f_lo, detune_cents=8)
+    f_hi = pg.TransformPE(f_lo, func=lambda x: x * 2)
+    synth_hi = pg.SuperSawPE(frequency=f_hi, detune_cents=8)
     synth = pg.MixPE(synth_lo, synth_hi)
 
     # Apply ADSR to the mixed synths
@@ -216,7 +203,7 @@ def make_synth(gates, pitches):
 
 
 # Now for the final mix...
-duration = pitch_points[-1][0] + _sec2sam(5) # account for reverb tail
+duration = pitch_points[-1][0] + _sec2sam(5)  # account for reverb tail
 
 mono_mix, stem_lo, stem_hi = make_synth(gates, pitches)
 # a bit more bass...

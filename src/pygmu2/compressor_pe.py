@@ -10,7 +10,6 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-
 import numpy as np
 
 from pygmu2.processing_element import ProcessingElement
@@ -158,7 +157,9 @@ class CompressorPE(_DynamicsProcessorPE):
             stereo_link=stereo_link,
         )
         super().__init__(
-            cached, envelope_pe, dynamics_pe,
+            cached,
+            envelope_pe,
+            dynamics_pe,
             threshold=threshold,
             attack=attack,
             release=release,
@@ -191,7 +192,9 @@ class CompressorPE(_DynamicsProcessorPE):
         return self._detection
 
     def __repr__(self) -> str:
-        makeup_str = "auto" if self._makeup_gain == self.AUTO else f"{self.makeup_gain:.1f}"
+        makeup_str = (
+            "auto" if self._makeup_gain == self.AUTO else f"{self.makeup_gain:.1f}"
+        )
         return (
             f"CompressorPE(threshold={self._threshold}, ratio={self._ratio}, "
             f"attack={self._attack}, release={self._release}, knee={self._knee}, "
@@ -304,7 +307,9 @@ class ExpanderPE(_DynamicsProcessorPE):
             gate_range=gate_range,
         )
         super().__init__(
-            cached, envelope_pe, dynamics_pe,
+            cached,
+            envelope_pe,
+            dynamics_pe,
             threshold=threshold,
             attack=attack,
             release=release,

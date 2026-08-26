@@ -20,7 +20,8 @@ from pygmu2.mix_pe import MixPE
 
 class SequenceMode(Enum):
     """Sequencer overlap behavior."""
-    OVERLAP = "overlap"        # Mix overlapping segments
+
+    OVERLAP = "overlap"  # Mix overlapping segments
     NON_OVERLAP = "non_overlap"  # Stop each segment when the next begins
 
 
@@ -50,7 +51,9 @@ class SequencePE(ProcessingElement):
         ):
             # Allow SequencePE(pe, start) as a single pair.
             pairs = [(input_start_pairs[0], input_start_pairs[1])]
-        elif len(input_start_pairs) == 1 and isinstance(input_start_pairs[0], (list, tuple)):
+        elif len(input_start_pairs) == 1 and isinstance(
+            input_start_pairs[0], (list, tuple)
+        ):
             # Allow SequencePE([(pe, start), ...]) or SequencePE((pe, start))
             pairs = list(input_start_pairs[0])
         else:

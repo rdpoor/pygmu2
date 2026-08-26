@@ -13,12 +13,14 @@ import numpy as np
 SRATE = 44100
 pg.set_sample_rate(SRATE)
 
+
 def sigmoid(x, L=1, k=1, x0=0.5):
     return L / (1 + np.exp(-k * (x - x0)))
 
+
 class WarglePE(pg.ProcessingElement):
     """
-    Warble + Gargle: Stochastic additive synthesizer whose harmonic amplitudes 
+    Warble + Gargle: Stochastic additive synthesizer whose harmonic amplitudes
     wander independently over time.
 
     A set of sine oscillators (warglets) is built, one per partial.  Each
@@ -40,6 +42,7 @@ class WarglePE(pg.ProcessingElement):
             values (≈10+) make each partial snap between silent and full.
         seed: Optional RNG seed for reproducibility.
     """
+
     def __init__(
         self,
         frequency: float | pg.ProcessingElement,
@@ -60,15 +63,14 @@ class WarglePE(pg.ProcessingElement):
 
         if isinstance(self._partials, int):
             for i in range(self._partials):
-                warglets.append(self.make_warglet(i+1))
+                warglets.append(self.make_warglet(i + 1))
         else:
             for partial in self._partials:
                 warglets.append(self.make_warglet(partial))
 
         # Use nested GainPE since self._amplitude might be a PE, not a constant
         self._mix = pg.GainPE(
-            pg.GainPE(pg.MixPE(*warglets), 1.0 / len(warglets)), 
-            self._amplitude
+            pg.GainPE(pg.MixPE(*warglets), 1.0 / len(warglets)), self._amplitude
         )
 
     def inputs(self) -> list[pg.ProcessingElement]:
@@ -108,6 +110,7 @@ class WarglePE(pg.ProcessingElement):
             freq = pg.TransformPE(self._frequency, func=lambda x: partial * x)
         return pg.SinePE(frequency=freq, amplitude=amp)
 
+
 if __name__ == "__main__":
 
     def demo_wargle(
@@ -117,8 +120,8 @@ if __name__ == "__main__":
     ):
         print(f"rate={rate}, partials={partials}, intensity={intensity}")
         vox = WarglePE(
-            frequency=110, 
-            amplitude=0.5, 
+            frequency=110,
+            amplitude=0.5,
             rate=rate,
             partials=partials,
             intensity=intensity,
@@ -135,10 +138,11 @@ if __name__ == "__main__":
         demo_wargle(rate=10, partials=partials, intensity=2.0)
     print("===== explicit partials")
     for partials in [
-        [1, 3, 5], 
-        [1, 2, 4, 6], 
-        [5, 6, 7, 9], 
-        [1, 2.01, 2.99, 4.02, 4.98, 6.03]]:
+        [1, 3, 5],
+        [1, 2, 4, 6],
+        [5, 6, 7, 9],
+        [1, 2.01, 2.99, 4.02, 4.98, 6.03],
+    ]:
         demo_wargle(rate=10, partials=partials, intensity=2.0)
     print("===== stepping intensity")
     for intensity in [1, 3, 10, 30]:

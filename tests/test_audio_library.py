@@ -13,7 +13,6 @@ import pytest
 
 from pygmu2 import AudioLibrary
 
-
 STRUDEL_JSON_URL = "https://software.tomandandy.com/strudel.json"
 
 

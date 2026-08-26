@@ -38,6 +38,7 @@ def render_trigger(gate_values, sr=1000):
 # Construction
 # ---------------------------------------------------------------------------
 
+
 class TestGateToTriggerPEConstruction:
 
     def test_is_not_pure(self):
@@ -63,6 +64,7 @@ class TestGateToTriggerPEConstruction:
 
     def test_is_trigger_signal(self):
         from pygmu2.trigger_signal import TriggerSignal
+
         gate = SignalToGatePE(pg.ConstantPE(0.0))
         pe = GateToTriggerPE(gate)
         assert isinstance(pe, TriggerSignal)
@@ -71,6 +73,7 @@ class TestGateToTriggerPEConstruction:
 # ---------------------------------------------------------------------------
 # Output shape and value constraints
 # ---------------------------------------------------------------------------
+
 
 class TestGateToTriggerPEShape:
 
@@ -96,6 +99,7 @@ class TestGateToTriggerPEShape:
 # ---------------------------------------------------------------------------
 # Rising-edge detection
 # ---------------------------------------------------------------------------
+
 
 class TestGateToTriggerPERisingEdge:
 
@@ -141,6 +145,7 @@ class TestGateToTriggerPERisingEdge:
 # ---------------------------------------------------------------------------
 # State persistence and lifecycle
 # ---------------------------------------------------------------------------
+
 
 class TestGateToTriggerPEState:
 
@@ -201,6 +206,7 @@ class TestGateToTriggerPEState:
 # Extent
 # ---------------------------------------------------------------------------
 
+
 class TestGateToTriggerPEExtent:
 
     def test_extent_matches_gate(self):
@@ -220,6 +226,7 @@ class TestGateToTriggerPEExtent:
 # ---------------------------------------------------------------------------
 # Integration: SignalToGatePE → GateToTriggerPE
 # ---------------------------------------------------------------------------
+
 
 class TestGateToTriggerPEIntegration:
 

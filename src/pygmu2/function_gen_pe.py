@@ -33,6 +33,7 @@ from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 from pygmu2.config import get_sample_rate
 
+
 class FunctionGenPE(ProcessingElement):
     """
     Naive function generator (no anti-aliasing).
@@ -57,12 +58,14 @@ class FunctionGenPE(ProcessingElement):
     ):
         self._frequency = frequency
         self._duty_cycle = duty_cycle
-        self._phase_in = phase                                 # NEW
+        self._phase_in = phase  # NEW
         self._waveform = str(waveform).lower()
         self._channels = int(channels)
 
         if self._waveform not in (self.WAVE_RECTANGLE, self.WAVE_SAWTOOTH):
-            raise ValueError(f"waveform must be 'rectangle' or 'sawtooth', got {waveform!r}")
+            raise ValueError(
+                f"waveform must be 'rectangle' or 'sawtooth', got {waveform!r}"
+            )
         if self._channels < 1:
             raise ValueError(f"channels must be >= 1, got {channels}")
 
@@ -79,7 +82,7 @@ class FunctionGenPE(ProcessingElement):
         return self._duty_cycle
 
     @property
-    def phase(self) -> float | ProcessingElement:         # NEW
+    def phase(self) -> float | ProcessingElement:  # NEW
         return self._phase_in
 
     @property
@@ -92,7 +95,7 @@ class FunctionGenPE(ProcessingElement):
             result.append(self._frequency)
         if isinstance(self._duty_cycle, ProcessingElement):
             result.append(self._duty_cycle)
-        if isinstance(self._phase_in, ProcessingElement):       # NEW
+        if isinstance(self._phase_in, ProcessingElement):  # NEW
             result.append(self._phase_in)
         return result
 
@@ -149,19 +152,26 @@ class FunctionGenPE(ProcessingElement):
             # -1 -> +1 over [0,a)
             y_mid[rise] = -1.0 + 2.0 * (p[rise] / a_mid[rise])
             # +1 -> -1 over [a,1)
-            y_mid[~rise] = 1.0 - 2.0 * ((p[~rise] - a_mid[~rise]) / (1.0 - a_mid[~rise]))
+            y_mid[~rise] = 1.0 - 2.0 * (
+                (p[~rise] - a_mid[~rise]) / (1.0 - a_mid[~rise])
+            )
             y[m_mid] = y_mid
 
         return y
 
     def _render(self, start: int, duration: int) -> Snippet:
-        freq = self._scalar_or_pe_values(self._frequency, start, duration, dtype=np.float64)
-        duty = self._scalar_or_pe_values(self._duty_cycle, start, duration, dtype=np.float64)
-        ph_in = self._scalar_or_pe_values(self._phase_in, start, duration, dtype=np.float64)  # NEW
-
+        freq = self._scalar_or_pe_values(
+            self._frequency, start, duration, dtype=np.float64
+        )
+        duty = self._scalar_or_pe_values(
+            self._duty_cycle, start, duration, dtype=np.float64
+        )
+        ph_in = self._scalar_or_pe_values(
+            self._phase_in, start, duration, dtype=np.float64
+        )  # NEW
 
         # Phase increment per sample (cycles/sample)
-        dt = freq / float(get_sample_rate())   # or your existing sr variable
+        dt = freq / float(get_sample_rate())  # or your existing sr variable
 
         if self.is_pure():
             idx = np.arange(start, start + duration, dtype=np.float64)
@@ -179,13 +189,14 @@ class FunctionGenPE(ProcessingElement):
         # Apply phase offset (scalar or per-sample), in cycles
         phase = np.mod(base_phase + ph_in, 1.0)
 
-
         # Naive waveform
         duty = np.clip(duty, 0.0, 1.0)
         if self._waveform == self.WAVE_RECTANGLE:
             y = np.where(phase < duty, 1.0, -1.0).astype(np.float64)
         else:
-            y = self._piecewise_linear(phase.astype(np.float64), duty.astype(np.float64))
+            y = self._piecewise_linear(
+                phase.astype(np.float64), duty.astype(np.float64)
+            )
 
         data = y.reshape(-1, 1)
         if self._channels > 1:
@@ -207,4 +218,3 @@ class FunctionGenPE(ProcessingElement):
             f"FunctionGenPE(frequency={freq_str}, duty_cycle={duty_str}, "
             f"waveform={self._waveform!r}, channels={self._channels})"
         )
-

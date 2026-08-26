@@ -22,6 +22,7 @@ PLUCK_FILE = AUDIO_DIR / "uke_54.wav"
 # Probe the voice file once at import time to get its length
 PLUCK_SAMPLES = pg.WavReaderPE(str(PLUCK_FILE)).extent().end
 
+
 def make_pluck():
     """Return a fresh WavReaderPE for thepluck file."""
     return pg.WavReaderPE(str(PLUCK_FILE))
@@ -31,14 +32,14 @@ def make_pluck():
 # Demos
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def demo_dry_pluck():
     """Play the unprocessed pluckfor reference."""
     pg.play(pg.GainPE(make_pluck(), gain=2.14))
 
 
 def demo_slew_rate_limit():
-    """Slew rate limit to varying degrees.
-    """
+    """Slew rate limit to varying degrees."""
     print("Demo: Slew Rate Limit")
     for rate in [10, 30, 100, 300, 1000]:
         pluck = make_pluck()

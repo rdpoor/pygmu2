@@ -29,6 +29,7 @@ logger = get_logger(__name__)
 def _import_miniaudio():
     try:
         import miniaudio
+
         return miniaudio
     except ImportError as e:
         raise ImportError(
@@ -61,7 +62,7 @@ class AudioReaderPE(SourcePE):
     def __init__(self, path: str, max_level_db: float | None = None):
         self._path = path
         self._max_level_db = max_level_db
-        self._file_info = None          # populated lazily by _ensure_file_info()
+        self._file_info = None  # populated lazily by _ensure_file_info()
         self._data: np.ndarray | None = None  # (frames, channels) float32
 
     # ------------------------------------------------------------------
@@ -157,5 +158,7 @@ class AudioReaderPE(SourcePE):
 
     def __repr__(self) -> str:
         if self._max_level_db is not None:
-            return f"AudioReaderPE(path={self._path!r}, max_level_db={self._max_level_db})"
+            return (
+                f"AudioReaderPE(path={self._path!r}, max_level_db={self._max_level_db})"
+            )
         return f"AudioReaderPE(path={self._path!r})"

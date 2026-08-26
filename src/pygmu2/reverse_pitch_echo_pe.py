@@ -16,13 +16,16 @@ import numpy as np
 # Try to import numba for JIT compilation (optional optimization)
 try:
     from numba import jit
+
     NUMBA_AVAILABLE = True
 except ImportError:
     NUMBA_AVAILABLE = False
+
     # Dummy decorator when numba isn't available
     def jit(*args, **kwargs):
         def decorator(func):
             return func
+
         return decorator
 
 
@@ -92,7 +95,9 @@ def _reverse_pitch_echo_numba(
         if target_samples > max_block_samples:
             target_samples = max_block_samples
         target_samples = float(np.round(target_samples))
-        smoothed_block_samples += (target_samples - smoothed_block_samples) * smooth_alpha
+        smoothed_block_samples += (
+            target_samples - smoothed_block_samples
+        ) * smooth_alpha
 
         # Lock in block size at start of each new block
         if write_idx == 0:
@@ -135,7 +140,11 @@ def _reverse_pitch_echo_numba(
                 wet = 0.0
                 if previous_block_samples > 0 and read_idx < previous_block_samples:
                     # Calculate read position (forward or reverse)
-                    idx = previous_block_samples - 1 - read_idx if playback_reverse == 1 else read_idx
+                    idx = (
+                        previous_block_samples - 1 - read_idx
+                        if playback_reverse == 1
+                        else read_idx
+                    )
                     if 0 <= idx < previous_block_samples:
                         # Hann window: 0.5 - 0.5*cos(2*pi*t) for t in [0,1]
                         if previous_block_samples > 1:
@@ -195,7 +204,9 @@ def _reverse_pitch_echo_numba(
             for c in range(channels):
                 # Linear interpolation for each read head
                 s1 = (1.0 - frac) * pitch_buffer[idx0, c] + frac * pitch_buffer[idx1, c]
-                s2 = (1.0 - frac2) * pitch_buffer[idx2, c] + frac2 * pitch_buffer[idx3, c]
+                s2 = (1.0 - frac2) * pitch_buffer[idx2, c] + frac2 * pitch_buffer[
+                    idx3, c
+                ]
                 # Crossfade between the two read heads
                 pitched_c = f * s1 + (1.0 - f) * s2
 
@@ -210,7 +221,11 @@ def _reverse_pitch_echo_numba(
                 # --- Read from previous block with Hann window ---
                 wet = 0.0
                 if previous_block_samples > 0 and read_idx < previous_block_samples:
-                    idx = previous_block_samples - 1 - read_idx if playback_reverse == 1 else read_idx
+                    idx = (
+                        previous_block_samples - 1 - read_idx
+                        if playback_reverse == 1
+                        else read_idx
+                    )
                     if 0 <= idx < previous_block_samples:
                         if previous_block_samples > 1:
                             pos = read_idx / (previous_block_samples - 1.0)
@@ -263,6 +278,7 @@ def _reverse_pitch_echo_numba(
         previous_block_samples,
         playback_reverse,
     )
+
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
@@ -509,7 +525,9 @@ class ReversePitchEchoPE(ProcessingElement):
             initial_seconds = 0.25  # Default if block_seconds is a PE
         else:
             initial_seconds = float(self._block_seconds)
-        self._smoothed_block_samples = self._clamp_block_samples(initial_seconds * self.sample_rate)
+        self._smoothed_block_samples = self._clamp_block_samples(
+            initial_seconds * self.sample_rate
+        )
         self._current_block_samples = int(self._smoothed_block_samples)
         self._previous_block_samples = 0
         self._playback_reverse = True
@@ -596,20 +614,39 @@ class ReversePitchEchoPE(ProcessingElement):
             return Snippet(start, np.zeros_like(data, dtype=np.float32))
 
         # Get block size values (either constant or from PE)
-        block_values = self._scalar_or_pe_values(self._block_seconds, start, duration, dtype=np.float64)
+        block_values = self._scalar_or_pe_values(
+            self._block_seconds, start, duration, dtype=np.float64
+        )
 
         # Get pitch ratio values (either constant or from PE)
-        pitch_values = self._scalar_or_pe_values(self._pitch_ratio, start, duration, dtype=np.float64)
+        pitch_values = self._scalar_or_pe_values(
+            self._pitch_ratio, start, duration, dtype=np.float64
+        )
 
         # Get feedback values (either constant or from PE)
-        fb_values = self._scalar_or_pe_values(self._feedback, start, duration, dtype=np.float64)
+        fb_values = self._scalar_or_pe_values(
+            self._feedback, start, duration, dtype=np.float64
+        )
 
         # Get alternate direction values (either constant or from PE)
-        alt_values = self._scalar_or_pe_values(self._alternate_direction, start, duration, dtype=np.float64)
+        alt_values = self._scalar_or_pe_values(
+            self._alternate_direction, start, duration, dtype=np.float64
+        )
 
         # Use Numba-accelerated path when available
         if NUMBA_AVAILABLE:
-            output, self._current_is_a, self._pitch_write_pos, self._pitch_read_pos, self._write_idx, self._read_idx, self._smoothed_block_samples, self._current_block_samples, self._previous_block_samples, playback_reverse = _reverse_pitch_echo_numba(
+            (
+                output,
+                self._current_is_a,
+                self._pitch_write_pos,
+                self._pitch_read_pos,
+                self._write_idx,
+                self._read_idx,
+                self._smoothed_block_samples,
+                self._current_block_samples,
+                self._previous_block_samples,
+                playback_reverse,
+            ) = _reverse_pitch_echo_numba(
                 data,
                 block_values,
                 pitch_values,
@@ -649,19 +686,28 @@ class ReversePitchEchoPE(ProcessingElement):
 
         for i in range(samples):
             # Smooth block size changes to prevent abrupt transitions
-            target_samples = self._clamp_block_samples(max(0.0, float(block_values[i])) * self.sample_rate)
-            self._smoothed_block_samples += (target_samples - self._smoothed_block_samples) * smooth_alpha
+            target_samples = self._clamp_block_samples(
+                max(0.0, float(block_values[i])) * self.sample_rate
+            )
+            self._smoothed_block_samples += (
+                target_samples - self._smoothed_block_samples
+            ) * smooth_alpha
 
             # Lock in block size at start of each new block
             if self._write_idx == 0:
-                self._current_block_samples = self._clamp_block_samples(self._smoothed_block_samples)
+                self._current_block_samples = self._clamp_block_samples(
+                    self._smoothed_block_samples
+                )
 
             # Pitch-shift the input sample
             pitched = pitch_shifter.process(data[i], float(pitch_values[i]))
 
             # --- Read from previous block with Hann window ---
             wet = output[i]
-            if self._previous_block_samples > 0 and self._read_idx < self._previous_block_samples:
+            if (
+                self._previous_block_samples > 0
+                and self._read_idx < self._previous_block_samples
+            ):
                 # Calculate read index (forward or reverse)
                 idx = (
                     self._previous_block_samples - 1 - self._read_idx
@@ -691,7 +737,10 @@ class ReversePitchEchoPE(ProcessingElement):
             # --- Block boundary: swap buffers ---
             if self._write_idx >= self._current_block_samples:
                 # Swap current and previous buffers
-                self._current_buffer, self._previous_buffer = previous_buffer, current_buffer
+                self._current_buffer, self._previous_buffer = (
+                    previous_buffer,
+                    current_buffer,
+                )
                 current_buffer = self._current_buffer
                 previous_buffer = self._previous_buffer
 
@@ -701,14 +750,28 @@ class ReversePitchEchoPE(ProcessingElement):
 
                 # Update playback direction for next block
                 alternate = float(alt_values[i]) >= 0.5
-                self._playback_reverse = not self._playback_reverse if alternate else True
+                self._playback_reverse = (
+                    not self._playback_reverse if alternate else True
+                )
 
         return Snippet(start, output.astype(np.float32))
 
     def __repr__(self) -> str:
-        block_repr = self._block_seconds if not self._block_is_pe else f"{self._block_seconds.__class__.__name__}(...)"
-        pitch_repr = self._pitch_ratio if not self._pitch_is_pe else f"{self._pitch_ratio.__class__.__name__}(...)"
-        fb_repr = self._feedback if not self._fb_is_pe else f"{self._feedback.__class__.__name__}(...)"
+        block_repr = (
+            self._block_seconds
+            if not self._block_is_pe
+            else f"{self._block_seconds.__class__.__name__}(...)"
+        )
+        pitch_repr = (
+            self._pitch_ratio
+            if not self._pitch_is_pe
+            else f"{self._pitch_ratio.__class__.__name__}(...)"
+        )
+        fb_repr = (
+            self._feedback
+            if not self._fb_is_pe
+            else f"{self._feedback.__class__.__name__}(...)"
+        )
         return (
             f"ReversePitchEchoPE(source={self._source.__class__.__name__}, "
             f"block_seconds={block_repr}, pitch_ratio={pitch_repr}, "

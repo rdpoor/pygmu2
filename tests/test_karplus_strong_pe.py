@@ -83,7 +83,9 @@ class TestKarplusStrongPEBasics:
 
     def test_two_phase_repr(self):
         """Repr includes duration and rho_damping when both provided."""
-        ks = KarplusStrongPE(frequency=440.0, rho=0.996, duration=44100, rho_damping=0.95)
+        ks = KarplusStrongPE(
+            frequency=440.0, rho=0.996, duration=44100, rho_damping=0.95
+        )
         r = repr(ks)
         assert "duration=44100" in r
         assert "rho_damping=0.95" in r
@@ -158,6 +160,7 @@ class TestKarplusStrongPERender:
     def test_rho_for_decay_db_formula(self):
         """rho_for_decay_db(seconds, frequency, sample_rate, db) returns expected rho (includes cos(pi/N) correction)."""
         sample_rate = 44100
+
         # rho = 10^(db/(20*periods)) / cos(pi/N), clamped to 1.0
         def expected_rho(seconds, frequency, sr, db=-60.0):
             periods = seconds * frequency
@@ -194,8 +197,8 @@ class TestKarplusStrongPERender:
         # Peak/RMS near start vs near end; expect ~60 dB drop
         early = snippet.data[: n // 10]
         late = snippet.data[9 * n // 10 :]
-        rms_early = np.sqrt(np.mean(early ** 2)) + 1e-12
-        rms_late = np.sqrt(np.mean(late ** 2)) + 1e-12
+        rms_early = np.sqrt(np.mean(early**2)) + 1e-12
+        rms_late = np.sqrt(np.mean(late**2)) + 1e-12
         ratio_db = 20 * np.log10(rms_late / rms_early)
         assert ratio_db <= -50, "Late window should be at least ~50 dB below early"
         assert ratio_db >= -75, "Decay should not be much more than 60 dB (tolerance)"
@@ -219,4 +222,6 @@ class TestKarplusStrongPERender:
         # RMS in late sustain (samples 1500-2000) vs well into damping (5000-6000)
         sustain_rms = np.sqrt(np.mean(snippet.data[1500:2000] ** 2))
         damping_rms = np.sqrt(np.mean(snippet.data[5000:6000] ** 2))
-        assert damping_rms < sustain_rms, "After duration, rho_damping should decay faster"
+        assert (
+            damping_rms < sustain_rms
+        ), "After duration, rho_damping should decay faster"

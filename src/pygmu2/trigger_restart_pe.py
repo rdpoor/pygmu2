@@ -15,6 +15,7 @@ from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 from pygmu2.trigger_signal import TriggerSignal
 
+
 class TriggerRestartPE(ProcessingElement):
     """
     Trigger-controlled restart/time-remap.
@@ -67,7 +68,6 @@ class TriggerRestartPE(ProcessingElement):
 
     def _on_stop(self) -> None:
         self._reset_state()
-
 
     def _render(self, start: int, duration: int) -> Snippet:
         n = duration

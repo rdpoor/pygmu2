@@ -51,7 +51,9 @@ class SetExtentPE(_ExtentWindowPE):
         self._duration = int(duration) if duration is not None else None
         end = None
         if self._duration is not None:
-            end = self._duration if self._start is None else self._start + self._duration
+            end = (
+                self._duration if self._start is None else self._start + self._duration
+            )
         extent = Extent(self._start, end)
         super().__init__(source, extent, extend_mode)
 
@@ -71,7 +73,13 @@ class SetExtentPE(_ExtentWindowPE):
         return self._extent
 
     def __repr__(self) -> str:
-        start_str = str(self._extent.start) if self._extent.start is not None else "None"
+        start_str = (
+            str(self._extent.start) if self._extent.start is not None else "None"
+        )
         end_str = str(self._extent.end) if self._extent.end is not None else "None"
-        extend_str = f", extend_mode={self._extend_mode.value}" if self._extend_mode != ExtendMode.ZERO else ""
+        extend_str = (
+            f", extend_mode={self._extend_mode.value}"
+            if self._extend_mode != ExtendMode.ZERO
+            else ""
+        )
         return f"SetExtentPE(source={self._source.__class__.__name__}, extent=Extent({start_str}, {end_str}){extend_str})"

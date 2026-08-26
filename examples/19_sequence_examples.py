@@ -36,7 +36,6 @@ pg.set_sample_rate(44100)
 
 from typing import Optional
 
-
 SAMPLE_RATE = 44100
 
 # C major chord: C4, E4, G4 (MIDI)

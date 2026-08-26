@@ -42,9 +42,9 @@ WAV_FILE = Path(__file__).parent / "audio" / "uke_54.wav"
 # Shared parameters (matching the original snippet)
 # ---------------------------------------------------------------------------
 
-TEMPO        = 80     # BPM
-GAIN_FACTOR  = 0.25   # master amplitude scale
-NATIVE_PITCH = 48     # MIDI pitch that corresponds to the source sound at rate 1.0
+TEMPO = 80  # BPM
+GAIN_FACTOR = 0.25  # master amplitude scale
+NATIVE_PITCH = 48  # MIDI pitch that corresponds to the source sound at rate 1.0
 
 
 def _load_notes():
@@ -64,15 +64,16 @@ def _load_notes():
 # Demo 1: Supersaw wave source
 # ---------------------------------------------------------------------------
 
+
 def demo_saw_source():
     """Play MIDI notes using a 512 Hz sine wave as the source sound."""
     print("Demo: NotesPE — sine source (512 Hz)")
     notes = _load_notes()
 
     saw_pe = pg.BlitSawPE(frequency=256.0, amplitude=0.15)
-    
+
     sr = pg.get_sample_rate()
-    ramp_samples = int(0.7 * sr)   # 1200 ms
+    ramp_samples = int(0.7 * sr)  # 1200 ms
 
     freq_ramp_pe = pg.PiecewisePE(
         [(0, 9000.0), (ramp_samples, 400.0)],
@@ -80,12 +81,14 @@ def demo_saw_source():
         extend_mode=pg.ExtendMode.HOLD_LAST,
     )
 
-   # filtered_pe = pg.BiquadPE(saw_pe, mode=pg.BiquadMode.LOWPASS, frequency=freq_ramp_pe, q=2)
-    
-    filtered_pe = pg.MovingAveragePE(saw_pe, window=pg.window_for_cutoff(freq_ramp_pe, sr))  # ~1 kHz
+    # filtered_pe = pg.BiquadPE(saw_pe, mode=pg.BiquadMode.LOWPASS, frequency=freq_ramp_pe, q=2)
+
+    filtered_pe = pg.MovingAveragePE(
+        saw_pe, window=pg.window_for_cutoff(freq_ramp_pe, sr)
+    )  # ~1 kHz
 
     spatial_pe = pg.SpatialPE(filtered_pe, method=pg.SpatialLinear(azimuth=-90.0))
-    
+
     audio_dir = Path(__file__).parent / "audio"
     ir_path = audio_dir / "long_ir44.wav"
     ir = pg.WavReaderPE(str(ir_path))
@@ -107,6 +110,7 @@ def demo_saw_source():
 # Demo 2: recorded WAV source
 # ---------------------------------------------------------------------------
 
+
 def demo_wav_source():
     """Play MIDI notes using a recorded instrument sample as the source."""
     print("Demo: NotesPE — WAV source")
@@ -119,14 +123,14 @@ def demo_wav_source():
     notes = _load_notes()
 
     source = pg.WavReaderPE(str(WAV_FILE))
-    
+
     delayed_pe = pg.DelayPE(source, delay=22000)
     delayed_pe2 = pg.DelayPE(source, delay=33000)
-    
+
     gain_pe = pg.GainPE(delayed_pe, gain=0.25)
     gain_pe2 = pg.GainPE(delayed_pe2, gain=0.16)
     mixed_pe = pg.MixPE(source, gain_pe, gain_pe2)
-                
+
     music = pg.NotesPE(
         mixed_pe,
         notes,
@@ -145,7 +149,7 @@ def demo_wav_source():
 
 DEMOS = [
     ("NotesPE with blitsaw source", demo_saw_source),
-    ("NotesPE with WAV source",  demo_wav_source),
+    ("NotesPE with WAV source", demo_wav_source),
 ]
 
 README = """\

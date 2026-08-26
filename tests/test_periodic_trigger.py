@@ -11,10 +11,10 @@ import pytest
 import pygmu2 as pg
 from pygmu2.periodic_trigger import PeriodicTrigger
 
-
 # ---------------------------------------------------------------------------
 # Construction tests (static float hz)
 # ---------------------------------------------------------------------------
+
 
 class TestPeriodicTriggerConstruction:
 
@@ -62,6 +62,7 @@ class TestPeriodicTriggerConstruction:
 # ---------------------------------------------------------------------------
 # Static float hz rendering
 # ---------------------------------------------------------------------------
+
 
 class TestPeriodicTriggerStaticHz:
 
@@ -114,7 +115,7 @@ class TestPeriodicTriggerStaticHz:
         # Trigger at absolute sample 0, 10, 20; render window [8, 22)
         out = pt.render(8, 14).data[:, 0]
         expected = np.zeros(14, dtype=np.float32)
-        expected[2] = 1.0   # absolute 10
+        expected[2] = 1.0  # absolute 10
         expected[12] = 1.0  # absolute 20
         np.testing.assert_array_equal(out, expected)
 
@@ -129,6 +130,7 @@ class TestPeriodicTriggerStaticHz:
 # ---------------------------------------------------------------------------
 # PE hz rendering (phase accumulator mode)
 # ---------------------------------------------------------------------------
+
 
 class TestPeriodicTriggerPEHz:
 
@@ -182,7 +184,9 @@ class TestPeriodicTriggerPEHz:
         # Combined, triggers should appear every 2 samples (period = sr/hz = 10/5 = 2)
         combined = np.concatenate([out1, out2])
         trigger_positions = np.where(combined > 0)[0]
-        assert len(trigger_positions) >= 3, "Expected multiple triggers across 8 samples"
+        assert (
+            len(trigger_positions) >= 3
+        ), "Expected multiple triggers across 8 samples"
         spacings = np.diff(trigger_positions)
         assert np.all(spacings == 2), f"Expected spacing=2, got {spacings}"
 
@@ -206,14 +210,16 @@ class TestPeriodicTriggerPEHz:
         triggers_fast = int(np.sum(out[10:] > 0))
 
         # Fast half must have more triggers than slow half
-        assert triggers_fast > triggers_slow, (
-            f"Expected more triggers in fast half; slow={triggers_slow}, fast={triggers_fast}"
-        )
+        assert (
+            triggers_fast > triggers_slow
+        ), f"Expected more triggers in fast half; slow={triggers_slow}, fast={triggers_fast}"
         # Fast section should have triggers evenly spaced at period=2
         fast_positions = np.where(out[10:] > 0)[0]
         if len(fast_positions) > 1:
             spacings = np.diff(fast_positions)
-            assert np.all(spacings == 2), f"Expected spacing=2 in fast section, got {spacings}"
+            assert np.all(
+                spacings == 2
+            ), f"Expected spacing=2 in fast section, got {spacings}"
 
     def test_inputs_returns_hz_pe(self):
         hz_pe = pg.ConstantPE(2.0)

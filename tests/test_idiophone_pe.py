@@ -172,9 +172,9 @@ class TestRegisterScaling:
         """A2 (110 Hz) should decay more slowly than A6 (1760 Hz)."""
         low_blocks = self._half_life_blocks(110.0)
         high_blocks = self._half_life_blocks(1760.0)
-        assert low_blocks > high_blocks, (
-            f"low note ({low_blocks} blocks) should outlast high note ({high_blocks} blocks)"
-        )
+        assert (
+            low_blocks > high_blocks
+        ), f"low note ({low_blocks} blocks) should outlast high note ({high_blocks} blocks)"
 
     def test_ref_freq_matches_tau_mid(self):
         """At A4 the fundamental should reach -60 dB within ±20% of tau_mid (1.0 s)."""
@@ -186,6 +186,6 @@ class TestRegisterScaling:
         n_blocks = int(np.ceil(n_samples / BLOCK_SIZE))
         audio = render_blocks(pe, n_blocks)
         peak_at_tau = float(np.max(np.abs(audio[n_samples - BLOCK_SIZE : n_samples])))
-        assert peak_at_tau < 0.3 * (1.0 + tolerance), (
-            f"signal at tau_mid louder than expected: {peak_at_tau:.4f}"
-        )
+        assert peak_at_tau < 0.3 * (
+            1.0 + tolerance
+        ), f"signal at tau_mid louder than expected: {peak_at_tau:.4f}"

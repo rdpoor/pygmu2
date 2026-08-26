@@ -5,6 +5,7 @@ from pygmu2.gate_signal import GateSignal
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.snippet import Snippet
 
+
 class ScheduledGatePE(GateSignal):
     """
     Convert note durations into gate signals, specifically for feeding into an
@@ -15,10 +16,8 @@ class ScheduledGatePE(GateSignal):
     the duration of that note has elapsed unless an new note has started
     before the previous note ends.
     """
-    def __init__(
-        self,
-        notes: list[tuple[int, int]] # start, duration pairs
-    ):
+
+    def __init__(self, notes: list[tuple[int, int]]):  # start, duration pairs
         # Merge overlapping note intervals once at construction time.
         notes_sorted = sorted(notes)
         self._merged = []
@@ -26,9 +25,9 @@ class ScheduledGatePE(GateSignal):
             a, b = notes_sorted[0][0], notes_sorted[0][0] + notes_sorted[0][1]
             for note_start, note_dur in notes_sorted[1:]:
                 note_end = note_start + note_dur
-                if note_start < b:      # overlap: extend the current interval
+                if note_start < b:  # overlap: extend the current interval
                     b = max(b, note_end)
-                else:                   # gap: close current interval, start a new one
+                else:  # gap: close current interval, start a new one
                     self._merged.append((a, b))
                     a, b = note_start, note_end
             self._merged.append((a, b))
@@ -50,7 +49,7 @@ class ScheduledGatePE(GateSignal):
             # with the end of the last note (start + duration)
             first = self._notes[0]
             last = self._notes[-1]
-            return Extent(first[0], last[0]+last[1])
+            return Extent(first[0], last[0] + last[1])
 
     def _render_gate(self, start: int, duration: int) -> Snippet:
         out = np.zeros((duration, 1), dtype=np.float32)

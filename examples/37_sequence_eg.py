@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pygmu2 as pg
 from examples_helper import run_demos
-pg.set_sample_rate(44100)
 
+pg.set_sample_rate(44100)
 
 
 def _build_sources():
@@ -43,7 +43,9 @@ def demo_overlap():
         (choir_up, int(2.0 * sample_rate)),
         mode=pg.SequenceMode.OVERLAP,
     )
-    pg.play(pg.GainPE(pg.CropPE(seq, 0, int(3.5 * sample_rate)), gain=2.54), sample_rate)
+    pg.play(
+        pg.GainPE(pg.CropPE(seq, 0, int(3.5 * sample_rate)), gain=2.54), sample_rate
+    )
 
 
 def demo_non_overlap():
@@ -57,7 +59,9 @@ def demo_non_overlap():
         (choir_up, int(2.0 * sample_rate)),
         mode=pg.SequenceMode.NON_OVERLAP,
     )
-    pg.play(pg.GainPE(pg.CropPE(seq, 0, int(3.5 * sample_rate)), gain=4.07), sample_rate)
+    pg.play(
+        pg.GainPE(pg.CropPE(seq, 0, int(3.5 * sample_rate)), gain=4.07), sample_rate
+    )
 
 
 DEMOS = [

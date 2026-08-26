@@ -13,13 +13,16 @@ import numpy as np
 # Try to import numba for JIT compilation (optional optimization)
 try:
     from numba import jit
+
     NUMBA_AVAILABLE = True
 except ImportError:
     NUMBA_AVAILABLE = False
+
     # Dummy decorator when numba isn't available
     def jit(*args, **kwargs):
         def decorator(func):
             return func
+
         return decorator
 
 
@@ -111,6 +114,7 @@ def _comb_process_numba(
             write_pos = 0
 
     return y, buffer, write_pos, smoothed_freq
+
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
@@ -277,10 +281,14 @@ class CombPE(ProcessingElement):
         smooth_alpha = 1.0 / self._smoothing_samples
 
         # Get frequency values (either constant or from PE)
-        freq_values = self._scalar_or_pe_values(self._frequency, start, duration, dtype=np.float64)
+        freq_values = self._scalar_or_pe_values(
+            self._frequency, start, duration, dtype=np.float64
+        )
 
         # Get feedback values (either constant or from PE)
-        fb_values = self._scalar_or_pe_values(self._feedback, start, duration, dtype=np.float64)
+        fb_values = self._scalar_or_pe_values(
+            self._feedback, start, duration, dtype=np.float64
+        )
 
         # Use Numba-accelerated path when available
         if NUMBA_AVAILABLE:
@@ -341,8 +349,16 @@ class CombPE(ProcessingElement):
         return Snippet(start, output.astype(np.float32))
 
     def __repr__(self) -> str:
-        freq_repr = self._frequency if not self._freq_is_pe else f"{self._frequency.__class__.__name__}(...)"
-        fb_repr = self._feedback if not self._fb_is_pe else f"{self._feedback.__class__.__name__}(...)"
+        freq_repr = (
+            self._frequency
+            if not self._freq_is_pe
+            else f"{self._frequency.__class__.__name__}(...)"
+        )
+        fb_repr = (
+            self._feedback
+            if not self._fb_is_pe
+            else f"{self._feedback.__class__.__name__}(...)"
+        )
         return (
             f"CombPE(source={self._source.__class__.__name__}, "
             f"frequency={freq_repr}, feedback={fb_repr})"

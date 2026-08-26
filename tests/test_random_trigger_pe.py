@@ -11,10 +11,10 @@ import pytest
 import pygmu2 as pg
 from pygmu2.random_trigger_pe import RandomTriggerPE
 
-
 # ---------------------------------------------------------------------------
 # Construction
 # ---------------------------------------------------------------------------
+
 
 class TestRandomTriggerPEConstruction:
 
@@ -44,6 +44,7 @@ class TestRandomTriggerPEConstruction:
 # ---------------------------------------------------------------------------
 # Output values and shape
 # ---------------------------------------------------------------------------
+
 
 class TestRandomTriggerPEOutput:
 
@@ -104,14 +105,15 @@ class TestRandomTriggerPEOutput:
         rt.on_start()
         count = int(rt.render(0, n).data[:, 0].sum())
         expected = n * rate / sr
-        assert expected * 0.5 < count < expected * 1.5, (
-            f"count={count}, expected≈{expected:.0f}"
-        )
+        assert (
+            expected * 0.5 < count < expected * 1.5
+        ), f"count={count}, expected≈{expected:.0f}"
 
 
 # ---------------------------------------------------------------------------
 # Reproducibility
 # ---------------------------------------------------------------------------
+
 
 class TestRandomTriggerPEReproducibility:
 
@@ -126,9 +128,7 @@ class TestRandomTriggerPEReproducibility:
         rt2 = RandomTriggerPE(rate=10.0, seed=99)
         rt1.on_start()
         rt2.on_start()
-        np.testing.assert_array_equal(
-            rt1.render(0, 200).data, rt2.render(0, 200).data
-        )
+        np.testing.assert_array_equal(rt1.render(0, 200).data, rt2.render(0, 200).data)
 
     def test_on_start_replays_sequence(self):
         rt = RandomTriggerPE(rate=10.0, seed=7)
@@ -142,6 +142,7 @@ class TestRandomTriggerPEReproducibility:
 # ---------------------------------------------------------------------------
 # PE rate
 # ---------------------------------------------------------------------------
+
 
 class TestRandomTriggerPEPERate:
 

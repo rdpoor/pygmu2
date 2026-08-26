@@ -208,9 +208,7 @@ class TestCropPERender:
         renderer.start()
 
         snippet = crop.render(0, 50)
-        np.testing.assert_array_equal(
-            snippet.data, np.zeros((50, 1), dtype=np.float32)
-        )
+        np.testing.assert_array_equal(snippet.data, np.zeros((50, 1), dtype=np.float32))
 
         renderer.stop()
 
@@ -223,9 +221,7 @@ class TestCropPERender:
         renderer.start()
 
         snippet = crop.render(250, 50)
-        np.testing.assert_array_equal(
-            snippet.data, np.zeros((50, 1), dtype=np.float32)
-        )
+        np.testing.assert_array_equal(snippet.data, np.zeros((50, 1), dtype=np.float32))
 
         renderer.stop()
 
@@ -508,45 +504,43 @@ class TestCropPEIntegration:
 
 class TestCropPERegression:
     """Regression tests for CropPE with infinite extent sources."""
-    
+
     def setup_method(self):
         self.renderer = NullRenderer(sample_rate=44100)
-    
+
     def test_crop_ramp_with_extend_mode_infinite_source(self):
         """
         Regression test: CropPE should properly limit PiecewisePE with extend_mode=ExtendMode.HOLD_BOTH
         (infinite extent) so it outputs zeros outside the crop window.
-        
+
         Bug: PiecewisePE with extend_mode=ExtendMode.HOLD_BOTH has infinite extent. CropPE must
         ensure it outputs zeros after the crop end, not hold values.
         """
         ramp = PiecewisePE([(0, 10.0), (100, 20.0)], extend_mode=ExtendMode.HOLD_BOTH)
-        
+
         # Verify infinite extent
         assert ramp.extent().start is None
         assert ramp.extent().end is None
-        
+
         # Crop to finite window
         cropped = CropPE(ramp, 0, (200) - (0))
-        
+
         self.renderer.set_source(cropped)
-        
+
         # Render within crop window
         snippet1 = cropped.render(50, 50)
         # Should get ramp values
         assert snippet1.data[0, 0] == pytest.approx(15.0, abs=0.5)
-        
+
         # Render after crop window - CRITICAL: should be zeros, not held value
         snippet2 = cropped.render(250, 50)
         np.testing.assert_array_almost_equal(
-            snippet2.data,
-            np.zeros((50, 1), dtype=np.float32),
-            decimal=5
+            snippet2.data, np.zeros((50, 1), dtype=np.float32), decimal=5
         )
-        
+
         # Critical assertion: should be zeros, NOT the ramp's end value (20.0)
         assert snippet2.data[0, 0] != pytest.approx(20.0, abs=0.1)
-    
+
     def test_crop_ramp_with_extend_mode_before_ramp(self):
         """
         Regression test: CropPE should handle PiecewisePE with extend_mode when
@@ -554,21 +548,19 @@ class TestCropPERegression:
         """
         ramp = PiecewisePE([(0, 5.0), (100, 10.0)], extend_mode=ExtendMode.HOLD_BOTH)
         cropped = CropPE(ramp, -50, (50) - (-50))
-        
+
         self.renderer.set_source(cropped)
-        
+
         snippet = cropped.render(-50, 100)
-        
+
         # First 50 samples should hold start_value (5.0)
         np.testing.assert_array_almost_equal(
-            snippet.data[:50, 0],
-            np.full(50, 5.0, dtype=np.float32),
-            decimal=5
+            snippet.data[:50, 0], np.full(50, 5.0, dtype=np.float32), decimal=5
         )
-        
+
         # Next 50 samples should be ramp values
         assert snippet.data[50, 0] == pytest.approx(5.0, abs=0.1)
-    
+
     def test_crop_ramp_with_extend_mode_after_ramp(self):
         """
         Regression test: CropPE should limit PiecewisePE with extend_mode when
@@ -576,67 +568,63 @@ class TestCropPERegression:
         """
         ramp = PiecewisePE([(0, 10.0), (100, 20.0)], extend_mode=ExtendMode.HOLD_BOTH)
         cropped = CropPE(ramp, 0, (150) - (0))
-        
+
         self.renderer.set_source(cropped)
-        
+
         # Render within crop but after ramp
         snippet = cropped.render(120, 30)
-        
+
         # Should get ramp's end value (20.0) for samples within crop
         np.testing.assert_array_almost_equal(
-            snippet.data,
-            np.full((30, 1), 20.0, dtype=np.float32),
-            decimal=5
+            snippet.data, np.full((30, 1), 20.0, dtype=np.float32), decimal=5
         )
-        
+
         # Render after crop - should be zeros
         snippet_after = cropped.render(200, 50)
         np.testing.assert_array_almost_equal(
-            snippet_after.data,
-            np.zeros((50, 1), dtype=np.float32),
-            decimal=5
+            snippet_after.data, np.zeros((50, 1), dtype=np.float32), decimal=5
         )
-    
+
     def test_crop_extent_intersection_with_infinite(self):
         """
         Regression test: CropPE extent calculation should correctly intersect
         crop extent with source's infinite extent.
         """
         ramp = PiecewisePE([(0, 10.0), (100, 20.0)], extend_mode=ExtendMode.HOLD_BOTH)
-        
+
         # Crop with finite bounds
         cropped1 = CropPE(ramp, 0, (200) - (0))
         assert cropped1.extent().start == 0
         assert cropped1.extent().end == 200
-        
+
         # Crop with finite start
         cropped2 = CropPE(ramp, 0, 200)
         assert cropped2.extent().start == 0
         assert cropped2.extent().end == 200
-        
+
         # Crop with None end
         cropped3 = CropPE(ramp, 0, None)
         assert cropped3.extent().start == 0
         assert cropped3.extent().end is None
-    
+
     def test_crop_extent_before_start_returns_hold_first(self):
         """
         Regression test: before crop start with HOLD_FIRST returns the first value.
         """
         # IdentityPE outputs the sample index as the value
         source = IdentityPE()
-        
+
         # Crop to a finite window, hold first value before start.
         crop = CropPE(source, 0, 10000, extend_mode=ExtendMode.HOLD_FIRST)
-        
+
         self.renderer.set_source(crop)
-        
+
         # Render before crop start - should hold first value (0.0)
         snippet = crop.render(-20000, 1000)
-        
+
         expected = np.zeros((1000, 1), dtype=np.float32)
         np.testing.assert_array_equal(snippet.data, expected)
-        
+
         # Also test rendering at positive time but still before crop_end
         snippet2 = crop.render(5000, 100)
         expected2 = np.arange(5000, 5100, dtype=np.float32).reshape(-1, 1)
