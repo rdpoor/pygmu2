@@ -78,12 +78,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = [
-    "--cov=src",
-    "--cov-report=html",
-    "--cov-report=term-missing",
-    "--verbose",
-]
+# Coverage is opt-in (pytest --cov=src), not forced on every run.
 
 [tool.black]
 line-length = 88
