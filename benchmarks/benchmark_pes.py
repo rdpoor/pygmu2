@@ -254,9 +254,8 @@ def setup_fallback_configs():
         CompressorPE,
         LimiterPE,
         ExpanderPE,
-        RandomPE,
-        RandomMode,
-        Extent,
+        RandomValuePE,
+        RandomStepPE,
     )
 
     # Try to import optional PEs
@@ -464,18 +463,23 @@ def setup_fallback_configs():
 
     # === Random PEs ===
     register_fallback(
-        "RandomPE",
+        "RandomValuePE",
         [
             BenchmarkConfig(
-                "RandomPE (Sample & Hold)",
-                lambda: RandomPE(mode=RandomMode.SAMPLE_HOLD),
+                "RandomValuePE (10 Hz)",
+                lambda: RandomValuePE(rate=10.0, seed=42),
                 "source",
             ),
+        ],
+    )
+
+    register_fallback(
+        "RandomStepPE",
+        [
             BenchmarkConfig(
-                "RandomPE (Linear)", lambda: RandomPE(mode=RandomMode.LINEAR), "source"
-            ),
-            BenchmarkConfig(
-                "RandomPE (Walk)", lambda: RandomPE(mode=RandomMode.WALK), "source"
+                "RandomStepPE (10 Hz)",
+                lambda: RandomStepPE(rate=10.0, seed=42),
+                "source",
             ),
         ],
     )
@@ -765,6 +769,9 @@ if __name__ == "__main__":
     print("pygmu2 PE Benchmark Suite")
     print("=" * 70)
     print()
+
+    # Global sample rate is required before any PE construction
+    pygmu2.set_sample_rate(44100)
 
     configs = collect_all_configs()
 
