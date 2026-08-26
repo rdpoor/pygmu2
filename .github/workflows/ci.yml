@@ -31,4 +31,9 @@ jobs:
         run: uv run black --check src tests examples benchmarks scripts
 
       - name: Test suite (unit + examples smoke + boundary gates)
-        run: uv run pytest -q
+        run: |
+          set -o pipefail
+          uv run pytest -x -q 2>&1 | tee pytest.log || {
+            echo "::error title=pytest::$(tail -c 900 pytest.log | tr '\n' '¶')"
+            exit 1
+          }
