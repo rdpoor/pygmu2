@@ -213,17 +213,22 @@ stereo_mix = pg.SpatialPE(eq_mix, method=pg.SpatialAdapter(channels=2))
 # add plate reverb
 wet_mix = pg.ReverbPE(source=stereo_mix, ir=IR, mix=0.3)
 
-# Render supersaw stems to separate files
-stem_dir = Path(__file__).parent / "audio"
-cropped_lo = pg.CropPE(stem_lo, 0, duration)
-cropped_hi = pg.CropPE(stem_hi, 0, duration)
-lo_path = str(stem_dir / "im_lucky_supersaw_lo.wav")
-hi_path = str(stem_dir / "im_lucky_supersaw_hi.wav")
-print(f"Rendering supersaw lo stem → {lo_path}")
-pg.render_to_file(cropped_lo, lo_path, sample_rate=SRATE)
-print(f"Rendering supersaw hi stem → {hi_path}")
-pg.render_to_file(cropped_hi, hi_path, sample_rate=SRATE)
-print("Stems written.")
+def main():
+    # Render supersaw stems to separate files
+    stem_dir = Path(__file__).parent / "audio"
+    cropped_lo = pg.CropPE(stem_lo, 0, duration)
+    cropped_hi = pg.CropPE(stem_hi, 0, duration)
+    lo_path = str(stem_dir / "im_lucky_supersaw_lo.wav")
+    hi_path = str(stem_dir / "im_lucky_supersaw_hi.wav")
+    print(f"Rendering supersaw lo stem → {lo_path}")
+    pg.render_to_file(cropped_lo, lo_path)
+    print(f"Rendering supersaw hi stem → {hi_path}")
+    pg.render_to_file(cropped_hi, hi_path)
+    print("Stems written.")
 
-# Render and play the full mix...
-pg.browse(source=wet_mix, sample_rate=SRATE)
+    # Render and play the full mix...
+    pg.browse(wet_mix)
+
+
+if __name__ == "__main__":
+    main()
