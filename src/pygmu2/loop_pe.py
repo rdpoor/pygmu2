@@ -184,15 +184,17 @@ class LoopPE(ProcessingElement):
         channels = self._source.channel_count() or 1
         output = np.zeros((duration, channels), dtype=np.float32)
 
-        # Check if we're past the end (for finite loops)
+        # Clamp to the extent [0, total_length): zero-fill before 0 (a
+        # negative start must not wrap through the modulo) and past the end.
+        first_valid = max(start, 0)
+        lead = first_valid - start
         if self._count is not None:
             total_length = self._count * self._loop_length
-            if start >= total_length:
+            if first_valid >= total_length:
                 return Snippet(start, output)
-            # Clamp duration to not exceed total length
-            valid_duration = min(duration, total_length - start)
+            valid_duration = min(duration - lead, total_length - first_valid)
         else:
-            valid_duration = duration
+            valid_duration = duration - lead
 
         if valid_duration <= 0:
             return Snippet(start, output)
@@ -201,13 +203,13 @@ class LoopPE(ProcessingElement):
         loop_data = self._source.render(self._resolved_start, self._loop_length).data
 
         # Create array of output sample indices
-        out_indices = np.arange(start, start + valid_duration)
+        out_indices = np.arange(first_valid, first_valid + valid_duration)
 
         # Map to positions within the loop (vectorized modulo)
         loop_positions = out_indices % self._loop_length
 
         # Use fancy indexing to get all samples at once
-        output[:valid_duration, :] = loop_data[loop_positions, :]
+        output[lead : lead + valid_duration, :] = loop_data[loop_positions, :]
 
         # Apply crossfade if enabled
         if self._crossfade > 0:
@@ -236,8 +238,9 @@ class LoopPE(ProcessingElement):
                 blend_samples = loop_data[blend_positions, :]
 
                 # Apply crossfade: out = current * fade_out + blend * fade_in
-                output[xfade_indices, :] = (
-                    output[xfade_indices, :] * fade_out + blend_samples * fade_in
+                out_rows = xfade_indices + lead
+                output[out_rows, :] = (
+                    output[out_rows, :] * fade_out + blend_samples * fade_in
                 )
 
         return Snippet(start, output.astype(np.float32))

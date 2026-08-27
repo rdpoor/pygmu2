@@ -43,6 +43,9 @@ class GateToTriggerPE(TriggerSignal):
     def _on_start(self) -> None:
         self._prev = 0.0
 
+    def _reset_state(self) -> None:
+        self._prev = 0.0
+
     def _render_trigger(self, start: int, duration: int) -> Snippet:
         gate_data = self._gate.render(start, duration).data[:, 0]
         out = np.zeros((duration, 1), dtype=np.float32)

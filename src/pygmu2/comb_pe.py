@@ -226,6 +226,13 @@ class CombPE(ProcessingElement):
         channels = self._source.channel_count() or 1
         self._allocate_buffer(channels)
 
+    def _reset_state(self) -> None:
+        """Clear the delay line and smoothing state."""
+        if self._buffer is not None:
+            self._buffer[:] = 0.0
+        self._write_pos = 0
+        self._smoothed_freq = -1.0
+
     def _on_stop(self) -> None:
         """Clear state."""
         self._buffer = None

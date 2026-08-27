@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from math import log, log2
 from typing import List
 
-from pygmu2.source_pe import SourcePE
+from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 from pygmu2.mix_pe import MixPE
@@ -159,7 +159,7 @@ INSTRUMENTS: dict[str, InstrumentDef] = {
 # ---------------------------------------------------------------------------
 
 
-class IdiophonePE(SourcePE):
+class IdiophonePE(ProcessingElement):
     """Struck bar idiophone synthesis PE.
 
     Produces a note by summing DecayingSinePE partials defined by an
@@ -226,29 +226,23 @@ class IdiophonePE(SourcePE):
         return MixPE(*partials)
 
     # ------------------------------------------------------------------
-    # SourcePE interface
+    # ProcessingElement interface
     # ------------------------------------------------------------------
 
     def _compute_extent(self) -> Extent:
         return self._mix_pe.extent()
 
-    def _reset_state(self) -> None:
-        for input_pe in self._mix_pe.inputs():
-            input_pe._reset_state()
-
-    def _on_start(self) -> None:
-        self._reset_state()
-
-    def _on_stop(self) -> None:
-        self._reset_state()
+    def inputs(self) -> List[ProcessingElement]:
+        # Expose the internal graph so the Renderer (and any graph walk)
+        # manages lifecycle and reset for the partials — the composite
+        # itself holds no state; the DecayingSinePE partials declare theirs.
+        return [self._mix_pe]
 
     def _render(self, start: int, duration: int) -> Snippet:
         return self._mix_pe.render(start, duration)
 
     def channel_count(self) -> int:
         return self._channels
-
-    stateful = True
 
     def __repr__(self) -> str:
         return (

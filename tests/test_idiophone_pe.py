@@ -82,9 +82,13 @@ class TestConstruction:
     def test_repr_contains_instrument_name(self):
         assert "marimba" in repr(IdiophonePE(MARIMBA))
 
-    def test_is_not_pure(self):
-        # Stateful recurrence; must not be cached or reordered by the framework.
-        assert IdiophonePE(MARIMBA).stateful
+    def test_graph_is_stateful(self):
+        # The composite itself is stateless; its DecayingSinePE partials
+        # carry the stateful recurrence and are exposed via inputs().
+        pe = IdiophonePE(MARIMBA)
+        assert not pe.stateful
+        mix = pe.inputs()[0]
+        assert all(partial.stateful for partial in mix.inputs())
 
 
 # ---------------------------------------------------------------------------

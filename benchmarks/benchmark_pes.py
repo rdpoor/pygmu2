@@ -18,11 +18,13 @@ from dataclasses import dataclass
 from typing import Callable, Optional, Any
 import numpy as np
 
-# Add src to path for development
+# Add src to path for development (and repo root for tests.pe_factories)
 sys.path.insert(0, "src")
+sys.path.insert(0, ".")
 
 import pygmu2
 from pygmu2 import ProcessingElement, NullRenderer
+from tests.pe_factories import FACTORIES as CONTRACT_FACTORIES, HARDWARE
 
 
 @dataclass
@@ -631,6 +633,15 @@ def collect_all_configs() -> list[BenchmarkConfig]:
         if configs:
             all_configs.extend(configs)
             print(f"  {name}: {len(configs)} config(s) from auto-discovery")
+            continue
+
+        # Fall back to the contract suite's factory registry (shared with
+        # tests/test_contract.py so benchmarks and contracts cannot drift)
+        if name in CONTRACT_FACTORIES and name not in HARDWARE:
+            all_configs.append(
+                BenchmarkConfig(name, CONTRACT_FACTORIES[name], "contract-factory")
+            )
+            print(f"  {name}: 1 config from contract factory")
         else:
             print(f"  {name}: skipped (no config available)")
 
