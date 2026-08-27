@@ -1,46 +1,21 @@
 # Contributing to pygmu2
 
-This guide covers the architecture, conventions, and processes for developing pygmu2.
+This guide covers the architecture, conventions, and processes for developing
+pygmu2. The governing design document is [`DESIGN_PHILOSOPHY.md`](DESIGN_PHILOSOPHY.md);
+where this guide states a rule, that document states the reason and the CI gate
+that enforces it.
 
 ## Development Setup
 
-### Using uv (recommended)
-
-[uv](https://docs.astral.sh/uv/) is a fast Python package manager:
-
 ```bash
-# Install uv
+# Install uv if needed
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Clone and setup
-git clone https://github.com/yourname/pygmu2.git
+git clone https://github.com/rdpoor/pygmu2.git
 cd pygmu2
+uv sync --all-extras   # extras cover the numba/midi/audio PEs; CI uses this too
 
-# Install dependencies (creates .venv automatically)
-uv sync
-
-# Run tests to verify setup
-uv run pytest
-```
-
-### Using pipenv
-
-```bash
-# Install pipenv
-pip install pipenv
-
-# Clone and setup
-git clone https://github.com/yourname/pygmu2.git
-cd pygmu2
-
-# Install dependencies
-pipenv install --dev
-
-# Activate environment
-pipenv shell
-
-# Run tests to verify setup
-pytest
+uv run pytest -q       # verify: the whole suite should be green
 ```
 
 ## Project Structure
@@ -48,560 +23,232 @@ pytest
 ```
 pygmu2/
 ├── src/pygmu2/
-│   ├── __init__.py              # Package exports (update when adding PEs)
-│   ├── processing_element.py    # PE and SourcePE base classes
-│   ├── snippet.py               # Audio data container
-│   ├── extent.py                # Temporal bounds
-│   ├── renderer.py              # Renderer base + profiling
-│   ├── audio_renderer.py        # Real-time playback
-│   ├── null_renderer.py         # Silent rendering (testing)
-│   ├── config.py                # Error handling configuration
+│   ├── __init__.py              # Public surface: eager + lazy exports, __all__
+│   ├── processing_element.py    # PE base class: render chokepoint, stateful contract
+│   ├── snippet.py               # Audio buffer (float32, read-only) + broadcast_channels
+│   ├── extent.py                # Temporal bounds (None = unbounded)
+│   ├── semantic_signal.py       # Shared base for GateSignal / TriggerSignal
+│   ├── renderer.py              # Renderer base: lifecycle walks, no validation
+│   ├── audio_renderer.py        # Real-time playback (sounddevice)
+│   ├── null_renderer.py         # Silent rendering (tests, offline)
+│   ├── diagnostics.py           # THE profiler: with diagnostics.profile() as report
+│   ├── config.py                # Global sample rate
 │   ├── conversions.py           # dB/pitch/time conversions
-│   ├── logger.py                # Logging utilities
-│   │
-│   │   # Processing Elements
-│   ├── sine_pe.py               # Sine oscillator
-│   ├── blit_saw_pe.py           # Band-limited sawtooth
-│   ├── super_saw_pe.py          # Detuned unison saw
-│   ├── adsr_pe.py               # ADSR envelope generator
-│   ├── constant_pe.py           # Constant value
-│   ├── ramp_pe.py               # Linear ramp
-│   ├── gain_pe.py               # Gain control
-│   ├── mix_pe.py                # Audio mixer
-│   ├── delay_pe.py              # Sample delay
-│   ├── crop_pe.py               # Temporal cropping
-│   ├── loop_pe.py               # Looping
-│   ├── slice_pe.py              # Slice/cut region + optional fades
-│   ├── biquad_pe.py             # Biquad filter
-│   ├── envelope_pe.py           # Envelope follower
-│   ├── dynamics_pe.py           # Flexible dynamics processor
-│   ├── compressor_pe.py         # Compressor/limiter/gate
-│   ├── random_pe.py             # Random value generator
-│   ├── window_pe.py             # Windowed statistics
-│   ├── wav_reader_pe.py         # WAV file input
-│   └── wav_writer_pe.py         # WAV file output
-│
-├── tests/                       # Unit tests (pytest)
-├── examples/                    # Runnable example scripts
-├── benchmarks/                  # Performance benchmarks
-│   └── benchmark_pes.py         # Auto-discovering PE benchmark suite
-├── pyproject.toml               # Project config (uv, pytest, tools)
-├── uv.lock                      # uv lockfile (auto-generated)
-├── Pipfile                      # pipenv dependencies (alternative)
-├── Pipfile.lock                 # pipenv lockfile
-└── LICENSE
+│   ├── temperament.py           # Tuning systems
+│   ├── utils.py                 # play / play_offline / browse / render_to_file
+│   ├── *_pe.py                  # The PE catalog (one file per PE)
+│   └── meltysynth/              # Vendored SoundFont synth — do not reformat/edit
+├── tests/
+│   ├── pe_factories.py          # One construction recipe per exported PE
+│   ├── test_contract.py         # Universal contract suite (auto-discovers __all__)
+│   ├── test_examples.py         # Every example must import cleanly
+│   ├── test_boundaries.py       # Exports, README tables, import hygiene, benchmarks
+│   ├── probes.py                # Test-only PEs (IdentityPE timestamp probe)
+│   └── test_*.py                # Per-PE behavioural tests
+├── examples/                    # *_eg.py — runnable demos (smoke-tested in CI)
+├── benchmarks/                  # benchmark_pes.py (shares tests/pe_factories.py)
+├── scripts/                     # jogshuttle player, MIDI demos, gen_readme_tables
+└── pyproject.toml               # THE dependency manifest (uv.lock pins it)
 ```
 
 ## Architecture
 
-### Processing Element Lifecycle
+### Lifecycle
 
 ```
-0. set_sample_rate()  Set the global sample rate before any PE construction
-1. Construction     PE created with parameters
-2. set_source()     Renderer validates graph (purity, channels)
-3. on_start()       Called bottom-up (inputs before outputs)
-4. render()         Called repeatedly to generate audio
-5. on_stop()        Called top-down (outputs before inputs)
+0. pg.set_sample_rate(rate)   before constructing any PE (enforced)
+1. Construction               parameters validated; internal graphs built
+2. renderer.set_source(pe)    attaches the graph — no validation walk
+3. renderer.start()           on_start() bottom-up over the graph
+4. render(start, duration)    pull-based, lazy, exact-length Snippets
+5. renderer.stop()            on_stop() top-down
 ```
 
-### Graph Evaluation
+There is deliberately **no up-front graph validation**: correctness is proven
+exhaustively by the contract suite in CI, and anything wrong at runtime fails
+loudly where the fact surfaces (philosophy PD-2). A channel mismatch raises
+numpy's own broadcast error at render time; that is by design, not neglect.
 
-Audio flows lazily through the graph:
+### The `stateful` contract (contiguity)
 
-```
-render(start, duration) called on root PE
-    └─> Root PE calls render() on its inputs
-            └─> Inputs call render() on their inputs
-                    └─> ... recursively to source PEs
-```
-
-Each `render()` call returns a `Snippet` containing exactly `duration` samples.
-
-## API Conventions
-
-### Variable-Input PEs
-
-For PEs that take a variable number of inputs (e.g., `MixPE`, `SequencePE`,
-`RandomSelectPE`), we standardize on:
-
-- Preferred usage: pass inputs as positional arguments (`*args`).
-  - `MixPE(a, b, c)`
-  - `SequencePE((pe1, 0), (pe2, 44100))`
-  - `RandomSelectPE(trigger, pe1, pe2, weights=[...])`
-- Also supported: pass a single list/tuple of inputs.
-  - `MixPE([a, b, c])`
-  - `SequencePE([(pe1, 0), (pe2, 44100)])`
-  - `RandomSelectPE(trigger, inputs=[pe1, pe2])`
-
-When both forms could apply, constructors should reject ambiguous mixes
-(e.g., providing both a list and positional inputs).
-
-## Immutability Contract
-
-Processing elements must treat input `Snippet` buffers as immutable.
-Do not modify `snippet.data` from any input PE in-place. Always write into
-a new buffer (or a copy) when producing output. This prevents accidental
-buffer aliasing across the graph and keeps PE behavior consistent.
-
-## Extent Stability
-
-An element's extent is fixed at construction time and does not change afterward.
-The extent may be finite or indefinite (infinite), but it should never vary over
-the lifetime of the instance.
-
-Because graphs are built from leaves toward the root, input extents are known
-when composing higher-level PEs. As a result, the root extent is determined
-at construction time and remains stable for the life of the graph.
-
-## PE Construction Guidelines
-
-Prefer to compute as much as possible in `__init__`. This keeps PEs predictable
-and easier to reason about now that sample rate is globally available.
-
-**Do in `__init__` whenever possible:**
-- validate parameters and invariants
-- build internal graphs
-- resolve constants
-- infer and set `sample_rate` if it can be computed immediately
-- compute extents and purity if independent of `sample_rate`
-
-**Do at construction time whenever possible:**
-- values that depend on sample rate (now globally available)
-- seconds → samples conversions
-- extents that depend on sample rate or other known inputs
-- allocating buffers/state tied to the configured rate
-
-### Purity and State
-
-**Pure PEs** produce the same output for the same input and can be shared:
-- Most source PEs (SinePE, ConstantPE)
-- Stateless transforms (GainPE, MixPE, CropPE)
-
-**Stateful PEs** maintain internal state and cannot be shared:
-- EnvelopePE (tracks envelope value)
-- BiquadPE (filter state)
-- BlitSawPE (phase accumulator)
-
-The Renderer validates that stateful PEs have only one downstream consumer.
-
-### The `inputs()` Contract
-
-`inputs()` must return **every PE that this PE calls `render()` on**. The
-Renderer uses `inputs()` to walk the entire graph for:
-
-- **Validation** — checking purity constraints and channel compatibility
-- **Lifecycle** — calling `on_start()` / `on_stop()` on every reachable PE
-- **Profiling** — collecting all PEs for timing
-
-If a PE is rendered but not reachable via `inputs()`, it will never receive
-lifecycle calls and the Renderer cannot validate it.
-
-### Composite PEs (Internal Graphs)
-
-Some PEs build an internal graph of sub-PEs (e.g., CompressorPE combines
-EnvelopePE + DynamicsPE; ReverbPE combines ConvolvePE + GainPE + MixPE).
-These **must expose the internal graph** through `inputs()` so the Renderer
-can manage it.
-
-Follow this pattern (used by ReverbPE, CompressorPE, GatePE):
-
-1. **Wrap the source in `CachePE`** if it feeds multiple internal PEs.
-   Without this, the source would be rendered multiple times per frame
-   (wasteful for pure sources, incorrect for impure ones), and the Renderer
-   would reject non-pure sources with multiple sinks.
-
-2. **Return `[self._out]` from `inputs()`**, where `_out` is the final node
-   of the internal graph. The Renderer will recursively walk `_out.inputs()`
-   to discover all internal PEs.
-
-3. **Delegate `channel_count()`, `_compute_extent()`, and `_render()`** to
-   `self._out`. No manual `_on_start()` / `_on_stop()` / `_reset_state()`
-   needed — the Renderer handles lifecycle for the entire reachable graph.
+Every PE declares whether it holds render state:
 
 ```python
-from pygmu2.cache_pe import CachePE
+class MyFilterPE(ProcessingElement):
+    stateful = True   # filter memory, phase accumulator, delay line, ...
+```
 
+- `stateful = False` (the default): `render(start, duration)` is a pure
+  function of its arguments — any order, any position, multiple sinks.
+- `stateful = True`: renders must be **contiguous** (each `start` equals the
+  previous request's end). The base class enforces this: a gap or seek raises
+  `RuntimeError: non-contiguous render`. The sanctioned way to seek is an
+  explicit `reset_state()`, which clears the expectation and the PE's state.
+
+When statefulness depends on constructor arguments (e.g. an oscillator that is
+closed-form with constant parameters but accumulates phase when a parameter is
+a PE), declare it as a property:
+
+```python
+@property
+def stateful(self) -> bool:
+    return bool(self.inputs())
+```
+
+The declaration is **falsified by CI**: the contract suite renders every PE in
+shuffled order and requires it to either match the contiguous reference
+(stateless) or raise (stateful). A lie in either direction fails the build.
+
+### Snippets are immutable
+
+`Snippet` buffers are `float32`, shape `(samples, channels)`, and **read-only**
+(`data.flags.writeable = False`). Buffers are shared across sinks; an in-place
+write would corrupt siblings silently, so it raises at the write instead.
+Always produce output into a new array. To broadcast a mono control across
+channels, use `snippet.broadcast_channels(data, channels)` — it returns a view
+and raises on a genuine multichannel mismatch.
+
+### Extents
+
+`extent()` is fixed at construction and never changes (the contract suite
+checks this). `None` bounds mean unbounded. Note that `render()` does **not**
+clamp to the extent — samples outside it are zero-filled by the PE itself, and
+`extend_mode` hold regions (CropPE) live *outside* the advertised extent, so
+they are only observable when a wider consumer pulls past it.
+
+### Composite PEs (internal graphs)
+
+A PE that builds an internal graph must **expose it through `inputs()`** so
+the Renderer's lifecycle walk reaches every internal node:
+
+```python
 class MyCompositePE(ProcessingElement):
     def __init__(self, source, ...):
-        # Cache source to avoid double-pull
-        self._source = CachePE(source)
+        cached = CachePE(source)          # if source feeds >1 internal sink
+        self._out = OtherPE(SomePE(cached), cached)
 
-        # Build internal graph
-        self._internal_a = SomePE(self._source, ...)
-        self._internal_b = OtherPE(self._source, self._internal_a, ...)
-        self._out = self._internal_b
+    def inputs(self):
+        return [self._out]                # renderer walks the whole graph
 
-    def inputs(self) -> list[ProcessingElement]:
-        return [self._out]  # Expose full internal graph to Renderer
+    def _render(self, start, duration):
+        return self._out.render(start, duration)
 
     def channel_count(self):
         return self._out.channel_count()
 
     def _compute_extent(self):
         return self._out.extent()
-
-    def _render(self, start, duration):
-        return self._out.render(start, duration)
 ```
 
-**Anti-pattern — do NOT hide internal PEs:**
+Do **not** hide internal PEs behind `inputs() == []` and hand-forward
+lifecycle calls — that bypasses the contiguity bookkeeping (`reset_state()`
+via the private `_reset_state()` does not clear the expectation) and has
+caused real bugs twice.
 
-```python
-# BAD: internal PEs are invisible to the Renderer
-def inputs(self):
-    return [self._source]  # hides self._internal_a, self._internal_b
+**CachePE and fan-out:** wrap a source in `CachePE` when it feeds multiple
+internal sinks. CachePE is order-safe by design (identical repeated requests
+are served from cache); if a sink diverges, the request falls through to the
+source, whose own contiguity check raises naming the actual state owner. The
+composite itself usually holds no state — leave it stateless and let the
+internal nodes declare theirs.
 
-def _on_start(self):
-    self._internal_a.on_start()  # fragile manual lifecycle
-```
+### Gates and triggers
+
+`GateSignal` = sustained level, values exactly {0, 1}, duration meaningful.
+`TriggerSignal` = isolated one-sample {0, 1} events. Gates are the primitive:
+derive triggers with `GateToTriggerPE(gate)`. Note the rate convention when
+deriving from a toggling gate: `RandomGatePE(rate=r)` yields r/2 triggers/sec.
 
 ## Creating a New Processing Element
 
-### Template
+The checklist is five steps. Everything else (contiguity, framing, dtype,
+zero-fill, extent stability, reset semantics) is enforced by the base class
+and verified automatically by the contract suite — if a proposed convention
+would add a sixth step here, it belongs in the base class instead
+(philosophy R6).
 
-```python
-"""
-MyNewPE - Description of what it does.
+1. **Write `src/pygmu2/<name>_pe.py`** — implement `_render()`, `inputs()`,
+   `channel_count()`, `_compute_extent()`; set `stateful = True` if the PE
+   holds render state (and implement `_reset_state()` to clear it).
+2. **Export it**: add to `__init__.py` (the lazy registry if it imports
+   scipy/numba/mido/miniaudio — `import pygmu2` must stay heavy-dep-free)
+   and to `__all__`.
+3. **Add a factory** to `tests/pe_factories.py` — one canonical, seeded
+   construction. This buys full contract-suite coverage and a benchmark
+   config for free.
+4. **Write behavioural tests** in `tests/test_<name>_pe.py` for the DSP
+   itself (the contract suite already covers the framework contract).
+5. **Run `uv run pytest -q`** — this includes the export-completeness walk,
+   the README-table check (run `uv run python scripts/gen_readme_tables.py`
+   if the table drifted), and the examples smoke test.
 
-Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
-MIT License
-"""
-
-from typing import Optional, Union
-import numpy as np
-
-from pygmu2.processing_element import ProcessingElement
-from pygmu2.extent import Extent
-from pygmu2.snippet import Snippet
-
-
-class MyNewPE(ProcessingElement):
-    """
-    One-line summary.
-    
-    Detailed description of the PE's behavior, including:
-    - What it does
-    - Key parameters and their effects
-    - Any important notes about state or purity
-    
-    Args:
-        source: Input audio PE
-        param1: Description (default: X)
-        param2: Description, can be float or PE for modulation
-    
-    Example:
-        result_stream = MyNewPE(source_stream, param1=0.5)
-    """
-    
-    def __init__(
-        self,
-        source: ProcessingElement,
-        param1: float = 1.0,
-        param2: Union[float, ProcessingElement] = 0.0,
-    ):
-        self._source = source
-        self._param1 = param1
-        self._param2 = param2
-        
-        # State (if any)
-        self._state: Optional[float] = None
-    
-    def inputs(self) -> list[ProcessingElement]:
-        """Return list of input PEs."""
-        result = [self._source]
-        if isinstance(self._param2, ProcessingElement):
-            result.append(self._param2)
-        return result
-    
-    def is_pure(self) -> bool:
-        """Return True if stateless, False if has internal state."""
-        return self._state is None  # Or just: return False
-    
-    def channel_count(self) -> Optional[int]:
-        """Return output channel count, or None to inherit from input."""
-        return self._source.channel_count()
-    
-    def _compute_extent(self) -> Extent:
-        """Compute and return this PE's temporal bounds."""
-        return self._source.extent()
-    
-    def _on_start(self) -> None:
-        """Initialize state when rendering begins."""
-        self._state = 0.0
-
-    def _on_stop(self) -> None:
-        """Clean up when rendering ends."""
-        self._state = None
-    
-    def _render(self, start: int, duration: int) -> Snippet:
-        """Generate output samples."""
-        # Get input
-        source_snippet = self._source.render(start, duration)
-        audio = source_snippet.data.astype(np.float64)
-        
-        # Get parameter (constant or from PE)
-        if isinstance(self._param2, ProcessingElement):
-            param2_snippet = self._param2.render(start, duration)
-            param2 = param2_snippet.data[:, 0]
-        else:
-            param2 = self._param2
-        
-        # Process
-        output = audio * self._param1 + param2
-        
-        return Snippet(start, output.astype(np.float32))
-    
-    def __repr__(self) -> str:
-        return f"MyNewPE(param1={self._param1})"
-```
-
-### Checklist for New PEs
-
-1. **Create the PE file** in `src/pygmu2/`
-2. **Add to `__init__.py`**:
-   - Import the class
-   - Add to `__all__`
-3. **Write unit tests** in `tests/test_myname_pe.py`
-4. **Add benchmark config** (optional) in `benchmarks/benchmark_pes.py`
-5. **Run tests**: `pipenv run pytest tests/test_myname_pe.py -v`
-6. **Run full suite**: `pipenv run pytest`
-7. **Add an example** (optional) in `examples/`
-
-### Conventions
-
-- **Naming**: `<Name>PE` for classes, `<name>_pe.py` for files
-- **Parameters**: Use dB for levels, seconds for time, Hz for frequency
-- **PE inputs**: Accept `Union[float, ProcessingElement]` for modulatable params
-- **Docstrings**: Include Args, Example, and behavioral notes
-- **Errors**: Use `config.handle_error()` instead of raising directly
-- **Time parameters**:
-  - Prefer defaults expressed in **seconds** (no implicit sample-rate assumptions).
-  - Convert seconds→samples in `__init__` using `ProcessingElement._time_to_samples(...)`.
-  - If you support both `*_samples` and `*_seconds`, accept them as `Optional[...]` and let `_time_to_samples` enforce mutual exclusion.
+Conventions: `<Name>PE` / `<name>_pe.py`; dB for levels, seconds for time, Hz
+for frequency; modulatable parameters accept `float | ProcessingElement` (use
+`self._scalar_or_pe_values(...)` in `_render`); seconds→samples in `__init__`.
+Errors are plain raises where the fact surfaces — there is no error-mode
+machinery, and no speculative validation (philosophy PD-2/R3). The class
+docstring's first line becomes the README table entry — make it count.
 
 ## Testing
 
-### Running Tests
-
-Using **uv** (recommended):
-
 ```bash
-# All tests
-uv run pytest
-
-# Specific file
-uv run pytest tests/test_sine_pe.py -v
-
-# With coverage
-uv run pytest --cov=src --cov-report=html
-
-# Skip slow tests (if any)
-uv run pytest -m "not slow"
+uv run pytest -q                       # everything (fast: no coverage)
+uv run pytest tests/test_contract.py   # the universal contract suite
+uv run pytest --cov=src                # coverage, when you want it
 ```
 
-Using **pipenv**:
+Test tiers (philosophy §6): **contract** (auto-discovered, every PE),
+**behavioural** (per-PE DSP), **boundary** (examples import, benchmarks run,
+README matches, `import pygmu2` loads no heavy deps), **numerical**
+(analytical DSP properties — see `tests/test_analytical_pe.py`).
 
-```bash
-# All tests
-pipenv run pytest
+Rules of thumb: go through a `NullRenderer` for anything lifecycle-related;
+seed all randomness; `tests/probes.py:IdentityPE` outputs the sample index,
+which makes time-manipulating PEs trivially verifiable.
 
-# Specific file
-pipenv run pytest tests/test_sine_pe.py -v
+## Profiling
 
-# With coverage
-pipenv run pytest --cov=src --cov-report=html
-
-# Skip slow tests (if any)
-pipenv run pytest -m "not slow"
-```
-
-### Test Structure
+`pygmu2.diagnostics` is the profiler (the render chokepoint has zero-cost
+hooks). New PE code is plain numpy until a profile names it hot — numba or
+other acceleration needs a measurement attached (philosophy §4):
 
 ```python
-"""Tests for MyNewPE."""
+from pygmu2 import diagnostics
 
-import numpy as np
-import pytest
-from pygmu2 import MyNewPE, SinePE, NullRenderer
-
-
-class TestMyNewPEBasics:
-    """Test creation and properties."""
-    
-    def test_create_default(self):
-        pe_stream = MyNewPE(SinePE(frequency=440.0))
-        assert pe_stream.param1 == 1.0
-    
-    def test_inputs(self):
-        source_stream = SinePE(frequency=440.0)
-        pe_stream = MyNewPE(source_stream)
-        assert source_stream in pe_stream.inputs()
-
-
-class TestMyNewPERender:
-    """Test rendering behavior."""
-    
-    @pytest.fixture
-    def renderer(self):
-        return NullRenderer(sample_rate=44100)
-    
-    def test_render_returns_snippet(self, renderer):
-        pe_stream = MyNewPE(SinePE(frequency=440.0))
-        renderer.set_source(pe_stream)
-        renderer.start()
-        
-        snippet = pe_stream.render(0, 1000)
-        
-        assert snippet.data.shape == (1000, 1)
+with diagnostics.profile() as report:
+    renderer.render(0, 44100)
+print(report.summary(sample_rate=44100))   # per-class ms, samples/s, x realtime
 ```
 
-## Profiling and Benchmarks
+For examples, `PYGMU_RENDER_MODE=profile uv run python examples/foo_eg.py 1`
+renders silently and prints the profile; `=offline` renders to a file first.
 
-### Built-in Profiling
+## The change protocol
 
-The Renderer has optional profiling:
-
-```python
-renderer = NullRenderer(sample_rate=44100)
-renderer.enable_profiling()
-renderer.set_source(my_pe)
-renderer.start()
-
-# Render some audio
-for i in range(100):
-    renderer.render(i * 1024, 1024)
-
-renderer.stop()
-renderer.print_profile_report()
-```
-
-### Benchmark Suite
-
-Using **uv**:
-
-```bash
-# Run all benchmarks
-uv run python benchmarks/benchmark_pes.py
-
-# Quick mode (fewer iterations)
-uv run python benchmarks/benchmark_pes.py --quick
-
-# List discovered PEs
-uv run python benchmarks/benchmark_pes.py --list
-
-# Buffer size scaling test
-uv run python benchmarks/benchmark_pes.py --scaling
-```
-
-Using **pipenv**:
-
-```bash
-# Run all benchmarks
-pipenv run python benchmarks/benchmark_pes.py
-
-# Quick mode (fewer iterations)
-pipenv run python benchmarks/benchmark_pes.py --quick
-```
-
-### Adding Benchmark Configs
-
-In `benchmarks/benchmark_pes.py`, add to `setup_fallback_configs()`:
-
-```python
-register_fallback("MyNewPE", [
-    BenchmarkConfig(
-        "MyNewPE (config1)",
-        lambda: MyNewPE(SinePE(frequency=440.0), param1=1.0),
-        "category"
-    ),
-])
-```
-
-### Performance Tips
-
-- Use numpy vectorized operations, avoid Python loops
-- For IIR filters, use `scipy.signal.lfilter`
-- For sliding window operations, use `scipy.ndimage` filters
-- Profile before optimizing: `pipenv run python -m cProfile -s cumtime script.py`
-
-## Error Handling
-
-Use `config.handle_error()` instead of raising exceptions directly:
-
-```python
-from pygmu2.config import handle_error
-
-# Non-fatal error (warns in lenient mode, raises in strict mode)
-if something_wrong:
-    if handle_error("Something went wrong"):
-        return default_value  # Lenient mode fallback
-
-# Fatal error (always raises)
-if critical_error:
-    handle_error("Critical failure", fatal=True)
-
-# With custom exception type
-handle_error("Invalid value", fatal=True, exception_class=ValueError)
-```
+A change to `src/` is not complete until its consumers are proven
+(philosophy §7). CI enforces: the full suite (contract + boundary + examples
+smoke) on every push, plus `black --check`. Renaming or removing a public
+name means migrating `examples/`, `benchmarks/`, `scripts/`, `tests/`, and
+`*.md` in the same commit — no aliases, no deprecation shims (pre-1.0), and
+**never** parking a broken file as `.py-disabled` (CI rejects new ones).
 
 ## Code Style
 
-### Formatting
-
 ```bash
-uv run black src tests
-# or: pipenv run black src tests
+uv run black src tests examples benchmarks scripts   # format (CI checks)
+uv run flake8 src tests                              # lint
+uv run mypy src/pygmu2/processing_element.py ...     # types (core ratchet)
 ```
 
-### Type Checking
+Vendored `src/pygmu2/meltysynth/` is excluded from all of the above.
 
-```bash
-uv run mypy src
-# or: pipenv run mypy src
-```
-
-### Linting
-
-```bash
-uv run flake8 src tests
-# or: pipenv run flake8 src tests
-```
-
-### Import Order
-
-```python
-# Standard library
-from typing import Optional, Union
-import numpy as np
-
-# Third-party (if any)
-from scipy.signal import lfilter
-
-# Local
-from pygmu2.processing_element import ProcessingElement
-from pygmu2.snippet import Snippet
-```
-
-## Git Workflow
-
-1. Create a branch for your feature
-2. Write tests first (TDD encouraged)
-3. Implement the feature
-4. Run the full test suite
-5. Update documentation if needed
-6. Create a pull request
-
-### Commit Messages
+## Commit Messages
 
 ```
-Add MyNewPE for doing something useful
+One-line summary of what changed
 
-- Describe what it does
-- Note any important implementation details
-- Reference any related issues
+Body: what and why — including what the change deletes or falsifies.
+If the change claims an invariant, name the test that fails when it is
+violated. If it adds a debugging aid or optimization, name the measured
+error or profile that motivated it.
 ```
-
-## Questions?
-
-Open an issue on GitHub or check existing issues for similar questions.
