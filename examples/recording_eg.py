@@ -26,8 +26,15 @@ from pygmu2 import (
 import pygmu2 as pg
 from examples_helper import run_demos
 
-pg.set_sample_rate(44100)
-SAMPLE_RATE = 44100
+# Recording is hardware-facing: the sample rate must match your audio
+# interface end-to-end (a mismatched link slips or resamples — see the
+# README "Recording" section), and input/output must share one clock —
+# a single duplex device, e.g. a macOS Aggregate Device. Set DEVICE to
+# its name or index, or None for the system default.
+SAMPLE_RATE = 48000
+DEVICE = None
+
+pg.set_sample_rate(SAMPLE_RATE)
 
 
 def s2s(seconds):
@@ -42,8 +49,8 @@ def click_track(n_beats, bpm=90):
 
 
 def make_renderer():
-    renderer = DuplexRenderer(sample_rate=SAMPLE_RATE)
-    print("Measuring round-trip offset (a short noise click will play)...")
+    renderer = DuplexRenderer(sample_rate=SAMPLE_RATE, device=DEVICE)
+    print("Measuring round-trip offset (a short sweep will play)...")
     offset = renderer.calibrate()
     print(f"Calibration: {offset} samples " f"({1000.0 * offset / SAMPLE_RATE:.1f} ms)")
     return renderer
@@ -88,8 +95,8 @@ def demo_punch_in_punch_out():
 
 
 DEMOS = [
-    demo_record_and_mix,
-    demo_punch_in_punch_out,
+    ("Record 8 beats against a click, then play the mix", demo_record_and_mix),
+    ("Punch-in/punch-out: record beats 4-8 to a WAV file", demo_punch_in_punch_out),
 ]
 
 if __name__ == "__main__":
