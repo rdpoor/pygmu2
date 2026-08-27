@@ -1,5 +1,0 @@
-# Core dependencies
-# Add your project dependencies here
-
-# Development dependencies (also available via pyproject.toml)
-# Install with: pip install -e ".[dev]"

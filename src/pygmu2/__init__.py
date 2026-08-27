@@ -105,7 +105,12 @@ from pygmu2.wav_reader_pe import WavReaderPE
 from pygmu2.wav_writer_pe import WavWriterPE
 from pygmu2.wavetable_pe import WavetablePE, InterpolationMode, OutOfBoundsMode
 
-__version__ = "0.2.0"
+try:  # single source of truth: [project] version in pyproject.toml
+    from importlib.metadata import version as _pkg_version
+
+    __version__ = _pkg_version("pygmu2")
+except Exception:  # uninstalled source tree
+    __version__ = "0.0.0+unknown"
 
 # Lazy imports for modules with heavy dependencies (scipy, numba, mido,
 # miniaudio, vendored meltysynth). Loaded on first access so that

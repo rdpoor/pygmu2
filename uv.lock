@@ -989,16 +989,11 @@ wheels = [
 
 [[package]]
 name = "pygmu2"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
-    { name = "mido" },
-    { name = "miniaudio" },
-    { name = "numba" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "python-rtmidi" },
-    { name = "pyyaml" },
     { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.17.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "sounddevice" },
@@ -1006,15 +1001,11 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+accel = [
+    { name = "numba" },
+]
 audio = [
     { name = "miniaudio" },
-]
-dev = [
-    { name = "black" },
-    { name = "flake8" },
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
 ]
 gdrive = [
     { name = "google-auth" },
@@ -1023,6 +1014,11 @@ gdrive = [
 ]
 gui = [
     { name = "pyside6" },
+    { name = "pyyaml" },
+]
+midi = [
+    { name = "mido" },
+    { name = "python-rtmidi" },
 ]
 ssl = [
     { name = "certifi" },
@@ -1039,28 +1035,22 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "black", marker = "extra == 'dev'", specifier = ">=23.0.0" },
     { name = "certifi", marker = "extra == 'ssl'", specifier = ">=2023.0.0" },
-    { name = "flake8", marker = "extra == 'dev'", specifier = ">=6.0.0" },
     { name = "google-auth", marker = "extra == 'gdrive'", specifier = ">=2.0.0" },
     { name = "google-auth-oauthlib", marker = "extra == 'gdrive'", specifier = ">=1.0.0" },
-    { name = "mido", specifier = ">=1.3.0" },
-    { name = "miniaudio", specifier = ">=1.61" },
+    { name = "mido", marker = "extra == 'midi'", specifier = ">=1.3.0" },
     { name = "miniaudio", marker = "extra == 'audio'", specifier = ">=1.46" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0.0" },
-    { name = "numba", specifier = ">=0.57.0" },
+    { name = "numba", marker = "extra == 'accel'", specifier = ">=0.57.0" },
     { name = "numpy", specifier = ">=1.20.0" },
     { name = "pyside6", marker = "extra == 'gui'", specifier = ">=6.5.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
-    { name = "python-rtmidi", specifier = ">=1.5.0" },
-    { name = "pyyaml", specifier = ">=6.0.0" },
+    { name = "python-rtmidi", marker = "extra == 'midi'", specifier = ">=1.5.0" },
+    { name = "pyyaml", marker = "extra == 'gui'", specifier = ">=6.0.0" },
     { name = "requests", marker = "extra == 'gdrive'", specifier = ">=2.0.0" },
     { name = "scipy", specifier = ">=1.10.0" },
     { name = "sounddevice", specifier = ">=0.4.0" },
     { name = "soundfile", specifier = ">=0.12.0" },
 ]
-provides-extras = ["dev", "ssl", "audio", "gui", "gdrive"]
+provides-extras = ["accel", "midi", "audio", "gui", "ssl", "gdrive"]
 
 [package.metadata.requires-dev]
 dev = [

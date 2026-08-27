@@ -24,8 +24,9 @@ jobs:
           python-version: "3.12"
           enable-cache: true
 
+      # All extras: the test suite covers the numba/midi/audio PEs too
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --all-extras
 
       - name: Format check (black)
         run: uv run black --check src tests examples benchmarks scripts
