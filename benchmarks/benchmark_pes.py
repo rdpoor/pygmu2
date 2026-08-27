@@ -568,7 +568,11 @@ def setup_fallback_configs():
                     lambda: SVFilterPE(
                         SinePE(frequency=440.0),
                         mode=BiquadMode.LOWPASS,
-                        frequency=SinePE(frequency=5.0, amplitude=500.0),
+                        # 500..1500 Hz sweep (offset keeps frequency positive)
+                        frequency=MixPE(
+                            SinePE(frequency=5.0, amplitude=500.0),
+                            ConstantPE(1000.0),
+                        ),
                         q=0.707,
                     ),
                     "filter",
