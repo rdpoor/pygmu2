@@ -10,12 +10,16 @@ chases the current target with the same coefficient:
 
     if rng.random() < p:
         target = rng.random()          # new Poisson-rate target
-    current += p * (target - current)  # one-pole RC approach
+    current += s * (target - current)  # one-pole approach, coefficient s
     out[n] = current
 
-With p = rate/sr the time constant equals the mean jump interval (1/rate s),
-so the output typically reaches ~63 % of each target before the next one
-arrives.  Equilibrium std ≈ 0.20, mean = 0.5; output is bounded in [0, 1].
+The smoothing coefficient s decouples the approach speed from the jump
+rate.  s=None (default) auto-tracks p = rate/sr, so the time constant
+equals the mean jump interval (1/rate s) and the output typically reaches
+~63 % of each target before the next arrives (equilibrium std ≈ 0.20,
+mean 0.5, bounded in [0, 1]).  s=1.0 jumps instantly — classic stepped
+sample-and-hold randomness (the former RandomStepPE).  Values between give
+anything from slow wander over fast jumps to snappy tracking.
 
 Why not white-noise + RC filter?
 ---------------------------------
@@ -49,19 +53,26 @@ class RandomValuePE(ProcessingElement):
     output range.
 
     Args:
-        rate: Mean jump rate in Hz; also sets the approach time constant
-              (τ = 1/rate seconds).  Accepts ``float`` or ``ProcessingElement``.
-              Default 10.0 → ~100 ms mean hold / approach time.
+        rate: Mean jump rate in Hz.  Accepts ``float`` or
+              ``ProcessingElement``.  Default 10.0 → ~100 ms mean interval.
         seed: Optional RNG seed for reproducible sequences.
+        smoothing: One-pole approach coefficient per sample, in (0, 1].
+              None (default) auto-tracks rate/sr, giving smooth wandering
+              with time constant 1/rate.  1.0 jumps instantly: stepped
+              random values (the former RandomStepPE).
     """
 
     def __init__(
         self,
         rate: float | ProcessingElement = 10.0,
         seed: int | None = None,
+        smoothing: float | None = None,
     ):
+        if smoothing is not None and not (0.0 < smoothing <= 1.0):
+            raise ValueError(f"smoothing must be in (0, 1], got {smoothing}")
         self._rate = rate
         self._seed = seed
+        self._smoothing = smoothing
         self._rng: np.random.Generator | None = None
         self._target: float = 0.5
         self._current: float = 0.5
@@ -97,11 +108,13 @@ class RandomValuePE(ProcessingElement):
         current = self._current
         target = self._target
 
+        smoothing = self._smoothing
         for i in range(duration):
             p = min(float(rate_data[i]) / sr, 1.0)
             if rng.random() < p:  # Poisson jump: pick new target
                 target = float(rng.random())
-            current += p * (target - current)  # exponential approach
+            s_coef = p if smoothing is None else smoothing
+            current += s_coef * (target - current)  # one-pole approach
             out[i] = current
 
         self._current = current
@@ -109,4 +122,7 @@ class RandomValuePE(ProcessingElement):
         return Snippet(start, out.reshape(-1, 1))
 
     def __repr__(self) -> str:
-        return f"RandomValuePE(rate={self._rate!r}, seed={self._seed!r})"
+        return (
+            f"RandomValuePE(rate={self._rate!r}, seed={self._seed!r}, "
+            f"smoothing={self._smoothing!r})"
+        )

@@ -37,7 +37,7 @@ from pygmu2 import (
     LadderMode,
     MidiInPE,
     MixPE,
-    RandomStepPE,
+    RandomValuePE,
     RingModulatorPE,
     SlewLimiterPE,
     SlewMode,
@@ -76,7 +76,9 @@ LPF_MAX_HZ = 9_000.0  # absolute ceiling clamped on computed cutoff values
 
 # ── Randomness — filter step rate ─────────────────────────────────────────────
 
-MAX_RANDOMNESS = 84.0  # RandomStepPE rate (steps/s) at velocity=127, onset
+MAX_RANDOMNESS = (
+    84.0  # RandomValuePE(smoothing=1.0) rate (steps/s) at velocity=127, onset
+)
 MIN_RANDOMNESS = 2.0  # rate at settle end (0 = filter frozen)
 
 # ── Filter harmonic range ──────────────────────────────────────────────────────
@@ -206,7 +208,7 @@ def make_voice(
         amp_cached:  CachePE(amp_ctrl) — shared note gate.
         resonance:   Moog ladder resonance.
         settle_time: Filter decay time.
-        seed:        RNG seed for this voice's RandomStepPE.
+        seed:        RNG seed for this voice's RandomValuePE(smoothing=1.0).
         voice_gain:  Per-voice output gain.
         pan_azimuth: Stereo position in degrees (-90=L, 0=centre, +90=R).
 
@@ -222,7 +224,7 @@ def make_voice(
     osc = BlitSawPE(frequency=freq_cached)
 
     # Filter CV: step × range_ctrl → quantise to harmonics of the played note
-    filter_step = RandomStepPE(rate=filter_rate_ctrl, seed=seed)
+    filter_step = RandomValuePE(rate=filter_rate_ctrl, seed=seed, smoothing=1.0)
     scaled_cv = RingModulatorPE(filter_step, range_ctrl, bias=0.0, mix=1.0)
 
     def filter_freq_func(r: np.ndarray) -> np.ndarray:

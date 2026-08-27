@@ -32,9 +32,9 @@ def random_to_frequency(r):
 
 
 def demo_fixed_rates():
-    """Use RandomStepPE to control pitch with selected values for rate."""
+    """Use RandomValuePE(smoothing=1.0) to control pitch with selected values for rate."""
     for rate in [1, 3, 10, 30, 100]:
-        step_value = pg.RandomStepPE(rate=rate)
+        step_value = pg.RandomValuePE(rate=rate, smoothing=1.0)
         freq = pg.TransformPE(step_value, func=random_to_frequency)
         note = pg.BlitSawPE(frequency=freq)
         cropped_note = pg.CropPE(note, 0, s(4))
@@ -51,7 +51,7 @@ def demo_ramped_rate():
         [(0, 1.0), (duration_samples, 100.0)],
         transition_type=pg.TransitionType.EXPONENTIAL,
     )
-    step_value = pg.RandomStepPE(rate=rate_ramp)
+    step_value = pg.RandomValuePE(rate=rate_ramp, smoothing=1.0)
     freq = pg.TransformPE(step_value, func=random_to_frequency)
     note = pg.BlitSawPE(frequency=freq)
     cropped_note = pg.CropPE(note, 0, duration_samples)
@@ -68,7 +68,7 @@ DEMOS = [
 # ──────────────────────────────────────────────────────────────────────────────
 
 README = """\
-RandomStepPE generates a piecewise-constant (sample-and-hold) random signal.
+RandomValuePE(smoothing=1.0) generates a piecewise-constant (sample-and-hold) random signal.
 At each sample it may jump to a new value via a Poisson process controlled
 by a rate parameter (jumps per second).  Higher rates produce faster,
 more chaotic stepping; lower rates give longer held values.

@@ -139,7 +139,6 @@ FACTORIES = {
         inputs=[pg.ConstantPE(0.25), pg.ConstantPE(0.75)],
         seed=42,
     ),
-    "RandomStepPE": lambda: pg.RandomStepPE(rate=100.0, seed=42),
     "RandomTriggerPE": lambda: pg.RandomTriggerPE(rate=100.0, seed=42),
     "RandomValuePE": lambda: pg.RandomValuePE(rate=100.0, seed=42),
     "ResamplePE": lambda: pg.ResamplePE(_sine(), rate=1.5),

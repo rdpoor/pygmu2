@@ -6,7 +6,7 @@ follows a Poisson process: at each sample there is an independent probability
 p = rate / sr of firing, giving exponentially distributed inter-event intervals
 with mean sr/rate samples (1/rate seconds).
 
-This is the trigger-output analogue of RandomStepPE (which also samples a new
+This is the trigger-output analogue of RandomValuePE(smoothing=1.0) (which also samples a new
 random value at each jump).
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors

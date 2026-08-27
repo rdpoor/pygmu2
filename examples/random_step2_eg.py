@@ -1,7 +1,7 @@
 """
 Example: Random Step 2 — Musical ratios with parallel stepped LPF and slew.
 
-Two independent RandomStepPE sources modulate pitch and Moog ladder filter
+Two independent RandomValuePE(smoothing=1.0) sources modulate pitch and Moog ladder filter
 cutoff simultaneously.  Pitch is quantized to just-intonation intervals above
 a root, and filter cutoff is quantized to harmonics of that same root, so
 every discrete state is acoustically related.
@@ -107,10 +107,10 @@ def build_chain(
     filter_seed=None,
 ):
     """
-    Construct a BlitSaw → LadderPE chain driven by two RandomStepPEs.
+    Construct a BlitSaw → LadderPE chain driven by two RandomValuePE(smoothing=1.0)s.
 
     Each control path is:
-        RandomStepPE → TransformPE (quantise to Hz) → SlewLimiterPE → …
+        RandomValuePE(smoothing=1.0) → TransformPE (quantise to Hz) → SlewLimiterPE → …
 
     The SlewLimiterPE adds a brief linear ramp between discrete states so that
     pitch and filter transitions glide rather than snap.
@@ -126,8 +126,8 @@ def build_chain(
     Returns:
         Cropped, gain-adjusted PE ready for play_offline.
     """
-    pitch_step = pg.RandomStepPE(rate=pitch_rate, seed=pitch_seed)
-    filter_step = pg.RandomStepPE(rate=filter_rate, seed=filter_seed)
+    pitch_step = pg.RandomValuePE(rate=pitch_rate, seed=pitch_seed, smoothing=1.0)
+    filter_step = pg.RandomValuePE(rate=filter_rate, seed=filter_seed, smoothing=1.0)
 
     freq_stepped = pg.TransformPE(pitch_step, func=random_to_pitch_freq)
     cutoff_stepped = pg.TransformPE(filter_step, func=random_to_filter_freq)
@@ -216,7 +216,7 @@ def demo_rhythmic_gate():
         range_factor = MIN_RANGE + (1−MIN_RANGE) × env
                                               — full harmonic range → bottom quarter
 
-    The range_factor is multiplied into the raw [0,1] CV from RandomStepPE
+    The range_factor is multiplied into the raw [0,1] CV from RandomValuePE(smoothing=1.0)
     before quantisation via RingModulatorPE.  Because this scales the *held*
     value as well, the filter drifts continuously toward darker harmonics
     between firings, reinforcing the sense of settling.
@@ -228,7 +228,7 @@ def demo_rhythmic_gate():
               ├─ × MAX_RATE                    → filter_rate
               └─ MIN_RANGE + (1−MIN_RANGE)×env → range_factor
                     ↕
-        RandomStepPE(rate=filter_rate) × range_factor
+        RandomValuePE(rate=filter_rate, smoothing=1.0) × range_factor
           → quantise → SlewLimiterPE → LadderPE
     """
     print("Demo: Rhythmic gate — rapid wide filter at onset, settling to dark/slow")
@@ -282,7 +282,7 @@ def demo_rhythmic_gate():
     )
 
     # ── Filter CV: step × range_factor ──────────────────────────────────────
-    filter_step = pg.RandomStepPE(rate=filter_rate, seed=RUN_SEED + 12)
+    filter_step = pg.RandomValuePE(rate=filter_rate, seed=RUN_SEED + 12, smoothing=1.0)
     # RingModulatorPE with bias=0, mix=1: output = filter_step × range_factor
     scaled_cv = pg.RingModulatorPE(filter_step, range_factor, bias=0.0, mix=1.0)
     cutoff_stepped = pg.TransformPE(scaled_cv, func=random_to_filter_freq)
@@ -313,7 +313,7 @@ DEMOS = [
 README = """\
 Random Step 2 — Musical ratios with parallel stepped LPF and slew
 
-Two independent RandomStepPE sources modulate pitch and Moog ladder filter
+Two independent RandomValuePE(smoothing=1.0) sources modulate pitch and Moog ladder filter
 cutoff simultaneously.  Pitch is quantized to just-intonation intervals above
 a root (A2 = 110 Hz), and filter cutoff is quantized to harmonics of that same
 root, so every discrete state is acoustically related.

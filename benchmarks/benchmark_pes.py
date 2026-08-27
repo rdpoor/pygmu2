@@ -257,7 +257,6 @@ def setup_fallback_configs():
         LimiterPE,
         ExpanderPE,
         RandomValuePE,
-        RandomStepPE,
     )
 
     # Try to import optional PEs
@@ -468,19 +467,13 @@ def setup_fallback_configs():
         "RandomValuePE",
         [
             BenchmarkConfig(
-                "RandomValuePE (10 Hz)",
+                "RandomValuePE (10 Hz, smooth)",
                 lambda: RandomValuePE(rate=10.0, seed=42),
                 "source",
             ),
-        ],
-    )
-
-    register_fallback(
-        "RandomStepPE",
-        [
             BenchmarkConfig(
-                "RandomStepPE (10 Hz)",
-                lambda: RandomStepPE(rate=10.0, seed=42),
+                "RandomValuePE (10 Hz, stepped)",
+                lambda: RandomValuePE(rate=10.0, seed=42, smoothing=1.0),
                 "source",
             ),
         ],

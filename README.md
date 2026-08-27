@@ -175,7 +175,6 @@ checks that it matches the source.
 | `PiecewisePE` | A SourcePE that outputs a piecewise curve defined by (sample_index, value) points. |
 | `RandomGatePE` | Poisson-process toggle gate. |
 | `RandomSelectPE` | On each positive trigger event, randomly selects one of N input PEs, then. |
-| `RandomStepPE` | Poisson sample-and-hold random generator. |
 | `RandomTriggerPE` | Poisson-process trigger generator. |
 | `RandomValuePE` | Continuously wandering random voltage in [0, 1]. |
 | `ResamplePE` | Pure constant-rate resampling of a source PE. |
