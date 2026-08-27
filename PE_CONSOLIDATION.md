@@ -1,7 +1,10 @@
 # PE Catalog Consolidation Study
 
-**Status:** Proposal for review — no code has changed. Implementation is planned separately,
-after the owner reacts to the decision points in §F.
+**Status:** IMPLEMENTED (2026-08-26). The owner accepted all five §F recommendations; every
+merge, deletion, and fix below has landed. One correction found during implementation:
+`DynamicsMode.EXPAND` was NOT dead code — `examples/dynamics_eg.py` uses it (the census
+missed example consumers), so EXPAND stays; only `LIMIT` and the `in_knee` locals were
+removed. F3 resolved as "demote IdentityPE to tests/probes.py".
 **Method:** Three parallel code explorations over the suspected overlap clusters
 (extent/time, control-signal, oscillator/audio), reading every implicated PE's
 implementation and taking a usage census across `src/`, `tests/`, `examples/`, `scripts/`,
