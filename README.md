@@ -285,20 +285,25 @@ pipenv run python examples/01_hello_sine.py
 
 ## Modulation and Automation
 
-Many PE parameters accept either constant values or other PEs for modulation:
+Many PE parameters accept either a constant value or another PE. Both of
+SinePE's main parameters are modulatable, which makes vibrato and tremolo
+mirror images of each other — drive `frequency` with an LFO for one,
+`amplitude` for the other:
 
 ```python
-# Constant frequency
-sine_stream = SinePE(frequency=440.0)
+# Vibrato: frequency = 440 ± 10 Hz, wobbling at 5 Hz
+vibrato_lfo = SinePE(frequency=5.0, amplitude=10.0)
+vibrato_stream = SinePE(frequency=MixPE(ConstantPE(440.0), vibrato_lfo))
 
-# Vibrato (frequency modulated by LFO)
-lfo_stream = SinePE(frequency=5.0, amplitude=10.0)
-vibrato_stream = SinePE(frequency=MixPE(ConstantPE(440.0), lfo_stream))
-
-# Tremolo (amplitude modulated)
-tremolo_lfo_stream = GainPE(SinePE(frequency=4.0), gain=0.3)
-tremolo_stream = GainPE(sine_stream, gain=MixPE(ConstantPE(0.7), tremolo_lfo_stream))
+# Tremolo: amplitude = 0.7 ± 0.3, pulsing at 4 Hz
+tremolo_lfo = SinePE(frequency=4.0, amplitude=0.3)
+tremolo_stream = SinePE(frequency=440.0, amplitude=MixPE(ConstantPE(0.7), tremolo_lfo))
 ```
+
+The `MixPE(ConstantPE(center), lfo)` idiom adds a DC offset to a bipolar
+LFO — here it keeps the tremolo gain within [0.4, 1.0], so the signal
+never inverts or fully gates. The same pattern modulates any PE-valued
+parameter: filter frequency, gain, delay time, and so on.
 
 ## Alternative Temperaments
 
