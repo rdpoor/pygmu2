@@ -286,7 +286,7 @@ class TestCalibration:
 
         with patch("pygmu2.duplex_renderer.sd.Stream", SilentStream):
             renderer = DuplexRenderer(sample_rate=44100, blocksize=BLOCK)
-            with pytest.raises(RuntimeError, match="no dominant click"):
+            with pytest.raises(RuntimeError, match="no dominant sweep"):
                 renderer.calibrate(duration_seconds=0.25)
 
 

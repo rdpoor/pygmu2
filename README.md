@@ -358,8 +358,10 @@ See `examples/temperaments_eg.py` for a detailed demonstration.
 `DuplexRenderer` plays a graph and records audio input on a single
 full-duplex stream — one device clock, so the capture is sample-accurate
 relative to playback up to a constant offset. `calibrate()` measures that
-offset exactly (speaker → room → mic), so takes land sample-exact on the
-timeline they were performed against. Monitor your instrument externally
+offset exactly (speaker → room → mic), so takes land on the timeline they
+were performed against to sub-millisecond accuracy (each stream open
+contributes ±~20 samples of buffer alignment; measured end-to-end error
+on real hardware: 0.3 ms). Monitor your instrument externally
 (amp, acoustically); pygmu2 plays the backing and captures the mic.
 
 ```python

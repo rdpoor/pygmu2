@@ -10,8 +10,9 @@ DuplexRenderer.calibrate() can measure exactly).
 
 Raw callback-aligned stamps are the ground truth; a measured calibration
 offset (if the session was calibrated) is carried on the Recording and
-applied by as_pe(), so a calibrated take lands sample-exact on the
-timeline it was performed against.
+applied by as_pe(), so a calibrated take lands on the timeline it was
+performed against to sub-millisecond accuracy (per-stream-open buffer
+alignment contributes a small residual; see BACKLOG).
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License

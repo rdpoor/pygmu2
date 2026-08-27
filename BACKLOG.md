@@ -35,6 +35,9 @@ lives in IMPLEMENTATION_PLAN.md / PE_CONSOLIDATION.md.
   completion — a cost only for takes long enough to pressure RAM)
 - AudioInPE: live input as a graph source (the duplex substrate exists;
   needs a real-time monitoring latency budget to justify)
+- Persistent duplex stream shared by calibrate() and recording (today each
+  opens its own sd.Stream; per-open buffer alignment adds ±~20 samples —
+  measured end-to-end overdub error 0.29 ms on H4 aggregate, 2026-08-27)
 
 ## Tests
 

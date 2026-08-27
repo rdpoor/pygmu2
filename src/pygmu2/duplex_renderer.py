@@ -7,8 +7,8 @@ request for the next output block. Captured audio is stamped with the render
 position of the same callback's output — sample-accurate relative to the
 render timeline up to a constant round-trip offset (output latency + input
 latency + the acoustic path), which calibrate() measures exactly by playing
-a click through the normal path and cross-correlating the recording. No
-estimates, no manually tuned latency numbers.
+a swept sine through the normal path and cross-correlating the recording.
+No estimates, no manually tuned latency numbers.
 
 Intended workflow (musician monitors their instrument externally — amp,
 acoustic — not through software):
@@ -20,7 +20,7 @@ acoustic — not through software):
     take = renderer.record_extent()         # plays backing, records input
     renderer.stop()
 
-    overdub = MixPE(backing_track, take.as_pe())   # sample-exact
+    overdub = MixPE(backing_track, take.as_pe())   # aligned
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
@@ -40,11 +40,13 @@ from pygmu2.logger import get_logger
 
 logger = get_logger(__name__)
 
-# Calibration click template parameters (seeded noise burst; a bare impulse
-# is too weak acoustically to survive speaker -> room -> mic reliably)
-_CLICK_SEED = 20260826
-_CLICK_MS = 10.0
-_CLICK_AMPLITUDE = 0.7
+# Calibration sweep parameters (log swept sine; a bare click or short
+# noise burst is too weak acoustically to survive speaker -> room -> mic
+# against ambient noise — the sweep's time-bandwidth product buys ~30 dB
+# of correlation gain, verified on hardware)
+_SWEEP_SECONDS = 0.2
+_SWEEP_F0 = 100.0
+_SWEEP_AMPLITUDE = 0.7
 # Peak dominance required to accept a calibration measurement: the highest
 # cross-correlation peak must exceed the best peak outside its neighborhood
 # by this factor, or we refuse to guess.
@@ -164,6 +166,14 @@ class DuplexRenderer(Renderer):
         if errors:
             raise errors[0]
 
+        if recording.status_events:
+            logger.warning(
+                f"Recording captured with {len(recording.status_events)} "
+                f"stream status event(s) (first: "
+                f"{recording.status_events[0]}) — the driver dropped "
+                "samples, so the capture has gaps and its alignment "
+                "cannot be trusted. See Recording.summary()."
+            )
         logger.info(
             f"Recorded {recording.duration} samples "
             f"({len(recording.status_events)} status events)"
@@ -188,23 +198,45 @@ class DuplexRenderer(Renderer):
 
     @classmethod
     def _click_template(cls, sample_rate: int) -> np.ndarray:
-        """The known calibration burst: seeded noise, exponential decay."""
-        n = max(8, int(sample_rate * _CLICK_MS / 1000.0))
-        rng = np.random.default_rng(_CLICK_SEED)
-        burst = rng.uniform(-1.0, 1.0, n) * np.exp(-np.arange(n) / (n / 4.0))
-        return (_CLICK_AMPLITUDE * burst).astype(np.float32)
+        """The known calibration signal: a log swept sine (the standard
+        impulse-response measurement signal). Its time-bandwidth product
+        gives ~30 dB of correlation processing gain over a short burst,
+        so the peak stands far above room noise even with weak
+        speaker-to-mic coupling."""
+        n = max(8, int(sample_rate * _SWEEP_SECONDS))
+        t = np.arange(n) / sample_rate
+        f0 = _SWEEP_F0
+        f1 = min(0.4 * sample_rate, 12000.0)
+        k = (f1 / f0) ** (1.0 / _SWEEP_SECONDS)
+        phase = 2.0 * np.pi * f0 * (np.power(k, t) - 1.0) / np.log(k)
+        sweep = np.sin(phase)
+        # raised-cosine fades so the edges don't thump
+        fade = max(1, int(0.005 * sample_rate))
+        ramp = 0.5 * (1.0 - np.cos(np.pi * np.arange(fade) / fade))
+        sweep[:fade] *= ramp
+        sweep[-fade:] *= ramp[::-1]
+        return (_SWEEP_AMPLITUDE * sweep).astype(np.float32)
 
-    def calibrate(self, duration_seconds: float = 1.0) -> int:
+    def calibrate(self, duration_seconds: float = 3.0) -> int:
         """
         Measure the exact round-trip offset (in samples) between the render
         timeline and the recorded timeline: output latency + input latency
         + the acoustic path from speaker to microphone.
 
-        Plays a short click through the normal playback path while
+        Plays a short swept sine through the normal playback path while
         recording, then cross-correlates the recording against the known
-        click. The measured offset is stored on this renderer and stamped
+        sweep. The measured offset is stored on this renderer and stamped
         into every subsequent Recording, whose as_pe() applies it — making
-        overdubs land sample-exact.
+        overdubs land where they were performed (measured end-to-end
+        residual on real hardware: under half a millisecond, from
+        per-stream-open buffer alignment).
+
+        The sweep is played late in the capture window (leaving one second
+        of tail for its return) because streams settle for a moment after
+        opening: measured on real hardware, the first ~0.5 s of a duplex
+        stream can carry extra input buffering that reads as an inflated
+        offset. Measuring in steady state is what a session's recordings
+        actually experience.
 
         Run once per session/setup (device pair, buffer settings, and mic/
         speaker positions all contribute; re-run if any change).
@@ -213,8 +245,11 @@ class DuplexRenderer(Renderer):
             The measured offset in samples.
 
         Raises:
-            RuntimeError: If no dominant click is detected in the recording
-                (wrong input device, muted mic, or level too low).
+            RuntimeError: If no dominant sweep is detected in the recording
+                (wrong input device, muted mic, or level too low), or if
+                the stream reported status events (overflow/underflow)
+                during the capture — dropped samples make the measurement
+                untrustworthy.
         """
         source = self._source
         started = self._started
@@ -222,9 +257,11 @@ class DuplexRenderer(Renderer):
 
         template = self._click_template(sr)
         total = max(int(duration_seconds * sr), len(template) * 4)
-        # Place the click early but not at 0, leaving room for negative
-        # measurement error margins.
-        click_at = len(template)
+        # Play the sweep as late as the window allows while keeping a
+        # one-second tail for its return trip — past the stream's
+        # settling transient, i.e. in the steady state that recordings
+        # actually experience.
+        click_at = max(len(template), total - sr - len(template))
 
         from pygmu2.array_pe import ArrayPE
         from pygmu2.crop_pe import CropPE
@@ -248,6 +285,16 @@ class DuplexRenderer(Renderer):
                 if started:
                     self.start()
 
+        if recording.status_events:
+            raise RuntimeError(
+                "Calibration failed: the stream reported "
+                f"{len(recording.status_events)} status event(s) "
+                f"(first: {recording.status_events[0]}) during the "
+                "capture — samples were dropped, so the measurement "
+                "cannot be trusted. Check the device configuration "
+                "(shared clock? aggregate device?) and re-run calibrate()."
+            )
+
         captured = recording.data[:, 0].astype(np.float64)
         corr = np.correlate(captured, template.astype(np.float64), mode="full")
         # lag k means the template starts at captured sample k
@@ -263,8 +310,8 @@ class DuplexRenderer(Renderer):
         runner_up = float(np.max(masked)) if masked.size else 0.0
         if peak <= 1e-9 or (runner_up > 0 and peak / runner_up < _PEAK_DOMINANCE):
             raise RuntimeError(
-                "Calibration failed: no dominant click detected in the "
-                f"recording (peak={peak:.3g}, "
+                "Calibration failed: no dominant sweep detected in the "
+                f"recording (dominance={peak / runner_up if runner_up > 0 else 0.0:.2f}, "
                 f"need >= {_PEAK_DOMINANCE}). Check that the input device "
                 "is the right microphone, unmuted, and can hear the "
                 "speakers; then re-run calibrate()."
@@ -517,6 +564,13 @@ class Transport:
             path = (
                 seg.path if self._on_exists == "overwrite" else _numbered_path(seg.path)
             )
+            if seg.recording.status_events:
+                logger.warning(
+                    f"Segment {seg.path!r}: capture has "
+                    f"{len(seg.recording.status_events)} stream status "
+                    "event(s) — the driver dropped samples; the take has "
+                    "gaps and its alignment cannot be trusted."
+                )
             seg.recording.save(path)
             seg.written_path = path
             logger.info(
