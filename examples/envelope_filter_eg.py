@@ -26,7 +26,7 @@ Signal chain (Demo 3):
                                                               │
                                                         GainPE(0.5)
                                                               │
-                                                    SetExtentPE (+tail)
+                                                    CropPE clip=False (+tail)
                                                               │
                                                          pg.play()
 
@@ -105,11 +105,14 @@ def demo_envelope_filter():
     claps_end = claps.extent().end
     release_samples = int((RELEASE + 0.4) * SRATE)
 
-    output = pg.SetExtentPE(
-        pg.GainPE(filtered, 0.5), start=0, duration=claps_end + release_samples
+    output = pg.CropPE(
+        pg.GainPE(filtered, 0.5),
+        start=0,
+        duration=claps_end + release_samples,
+        clip=False,
     )
 
-    pg.play(output, SRATE)
+    pg.play(output)
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

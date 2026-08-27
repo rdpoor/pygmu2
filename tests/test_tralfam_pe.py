@@ -206,8 +206,8 @@ class TestTralfamPEPaddedLength:
         """padded_length anchors at the source's start, not at 0."""
         inner = make_source(N)
         src = pg.CropPE(pg.ConstantPE(0.0), start=100, duration=N)
-        # Use ArrayPE-based source with offset via SetExtentPE
-        src = pg.SetExtentPE(make_source(N), start=100, duration=N)
+        # Use ArrayPE-based source with offset via CropPE(clip=False)
+        src = pg.CropPE(make_source(N), 100, N, clip=False)
         pe = TralfamPE(src, seed=0, padded_length=2 * N)
         assert pe.extent() == pg.Extent(100, 100 + 2 * N)
 

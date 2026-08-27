@@ -75,7 +75,6 @@ from pygmu2.scheduled_gate_pe import ScheduledGatePE
 from pygmu2.signal_to_gate_pe import SignalToGatePE
 from pygmu2.sequence_pe import SequencePE, SequenceMode
 from pygmu2.slew_limiter_pe import SlewLimiterPE, SlewMode
-from pygmu2.set_extent_pe import SetExtentPE
 from pygmu2.sine_pe import SinePE
 from pygmu2.slice_pe import SlicePE
 from pygmu2.snippet import Snippet
@@ -188,7 +187,6 @@ __all__ = [
     "ConstantPE",
     "ControlPE",
     "CropPE",
-    "SetExtentPE",
     "DecayingSinePE",
     "DelayPE",
     "DiracPE",

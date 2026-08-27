@@ -18,7 +18,7 @@ import numpy as np
 
 from pygmu2.mag_freq_pe import MagFreqPE
 from pygmu2.processing_element import ProcessingElement
-from pygmu2.set_extent_pe import SetExtentPE
+from pygmu2.crop_pe import CropPE
 
 
 class TralfamPE(MagFreqPE):
@@ -57,7 +57,7 @@ class TralfamPE(MagFreqPE):
 
         if padded_length is not None:
             src_start = source.extent().start
-            source = SetExtentPE(source, start=src_start, duration=padded_length)
+            source = CropPE(source, src_start, padded_length, clip=False)
 
         rng = np.random.default_rng(seed)
         pitch_ratio = 2.0 ** (pitch_shift / 12.0)

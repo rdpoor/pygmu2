@@ -629,3 +629,46 @@ class TestCropPERegression:
         snippet2 = crop.render(5000, 100)
         expected2 = np.arange(5000, 5100, dtype=np.float32).reshape(-1, 1)
         np.testing.assert_array_equal(snippet2.data, expected2)
+
+
+class TestCropPEClipFalse:
+    """clip=False advertises the window verbatim (the former SetExtentPE):
+    the window may extend past the source, excess filled per extend_mode."""
+
+    def setup_method(self):
+        self.renderer = NullRenderer(sample_rate=44100)
+
+    def test_extent_is_window_verbatim(self):
+        src = CropPE(ConstantPE(1.0), 0, 100)  # source extent [0, 100)
+        padded = CropPE(src, 0, 500, clip=False)
+        assert padded.extent() == Extent(0, 500)
+        # clip=True (default) intersects instead
+        clipped = CropPE(src, 0, 500)
+        assert clipped.extent() == Extent(0, 100)
+
+    def test_zero_pads_past_source(self):
+        src = CropPE(ConstantPE(1.0), 0, 100)
+        padded = CropPE(src, 0, 200, clip=False)
+        self.renderer.set_source(padded)
+        self.renderer.start()
+        data = padded.render(0, 200).data[:, 0]
+        assert np.all(data[:100] == 1.0)
+        assert np.all(data[100:] == 0.0)
+        self.renderer.stop()
+
+    def test_hold_first_holds_nonzero_value(self):
+        """Regression for the vacuous old test: the held value must be
+        distinguishable from zeros, or the assertion proves nothing."""
+        from pygmu2 import ExtendMode
+
+        src = ConstantPE(0.75)
+        windowed = CropPE(src, 100, 100, extend_mode=ExtendMode.HOLD_FIRST)
+        self.renderer.set_source(windowed)
+        self.renderer.start()
+        before = windowed.render(0, 50).data[:, 0]
+        assert np.all(before == 0.75), "HOLD_FIRST must emit the first value"
+        self.renderer.stop()
+
+    def test_repr_shows_clip_false(self):
+        r = repr(CropPE(ConstantPE(1.0), 0, 10, clip=False))
+        assert "clip=False" in r

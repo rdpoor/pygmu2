@@ -146,7 +146,7 @@ checks that it matches the source.
 | `ConstantPE` | A SourcePE that outputs a constant value. |
 | `ControlPE` | A SourcePE whose output value can be changed at any time from any thread. |
 | `ConvolvePE` | Streaming convolution: y = x * h. |
-| `CropPE` | A ProcessingElement that limits its input to a specified range. |
+| `CropPE` | A ProcessingElement that imposes a time window on its input. |
 | `DecayingSinePE` | Exponentially decaying sine tone. |
 | `DelayPE` | A ProcessingElement that delays its input by a specified amount. |
 | `DiracPE` | A SourcePE that outputs a unit impulse (Dirac delta in discrete time). |
@@ -184,7 +184,6 @@ checks that it matches the source.
 | `SVFilterPE` | Second-order state variable filter with the same API as BiquadPE. |
 | `ScheduledGatePE` | Convert note durations into gate signals, specifically for feeding into an. |
 | `SequencePE` | Schedule PEs at specific start times. |
-| `SetExtentPE` | Force a PE to a specified extent, padding or truncating as needed. |
 | `SignalToGatePE` | Schmitt-trigger gate: converts an analog signal to a gate signal. |
 | `SinePE` | A ProcessingElement that generates a sine wave. |
 | `SlewLimiterPE` | Slew-rate limiter for control signals. |

@@ -43,7 +43,7 @@ def demo_slew_rate_limit():
     print("Demo: Slew Rate Limit")
     for rate in [10, 30, 100, 300, 1000]:
         pluck = make_pluck()
-        srl = pg.SetExtentPE(pg.SlewLimiterPE(pluck, rate), 0, PLUCK_SAMPLES)
+        srl = pg.CropPE(pg.SlewLimiterPE(pluck, rate), 0, PLUCK_SAMPLES, clip=False)
         print(f"  slew rate limit = {rate} units/second", flush=True)
         pg.play(pg.GainPE(pad_clip(srl), gain=2.15))
     print("Done!")

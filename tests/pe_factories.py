@@ -153,7 +153,6 @@ FACTORIES = {
     "SequencePE": lambda: pg.SequencePE(
         (_finite_sine(256), 0), (pg.CropPE(pg.SinePE(frequency=550.0), 0, 256), 256)
     ),
-    "SetExtentPE": lambda: pg.SetExtentPE(_sine(), 0, 1024),
     "SignalToGatePE": lambda: pg.SignalToGatePE(
         _sine(), low_threshold=0.1, high_threshold=0.3
     ),

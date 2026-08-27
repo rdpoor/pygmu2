@@ -48,7 +48,7 @@ def pad_clip(pe, silence_secs: float = 0.5):
     separated.  The caller is responsible for playing the returned PE.
     """
     n = pe.extent().end
-    return pg.SetExtentPE(pe, 0, n + s(silence_secs))
+    return pg.CropPE(pe, 0, n + s(silence_secs), clip=False)
 
 
 def run_demos(demos: list[tuple[str, Callable]], readme: str | None = None) -> None:
