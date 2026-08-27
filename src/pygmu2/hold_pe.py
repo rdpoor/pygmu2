@@ -45,10 +45,10 @@ class HoldPE(ProcessingElement):
 
     Example:
         # Sample-and-hold: stepped random values, 8 steps/second
-        stepped = HoldPE(NoisePE(seed=1), GateToTriggerPE(PeriodicGate(8.0)))
+        stepped = HoldPE(NoisePE(seed=1), GateToTriggerPE(PeriodicGatePE(8.0)))
 
         # Track-and-hold: follow while the gate is high, freeze while low
-        frozen = HoldPE(lfo, PeriodicGate(frequency=2.0, duty_cycle=0.5))
+        frozen = HoldPE(lfo, PeriodicGatePE(frequency=2.0, duty_cycle=0.5))
     """
 
     def __init__(

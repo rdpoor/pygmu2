@@ -1,5 +1,5 @@
 """
-PeriodicGate - a GateSignal that generates a periodic gate.
+PeriodicGatePE - a GateSignal that generates a periodic gate.
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
@@ -15,7 +15,7 @@ from pygmu2.gate_signal import GateSignal
 from pygmu2.analog_osc_pe import AnalogOscPE
 
 
-class PeriodicGate(GateSignal):
+class PeriodicGatePE(GateSignal):
     """
     A GateSignal that emits a periodic rectangular gate (0/1), with fixed or
     dynamic frequency, duty cycle, and phase.

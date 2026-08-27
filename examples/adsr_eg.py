@@ -69,7 +69,7 @@ def demo_gate_adsr_vca():
     # An on-off gate to simulate a note repeating every 1/REPEAT_HZ seconds,
     # held for GATE_SEC each time.
     # Note: duty_cycle = gate_sec / repeat_sec = gate_sec * repeat_hz
-    gate = pg.PeriodicGate(
+    gate = pg.PeriodicGatePE(
         frequency=REPEAT_HZ,
         duty_cycle=GATE_SEC / REPEAT_SEC,
     )
@@ -112,16 +112,14 @@ def demo_gate_adsr_vca():
 
 def demo_trigger_adsr_vca():
     """
-    PeriodicTrigger -> AdsrTriggerSignal -> GainPE(SuperSaw)
+    GateToTriggerPE(PeriodicGatePE) -> AdsrTriggerSignal -> GainPE(SuperSaw)
     """
     duration_s = 8.0
 
     if GATE_SEC + RELEASE_SEC > REPEAT_SEC:
         print(f"warning: REPEAT_HZ is too high for ADSR to complete")
 
-    trigger = pg.PeriodicTrigger(
-        hz=REPEAT_HZ,
-    )
+    trigger = pg.GateToTriggerPE(pg.PeriodicGatePE(frequency=REPEAT_HZ))
 
     env = pg.AdsrTriggeredPE(
         trigger=trigger,
@@ -151,12 +149,12 @@ def demo_trigger_adsr_vca():
 
 def demo_trigger_adsr_filter_sweep():
     """
-    PeriodicTrigger -> AdsrTriggerSignal -> TransformPE -> LadderPE cutoff
+    GateToTriggerPE(PeriodicGatePE) -> AdsrTriggerSignal -> TransformPE -> LadderPE cutoff
     """
     duration_s = 10.0
 
     # A periodic trigger to launch one-shot envelopes
-    trigger = pg.PeriodicTrigger(hz=0.5, phase=0.0, amplitude=1)
+    trigger = pg.GateToTriggerPE(pg.PeriodicGatePE(frequency=0.5))
 
     # One-shot envelope (A, D, sustain hold, R)
     sweep_env = pg.AdsrTriggeredPE(
@@ -198,7 +196,7 @@ def demo_dual_adsr_vca_and_filter():
     duration_s = 12.0
 
     # Gate pattern: controls loudness and note "hold"
-    gate = pg.PeriodicGate(
+    gate = pg.PeriodicGatePE(
         frequency=0.5,
         duty_cycle=0.35,
         phase=0.0,
@@ -213,7 +211,7 @@ def demo_dual_adsr_vca_and_filter():
     )
 
     # Trigger pattern: independent "wah" sweeps
-    trig = pg.PeriodicTrigger(hz=0.5, phase=0.0, amplitude=1)
+    trig = pg.GateToTriggerPE(pg.PeriodicGatePE(frequency=0.5))
 
     filt_env = pg.AdsrTriggeredPE(
         trigger=trig,

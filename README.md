@@ -169,19 +169,17 @@ checks that it matches the source.
 | `MovingAveragePE` | Pure box-filter low-pass via a sliding window mean. |
 | `NoisePE` | Noise generator. |
 | `NotesPE` | Render a list of Notes from a single source sample. |
-| `PeriodicGate` | A GateSignal that emits a periodic rectangular gate (0/1), with fixed or. |
-| `PeriodicTrigger` | A TriggerSignal that emits +1 impulses periodically. |
+| `PeriodicGatePE` | A GateSignal that emits a periodic rectangular gate (0/1), with fixed or. |
 | `PiecewisePE` | A SourcePE that outputs a piecewise curve defined by (sample_index, value) points. |
 | `RandomGatePE` | Poisson-process toggle gate. |
 | `RandomSelectPE` | On each positive trigger event, randomly selects one of N input PEs, then. |
-| `RandomTriggerPE` | Poisson-process trigger generator. |
 | `RandomValuePE` | Continuously wandering random voltage in [0, 1]. |
 | `ResamplePE` | Pure constant-rate resampling of a source PE. |
 | `ReverbPE` | Convolution reverb with a wet/dry mix control. |
 | `ReversePitchEchoPE` | Pitch-shifted reverse echo effect. |
 | `RingModulatorPE` | A ProcessingElement that ring-modulates a carrier signal with a modulator signal. |
 | `SVFilterPE` | Second-order state variable filter with the same API as BiquadPE. |
-| `ScheduledGatePE` | Convert note durations into gate signals, specifically for feeding into an. |
+| `ScheduledGatePE` | Convert note (start, duration) pairs into a gate signal: 1.0 while a. |
 | `SequencePE` | Schedule PEs at specific start times. |
 | `SignalToGatePE` | Schmitt-trigger gate: converts an analog signal to a gate signal. |
 | `SinePE` | A ProcessingElement that generates a sine wave. |
@@ -245,7 +243,7 @@ uv run python examples/hello_sine_eg.py
 | `random_select_eg.py` | RandomSelectPE example (new TriggerSignal/GateSignal conventions):. |
 | `random_step2_eg.py` | Example: Random Step 2 — Musical ratios with parallel stepped LPF and slew. |
 | `random_step_eg.py` | Example: Random Step - Poisson sample-and-hold random generator. |
-| `random_trigger_eg.py` | Example: RandomTriggerPE - Poisson-process trigger generator. |
+| `random_trigger_eg.py` | Example: random triggers, derived from a random gate. |
 | `random_value_eg.py` | Example: RandomValuePE - continuously wandering random voltage generator. |
 | `reverb_eg.py` | reverb_eg.py. |
 | `reverse_pitch_echo_eg.py` | Reverse Pitch Echo - block-based reverse playback. |

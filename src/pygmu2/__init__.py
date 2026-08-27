@@ -57,14 +57,12 @@ from pygmu2.mix_pe import MixPE
 from pygmu2.moving_average_pe import MovingAveragePE, window_for_cutoff
 from pygmu2.noise_pe import NoisePE, NoiseMode
 from pygmu2.null_renderer import NullRenderer
-from pygmu2.periodic_gate import PeriodicGate
-from pygmu2.periodic_trigger import PeriodicTrigger
+from pygmu2.periodic_gate_pe import PeriodicGatePE
 from pygmu2.piecewise_pe import PiecewisePE, TransitionType
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.source_pe import SourcePE
 from pygmu2.random_gate_pe import RandomGatePE
 from pygmu2.random_select_pe import RandomSelectPE
-from pygmu2.random_trigger_pe import RandomTriggerPE
 from pygmu2.random_value_pe import RandomValuePE
 from pygmu2.renderer import Renderer
 from pygmu2.resample_pe import ResamplePE
@@ -218,11 +216,9 @@ __all__ = [
     "GoogleDriveAssetLoader",
     "GithubUserContentAssetLoader",
     "NoisePE",
-    "PeriodicGate",
-    "PeriodicTrigger",
+    "PeriodicGatePE",
     "RandomGatePE",
     "RandomSelectPE",
-    "RandomTriggerPE",
     "RandomValuePE",
     "HoldPE",
     "ScheduledGatePE",

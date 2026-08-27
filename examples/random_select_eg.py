@@ -36,7 +36,7 @@ def demo_weighted_pitch():
     weights = [w for (_pe, w) in weighted_boops]
 
     # TriggerSignal: +1 impulses at 8 Hz
-    trigger = pg.PeriodicTrigger(hz=8.0)
+    trigger = pg.GateToTriggerPE(pg.PeriodicGatePE(frequency=8.0))
 
     chooser = pg.RandomSelectPE(
         trigger=trigger,
@@ -73,7 +73,7 @@ def demo_weighted_pitch_one_osc():
     freq_inputs = [pe for (pe, _w) in weighted_freqs]
     freq_weights = [w for (_pe, w) in weighted_freqs]
 
-    trigger = pg.PeriodicTrigger(hz=8.0)
+    trigger = pg.GateToTriggerPE(pg.PeriodicGatePE(frequency=8.0))
 
     chooser = pg.RandomSelectPE(
         trigger=trigger,
@@ -123,7 +123,7 @@ def demo_djembe_fury():
     ]
 
     # 10 triggers/sec
-    trigger = pg.PeriodicTrigger(hz=10.0)
+    trigger = pg.GateToTriggerPE(pg.PeriodicGatePE(frequency=10.0))
 
     chooser = pg.RandomSelectPE(
         trigger=trigger,

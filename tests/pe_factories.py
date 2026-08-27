@@ -87,8 +87,10 @@ def _fir():
 
 # name -> zero-arg callable returning a fresh PE
 FACTORIES = {
-    "AdsrGatedPE": lambda: pg.AdsrGatedPE(pg.PeriodicGate(frequency=10.0)),
-    "AdsrTriggeredPE": lambda: pg.AdsrTriggeredPE(pg.PeriodicTrigger(hz=10.0)),
+    "AdsrGatedPE": lambda: pg.AdsrGatedPE(pg.PeriodicGatePE(frequency=10.0)),
+    "AdsrTriggeredPE": lambda: pg.AdsrTriggeredPE(
+        pg.GateToTriggerPE(pg.PeriodicGatePE(frequency=10.0))
+    ),
     "AnalogOscPE": lambda: pg.AnalogOscPE(frequency=440.0),
     "ArrayPE": lambda: pg.ArrayPE(np.sin(2 * np.pi * np.arange(256) / 256)),
     "AudioReaderPE": lambda: pg.AudioReaderPE(_test_wav()),
@@ -110,7 +112,7 @@ FACTORIES = {
     "EnvelopePE": lambda: pg.EnvelopePE(_sine()),
     "ExpanderPE": lambda: pg.ExpanderPE(_sine(), threshold=-40.0),
     "GainPE": lambda: pg.GainPE(_sine(), gain=0.5),
-    "GateToTriggerPE": lambda: pg.GateToTriggerPE(pg.PeriodicGate(frequency=10.0)),
+    "GateToTriggerPE": lambda: pg.GateToTriggerPE(pg.PeriodicGatePE(frequency=10.0)),
     "IdentityPE": lambda: pg.IdentityPE(),
     "IdiophonePE": lambda: pg.IdiophonePE(
         __import__("pygmu2.idiophone_pe", fromlist=["GLOCKENSPIEL"]).GLOCKENSPIEL,
@@ -129,16 +131,14 @@ FACTORIES = {
     "NotesPE": lambda: pg.NotesPE(
         _finite_sine(512), [pg.Note(0.0, 1.0, 60), pg.Note(1.0, 1.0, 64)]
     ),
-    "PeriodicGate": lambda: pg.PeriodicGate(frequency=10.0),
-    "PeriodicTrigger": lambda: pg.PeriodicTrigger(hz=10.0),
+    "PeriodicGatePE": lambda: pg.PeriodicGatePE(frequency=10.0),
     "PiecewisePE": lambda: pg.PiecewisePE([(0, 0.0), (500, 1.0), (1000, 0.0)]),
     "RandomGatePE": lambda: pg.RandomGatePE(rate=100.0, seed=42),
     "RandomSelectPE": lambda: pg.RandomSelectPE(
-        pg.PeriodicTrigger(hz=50.0),
+        pg.GateToTriggerPE(pg.PeriodicGatePE(frequency=50.0)),
         inputs=[pg.ConstantPE(0.25), pg.ConstantPE(0.75)],
         seed=42,
     ),
-    "RandomTriggerPE": lambda: pg.RandomTriggerPE(rate=100.0, seed=42),
     "RandomValuePE": lambda: pg.RandomValuePE(rate=100.0, seed=42),
     "ResamplePE": lambda: pg.ResamplePE(_sine(), rate=1.5),
     "ReverbPE": lambda: pg.ReverbPE(_sine(), ir=_fir(), mix=0.3),
@@ -147,7 +147,9 @@ FACTORIES = {
     ),
     "RingModulatorPE": lambda: pg.RingModulatorPE(_sine(), pg.SinePE(frequency=30.0)),
     "SVFilterPE": lambda: pg.SVFilterPE(_sine(), frequency=1000.0, q=0.707),
-    "HoldPE": lambda: pg.HoldPE(_sine(), pg.PeriodicTrigger(hz=50.0)),
+    "HoldPE": lambda: pg.HoldPE(
+        _sine(), pg.GateToTriggerPE(pg.PeriodicGatePE(frequency=50.0))
+    ),
     "ScheduledGatePE": lambda: pg.ScheduledGatePE([(0, 100), (200, 100)]),
     "SequencePE": lambda: pg.SequencePE(
         (_finite_sine(256), 0), (pg.CropPE(pg.SinePE(frequency=550.0), 0, 256), 256)
@@ -164,7 +166,8 @@ FACTORIES = {
     "TralfamPE": lambda: pg.TralfamPE(_finite_sine(), seed=42),
     "TransformPE": lambda: pg.TransformPE(_sine(), func=lambda x: x * 0.5),
     "TriggerRestartPE": lambda: pg.TriggerRestartPE(
-        pg.PeriodicTrigger(hz=10.0), pg.DecayingSinePE(frequency=440.0, tau=0.1)
+        pg.GateToTriggerPE(pg.PeriodicGatePE(frequency=10.0)),
+        pg.DecayingSinePE(frequency=440.0, tau=0.1),
     ),
     "WavReaderPE": lambda: pg.WavReaderPE(_test_wav()),
     "WavWriterPE": lambda: pg.WavWriterPE(_sine(), _tmp_path(".wav")),

@@ -267,3 +267,32 @@ class TestScheduledGatePEBufferBoundaries:
         part_a = sg.render(0, 25).data[:, 0]
         part_b = sg.render(25, 25).data[:, 0]
         np.testing.assert_array_equal(np.concatenate([part_a, part_b]), full)
+
+
+class TestMergeOverlaps:
+    """merge_overlaps=False punches a one-sample 0 before each onset that
+    would otherwise be swallowed by legato, so GateToTriggerPE sees one
+    rising edge per note."""
+
+    def test_legato_default_merges_onsets(self):
+        import pygmu2 as pg
+
+        gate = pg.ScheduledGatePE([(0, 100), (50, 100)])  # overlapping notes
+        trig = pg.GateToTriggerPE(gate)
+        r = pg.NullRenderer(sample_rate=44100)
+        r.set_source(trig)
+        r.start()
+        events = trig.render(0, 200).data[:, 0]
+        assert events.sum() == 1.0  # one fused span -> one onset
+
+    def test_merge_overlaps_false_preserves_onsets(self):
+        import pygmu2 as pg
+
+        gate = pg.ScheduledGatePE([(0, 100), (50, 100)], merge_overlaps=False)
+        trig = pg.GateToTriggerPE(gate)
+        r = pg.NullRenderer(sample_rate=44100)
+        r.set_source(trig)
+        r.start()
+        events = trig.render(0, 200).data[:, 0]
+        assert events.sum() == 2.0  # both notes fire
+        assert events[0] == 1.0 and events[50] == 1.0

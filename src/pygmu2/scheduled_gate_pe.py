@@ -1,3 +1,11 @@
+"""
+ScheduledGatePE - gate signal from a list of (start, duration) notes.
+
+Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
+
+MIT License
+"""
+
 import numpy as np
 
 from pygmu2.extent import Extent
@@ -8,18 +16,28 @@ from pygmu2.snippet import Snippet
 
 class ScheduledGatePE(GateSignal):
     """
-    Convert note durations into gate signals, specifically for feeding into an
-    AdsrGatePE.
+    Convert note (start, duration) pairs into a gate signal: 1.0 while a
+    note sounds, 0.0 between notes. Typically feeds AdsrGatedPE, or
+    GateToTriggerPE when per-note onset events are needed.
 
-    notes is a list of (start, duration) pairs (in samples).  The _render
-    method will generate gate signals: 1.0 at the onset of a note, 0.0 when
-    the duration of that note has elapsed unless an new note has started
-    before the previous note ends.
+    Args:
+        notes: list of (start, duration) pairs, in samples.
+        merge_overlaps: If True (default), overlapping/abutting notes fuse
+            into one sustained gate span — legato. If False, each new note
+            that begins while the gate is already high punches a one-sample
+            0 immediately before its onset, so every note produces its own
+            rising edge and GateToTriggerPE sees one event per note
+            (otherwise legato passages silently lose onsets).
     """
 
-    def __init__(self, notes: list[tuple[int, int]]):  # start, duration pairs
+    def __init__(
+        self,
+        notes: list[tuple[int, int]],  # start, duration pairs
+        merge_overlaps: bool = True,
+    ):
         # Merge overlapping note intervals once at construction time.
         notes_sorted = sorted(notes)
+        self._merge_overlaps = bool(merge_overlaps)
         self._merged = []
         if notes_sorted:
             a, b = notes_sorted[0][0], notes_sorted[0][0] + notes_sorted[0][1]
@@ -31,6 +49,16 @@ class ScheduledGatePE(GateSignal):
                     self._merged.append((a, b))
                     a, b = note_start, note_end
             self._merged.append((a, b))
+
+        # Retrigger notches: one-sample gaps before onsets that fall
+        # strictly inside a merged span (merge_overlaps=False only).
+        self._notches: list[int] = []
+        if not self._merge_overlaps:
+            for note_start, _ in notes_sorted:
+                for a, b in self._merged:
+                    if a < note_start < b:
+                        self._notches.append(note_start - 1)
+                        break
 
         # Keep the original sorted notes for extent calculation.
         self._notes = notes_sorted
@@ -58,5 +86,11 @@ class ScheduledGatePE(GateSignal):
             hi = min(b, buf_end) - start
             if lo < hi:
                 out[lo:hi, 0] = 1.0
+
+        # Retrigger notches (merge_overlaps=False): force a one-sample 0
+        # before each swallowed onset so every note has a rising edge.
+        for n in self._notches:
+            if start <= n < buf_end:
+                out[n - start, 0] = 0.0
 
         return Snippet(start, out)

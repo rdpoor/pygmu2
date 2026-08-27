@@ -279,13 +279,17 @@ class TestSlewLimiterPEComposed:
 
         # Stepped source: NoisePE with fixed seed triggered at 10 Hz
         src = pg.NoisePE(min_value=0.0, max_value=1.0, seed=7)
-        trig = pg.PeriodicTrigger(hz=10.0)  # every 10 samples
+        trig = pg.GateToTriggerPE(pg.PeriodicGatePE(frequency=10.0))  # every 10 samples
         stepped = HoldPE(src, trig)
 
         # Slew-limit the steps (rate = 5 units/s → 0.05/sample)
         slewed = SlewLimiterPE(stepped, rate=5.0)
 
-        src.on_start()
+        # Start the whole graph (the derived trigger is stateful and
+        # needs lifecycle, unlike the stateless trigger it replaced)
+        renderer = pg.NullRenderer(sample_rate=100)
+        renderer.set_source(slewed)
+        renderer.start()
         out = slewed.render(0, 100).data[:, 0]
 
         # The output should be smooth: max difference between consecutive samples
