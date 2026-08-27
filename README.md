@@ -155,12 +155,12 @@ checks that it matches the source.
 | `GainPE` | A ProcessingElement that applies gain (amplitude scaling) to its input. |
 | `GateToTriggerPE` | Converts a GateSignal to a TriggerSignal by emitting +1 at each. |
 | `HoldPE` | Follow `source` while `control` > 0; hold the last value while it is 0. |
-| `IdiophonePE` | Struck bar idiophone synthesis PE. |
 | `KarplusStrongPE` | Plucked string using the classic Karplus-Strong algorithm. |
 | `LadderPE` | Moog-style ladder filter with non-linear saturation. |
 | `LimiterPE` | Brick-wall limiter — prevents signal from exceeding a ceiling level. |
 | `LoopPE` | Repeat a segment of audio from the source. |
 | `MagFreqPE` | PE that modifies the magnitude and phase of a source in the frequency. |
+| `MalletInstrumentPE` | A struck instrument that makes a tone. |
 | `MeltysynthPE` | Source PE that renders meltysynth SoundFont synthesis into stereo Snippets. |
 | `MidiInPE` | Source PE that receives MIDI input via Mido and exposes messages via callback. |
 | `MixPE` | A ProcessingElement that mixes (adds) multiple PE outputs together. |
@@ -229,12 +229,12 @@ uv run python examples/hello_sine_eg.py
 | `function_gen_aliasing_eg.py` | AnalogOscPE antialias=False - the naive (aliased) oscillator mode. |
 | `function_generator_eg.py` | Function generator outputs for teaching. |
 | `hello_sine_eg.py` | Hello Sine - Introduction to pygmu2. |
-| `idiophone_eg.py` | Struck bar idiophone synthesis using IdiophonePE. |
 | `im_lucky_eg.py` | I'm Lucky -- a pygmu2 re-creation of Thomas Dolby's synth part in Joan. |
 | `karplus_strong_eg.py` | Example 29: Karplus-Strong plucked string synthesis. |
 | `ladder_filter_eg.py` | Ladder Filter - Moog-style ladder responses. |
 | `looping_eg.py` | Looping - Repeating audio segments. |
 | `mag_freq_eg.py` | mag_freq_eg.py — FFT-domain magnitude and phase manipulation via MagFreqPE. |
+| `mallet_instrument_eg.py` | Mallet instrument synthesis: struck tones via MalletInstrumentPE. |
 | `notes_eg.py` | notes_eg.py — NotesPE: play MIDI notes from a source sample. |
 | `piecewise_eg.py` | Example 33: PiecewisePE - piecewise (sample_index, value) curves. |
 | `play_wav_eg.py` | Play WAV - Loading and playing audio files. |

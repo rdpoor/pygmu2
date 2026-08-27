@@ -1,25 +1,19 @@
 """
-test_idiophone_pe.py — Smoke tests for IdiophonePE.
+test_mallet_instrument_pe.py — Smoke tests for MalletInstrumentPE.
 
 Verifies construction, rendering, output shape, decay, and register scaling
 for all four instrument definitions.
 
 Run with:
-    pytest test_idiophone_pe.py -v
+    pytest test_mallet_instrument_pe.py -v
 """
 
 import numpy as np
 import pytest
 
 from pygmu2.config import set_sample_rate
-from pygmu2.idiophone_pe import (
-    BALAFON,
-    GLOCKENSPIEL,
-    INSTRUMENTS,
-    MARIMBA,
-    XYLOPHONE,
-    IdiophonePE,
-)
+from pygmu2 import MalletInstruments
+from pygmu2.mallet_instrument_pe import MalletInstrumentPE
 from pygmu2.source_pe import SourcePE
 
 # ---------------------------------------------------------------------------
@@ -47,7 +41,7 @@ def _set_sample_rate():
 # ---------------------------------------------------------------------------
 
 
-def render_blocks(pe: IdiophonePE, n_blocks: int) -> np.ndarray:
+def render_blocks(pe: MalletInstrumentPE, n_blocks: int) -> np.ndarray:
     """Render n_blocks contiguous blocks; return concatenated (samples, ch) array."""
     blocks = []
     for i in range(n_blocks):
@@ -62,30 +56,32 @@ def render_blocks(pe: IdiophonePE, n_blocks: int) -> np.ndarray:
 
 
 class TestConstruction:
-    @pytest.mark.parametrize("instr", INSTRUMENTS.values(), ids=INSTRUMENTS.keys())
+    @pytest.mark.parametrize(
+        "instr", MalletInstruments.all().values(), ids=MalletInstruments.all().keys()
+    )
     def test_instantiates(self, instr):
-        pe = IdiophonePE(instr, frequency=440.0)
+        pe = MalletInstrumentPE(instr, frequency=440.0)
         assert pe is not None
 
     def test_negative_frequency_raises(self):
         with pytest.raises(ValueError, match="frequency"):
-            IdiophonePE(MARIMBA, frequency=-440.0)
+            MalletInstrumentPE(MalletInstruments.MARIMBA, frequency=-440.0)
 
     def test_zero_frequency_raises(self):
         with pytest.raises(ValueError, match="frequency"):
-            IdiophonePE(MARIMBA, frequency=0.0)
+            MalletInstrumentPE(MalletInstruments.MARIMBA, frequency=0.0)
 
     def test_negative_amplitude_raises(self):
         with pytest.raises(ValueError, match="amplitude"):
-            IdiophonePE(MARIMBA, amplitude=-0.1)
+            MalletInstrumentPE(MalletInstruments.MARIMBA, amplitude=-0.1)
 
     def test_repr_contains_instrument_name(self):
-        assert "marimba" in repr(IdiophonePE(MARIMBA))
+        assert "marimba" in repr(MalletInstrumentPE(MalletInstruments.MARIMBA))
 
     def test_graph_is_stateless(self):
         # Composite and partials are all closed-form: the whole graph is
-        # stateless, so idiophone notes can be shared and seeked freely.
-        pe = IdiophonePE(MARIMBA)
+        # stateless, so mallet notes can be shared and seeked freely.
+        pe = MalletInstrumentPE(MalletInstruments.MARIMBA)
         assert not pe.stateful
         mix = pe.inputs()[0]
         assert all(not partial.stateful for partial in mix.inputs())
@@ -97,34 +93,46 @@ class TestConstruction:
 
 
 class TestRendering:
-    @pytest.mark.parametrize("instr", INSTRUMENTS.values(), ids=INSTRUMENTS.keys())
+    @pytest.mark.parametrize(
+        "instr", MalletInstruments.all().values(), ids=MalletInstruments.all().keys()
+    )
     def test_output_shape_mono(self, instr):
-        audio = render_blocks(IdiophonePE(instr, frequency=440.0), n_blocks=4)
+        audio = render_blocks(MalletInstrumentPE(instr, frequency=440.0), n_blocks=4)
         assert audio.shape == (BLOCK_SIZE * 4, 1)
 
     def test_output_shape_stereo(self):
-        audio = render_blocks(IdiophonePE(MARIMBA, channels=2), n_blocks=2)
+        audio = render_blocks(
+            MalletInstrumentPE(MalletInstruments.MARIMBA, channels=2), n_blocks=2
+        )
         assert audio.shape == (BLOCK_SIZE * 2, 2)
 
-    @pytest.mark.parametrize("instr", INSTRUMENTS.values(), ids=INSTRUMENTS.keys())
+    @pytest.mark.parametrize(
+        "instr", MalletInstruments.all().values(), ids=MalletInstruments.all().keys()
+    )
     def test_output_not_silent(self, instr):
         audio = render_blocks(
-            IdiophonePE(instr, frequency=440.0, amplitude=0.3), n_blocks=4
+            MalletInstrumentPE(instr, frequency=440.0, amplitude=0.3), n_blocks=4
         )
         assert np.max(np.abs(audio)) > 1e-6
 
     def test_amplitude_scales_peak(self):
-        loud = render_blocks(IdiophonePE(MARIMBA, amplitude=0.6), n_blocks=4)
-        soft = render_blocks(IdiophonePE(MARIMBA, amplitude=0.3), n_blocks=4)
+        loud = render_blocks(
+            MalletInstrumentPE(MalletInstruments.MARIMBA, amplitude=0.6), n_blocks=4
+        )
+        soft = render_blocks(
+            MalletInstrumentPE(MalletInstruments.MARIMBA, amplitude=0.3), n_blocks=4
+        )
         assert np.max(np.abs(loud)) > np.max(np.abs(soft))
 
     def test_output_is_float32(self):
-        audio = render_blocks(IdiophonePE(MARIMBA), n_blocks=1)
+        audio = render_blocks(MalletInstrumentPE(MalletInstruments.MARIMBA), n_blocks=1)
         assert audio.dtype == np.float32
 
     def test_contiguous_blocks_no_discontinuity(self):
         """Sample-to-sample jumps must stay within the range of a sine wave."""
-        pe = IdiophonePE(MARIMBA, frequency=440.0, amplitude=0.3)
+        pe = MalletInstrumentPE(
+            MalletInstruments.MARIMBA, frequency=440.0, amplitude=0.3
+        )
         audio = render_blocks(pe, n_blocks=8)[:, 0]
         max_jump = float(np.max(np.abs(np.diff(audio))))
         # A 440 Hz sine at sr=48000 moves at most 2π·440/48000 ≈ 0.058 per sample;
@@ -140,9 +148,11 @@ class TestRendering:
 class TestDecay:
     def test_fundamental_decays_to_near_silence(self):
         """After 7× tau_mid the marimba fundamental should be below -60 dB."""
-        # MARIMBA tau_mid = 1.0 s at A4; -60 dB ≈ 7 τ.
+        # MalletInstruments.MARIMBA tau_mid = 1.0 s at A4; -60 dB ≈ 7 τ.
         n_blocks = int(np.ceil(7.0 * SAMPLE_RATE / BLOCK_SIZE))
-        pe = IdiophonePE(MARIMBA, frequency=440.0, amplitude=0.3)
+        pe = MalletInstrumentPE(
+            MalletInstruments.MARIMBA, frequency=440.0, amplitude=0.3
+        )
         audio = render_blocks(pe, n_blocks)
         tail_rms = float(np.sqrt(np.mean(audio[-BLOCK_SIZE:] ** 2)))
         assert tail_rms < 1e-4, f"signal has not decayed: tail RMS = {tail_rms:.2e}"
@@ -150,7 +160,9 @@ class TestDecay:
     def test_early_blocks_louder_than_late_blocks(self):
         """Onset should be louder than the tail — basic sanity check."""
         n_blocks = int(np.ceil(3.0 * SAMPLE_RATE / BLOCK_SIZE))
-        pe = IdiophonePE(MARIMBA, frequency=440.0, amplitude=0.3)
+        pe = MalletInstrumentPE(
+            MalletInstruments.MARIMBA, frequency=440.0, amplitude=0.3
+        )
         audio = render_blocks(pe, n_blocks)[:, 0]
         onset_rms = float(np.sqrt(np.mean(audio[:BLOCK_SIZE] ** 2)))
         tail_rms = float(np.sqrt(np.mean(audio[-BLOCK_SIZE:] ** 2)))
@@ -165,7 +177,9 @@ class TestDecay:
 class TestRegisterScaling:
     def _half_life_blocks(self, frequency: float, threshold: float = 0.02) -> int:
         """Return the block index at which RMS first falls below threshold."""
-        pe = IdiophonePE(MARIMBA, frequency=frequency, amplitude=0.3)
+        pe = MalletInstrumentPE(
+            MalletInstruments.MARIMBA, frequency=frequency, amplitude=0.3
+        )
         for i in range(int(10.0 * SAMPLE_RATE / BLOCK_SIZE)):
             snippet = pe._render(i * BLOCK_SIZE, BLOCK_SIZE)
             if float(np.sqrt(np.mean(snippet.data**2))) < threshold:
@@ -182,10 +196,12 @@ class TestRegisterScaling:
 
     def test_ref_freq_matches_tau_mid(self):
         """At A4 the fundamental should reach -60 dB within ±20% of tau_mid (1.0 s)."""
-        tau_mid = 1.0  # MARIMBA fundamental tau_mid at A4
+        tau_mid = 1.0  # MalletInstruments.MARIMBA fundamental tau_mid at A4
         tolerance = 0.20
         n_samples = int(tau_mid * SAMPLE_RATE)
-        pe = IdiophonePE(MARIMBA, frequency=440.0, amplitude=0.3)
+        pe = MalletInstrumentPE(
+            MalletInstruments.MARIMBA, frequency=440.0, amplitude=0.3
+        )
         # Render to exactly tau_mid then check amplitude is near -60 dB (linear ≈ 0.001)
         n_blocks = int(np.ceil(n_samples / BLOCK_SIZE))
         audio = render_blocks(pe, n_blocks)

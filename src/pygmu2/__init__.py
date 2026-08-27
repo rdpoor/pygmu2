@@ -47,7 +47,12 @@ from pygmu2.gain_pe import GainPE
 from pygmu2.gate_signal import GateSignal
 from pygmu2.gate_to_trigger_pe import GateToTriggerPE
 from pygmu2.hold_pe import HoldPE
-from pygmu2.idiophone_pe import IdiophonePE
+from pygmu2.mallet_instrument_pe import (
+    InstrumentDef,
+    MalletInstrumentPE,
+    PartialDef,
+)
+from pygmu2.mallet_instruments import MalletInstruments
 from pygmu2.karplus_strong_pe import KarplusStrongPE, rho_for_decay_db
 from pygmu2.logger import set_global_logging, setup_logging, get_logger
 from pygmu2.loop_pe import LoopPE
@@ -189,7 +194,10 @@ __all__ = [
     "EnvelopePE",
     "GainPE",
     "ExpanderPE",
-    "IdiophonePE",
+    "InstrumentDef",
+    "MalletInstrumentPE",
+    "MalletInstruments",
+    "PartialDef",
     "KarplusStrongPE",
     "rho_for_decay_db",
     "LadderPE",

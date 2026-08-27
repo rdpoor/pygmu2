@@ -120,9 +120,8 @@ FACTORIES = {
     "ExpanderPE": lambda: pg.ExpanderPE(_sine(), threshold=-40.0),
     "GainPE": lambda: pg.GainPE(_sine(), gain=0.5),
     "GateToTriggerPE": lambda: pg.GateToTriggerPE(pg.PeriodicGatePE(frequency=10.0)),
-    "IdiophonePE": lambda: pg.IdiophonePE(
-        __import__("pygmu2.idiophone_pe", fromlist=["GLOCKENSPIEL"]).GLOCKENSPIEL,
-        frequency=880.0,
+    "MalletInstrumentPE": lambda: pg.MalletInstrumentPE(
+        pg.MalletInstruments.GLOCKENSPIEL, frequency=880.0
     ),
     "KarplusStrongPE": lambda: pg.KarplusStrongPE(frequency=440.0, seed=42),
     "LadderPE": lambda: pg.LadderPE(_sine(), frequency=1000.0, resonance=0.2),

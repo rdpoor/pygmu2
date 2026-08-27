@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Struck bar idiophone synthesis using IdiophonePE.
+Mallet instrument synthesis: struck tones via MalletInstrumentPE.
 
 Each instrument is modelled as a sum of DecayingSinePE partials whose decay
 times register-scale with pitch (bass notes ring longer than treble notes).
@@ -16,15 +16,14 @@ from pygmu2 import (
     pitch_to_freq,
 )
 import pygmu2 as pg
-from pygmu2.idiophone_pe import (
-    BALAFON,
-    CELESTE,
-    GLOCKENSPIEL,
-    MARIMBA,
-    XYLOPHONE,
-    SINGING_BOWL,
-    IdiophonePE,
-)
+from pygmu2 import MalletInstrumentPE, MalletInstruments
+
+BALAFON = MalletInstruments.BALAFON
+CELESTE = MalletInstruments.CELESTE
+GLOCKENSPIEL = MalletInstruments.GLOCKENSPIEL
+MARIMBA = MalletInstruments.MARIMBA
+XYLOPHONE = MalletInstruments.XYLOPHONE
+SINGING_BOWL = MalletInstruments.SINGING_BOWL
 from examples_helper import run_demos
 
 pg.set_sample_rate(44100)
@@ -46,7 +45,7 @@ def _make_arpeggio(instrument, midi_notes, note_spacing, amplitude=0.3):
     notes = []
     t = 0.0
     for midi in midi_notes:
-        note = IdiophonePE(
+        note = MalletInstrumentPE(
             instrument, frequency=pitch_to_freq(midi), amplitude=amplitude
         )
         notes.append(DelayPE(note, int(round(t * SR))))
@@ -56,11 +55,11 @@ def _make_arpeggio(instrument, midi_notes, note_spacing, amplitude=0.3):
 
 def _make_low_high(instrument, midi_low, midi_high, amplitude):
     """Low note followed by high note, no overlap (waits for low to decay to -60 dB)."""
-    low = IdiophonePE(
+    low = MalletInstrumentPE(
         instrument, frequency=pitch_to_freq(midi_low), amplitude=amplitude
     )
     high = DelayPE(
-        IdiophonePE(
+        MalletInstrumentPE(
             instrument, frequency=pitch_to_freq(midi_high), amplitude=amplitude
         ),
         low.extent().duration,
@@ -215,7 +214,7 @@ def demo_celeste_arpeggio():
 def demo_singing_bowl():
     print("=== Singing Bowl @ 166 Hz")
     t = 0.0
-    note = IdiophonePE(SINGING_BOWL, frequency=166.0, amplitude=1.0)
+    note = MalletInstrumentPE(SINGING_BOWL, frequency=166.0, amplitude=1.0)
     pg.play(pg.CropPE(note, 0, SR * 10))
 
 
