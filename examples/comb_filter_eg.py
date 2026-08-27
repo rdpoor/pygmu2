@@ -1,5 +1,5 @@
 """
-Example 16: Comb Filter - pitched resonance
+Comb Filter - pitched resonance
 
 Demonstrates CombPE tuned to different frequencies.
 

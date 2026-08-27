@@ -1,5 +1,5 @@
 """
-Example 17: Ladder Filter - Moog-style ladder responses
+Ladder Filter - Moog-style ladder responses
 
 Demonstrates LadderPE with resonance, drive, and a cutoff sweep.
 

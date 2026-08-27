@@ -1,5 +1,5 @@
 """
-Example 05: Flanging - Time-varying delay effect
+Flanging - Time-varying delay effect
 
 Demonstrates DelayPE with a sine-modulated delay time,
 creating classic flanging and chorus effects.

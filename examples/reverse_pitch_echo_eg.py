@@ -1,5 +1,5 @@
 """
-Example 15: Reverse Pitch Echo - block-based reverse playback
+Reverse Pitch Echo - block-based reverse playback
 
 Demonstrates ReversePitchEchoPE with pitch shift and feedback.
 

@@ -1,6 +1,4 @@
 """
-37_sequence_eg.py
-
 SequencePE example showing OVERLAP and NON_OVERLAP modes with audio material.
 """
 

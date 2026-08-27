@@ -1,5 +1,5 @@
 """
-Example 02: Play WAV - Loading and playing audio files
+Play WAV - Loading and playing audio files
 
 Loads a WAV file and plays it through the audio output.
 

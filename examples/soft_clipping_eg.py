@@ -1,5 +1,5 @@
 """
-Example 07: Soft Clipping - TransformPE with saturation
+Soft Clipping - TransformPE with saturation
 
 Demonstrates TransformPE for waveshaping/distortion effects
 using np.tanh for soft clipping (tube-like saturation).

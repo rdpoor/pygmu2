@@ -28,20 +28,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv sync
 
 # Run commands in the virtual environment
-uv run python examples/01_hello_sine.py
-```
-
-### Using pipenv
-
-```bash
-# Install pipenv if needed
-pip install pipenv
-
-# Install dependencies
-pipenv install
-
-# Activate environment
-pipenv shell
+uv run python examples/hello_sine_eg.py
 ```
 
 ## Quick Start
@@ -222,54 +209,42 @@ The `examples/` directory contains runnable demos:
 
 ```bash
 # Using uv:
-uv run python examples/01_hello_sine.py
+uv run python examples/hello_sine_eg.py
 
-# Using pipenv:
-pipenv run python examples/01_hello_sine.py
 ```
 
 <!-- BEGIN GENERATED: examples-table (scripts/gen_readme_tables.py) -->
 | Example | Description |
 |---------|-------------|
-| `00_template_eg.py` | 00_template_eg.py. |
-| `01_hello_sine.py` | Example 01: Hello Sine - Introduction to pygmu2. |
-| `02_play_wav.py` | Example 02: Play WAV - Loading and playing audio files. |
-| `03_looping.py` | Example 03: Looping - Repeating audio segments. |
-| `04_filtering.py` | Example 04: Filtering - Biquad filter with frequency sweep. |
-| `05_flanging.py` | Example 05: Flanging - Time-varying delay effect. |
-| `06_autowah.py` | Example 06: Autowah - Envelope-controlled filter. |
-| `07_soft_clipping.py` | Example 07: Soft Clipping - TransformPE with saturation. |
-| `08_write_to_file.py` | Example 08: Write to File - Offline rendering to WAV. |
-| `10_compression.py` | Example 10: Compression, Limiting, and Gating. |
-| `11_dynamics.py` | Example 11: Advanced Dynamics with DynamicsPE. |
-| `12_audio_library.py` | Example 12: Strudel Audio Library - Lazy downloading and playback. |
-| `15_reverse_pitch_echo.py` | Example 15: Reverse Pitch Echo - block-based reverse playback. |
-| `16_comb_filter.py` | Example 16: Comb Filter - pitched resonance. |
-| `17_ladder_filter.py` | Example 17: Ladder Filter - Moog-style ladder responses. |
-| `19_sequence_examples.py` | Example 19: Sequencing with MixPE, CropPE, SlicePE, DelayPE, PiecewisePE. |
-| `20_alternative_temperaments.py` | Alternative Temperaments Example. |
-| `20_timewarp.py` | Example 20: TimeWarpPE - variable-speed playback ("tape head"). |
-| `21_analog_osc.py` | Example 21: AnalogOscPE - bandlimited PWM + saw/triangle morph oscillator. |
-| `22_function_gen.py` | Example 22: FunctionGenPE - naive DSP-like function generator (aliased). |
-| `23_convolution.py` | Example 23: ConvolvePE - convolution reverb (room impulse responses). |
-| `24_slice.py` | Example 24: SlicePE - quick snippet audition framework. |
-| `27_spatial.py` | Example 27: Spatial Audio - Panning and Channel Conversion. |
-| `29_karplus_strong.py` | Example 29: Karplus-Strong plucked string synthesis. |
-| `33_piecewise.py` | Example 33: PiecewisePE - piecewise (sample_index, value) curves. |
-| `37_sequence_eg.py` | 37_sequence_eg.py. |
 | `adsr_eg.py` | adsr_eg.py  ADSR demos using the new GateSignal / TriggerSignal ADSR classes. |
+| `analog_osc_eg.py` | Example 21: AnalogOscPE - bandlimited PWM + saw/triangle morph oscillator. |
+| `asset_manager_eg.py` | demo_asset_mgr.py. |
+| `audio_library_eg.py` | Strudel Audio Library - Lazy downloading and playback. |
 | `audio_reader_eg.py` | audio_reader_eg.py. |
 | `audio_slew_rate_limit_eg.py` | Example: Slew Rate Limiting on a stringed instrument. |
+| `autowah_eg.py` | Autowah - Envelope-controlled filter. |
 | `bwv1007_eg.py` | Fun with Tralfam.  And Bach.  And Yo Yo Ma. |
+| `comb_filter_eg.py` | Comb Filter - pitched resonance. |
+| `compression_eg.py` | Example 10: Compression, Limiting, and Gating. |
+| `convolution_eg.py` | Example 23: ConvolvePE - convolution reverb (room impulse responses). |
 | `decaying_sine_eg.py` | Decaying sine tone synthesis — tau refactor. |
-| `demo_asset_manager.py` | demo_asset_mgr.py. |
+| `dynamics_eg.py` | Example 11: Advanced Dynamics with DynamicsPE. |
 | `envelope_filter_eg.py` | envelope_filter_eg.py — Envelope-controlled filter: louder hits sound brighter. |
-| `fold_4K_test.py` | what does it sound like when you ring modulate a sound with high frequency. |
+| `filtering_eg.py` | Filtering - Biquad filter with frequency sweep. |
+| `flanging_eg.py` | Flanging - Time-varying delay effect. |
+| `fold_4k_eg.py` | what does it sound like when you ring modulate a sound with high frequency. |
+| `function_gen_aliasing_eg.py` | Example 22: FunctionGenPE - naive DSP-like function generator (aliased). |
 | `function_generator_eg.py` | Function generator outputs for teaching. |
+| `hello_sine_eg.py` | Hello Sine - Introduction to pygmu2. |
 | `idiophone_eg.py` | Struck bar idiophone synthesis using IdiophonePE. |
-| `im_lucky.py` | I'm Lucky -- a pygmu2 re-creation of Thomas Dolby's synth part in Joan. |
+| `im_lucky_eg.py` | I'm Lucky -- a pygmu2 re-creation of Thomas Dolby's synth part in Joan. |
+| `karplus_strong_eg.py` | Example 29: Karplus-Strong plucked string synthesis. |
+| `ladder_filter_eg.py` | Ladder Filter - Moog-style ladder responses. |
+| `looping_eg.py` | Looping - Repeating audio segments. |
 | `mag_freq_eg.py` | mag_freq_eg.py — FFT-domain magnitude and phase manipulation via MagFreqPE. |
 | `notes_eg.py` | notes_eg.py — NotesPE: play MIDI notes from a source sample. |
+| `piecewise_eg.py` | Example 33: PiecewisePE - piecewise (sample_index, value) curves. |
+| `play_wav_eg.py` | Play WAV - Loading and playing audio files. |
 | `random_gate_eg.py` | Example: Random Gate - Poisson-process toggle gate. |
 | `random_select_eg.py` | RandomSelectPE example (new TriggerSignal/GateSignal conventions):. |
 | `random_step2_eg.py` | Example: Random Step 2 — Musical ratios with parallel stepped LPF and slew. |
@@ -277,11 +252,21 @@ pipenv run python examples/01_hello_sine.py
 | `random_trigger_eg.py` | Example: RandomTriggerPE - Poisson-process trigger generator. |
 | `random_value_eg.py` | Example: RandomValuePE - continuously wandering random voltage generator. |
 | `reverb_eg.py` | reverb_eg.py. |
+| `reverse_pitch_echo_eg.py` | Reverse Pitch Echo - block-based reverse playback. |
 | `ring_modulator_eg.py` | Example: Ring Modulator — Sideband synthesis and vocal morphing. |
+| `sequence_eg.py` | SequencePE example showing OVERLAP and NON_OVERLAP modes with audio material. |
+| `sequencing_techniques_eg.py` | Example 19: Sequencing with MixPE, CropPE, SlicePE, DelayPE, PiecewisePE. |
+| `slice_eg.py` | SlicePE - quick snippet audition framework. |
+| `soft_clipping_eg.py` | Soft Clipping - TransformPE with saturation. |
+| `spatial_eg.py` | Spatial Audio - Panning and Channel Conversion. |
 | `sum_of_sines_eg.py` | Example: Demo sine summation for popular waveforms (square, triangle, saw, pulse). |
 | `super_saw_eg.py` | Example: Super Saw - Rich, detuned unison oscillator. |
+| `temperaments_eg.py` | Alternative Temperaments Example. |
+| `template_eg.py` | Starting template for new pygmu2 examples. |
+| `timewarp_eg.py` | Example 20: TimeWarpPE - variable-speed playback ("tape head"). |
 | `tralfam_eg.py` | tralfam_eg.py. |
 | `wargle_eg.py` | etude #12: a funny sounding instrument. |
+| `write_to_file_eg.py` | Write to File - Offline rendering to WAV. |
 <!-- END GENERATED: examples-table -->
 
 ## Modulation and Automation
@@ -372,7 +357,7 @@ set_concert_pitch()
 set_reference_frequency(442.0)  # Some orchestras tune to A=442
 ```
 
-See `examples/20_alternative_temperaments.py` for a detailed demonstration.
+See `examples/temperaments_eg.py` for a detailed demonstration.
 
 ## Running Tests
 
@@ -381,9 +366,6 @@ See `examples/20_alternative_temperaments.py` for a detailed demonstration.
 uv run pytest
 uv run pytest --cov=src --cov-report=html  # With coverage
 
-# Using pipenv
-pipenv run pytest
-pipenv run pytest --cov=src --cov-report=html  # With coverage
 ```
 
 ## Troubleshooting

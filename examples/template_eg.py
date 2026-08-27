@@ -1,5 +1,5 @@
 """
-00_template_eg.py
+Starting template for new pygmu2 examples.
 
 Template example with pg.play() and command-line demo selection.
 

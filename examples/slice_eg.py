@@ -1,5 +1,5 @@
 """
-Example 24: SlicePE - quick snippet audition framework
+SlicePE - quick snippet audition framework
 
 Loads two WAV files and lets you define a small "playlist" of SlicePE snippets
 by hand-editing start/duration values.

@@ -1,5 +1,5 @@
 """
-Example 12: Strudel Audio Library - Lazy downloading and playback
+Strudel Audio Library - Lazy downloading and playback
 
 Downloads a Strudel-style JSON map, resolves one sound, and plays
 the entire sound. Audio files are cached on demand.

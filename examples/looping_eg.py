@@ -1,5 +1,5 @@
 """
-Example 03: Looping - Repeating audio segments
+Looping - Repeating audio segments
 
 Demonstrates LoopPE with and without crossfade on a percussion sample.
 

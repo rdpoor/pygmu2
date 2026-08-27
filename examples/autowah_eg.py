@@ -1,5 +1,5 @@
 """
-Example 06: Autowah - Envelope-controlled filter
+Autowah - Envelope-controlled filter
 
 Demonstrates using EnvelopePE to control BiquadPE or SVFilterPE frequency,
 creating the classic "autowah" or envelope filter effect.

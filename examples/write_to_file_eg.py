@@ -1,5 +1,5 @@
 """
-Example 08: Write to File - Offline rendering to WAV
+Write to File - Offline rendering to WAV
 
 Demonstrates rendering audio to a file instead of playing it,
 useful for batch processing, pre-rendering, or creating samples.

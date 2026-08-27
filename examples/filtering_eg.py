@@ -1,5 +1,5 @@
 """
-Example 04: Filtering - Biquad filter with frequency sweep
+Filtering - Biquad filter with frequency sweep
 
 Demonstrates BiquadPE with a sweeping cutoff frequency,
 creating a classic filter sweep effect.
