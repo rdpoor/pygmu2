@@ -21,6 +21,13 @@ Running a script
     python examples/my_eg.py 1        # run demo 1 and quit
     python examples/my_eg.py a        # run all demos and quit
 
+Render modes (environment variable, no script changes needed)
+-------------------------------------------------------------
+    PYGMU_RENDER_MODE=realtime   # default: pg.play() as written
+    PYGMU_RENDER_MODE=offline    # render to a temp WAV, then play it
+    PYGMU_RENDER_MODE=profile    # render silently under pygmu2.diagnostics
+                                 # and print a per-PE profile (no audio)
+
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
@@ -71,6 +78,8 @@ def run_demos(demos: list[tuple[str, Callable]], readme: str | None = None) -> N
     if os.environ.get("PYGMU_EXAMPLES_DEBUG"):
         logging.basicConfig(level=logging.DEBUG)
         logger.setLevel(logging.DEBUG)
+
+    _install_render_mode(os.environ.get("PYGMU_RENDER_MODE", "realtime"))
 
     def resolve_choice(choice: str):
         """Return (name, fn) for a valid digit choice, or (None, None)."""
@@ -132,3 +141,47 @@ def run_demos(demos: list[tuple[str, Callable]], readme: str | None = None) -> N
             print()
         print_menu()
         choose_and_play()
+
+
+def _profiled_play(source, device=None) -> None:
+    """PYGMU_RENDER_MODE=profile: render silently under diagnostics and
+    print a per-PE profile instead of playing audio."""
+    from pygmu2 import diagnostics
+
+    extent = source.extent()
+    if extent.start is None or extent.end is None:
+        raise RuntimeError("profile mode requires a finite extent (crop the source)")
+    renderer = pg.NullRenderer()
+    renderer.set_source(source)
+    renderer.start()
+    chunk = 8192
+    with diagnostics.profile() as report:
+        pos = extent.start
+        while pos < extent.end:
+            n = min(chunk, extent.end - pos)
+            renderer.render(pos, n)
+            pos += n
+    renderer.stop()
+    print(report.summary(sample_rate=pg.get_sample_rate() or 44100))
+
+
+def _offline_play(source, device=None) -> None:
+    """PYGMU_RENDER_MODE=offline: render fully, then play the file."""
+    pg.play_offline(source)
+
+
+def _install_render_mode(mode: str) -> None:
+    """Swap pg.play according to PYGMU_RENDER_MODE. Examples call
+    pg.play(...) as written; the swap happens underneath them."""
+    mode = (mode or "realtime").strip().lower()
+    if mode in ("", "realtime"):
+        return
+    if mode == "offline":
+        pg.play = _offline_play
+    elif mode == "profile":
+        pg.play = _profiled_play
+    else:
+        raise ValueError(
+            f"PYGMU_RENDER_MODE must be realtime|offline|profile, got {mode!r}"
+        )
+    print(f"[examples_helper] render mode: {mode}")

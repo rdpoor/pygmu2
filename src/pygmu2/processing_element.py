@@ -132,7 +132,7 @@ class ProcessingElement(ABC):
         if is_enabled() and timing_enabled():
             t0 = time.perf_counter_ns()
             result = self._render(start, duration)
-            record_timing(self, time.perf_counter_ns() - t0)
+            record_timing(self, time.perf_counter_ns() - t0, duration)
         else:
             result = self._render(start, duration)
 
