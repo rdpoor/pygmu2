@@ -5,6 +5,10 @@
 re-argued). Re-derived 2026-08-26 at commit `c5090e9`; supersedes the previous version of this
 file, whose DD-2/DD-5 decisions and Phase-2 placement of the consumer gates were overridden.
 
+**Status (2026-08-27):** Phases 0–5 executed and merged to `main`; the PE catalog
+consolidation (71 → 61) and the recording feature (§6) landed after them under the same
+philosophy. This document is retained as the record of what was decided and why.
+
 **The shape of this plan in one sentence:** consumer gates first, then a phase that is almost
 entirely deletions, then the contract suite that carries correctness from that point on, then
 surface/consumer repair, profiling, and docs — with debugging aids and optimizations explicitly
@@ -370,3 +374,47 @@ mapping of its rows:
 | P3.3 extras break a working environment | Pre-1.0, accepted; natural `ImportError` per PD-2 |
 | Deleting `Renderer` profiler breaks a caller | P1.3 greps `scripts/` and `benchmarks/` first; P4.1 restores capability via `diagnostics.py` in the same milestone |
 | Vendored `meltysynth/` swept accidentally | Excluded by name in black/flake8/grep targets and the P1.6 sweep |
+
+---
+
+## 6. Post-plan feature work — Recording (completed 2026-08-27)
+
+First feature built under the philosophy after the overhaul; developed on branch
+`recording` per the feature workflow (owner live-checks hardware before merge), merged
+to `main` at `0a7dc9f`.
+
+**Components** (new: `duplex_renderer.py`, `recording.py`, `tests/test_duplex_renderer.py`,
+`examples/recording_eg.py`):
+
+- **`DuplexRenderer`** — playback + capture on a single full-duplex `sd.Stream`, so input
+  and output share one device clock; each captured block is stamped with the render
+  position of the same callback's output block.
+- **`Recording`** — stamped capture container; `as_pe()` returns timeline-positioned
+  material (ArrayPE → DelayPE); PortAudio status events recorded as facts (R2).
+- **`calibrate()`** — measures the round-trip offset exactly (no estimates, no tuned
+  numbers): plays a 200 ms log swept sine through the normal speaker→room→mic path and
+  cross-correlates. Plays in steady state (streams carry ~0.5 s of settling transient),
+  requires a dominant peak, and refuses to report if the driver dropped samples.
+- **Punch-in/punch-out** — `Segment` (finite Extent + WAV path) and `Transport`
+  (non-blocking play-and-record). Capture windows are calibration-compensated, so the
+  file IS the musical region: sample 0 == the performance at `extent.start`; reload is
+  `DelayPE(WavReaderPE(path), extent.start)`, no metadata. Takes auto-number
+  (`foo-1.wav`, …) by default; `on_exists="overwrite"` opts out.
+
+**Verification** — 25 device-free tests (mocked stream drives the callback loop; a
+simulated k-sample loopback must calibrate to exactly k; a compensated-capture test
+asserts a segment's file content equals the played region sample-for-sample), plus a
+live hardware pass: end-to-end overdub alignment error **0.29 ms** across separate
+streams on the owner's rig.
+
+**Hardware findings baked into the code and docs** (each cost real debugging time):
+input and output must share a physical clock — two CoreAudio devices glued by PortAudio
+slip or silently drop input (a macOS Aggregate Device fixes it; drift correction off for
+same-clock halves); every link must agree on one sample rate (a 44.1 k device setting
+under a 48 k stream produced an 8.2 % input slip); short noise bursts cannot out-correlate
+room noise (the sweep's time-bandwidth product buys ~30 dB).
+
+**Second-pass ledger additions** (in `BACKLOG.md`, with measurements attached):
+streaming-to-WAV capture, `AudioInPE` live input, and a persistent duplex stream shared
+by calibrate() and recording (per-stream-open buffer alignment is the measured ±~20-sample
+residual behind the 0.29 ms figure).
