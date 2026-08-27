@@ -16,7 +16,6 @@ import pytest
 
 from pygmu2.config import set_sample_rate
 from pygmu2.decaying_sine_pe import DecayingSinePE
-from pygmu2.extent import Extent
 
 SAMPLE_RATE = 48000
 BLOCK_SIZE = 512

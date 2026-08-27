@@ -194,7 +194,7 @@ class TestSVFilterPEStateManagement:
         self.renderer.set_source(svf)
         with self.renderer:
             self.renderer.start()
-            snippet1 = svf.render(0, 100)
+            svf.render(0, 100)
             snippet2 = svf.render(100, 100)
         assert snippet2.data[0, 0] != 0.0
 

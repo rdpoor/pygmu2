@@ -126,7 +126,7 @@ def run_all(target_db: float = -6.0) -> list[tuple]:
 
         demos = getattr(mod, "DEMOS", None)
         if not demos:
-            print(f"  [skip] no DEMOS list")
+            print("  [skip] no DEMOS list")
             continue
 
         for name, fn in demos:

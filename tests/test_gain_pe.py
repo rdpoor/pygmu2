@@ -6,7 +6,6 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-import pytest
 import numpy as np
 from pygmu2 import (
     GainPE,
@@ -19,8 +18,6 @@ from pygmu2 import (
     NullRenderer,
     Extent,
 )
-
-from tests.probes import IdentityPE
 
 
 class TestGainPEBasics:

@@ -9,10 +9,8 @@ MIT License
 """
 
 import numpy as np
-import pytest
 
 from pygmu2 import (
-    ArrayPE,
     ConstantPE,
     GateToTriggerPE,
     HoldPE,

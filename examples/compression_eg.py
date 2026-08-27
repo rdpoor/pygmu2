@@ -23,7 +23,6 @@ from pygmu2 import (
     LoopPE,
     MixPE,
     WavReaderPE,
-    AudioLibrary,
 )
 
 # library = AudioLibrary.from_url("https://software.tomandandy.com/strudel.json")
@@ -88,8 +87,8 @@ def demo_limiter():
         lookahead=0.005,  # 5ms lookahead for transparent limiting
     )
 
-    print(f"Input: 10x amplitude (clipping without limiter)")
-    print(f"Ceiling: -6dB, Release: 50ms, Lookahead: 5ms")
+    print("Input: 10x amplitude (clipping without limiter)")
+    print("Ceiling: -6dB, Release: 50ms, Lookahead: 5ms")
     print()
 
     pg.play(pg.GainPE(limited_stream, gain=0.55))
@@ -118,8 +117,8 @@ def demo_noise_gate():
         gate_range=-30,  # -30dB attenuation when gated
     )
 
-    print(f"Threshold: -16dB, Attack: 1ms, Release: 100ms")
-    print(f"Range: -30dB (attenuation when gated)")
+    print("Threshold: -16dB, Attack: 1ms, Release: 100ms")
+    print("Range: -30dB (attenuation when gated)")
     print("You should hear the signal cut out during quiet portions.")
     print()
 
@@ -136,7 +135,6 @@ def demo_parallel_compression():
     print()
 
     sample_rate = 44100
-    duration = 3.0
 
     source_stream = WavReaderPE(sound_path)
     sample_rate = source_stream.file_sample_rate
@@ -158,7 +156,7 @@ def demo_parallel_compression():
     )
 
     print("Mixing 60% dry + 40% heavily compressed")
-    print(f"Compression: threshold=-30dB, ratio=10:1")
+    print("Compression: threshold=-30dB, ratio=10:1")
     print("Result: Punchy transients from dry + sustained body from compressed")
     print()
 

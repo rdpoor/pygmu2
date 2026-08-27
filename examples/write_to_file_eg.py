@@ -17,7 +17,6 @@ from pygmu2 import (
     WavWriterPE,
     WavReaderPE,
     NullRenderer,
-    Extent,
     pitch_to_freq,
 )
 import pygmu2 as pg
@@ -41,7 +40,7 @@ C4, E4, G4 = 60, 64, 67
 
 
 def write_to_file():
-    print(f"Creating C major triad...", flush=True)
+    print("Creating C major triad...", flush=True)
     print(f"  C4: {pitch_to_freq(C4):.1f} Hz", flush=True)
     print(f"  E4: {pitch_to_freq(E4):.1f} Hz", flush=True)
     print(f"  G4: {pitch_to_freq(G4):.1f} Hz", flush=True)
@@ -72,7 +71,7 @@ def write_to_file():
         extent = output_stream.extent()
         renderer.render(extent.start, extent.end - extent.start)
 
-    print(f"\nFile written successfully!", flush=True)
+    print("\nFile written successfully!", flush=True)
     print(f"  Size: {OUTPUT_FILE.stat().st_size:,} bytes", flush=True)
 
     # --- Play back the written file ---

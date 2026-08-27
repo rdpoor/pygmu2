@@ -8,7 +8,6 @@ MIT License
 
 import pytest
 import numpy as np
-import tempfile
 import os
 import soundfile as sf
 from pygmu2 import (
@@ -18,7 +17,6 @@ from pygmu2 import (
     ConstantPE,
     MixPE,
     NullRenderer,
-    Extent,
 )
 
 

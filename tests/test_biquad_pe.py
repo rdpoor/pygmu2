@@ -6,7 +6,6 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-import pytest
 import numpy as np
 from pygmu2 import (
     BiquadPE,
@@ -16,7 +15,6 @@ from pygmu2 import (
     SinePE,
     DiracPE,
     NullRenderer,
-    Extent,
 )
 
 
@@ -381,7 +379,7 @@ class TestBiquadPEStateManagement:
             self.renderer.start()
 
             # First render - captures impulse
-            snippet1 = bq.render(0, 100)
+            bq.render(0, 100)
 
             # Second render - should have decaying response
             snippet2 = bq.render(100, 100)

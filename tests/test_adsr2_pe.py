@@ -30,7 +30,6 @@ MIT License
 """
 
 import numpy as np
-import pytest
 import pygmu2 as pg
 from pygmu2 import ArrayPE, ConstantPE, CropPE, NullRenderer
 from pygmu2.adsr_pe import AdsrGatedPE, AdsrTriggeredPE, _generate_ramp

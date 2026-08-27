@@ -41,7 +41,6 @@ class Temperament(ABC):
         Returns:
             Frequency in Hz
         """
-        pass
 
     @abstractmethod
     def freq_to_pitch(
@@ -61,7 +60,6 @@ class Temperament(ABC):
         Returns:
             Pitch number (can be fractional)
         """
-        pass
 
     @abstractmethod
     def interval_to_ratio(self, interval: ArrayLike) -> np.ndarray:
@@ -74,7 +72,6 @@ class Temperament(ABC):
         Returns:
             Frequency ratio
         """
-        pass
 
     @abstractmethod
     def ratio_to_interval(self, ratio: ArrayLike) -> np.ndarray:
@@ -87,12 +84,10 @@ class Temperament(ABC):
         Returns:
             Interval in scale degrees
         """
-        pass
 
     @abstractmethod
     def name(self) -> str:
         """Return a human-readable name for this temperament."""
-        pass
 
 
 class EqualTemperament(Temperament):

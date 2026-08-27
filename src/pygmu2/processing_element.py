@@ -8,6 +8,7 @@ MIT License
 
 from __future__ import annotations
 import time
+from typing import TYPE_CHECKING
 from abc import ABC, abstractmethod
 
 from pygmu2.extent import Extent
@@ -15,6 +16,10 @@ from pygmu2.snippet import Snippet
 from pygmu2.config import (
     get_sample_rate,
 )
+
+if TYPE_CHECKING:
+    import numpy as np
+
 from pygmu2.diagnostics import (
     is_enabled,
     pull_count_enabled,
@@ -63,7 +68,7 @@ class ProcessingElement(ABC):
     # Next expected start for stateful PEs (None = no render yet)
     _expected_start: int | None = None
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: object, **kwargs: object) -> "ProcessingElement":
         """
         Enforce global sample rate requirement before any PE is constructed.
 
@@ -152,7 +157,6 @@ class ProcessingElement(ABC):
         Returns:
             Snippet containing the audio data
         """
-        pass
 
     def extent(self) -> Extent:
         """
@@ -194,7 +198,6 @@ class ProcessingElement(ABC):
         Returns:
             List of input PEs (empty for sources)
         """
-        pass
 
     def channel_count(self) -> int | None:
         """
@@ -261,11 +264,11 @@ class ProcessingElement(ABC):
         start: int,
         duration: int,
         *,
-        dtype: "object" = None,
+        dtype: object = None,
         channel: int = 0,
         allow_multichannel: bool = False,
         channels: int | None = None,
-    ):
+    ) -> "np.ndarray":
         """
         Protected helper for "scalar-or-PE" parameters.
 
@@ -308,7 +311,7 @@ class ProcessingElement(ABC):
         if isinstance(param, ProcessingElement):
             data = param.render(start, duration).data
             if allow_multichannel:
-                return data.astype(dtype, copy=False)
+                return data.astype(dtype, copy=False)  # type: ignore[call-overload,no-any-return]
 
             # 1D control: use one channel (default 0)
             if data.ndim != 2 or data.shape[1] < 1:
@@ -319,7 +322,7 @@ class ProcessingElement(ABC):
                 raise ValueError(
                     f"channel {channel} out of range for param with {data.shape[1]} channels"
                 )
-            return data[:, channel].astype(dtype, copy=False)
+            return data[:, channel].astype(dtype, copy=False)  # type: ignore[call-overload,no-any-return]
 
         # Scalar value
         value = float(param)

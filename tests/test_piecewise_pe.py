@@ -11,7 +11,6 @@ import numpy as np
 from pygmu2 import (
     PiecewisePE,
     TransitionType,
-    Extent,
     ExtendMode,
     NullRenderer,
 )

@@ -10,7 +10,6 @@ import pytest
 import numpy as np
 
 from pygmu2.temperament import (
-    Temperament,
     EqualTemperament,
     JustIntonation,
     PythagoreanTuning,

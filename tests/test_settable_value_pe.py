@@ -9,7 +9,6 @@ MIT License
 import threading
 
 import numpy as np
-import pytest
 
 from pygmu2 import SettableValuePE, NullRenderer
 

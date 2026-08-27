@@ -338,9 +338,6 @@ class TestAudioReaderPEMissingDep:
         # Remove the fake module to simulate miniaudio being absent
         sys.modules.pop("miniaudio", None)
         # Also make import fail
-        real_import = (
-            __builtins__.__import__ if hasattr(__builtins__, "__import__") else None
-        )
         import builtins
 
         original = builtins.__import__

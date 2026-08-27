@@ -213,7 +213,6 @@ def demo_celeste_arpeggio():
 
 def demo_singing_bowl():
     print("=== Singing Bowl @ 166 Hz")
-    t = 0.0
     note = MalletInstrumentPE(SINGING_BOWL, frequency=166.0, amplitude=1.0)
     pg.play(pg.CropPE(note, 0, SR * 10))
 

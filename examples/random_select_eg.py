@@ -12,9 +12,7 @@ This example uses a simple PeriodicSignal to generate periodic trigger events.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
-import numpy as np
 import pygmu2 as pg
 from examples_helper import run_demos
 

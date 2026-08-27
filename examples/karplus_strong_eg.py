@@ -16,7 +16,6 @@ MIT License
 from pygmu2 import (
     CropPE,
     DelayPE,
-    Extent,
     KarplusStrongPE,
     MixPE,
     pitch_to_freq,
@@ -95,12 +94,6 @@ def demo_high_rho_vs_low_rho():
 
     plucks = []
     t = 0
-
-    frequency: float = (440.0,)
-    duration_seconds: float = (1.0,)
-    amplitude: float = (0.5,)
-    seed: Optional[int] = (None,)
-    channels: int = 1
 
     duration_seconds = 2.0
     plucks.append(

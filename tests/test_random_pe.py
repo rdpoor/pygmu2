@@ -5,9 +5,8 @@ import pytest
 
 pytest.importorskip("pygmu2.random_pe", reason="random_pe module not yet implemented")
 
-from pygmu2 import NullRenderer, SinePE, ConstantPE, GainPE, MixPE
+from pygmu2 import NullRenderer, SinePE
 from pygmu2.random_pe import RandomPE, RandomMode
-from pygmu2.extent import Extent
 
 
 class TestRandomPEBasics:

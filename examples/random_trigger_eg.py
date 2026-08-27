@@ -14,7 +14,6 @@ MIT License
 """
 
 import pygmu2 as pg
-import numpy as np
 from examples_helper import s, pad_clip, run_demos
 
 pg.set_sample_rate(44100)

@@ -64,7 +64,7 @@ def demo_gate_adsr_vca():
     duration_s = 8.0
 
     if GATE_SEC + RELEASE_SEC > REPEAT_SEC:
-        print(f"warning: REPEAT_HZ is too high for ADSR to complete")
+        print("warning: REPEAT_HZ is too high for ADSR to complete")
 
     # An on-off gate to simulate a note repeating every 1/REPEAT_HZ seconds,
     # held for GATE_SEC each time.
@@ -117,7 +117,7 @@ def demo_trigger_adsr_vca():
     duration_s = 8.0
 
     if GATE_SEC + RELEASE_SEC > REPEAT_SEC:
-        print(f"warning: REPEAT_HZ is too high for ADSR to complete")
+        print("warning: REPEAT_HZ is too high for ADSR to complete")
 
     trigger = pg.GateToTriggerPE(pg.PeriodicGatePE(frequency=REPEAT_HZ))
 

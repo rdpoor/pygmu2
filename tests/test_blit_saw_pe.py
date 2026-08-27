@@ -14,7 +14,6 @@ from pygmu2 import (
     CropPE,
     PiecewisePE,
     NullRenderer,
-    Extent,
 )
 
 

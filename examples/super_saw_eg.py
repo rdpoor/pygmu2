@@ -17,8 +17,6 @@ MIT License
 # - Higher voice counts (9-11) add richness but cost more CPU
 
 
-from pathlib import Path
-
 import pygmu2 as pg
 from examples_helper import s, pad_clip, run_demos
 

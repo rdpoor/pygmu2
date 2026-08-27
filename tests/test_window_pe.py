@@ -358,7 +358,7 @@ class TestWindowPENoState:
 
             # Render blocks in different orders
             snippet_a = win.render(500, 100)
-            snippet_b = win.render(0, 100)
+            win.render(0, 100)
             snippet_c = win.render(500, 100)  # Same as snippet_a
 
             # snippet_a and snippet_c should be identical

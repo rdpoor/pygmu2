@@ -1,0 +1,15 @@
+[flake8]
+# Policy: black owns formatting — flake8 gates on correctness lints only.
+#   E203/W503/E501: style calls that black makes (line length included;
+#                   residual long lines are docstrings/URLs)
+#   E402: module-code-before-imports is a legitimate pattern here
+#         (sys.path setup in benchmarks, importorskip in tests,
+#         numba-guard ordering in a few PEs)
+# The suite is currently CLEAN under this policy; CI keeps it that way.
+max-line-length = 88
+extend-ignore = E203, W503, E501, E402
+exclude =
+    .venv,
+    src/pygmu2/meltysynth,
+    __pycache__,
+    htmlcov

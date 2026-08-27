@@ -13,7 +13,6 @@ MIT License
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 import pygmu2 as pg
 from pygmu2.mag_freq_pe import MagFreqPE
@@ -204,7 +203,7 @@ class TestTralfamPEPaddedLength:
 
     def test_padded_length_with_offset_source(self):
         """padded_length anchors at the source's start, not at 0."""
-        inner = make_source(N)
+        make_source(N)
         src = pg.CropPE(pg.ConstantPE(0.0), start=100, duration=N)
         # Use ArrayPE-based source with offset via CropPE(clip=False)
         src = pg.CropPE(make_source(N), 100, N, clip=False)

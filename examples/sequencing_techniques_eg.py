@@ -20,7 +20,6 @@ from pygmu2 import (
     ConstantPE,
     CropPE,
     DelayPE,
-    ExtendMode,
     GainPE,
     KarplusStrongPE,
     MixPE,
@@ -34,7 +33,6 @@ from examples_helper import run_demos
 
 pg.set_sample_rate(44100)
 
-from typing import Optional
 
 SAMPLE_RATE = 44100
 
@@ -138,7 +136,6 @@ def demo_legato_c_major():
     print("=== C major chord: legato (C overlap E overlap G) ===")
     onset_interval = int(0.5 * SAMPLE_RATE)  # next note starts 0.5 s after previous
     note_duration = int(1.5 * SAMPLE_RATE)  # each note long enough to overlap
-    total = int(1.5 * SAMPLE_RATE)  # total output length
 
     notes = []
     for i, midi_pitch in enumerate(C_MAJOR):

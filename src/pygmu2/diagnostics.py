@@ -27,11 +27,10 @@ MIT License
 from __future__ import annotations
 
 import threading
-import time
 from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Iterator
 
 if TYPE_CHECKING:
     from pygmu2.processing_element import ProcessingElement
@@ -39,7 +38,7 @@ if TYPE_CHECKING:
 _thread_local = threading.local()
 
 
-def _state():
+def _state() -> Any:
     if not hasattr(_thread_local, "pull_count"):
         _thread_local.pull_count = {}
         _thread_local.pull_count_class = {}
@@ -92,15 +91,15 @@ def record_timing(pe: "ProcessingElement", duration_ns: int, samples: int) -> No
 def is_enabled() -> bool:
     """True if either pull_count or timing is enabled."""
     s = _state()
-    return s.enabled_pull or s.enabled_timing
+    return bool(s.enabled_pull or s.enabled_timing)
 
 
 def pull_count_enabled() -> bool:
-    return _state().enabled_pull
+    return bool(_state().enabled_pull)
 
 
 def timing_enabled() -> bool:
-    return _state().enabled_timing
+    return bool(_state().enabled_timing)
 
 
 def get_block_report() -> str:
@@ -112,7 +111,7 @@ def get_block_report() -> str:
     lines = []
 
     if s.enabled_pull and (s.pull_count or s.pull_count_class):
-        by_class = defaultdict(int)
+        by_class: dict[str, int] = defaultdict(int)
         for pe_id, count in s.pull_count.items():
             cls = s.pull_count_class.get(pe_id, "?")
             by_class[cls] += count
@@ -122,19 +121,21 @@ def get_block_report() -> str:
         lines.append("")
 
     if s.enabled_timing and s.timings:
-        by_class = defaultdict(lambda: {"total_ns": 0, "count": 0})
+        timing_stats: dict[str, dict[str, int]] = defaultdict(
+            lambda: {"total_ns": 0, "count": 0}
+        )
         for cls, dur_ns, _samples in s.timings:
-            by_class[cls]["total_ns"] += dur_ns
-            by_class[cls]["count"] += 1
+            timing_stats[cls]["total_ns"] += dur_ns
+            timing_stats[cls]["count"] += 1
         lines.append("timing_ms (total, count, avg):")
         sorted_classes = sorted(
-            by_class.keys(),
-            key=lambda c: by_class[c]["total_ns"],
+            timing_stats.keys(),
+            key=lambda c: timing_stats[c]["total_ns"],
             reverse=True,
         )
         for cls in sorted_classes:
-            total_ns = by_class[cls]["total_ns"]
-            count = by_class[cls]["count"]
+            total_ns = timing_stats[cls]["total_ns"]
+            count = timing_stats[cls]["count"]
             total_ms = total_ns / 1_000_000
             avg_ms = total_ms / count if count else 0
             lines.append(
@@ -213,7 +214,7 @@ class Profile:
 
 
 @contextmanager
-def profile(pull_count: bool = True, timing: bool = True):
+def profile(pull_count: bool = True, timing: bool = True) -> "Iterator[Profile]":
     """Profile every PE render inside the block.
 
     Yields a Profile whose data is filled in when the block exits:
@@ -235,7 +236,7 @@ def profile(pull_count: bool = True, timing: bool = True):
             st.total_ns += dur_ns
             st.count += 1
             st.samples += samples
-        by_class_pulls = defaultdict(int)
+        by_class_pulls: dict[str, int] = defaultdict(int)
         for pe_id, count in s.pull_count.items():
             by_class_pulls[s.pull_count_class.get(pe_id, "?")] += count
         report.pull_counts = dict(by_class_pulls)

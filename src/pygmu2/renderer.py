@@ -131,14 +131,13 @@ class Renderer(ABC):
             )
         self._output(self._source.render(start, duration))
 
-    def __enter__(self):
+    def __enter__(self) -> "Renderer":
         """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit - ensures stop() is called."""
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+        """Context manager exit - ensures stop() is called (never swallows)."""
         self.stop()
-        return False
 
     @abstractmethod
     def _output(self, snippet: Snippet) -> None:
@@ -146,7 +145,6 @@ class Renderer(ABC):
         Output the snippet to the destination (DAC, file, etc.).
         Implemented by subclasses.
         """
-        pass
 
     def _start_graph(
         self,

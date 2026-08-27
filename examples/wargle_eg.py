@@ -7,7 +7,6 @@ MIT License
 """
 
 import pygmu2 as pg
-from pathlib import Path
 import numpy as np
 
 SRATE = 44100

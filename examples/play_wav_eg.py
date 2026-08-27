@@ -42,7 +42,7 @@ def play_wav():
         flush=True,
     )
 
-    print(f"Playing...", flush=True)
+    print("Playing...", flush=True)
     pg.play(pg.GainPE(source_stream, gain=1.67), sample_rate=file_sr)
 
     print("Done!", flush=True)

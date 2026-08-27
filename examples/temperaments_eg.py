@@ -22,7 +22,6 @@ from pygmu2 import (
     EqualTemperament,
     JustIntonation,
     PythagoreanTuning,
-    set_temperament,
     set_reference_frequency,
     set_concert_pitch,
     set_verdi_tuning,

@@ -15,7 +15,7 @@ MIT License
 
 from pathlib import Path
 import pygmu2 as pg
-from examples_helper import s, pad_clip, run_demos
+from examples_helper import pad_clip, run_demos
 
 pg.set_sample_rate(44100)
 

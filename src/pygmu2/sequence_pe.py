@@ -9,7 +9,7 @@ MIT License
 from __future__ import annotations
 
 from enum import Enum
-from typing import Iterable, List, Sequence, Tuple
+from typing import Tuple
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent

@@ -6,13 +6,11 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-import math
-
 from pygmu2 import (
+    AnalogOscPE,
     CropPE,
     GainPE,
     SinePE,
-    pitch_to_freq,
 )
 import pygmu2 as pg
 from examples_helper import run_demos

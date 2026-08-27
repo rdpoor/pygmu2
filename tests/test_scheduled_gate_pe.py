@@ -7,7 +7,6 @@ MIT License
 """
 
 import numpy as np
-import pytest
 
 import pygmu2 as pg
 from pygmu2.scheduled_gate_pe import ScheduledGatePE
@@ -275,8 +274,6 @@ class TestMergeOverlaps:
     rising edge per note."""
 
     def test_legato_default_merges_onsets(self):
-        import pygmu2 as pg
-
         gate = pg.ScheduledGatePE([(0, 100), (50, 100)])  # overlapping notes
         trig = pg.GateToTriggerPE(gate)
         r = pg.NullRenderer(sample_rate=44100)
@@ -286,8 +283,6 @@ class TestMergeOverlaps:
         assert events.sum() == 1.0  # one fused span -> one onset
 
     def test_merge_overlaps_false_preserves_onsets(self):
-        import pygmu2 as pg
-
         gate = pg.ScheduledGatePE([(0, 100), (50, 100)], merge_overlaps=False)
         trig = pg.GateToTriggerPE(gate)
         r = pg.NullRenderer(sample_rate=44100)

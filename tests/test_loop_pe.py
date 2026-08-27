@@ -12,7 +12,6 @@ from pygmu2 import (
     LoopPE,
     ConstantPE,
     PiecewisePE,
-    DiracPE,
     NullRenderer,
 )
 
@@ -221,7 +220,7 @@ class TestLoopPEFiniteCount:
 
     def test_stops_after_count(self):
         """Should output silence after count iterations."""
-        source = ConstantPE(1.0)
+        ConstantPE(1.0)
         source_cropped = PiecewisePE([(0, 1.0), (10, 1.0)])  # 10 samples of 1.0
         loop = LoopPE(source_cropped, count=2)
 
@@ -330,7 +329,7 @@ class TestLoopPEStereo:
         """Stereo source should loop both channels."""
         source = ConstantPE(0.5, channels=2)
         # Need a finite source for looping
-        from pygmu2 import CropPE, Extent
+        from pygmu2 import CropPE
 
         cropped = CropPE(source, 0, (100) - (0))
         loop = LoopPE(cropped)

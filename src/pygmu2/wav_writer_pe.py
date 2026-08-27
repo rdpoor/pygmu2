@@ -6,7 +6,6 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-import numpy as np
 import soundfile as sf
 
 from pygmu2.processing_element import ProcessingElement

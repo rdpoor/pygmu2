@@ -18,7 +18,6 @@ Delete the cached OAuth token to force re-authentication on the next run:
 Then run the script again — a browser window will open for you to re-authorize.
 """
 
-from pathlib import Path
 from examples_helper import run_demos
 
 from pygmu2.asset_manager import (

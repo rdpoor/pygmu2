@@ -29,4 +29,3 @@ class NullRenderer(Renderer):
 
     def _output(self, snippet: Snippet) -> None:
         """Discard the snippet (no output)."""
-        pass

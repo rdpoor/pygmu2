@@ -31,6 +31,15 @@ jobs:
       - name: Format check (black)
         run: uv run black --check src tests examples benchmarks scripts
 
+      - name: Lint (flake8 — correctness codes; policy in .flake8)
+        run: uv run flake8 src tests examples benchmarks scripts
+
+      - name: Types (mypy ratchet — core contract files)
+        run: >
+          uv run mypy src/pygmu2/processing_element.py src/pygmu2/snippet.py
+          src/pygmu2/extent.py src/pygmu2/renderer.py src/pygmu2/config.py
+          src/pygmu2/diagnostics.py
+
       - name: Test suite (unit + examples smoke + boundary gates)
         run: |
           set -o pipefail

@@ -5,10 +5,8 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-from pathlib import Path
-
 import pygmu2 as pg
-from examples_helper import pad_clip, run_demos
+from examples_helper import run_demos
 
 pg.set_sample_rate(44100)
 
@@ -23,7 +21,7 @@ def make_demo_eg(freq_amp_pairs, analytical_generator):
     # hold last value
     # short pause
     # play analytical version again
-    BUILD_DURATION = DURATION_SAMPLES * len(freq_amp_pairs)
+    DURATION_SAMPLES * len(freq_amp_pairs)
     tones = []
     start_samp = 0
 

@@ -9,7 +9,7 @@ MIT License
 
 from pathlib import Path
 
-from pygmu2 import WavReaderPE, LoopPE, CropPE, Extent
+from pygmu2 import WavReaderPE, LoopPE, CropPE
 import pygmu2 as pg
 from examples_helper import run_demos
 

@@ -14,7 +14,6 @@ import pytest
 from pygmu2.config import set_sample_rate
 from pygmu2 import MalletInstruments
 from pygmu2.mallet_instrument_pe import MalletInstrumentPE
-from pygmu2.source_pe import SourcePE
 
 # ---------------------------------------------------------------------------
 # Test constants

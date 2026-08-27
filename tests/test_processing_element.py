@@ -90,7 +90,7 @@ class MixPE(ProcessingElement):
 
         # Render all inputs (contiguous request per source)
         snippets = [source.render(start, duration) for source in self._sources]
-        channels = snippets[0].channels
+        snippets[0].channels
         result = snippets[0].data.copy()
         for snippet in snippets[1:]:
             result += snippet.data

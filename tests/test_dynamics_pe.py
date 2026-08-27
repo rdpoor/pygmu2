@@ -14,9 +14,7 @@ from pygmu2 import (
     EnvelopePE,
     ConstantPE,
     SinePE,
-    GainPE,
     CropPE,
-    Extent,
     NullRenderer,
 )
 
@@ -361,8 +359,8 @@ class TestDynamicsPEStereoLink:
 
         # Create envelope with different levels per channel
         # Left channel loud (0dB), right channel quiet (-40dB)
-        env_left = ConstantPE(1.0)
-        env_right = ConstantPE(0.01)
+        ConstantPE(1.0)
+        ConstantPE(0.01)
 
         # Use CropPE to create a stereo envelope PE
         # Actually, let's use a simpler approach - just test with mono envelope

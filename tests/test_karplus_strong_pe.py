@@ -11,7 +11,6 @@ import numpy as np
 from pygmu2 import (
     KarplusStrongPE,
     NullRenderer,
-    Extent,
     rho_for_decay_db,
 )
 

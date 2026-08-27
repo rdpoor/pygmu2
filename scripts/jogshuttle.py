@@ -31,7 +31,6 @@ from PySide6.QtCore import QTimer, Qt, Signal
 from PySide6.QtGui import (
     QCloseEvent,
     QColor,
-    QFont,
     QFontDatabase,
     QIcon,
     QImage,

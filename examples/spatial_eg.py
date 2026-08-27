@@ -14,8 +14,6 @@ from pathlib import Path
 from pygmu2 import (
     CropPE,
     DelayPE,
-    Extent,
-    GainPE,
     MixPE,
     PiecewisePE,
     SpatialPE,

@@ -114,7 +114,7 @@ class TestMagFreqPEInterface:
         assert pe.extent() == pg.Extent(0, N)
 
     def test_extent_offset_source(self):
-        inner = make_source(sine_signal(N))
+        make_source(sine_signal(N))
         src = pg.CropPE(pg.ConstantPE(0.0), start=100, duration=N)
         pe = MagFreqPE(src, identity_mangler)
         assert pe.extent() == pg.Extent(100, 100 + N)

@@ -23,7 +23,6 @@ from pygmu2 import (
     GainPE,
     CropPE,
     LoopPE,
-    Extent,
 )
 import pygmu2 as pg
 

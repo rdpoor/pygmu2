@@ -36,4 +36,3 @@ class SourcePE(ProcessingElement):
         Returns:
             Number of output channels (must be concrete int, not None)
         """
-        pass

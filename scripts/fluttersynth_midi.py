@@ -31,7 +31,6 @@ from pygmu2 import (
     BlitSawPE,
     CachePE,
     SettableValuePE,
-    DelayPE,
     GainPE,
     LadderPE,
     LadderMode,

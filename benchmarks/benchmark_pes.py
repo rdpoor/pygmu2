@@ -15,7 +15,7 @@ import sys
 import time
 import inspect
 from dataclasses import dataclass
-from typing import Callable, Optional, Any
+from typing import Callable
 import numpy as np
 
 # Add src to path for development (and repo root for tests.pe_factories)
@@ -246,7 +246,6 @@ def setup_fallback_configs():
         DelayPE,
         CropPE,
         MixPE,
-        TransformPE,
         EnvelopePE,
         WindowPE,
         LoopPE,

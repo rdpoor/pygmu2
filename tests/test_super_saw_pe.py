@@ -6,16 +6,13 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-import pytest
 import numpy as np
 from pygmu2 import (
     SuperSawPE,
     ConstantPE,
     CropPE,
     PiecewisePE,
-    SinePE,
     NullRenderer,
-    Extent,
 )
 
 
@@ -392,10 +389,7 @@ class TestSuperSawPEModulation:
     def test_vibrato_modulation(self):
         """Test frequency modulation (vibrato) with PE."""
         # This is a basic smoke test - just verify it doesn't crash
-        lfo = SinePE(frequency=5.0, amplitude=10.0)  # ±10 Hz vibrato
-        base_freq = ConstantPE(440.0)
-
-        # We can't easily add PEs, so use a constant for now
+        # (PE-valued frequency is covered elsewhere; constant here)
         saw = SuperSawPE(frequency=440.0)
 
         self.renderer.set_source(saw)

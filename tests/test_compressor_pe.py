@@ -14,7 +14,6 @@ from pygmu2 import (
     ExpanderPE,
     ConstantPE,
     SinePE,
-    GainPE,
     NullRenderer,
     DetectionMode,
     DynamicsPE,

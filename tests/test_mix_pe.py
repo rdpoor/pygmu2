@@ -8,7 +8,7 @@ MIT License
 
 import pytest
 import numpy as np
-from pygmu2 import MixPE, ConstantPE, SinePE, PiecewisePE, NullRenderer, Extent
+from pygmu2 import MixPE, ConstantPE, SinePE, PiecewisePE, NullRenderer
 
 
 class TestMixPEBasics:

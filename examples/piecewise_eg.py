@@ -11,8 +11,8 @@ MIT License
 """
 
 from pygmu2 import (
+    AnalogOscPE,
     CropPE,
-    Extent,
     ExtendMode,
     GainPE,
     PiecewisePE,

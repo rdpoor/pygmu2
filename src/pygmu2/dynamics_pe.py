@@ -15,7 +15,7 @@ import numpy as np
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
-from pygmu2.conversions import db_to_ratio, ratio_to_db
+from pygmu2.conversions import db_to_ratio
 
 
 class DynamicsMode(Enum):

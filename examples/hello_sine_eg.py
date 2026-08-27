@@ -18,7 +18,6 @@ from pygmu2 import (
     MixPE,
     GainPE,
     CropPE,
-    Extent,
     pitch_to_freq,
 )
 

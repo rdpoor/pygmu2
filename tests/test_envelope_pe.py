@@ -6,7 +6,6 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-import pytest
 import numpy as np
 from pygmu2 import (
     EnvelopePE,
@@ -213,8 +212,6 @@ class TestEnvelopePELookahead:
         impulse = DiracPE()
         source = DelayPE(impulse, delay=500)  # Delays impulse to sample 500
 
-        lookahead_samples = 220  # ~5ms at 44100Hz
-
         # Without lookahead - envelope rises after sample 500
         env_no_look = EnvelopePE(source, attack=0.005, release=0.1, lookahead=0.0)
 
@@ -321,8 +318,9 @@ class TestEnvelopePEStateManagement:
         with self.renderer:
             self.renderer.start()
 
-            # First pass - charge up envelope
-            snippet1 = env.render(0, 1000)
+            # First pass - charge up envelope (value unused; the render
+            # itself advances the envelope state)
+            env.render(0, 1000)
 
             # Restart
             self.renderer.stop()

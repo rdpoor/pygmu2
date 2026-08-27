@@ -49,7 +49,6 @@ class SpatialMethod(ABC):
     @abstractmethod
     def output_channels(self) -> int:
         """Return the number of output channels this method produces."""
-        pass
 
     @abstractmethod
     def render(

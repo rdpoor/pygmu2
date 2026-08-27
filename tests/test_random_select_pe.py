@@ -82,12 +82,6 @@ def test_random_select_dirac_low_sample_retrigger():
 def test_random_select_verify_trigger():
     sample_rate = 44100
     pg.set_sample_rate(sample_rate)
-    source_stream = IdentityPE()
-
-    slices = [
-        pg.SlicePE(source_stream, 10, 15),  # start at 10, end at 15, dur = 5
-    ]
-
     impulse = pg.DiracPE()
     gate = pg.TransformPE(impulse, func=lambda x: 1.0 - x)
     trigger = pg.LoopPE(gate, loop_start=0, loop_end=10)  # trigger every 10

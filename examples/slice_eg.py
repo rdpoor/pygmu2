@@ -12,9 +12,7 @@ MIT License
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from pygmu2 import (
     AudioRenderer,
@@ -23,7 +21,6 @@ from pygmu2 import (
     SequencePE,
     SlicePE,
     WavReaderPE,
-    seconds_to_samples,
 )
 
 # Path to audio files (relative to this script)
@@ -43,7 +40,7 @@ def extract_slices() -> dict:
     Generate a dict of named slices.
     """
     words_stream = WavReaderPE(str(VOICE_WAV))
-    sample_rate = words_stream.file_sample_rate
+    words_stream.file_sample_rate
     drums_stream = WavReaderPE(str(DRUMS_WAV))
 
     slices = {

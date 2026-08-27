@@ -6,17 +6,14 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
-import pytest
 import numpy as np
 from pygmu2 import (
     DelayPE,
     InterpolationMode,
     ConstantPE,
     PiecewisePE,
-    SinePE,
     MixPE,
     NullRenderer,
-    Extent,
     CropPE,
 )
 

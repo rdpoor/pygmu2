@@ -13,7 +13,6 @@ from pygmu2 import (
     ArrayPE,
     ConstantPE,
     CropPE,
-    Extent,
     AnalogOscPE,
     NullRenderer,
 )

@@ -18,19 +18,15 @@ from examples_helper import run_demos
 pg.set_sample_rate(44100)
 
 from pygmu2 import (
-    BlitSawPE,
     ConstantPE,
     CropPE,
     DynamicsPE,
     DynamicsMode,
     EnvelopePE,
-    Extent,
     GainPE,
     LoopPE,
     MixPE,
-    PiecewisePE,
     SinePE,
-    SuperSawPE,
     WavReaderPE,
 )
 
