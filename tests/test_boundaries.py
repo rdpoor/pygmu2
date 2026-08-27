@@ -60,3 +60,70 @@ def test_benchmark_suite_discovers():
         f"{result.stdout[-2000:]}\n{result.stderr[-2000:]}"
     )
     assert "benchmark configurations" in result.stdout
+
+
+# Complete, working PEs that are deliberately not exported yet. Each entry
+# needs a decision (export or delete — no limbo, DESIGN_PHILOSOPHY.md R7);
+# tracked as IMPLEMENTATION_PLAN.md P3.2.
+_EXPORT_OPT_OUT = {
+    "pygmu2.portamento_pe.PortamentoPE",
+}
+
+# Names served by the lazy-import registry in __init__.py (part of the
+# public surface even though not eagerly imported).
+_LAZY_EXPORTS = {"BiquadPE", "BiquadMode", "AudioReaderPE", "SVFilterPE"}
+
+
+def test_every_public_pe_is_exported():
+    """R7: the public surface is the product. A concrete PE class that is
+    neither exported nor on the commented opt-out list is unreachable —
+    export it or delete it."""
+    import importlib
+    import inspect
+
+    import pygmu2 as pg
+    from pygmu2.processing_element import ProcessingElement
+
+    exported = set(pg.__all__) | _LAZY_EXPORTS
+    offenders = []
+    for f in sorted((REPO_ROOT / "src" / "pygmu2").glob("*.py")):
+        if f.stem.startswith("_"):
+            continue
+        mod_name = f"pygmu2.{f.stem}"
+        mod = importlib.import_module(mod_name)
+        for name, obj in list(vars(mod).items()):
+            try:
+                is_pe = (
+                    isinstance(obj, type)
+                    and issubclass(obj, ProcessingElement)
+                    and obj.__module__ == mod_name
+                    and not name.startswith("_")
+                    and not inspect.isabstract(obj)
+                )
+            except TypeError:
+                continue
+            qualified = f"{mod_name}.{name}"
+            if is_pe and name not in exported and qualified not in _EXPORT_OPT_OUT:
+                offenders.append(qualified)
+    assert not offenders, (
+        f"Public PE classes neither exported nor opted out: {offenders}. "
+        f"Add to __all__ (and tests/pe_factories.py), or delete the class."
+    )
+
+
+def test_readme_tables_match_code():
+    """R4: the README's PE and example tables are generated, not
+    hand-written. This asserts they match the code (regenerate with
+    `uv run python scripts/gen_readme_tables.py`)."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "scripts" / "gen_readme_tables.py"),
+            "--check",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        timeout=120,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

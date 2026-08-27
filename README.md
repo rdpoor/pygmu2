@@ -139,68 +139,82 @@ renderer = NullRenderer()
 
 ## Available Processing Elements
 
-### Oscillators
-| PE | Description |
-|----|-------------|
-| `SinePE(frequency, amplitude, phase)` | Sine wave (supports modulation) |
-| `BlitSawPE(frequency, amplitude, m)` | Band-limited sawtooth (alias-free) |
-| `AnalogOscPE(frequency, duty_cycle, waveform)` | Bandlimited PWM rectangle + duty-controlled saw/triangle morph |
-| `SuperSawPE(frequency, voices, detune_cents)` | Detuned unison sawtooth |
-| `FunctionGenPE(frequency, duty_cycle, waveform)` | Naive DSP-like rectangle + duty-controlled saw/triangle morph (aliased) |
-| `WavetablePE(wavetable, indexer)` | Wavetable oscillator |
+The table below is generated from the code (`scripts/gen_readme_tables.py`);
+descriptions are each PE's first docstring line. Do not edit by hand — CI
+checks that it matches the source.
 
-### Sources
+<!-- BEGIN GENERATED: pe-table (scripts/gen_readme_tables.py) -->
 | PE | Description |
 |----|-------------|
-| `ConstantPE(value, channels)` | Constant value |
-| `PiecewisePE(points, transition_type)` | Piecewise curve (replaces RampPE) |
-| `DiracPE(channels)` | Unit impulse |
-| `IdentityPE(channels)` | Sample index as output |
-| `WavReaderPE(path)` | Read from WAV file |
-
-### Transforms
-| PE | Description |
-|----|-------------|
-| `GainPE(source, gain)` | Apply gain (supports automation) |
-| `MixPE(*sources)` | Sum multiple sources |
-| `DelayPE(source, delay)` | Delay by N samples |
-| `CropPE(source, start, duration)` | Limit to temporal range |
-| `LoopPE(source, loop_start=None, loop_end=None, count=None, crossfade_seconds=None, crossfade_samples=None)` | Loop a finite source (optional crossfade in seconds or samples) |
-| `SlicePE(source, start, duration, fade_in_samples=None, fade_in_seconds=None, fade_out_samples=None, fade_out_seconds=None)` | Extract a region and shift to time 0 (optional fades) |
-| `ConvolvePE(src, filter, fft_size=None)` | FFT-based streaming convolution with a finite FIR filter |
-| `TransformPE(source, func)` | Apply custom function |
-| `ReversePitchEchoPE(source, block_seconds, pitch_ratio, ...)` | Pitch-shifted reverse echo effect |
-
-### Filters
-| PE | Description |
-|----|-------------|
-| `BiquadPE(source, mode, frequency, q)` | Biquad filter (lowpass, highpass, bandpass, etc.) |
-| `LadderPE(source, frequency, resonance, mode)` | Moog-style ladder filter (lp/bp/hp 12/24 dB) |
-| `CombPE(source, frequency, feedback)` | Feedback comb filter tuned by frequency |
-
-### Dynamics
-| PE | Description |
-|----|-------------|
-| `CompressorPE(source, threshold, ratio, ...)` | All-in-one compressor |
-| `LimiterPE(source, ceiling, ...)` | Brick-wall limiter |
-| `GatePE(source, threshold, ...)` | Noise gate |
-| `DynamicsPE(source, envelope, ...)` | Flexible dynamics (sidechain support) |
-| `EnvelopePE(source, attack, release)` | Envelope follower |
-
-### Control
-| PE | Description |
-|----|-------------|
-| `AdsrPE(gate, attack_samples=None, attack_seconds=None, decay_samples=None, decay_seconds=None, sustain_level=0.7, release_samples=None, release_seconds=None)` | ADSR envelope generator (defaults specified in seconds; resolved at construction time) |
-
-### Analysis
-| PE | Description |
-|----|-------------|
-| `WindowPE(source, window, mode)` | Windowed statistics (max, rms, mean) |
-
-### Output
-| PE | Description |
-|----|-------------|
-| `WavWriterPE(source, path)` | Write to WAV file |
+| `AdsrGatedPE` | Gate-driven ADSR envelope generator. |
+| `AdsrTriggeredPE` | Trigger-driven one-shot ADSR envelope generator. |
+| `AnalogOscPE` | Bandlimited analog-style oscillator (PWM rectangle + duty-controlled saw/triangle morph). |
+| `ArrayPE` | A SourcePE that outputs values from a provided array. |
+| `AudioReaderPE` | A SourcePE that decodes a compressed audio file (MP3, FLAC, OGG, WAV). |
+| `BiquadPE` | Second-order IIR (biquad) filter. |
+| `BlitSawPE` | Band-limited sawtooth oscillator using BLIT synthesis. |
+| `CachePE` | Single-entry render cache for a source PE. |
+| `CombPE` | Feedback comb filter tuned by a target frequency. |
+| `CompressorPE` | All-in-one audio compressor with integrated envelope follower. |
+| `ConstantPE` | A SourcePE that outputs a constant value. |
+| `ControlPE` | A SourcePE whose output value can be changed at any time from any thread. |
+| `ConvolvePE` | Streaming convolution: y = x * h. |
+| `CropPE` | A ProcessingElement that limits its input to a specified range. |
+| `DecayingSinePE` | Exponentially decaying sine tone. |
+| `DelayPE` | A ProcessingElement that delays its input by a specified amount. |
+| `DiracPE` | A SourcePE that outputs a unit impulse (Dirac delta in discrete time). |
+| `DynamicsPE` | Flexible dynamics processor that applies compression, limiting,. |
+| `EnvelopePE` | Causal envelope follower with attack/release dynamics and optional lookahead. |
+| `ExpanderPE` | Downward expander / noise gate — attenuates signal below threshold. |
+| `FunctionGenPE` | Naive function generator (no anti-aliasing). |
+| `GainPE` | A ProcessingElement that applies gain (amplitude scaling) to its input. |
+| `GateToTriggerPE` | Converts a GateSignal to a TriggerSignal by emitting +1 at each. |
+| `IdentityPE` | A SourcePE that outputs the sample index as the sample value. |
+| `IdiophonePE` | Struck bar idiophone synthesis PE. |
+| `KarplusStrongPE` | Plucked string using the classic Karplus-Strong algorithm. |
+| `LadderPE` | Moog-style ladder filter with non-linear saturation. |
+| `LimiterPE` | Brick-wall limiter — prevents signal from exceeding a ceiling level. |
+| `LoopPE` | Repeat a segment of audio from the source. |
+| `MagFreqPE` | PE that modifies the magnitude and phase of a source in the frequency. |
+| `MeltysynthPE` | Source PE that renders meltysynth SoundFont synthesis into stereo Snippets. |
+| `MidiInPE` | Source PE that receives MIDI input via Mido and exposes messages via callback. |
+| `MixPE` | A ProcessingElement that mixes (adds) multiple PE outputs together. |
+| `MovingAveragePE` | Pure box-filter low-pass via a sliding window mean. |
+| `NoisePE` | Noise generator. |
+| `NotesPE` | Render a list of Notes from a single source sample. |
+| `PeriodicGate` | A GateSignal that emits a periodic rectangular gate (0/1), with fixed or. |
+| `PeriodicTrigger` | A TriggerSignal that emits +1 impulses periodically. |
+| `PiecewisePE` | A SourcePE that outputs a piecewise curve defined by (sample_index, value) points. |
+| `RandomGatePE` | Poisson-process toggle gate. |
+| `RandomSelectPE` | On each positive trigger event, randomly selects one of N input PEs, then. |
+| `RandomStepPE` | Poisson sample-and-hold random generator. |
+| `RandomTriggerPE` | Poisson-process trigger generator. |
+| `RandomValuePE` | Continuously wandering random voltage in [0, 1]. |
+| `ResamplePE` | Pure constant-rate resampling of a source PE. |
+| `ReverbPE` | Convolution reverb with a wet/dry mix control. |
+| `ReversePitchEchoPE` | Pitch-shifted reverse echo effect. |
+| `RingModulatorPE` | A ProcessingElement that ring-modulates a carrier signal with a modulator signal. |
+| `SVFilterPE` | Second-order state variable filter with the same API as BiquadPE. |
+| `SampleHoldPE` | Sample-and-Hold processing element. |
+| `ScheduledGatePE` | Convert note durations into gate signals, specifically for feeding into an. |
+| `SequencePE` | Schedule PEs at specific start times. |
+| `SetExtentPE` | Force a PE to a specified extent, padding or truncating as needed. |
+| `SignalToGatePE` | Schmitt-trigger gate: converts an analog signal to a gate signal. |
+| `SinePE` | A ProcessingElement that generates a sine wave. |
+| `SlewLimiterPE` | Slew-rate limiter for control signals. |
+| `SlicePE` | Extract a region from a source and shift it to start at time 0. |
+| `SpatialPE` | Spatial audio processing and channel conversion PE. |
+| `SuperSawPE` | Detuned unison sawtooth oscillator for warm, analog-like sounds. |
+| `TimeWarpPE` | Resample a source at a time-varying rate. |
+| `TrackHoldPE` | Track-and-Hold processing element. |
+| `TralfamPE` | PE that spreads a finite source's spectrum randomly across its time span. |
+| `TransformPE` | Apply an arbitrary transformation function to audio samples. |
+| `TriggerRestartPE` | Trigger-controlled restart/time-remap. |
+| `WavReaderPE` | A SourcePE that reads audio samples from a WAV file. |
+| `WavWriterPE` | A ProcessingElement that writes audio to a WAV file as a side effect. |
+| `WavetablePE` | Wavetable lookup synthesis with interpolation. |
+| `WindowPE` | Bidirectional windowed statistics - computes statistics over a symmetric. |
+<!-- END GENERATED: pe-table -->
 
 ## Examples
 
@@ -214,34 +228,60 @@ uv run python examples/01_hello_sine.py
 pipenv run python examples/01_hello_sine.py
 ```
 
+<!-- BEGIN GENERATED: examples-table (scripts/gen_readme_tables.py) -->
 | Example | Description |
 |---------|-------------|
-| `01_hello_sine.py` | Simple sine wave |
-| `02_play_wav.py` | Play a WAV file |
-| `03_looping.py` | Looping |
-| `04_filtering.py` | Filtering |
-| `05_flanging.py` | Flanging effect |
-| `06_autowah.py` | Auto-wah effect |
-| `07_soft_clipping.py` | Soft clipping |
-| `08_write_to_file.py` | Write to file |
-| `09_super_saw.py` | SuperSaw oscillator |
-| `10_compression.py` | Compression/limiting/gating |
-| `11_dynamics.py` | Advanced dynamics (sidechain) |
-| `12_audio_library.py` | Load audio files from remote Strudel maps |
-| `13_random.py` | Musical randomness (RandomPE) |
-| `14_trigger.py` | TriggerPE (one-shot and gated modes) |
-| `15_reverse_pitch_echo.py` | Reverse pitch echo effect |
-| `16_comb_filter.py` | Comb filter resonance |
-| `17_ladder_filter.py` | Moog-style ladder filter |
-| `18_adsr.py` | ADSR + ResetPE |
-| `19_sequence.py` | SequencePE |
-| `20_alternative_temperaments.py` | Alternative tuning systems (12-ET, just intonation, Pythagorean chords) |
-| `21_sequence_with_durations.py` | SequencePE with explicit durations |
-| `20_timewarp.py` | TimeWarpPE variable-speed playback |
-| `21_analog_osc.py` | AnalogOscPE (PWM, saw/triangle morph, subtractive patch) |
-| `22_function_gen.py` | FunctionGenPE (naive) + A/B vs AnalogOscPE at high pitch |
-| `23_convolution.py` | ConvolvePE convolution demo using room impulse responses (requires `short_ir*.wav` / `long_ir*.wav`) |
-| `24_slice.py` | SlicePE snippet audition framework (edit start/duration points) |
+| `00_template_eg.py` | 00_template_eg.py. |
+| `01_hello_sine.py` | Example 01: Hello Sine - Introduction to pygmu2. |
+| `02_play_wav.py` | Example 02: Play WAV - Loading and playing audio files. |
+| `03_looping.py` | Example 03: Looping - Repeating audio segments. |
+| `04_filtering.py` | Example 04: Filtering - Biquad filter with frequency sweep. |
+| `05_flanging.py` | Example 05: Flanging - Time-varying delay effect. |
+| `06_autowah.py` | Example 06: Autowah - Envelope-controlled filter. |
+| `07_soft_clipping.py` | Example 07: Soft Clipping - TransformPE with saturation. |
+| `08_write_to_file.py` | Example 08: Write to File - Offline rendering to WAV. |
+| `10_compression.py` | Example 10: Compression, Limiting, and Gating. |
+| `11_dynamics.py` | Example 11: Advanced Dynamics with DynamicsPE. |
+| `12_audio_library.py` | Example 12: Strudel Audio Library - Lazy downloading and playback. |
+| `15_reverse_pitch_echo.py` | Example 15: Reverse Pitch Echo - block-based reverse playback. |
+| `16_comb_filter.py` | Example 16: Comb Filter - pitched resonance. |
+| `17_ladder_filter.py` | Example 17: Ladder Filter - Moog-style ladder responses. |
+| `19_sequence_examples.py` | Example 19: Sequencing with MixPE, CropPE, SlicePE, DelayPE, PiecewisePE. |
+| `20_alternative_temperaments.py` | Alternative Temperaments Example. |
+| `20_timewarp.py` | Example 20: TimeWarpPE - variable-speed playback ("tape head"). |
+| `21_analog_osc.py` | Example 21: AnalogOscPE - bandlimited PWM + saw/triangle morph oscillator. |
+| `22_function_gen.py` | Example 22: FunctionGenPE - naive DSP-like function generator (aliased). |
+| `23_convolution.py` | Example 23: ConvolvePE - convolution reverb (room impulse responses). |
+| `27_spatial.py` | Example 27: Spatial Audio - Panning and Channel Conversion. |
+| `29_karplus_strong.py` | Example 29: Karplus-Strong plucked string synthesis. |
+| `33_piecewise.py` | Example 33: PiecewisePE - piecewise (sample_index, value) curves. |
+| `37_sequence_eg.py` | 37_sequence_eg.py. |
+| `adsr_eg.py` | adsr_eg.py  ADSR demos using the new GateSignal / TriggerSignal ADSR classes. |
+| `audio_reader_eg.py` | audio_reader_eg.py. |
+| `audio_slew_rate_limit_eg.py` | Example: Slew Rate Limiting on a stringed instrument. |
+| `bwv1007_eg.py` | Fun with Tralfam.  And Bach.  And Yo Yo Ma. |
+| `decaying_sine_eg.py` | Decaying sine tone synthesis — tau refactor. |
+| `demo_asset_manager.py` | demo_asset_mgr.py. |
+| `envelope_filter_eg.py` | envelope_filter_eg.py — Envelope-controlled filter: louder hits sound brighter. |
+| `fold_4K_test.py` | what does it sound like when you ring modulate a sound with high frequency. |
+| `function_generator_eg.py` | Function generator outputs for teaching. |
+| `idiophone_eg.py` | Struck bar idiophone synthesis using IdiophonePE. |
+| `im_lucky.py` | I'm Lucky -- a pygmu2 re-creation of Thomas Dolby's synth part in Joan. |
+| `mag_freq_eg.py` | mag_freq_eg.py — FFT-domain magnitude and phase manipulation via MagFreqPE. |
+| `notes_eg.py` | notes_eg.py — NotesPE: play MIDI notes from a source sample. |
+| `random_gate_eg.py` | Example: Random Gate - Poisson-process toggle gate. |
+| `random_select_eg.py` | RandomSelectPE example (new TriggerSignal/GateSignal conventions):. |
+| `random_step2_eg.py` | Example: Random Step 2 — Musical ratios with parallel stepped LPF and slew. |
+| `random_step_eg.py` | Example: Random Step - Poisson sample-and-hold random generator. |
+| `random_trigger_eg.py` | Example: RandomTriggerPE - Poisson-process trigger generator. |
+| `random_value_eg.py` | Example: RandomValuePE - continuously wandering random voltage generator. |
+| `reverb_eg.py` | reverb_eg.py. |
+| `ring_modulator_eg.py` | Example: Ring Modulator — Sideband synthesis and vocal morphing. |
+| `sum_of_sines_eg.py` | Example: Demo sine summation for popular waveforms (square, triangle, saw, pulse). |
+| `super_saw_eg.py` | Example: Super Saw - Rich, detuned unison oscillator. |
+| `tralfam_eg.py` | tralfam_eg.py. |
+| `wargle_eg.py` | etude #12: a funny sounding instrument. |
+<!-- END GENERATED: examples-table -->
 
 ## Modulation and Automation
 
@@ -258,20 +298,6 @@ vibrato_stream = SinePE(frequency=MixPE(ConstantPE(440.0), lfo_stream))
 # Tremolo (amplitude modulated)
 tremolo_lfo_stream = GainPE(SinePE(frequency=4.0), gain=0.3)
 tremolo_stream = GainPE(sine_stream, gain=MixPE(ConstantPE(0.7), tremolo_lfo_stream))
-```
-
-## Error Handling
-
-Configure error behavior for debugging vs production:
-
-```python
-from pygmu2 import ErrorMode, set_error_mode
-
-# Strict mode (default): errors raise exceptions
-set_error_mode(ErrorMode.STRICT)
-
-# Lenient mode: non-fatal errors become warnings
-set_error_mode(ErrorMode.LENIENT)
 ```
 
 ## Alternative Temperaments
