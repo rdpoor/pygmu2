@@ -44,6 +44,11 @@ class Snippet:
         if data.dtype != np.float32:
             data = data.astype(np.float32, copy=False)
 
+        # Snippet buffers are immutable: downstream PEs share them, so an
+        # in-place write would silently corrupt sibling sinks. Violations
+        # raise at the write (DESIGN_PHILOSOPHY.md R2).
+        data.flags.writeable = False
+
         # Zero-length snippets are allowed (duration=0)
         self._start = start
         self._data = data
