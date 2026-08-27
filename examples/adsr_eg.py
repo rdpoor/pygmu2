@@ -86,15 +86,10 @@ def demo_gate_adsr_vca():
         release_time=RELEASE_SEC,
     )
 
-    # We want the SuperSaw to restart at the same time as the ADSR.  For this,
-    # we need a trigger rather than a gate.
-    #
-    # TODO: Implement EdgeSignal that converts a gate signal into a trigger
-    # signal.  But for now, use a PeriodicTrigger running at the same speed as
-    # the PeriodicGate.
-    trigger = pg.PeriodicTrigger(
-        hz=REPEAT_HZ,
-    )
+    # We want the SuperSaw to restart at the same time as the ADSR.  For
+    # this, we need a trigger rather than a gate.  Derive it from the SAME
+    # gate with GateToTriggerPE (one timebase, so they can never drift).
+    trigger = pg.GateToTriggerPE(gate)
 
     # SuperSaw makes a nice fat synth sound.
     saw = pg.SuperSawPE(
