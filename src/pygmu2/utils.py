@@ -148,7 +148,9 @@ def browse(
     script_path = project_root / "scripts" / "jogshuttle.py"
     if not script_path.exists():
         raise FileNotFoundError(
-            "scripts/jogshuttle.py not found — run from the pygmu2 source tree"
+            f"browse() needs the jog/shuttle player at {script_path}, which is "
+            "only shipped in the pygmu2 source tree (it is not packaged). "
+            "Run from a checkout, or use play_offline() / render_to_file()."
         )
     cmd = [
         "uv",
