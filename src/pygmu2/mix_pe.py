@@ -125,37 +125,6 @@ class MixPE(ProcessingElement):
             return self._inputs[0].channel_count()
         return None
 
-    def required_input_channels(self) -> int | None:
-        """
-        All inputs must have the same channel count.
-
-        Returns None - validation is done by checking that all inputs
-        resolve to the same channel count.
-        """
-        return None
-
-    def resolve_channel_count(self, input_channel_counts: list[int]) -> int:
-        """
-        Resolve output channel count from inputs.
-
-        All inputs must have the same channel count.
-
-        Raises:
-            ValueError: If inputs have different channel counts
-        """
-        if not input_channel_counts:
-            raise ValueError("MixPE has no inputs")
-
-        first = input_channel_counts[0]
-        for i, count in enumerate(input_channel_counts[1:], start=2):
-            if count != first:
-                raise ValueError(
-                    f"MixPE input channel mismatch: input 1 has {first} channels, "
-                    f"input {i} has {count} channels"
-                )
-
-        return first
-
     def __repr__(self) -> str:
         input_names = [inp.__class__.__name__ for inp in self._inputs]
         return f"MixPE({', '.join(input_names)})"

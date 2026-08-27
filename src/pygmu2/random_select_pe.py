@@ -58,19 +58,6 @@ class _RandomSelectSourcePE(ProcessingElement):
     def channel_count(self) -> int | None:
         return self._inputs[0].channel_count()
 
-    def resolve_channel_count(self, input_channel_counts: list[int]) -> int:
-        # Require all candidate sources to have same channel count.
-        if not input_channel_counts:
-            raise ValueError("_RandomSelectSourcePE has no inputs")
-        cc0 = input_channel_counts[0]
-        for i, cc in enumerate(input_channel_counts[1:], start=1):
-            if cc != cc0:
-                raise ValueError(
-                    f"_RandomSelectSourcePE channel mismatch: input 0 has {cc0}, "
-                    f"input {i} has {cc}"
-                )
-        return cc0
-
     def _compute_extent(self) -> Extent:
         # Conservative: any source could be chosen at any time; union would be ideal
         # but expensive. Treat as infinite.
@@ -137,19 +124,6 @@ class RandomSelectPE(ProcessingElement):
 
     def channel_count(self) -> int | None:
         return self._selector.channel_count()
-
-    def resolve_channel_count(self, input_channel_counts: list[int]) -> int:
-        # input_channel_counts includes trigger at index 0
-        if len(input_channel_counts) < 2:
-            raise ValueError("RandomSelectPE has no audio inputs")
-        audio_counts = input_channel_counts[1:]
-        cc0 = audio_counts[0]
-        for i, cc in enumerate(audio_counts[1:], start=2):
-            if cc != cc0:
-                raise ValueError(
-                    f"RandomSelectPE channel mismatch: input 1 has {cc0}, input {i} has {cc}"
-                )
-        return cc0
 
     def _compute_extent(self) -> Extent:
         # Trigger-driven: silence until first event; after that depends on sources.

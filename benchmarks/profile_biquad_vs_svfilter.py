@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Profile BiquadPE vs SVFilterPE using the Renderer's built-in profiling.
+Profile BiquadPE vs SVFilterPE using pygmu2.diagnostics.
 
 Builds two equivalent graphs (autowah-style: envelope -> freq control -> lowpass
 filter), one using BiquadPE and one using SVFilterPE, renders the same extent
-with NullRenderer and enable_profiling(), then prints the profile report for each.
+with NullRenderer under diagnostics (per-PE render timing + pull counts), then
+prints the per-PE report for each and compares total wall time.
 
 Run from project root: python benchmarks/profile_biquad_vs_svfilter.py
 
@@ -13,11 +14,13 @@ MIT License
 """
 
 import sys
+import time
 from pathlib import Path
 
 # Add src for development
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+import pygmu2 as pg
 from pygmu2 import (
     SinePE,
     EnvelopePE,
@@ -29,8 +32,8 @@ from pygmu2 import (
     GainPE,
     CropPE,
     NullRenderer,
-    Extent,
 )
+from pygmu2 import diagnostics
 
 SAMPLE_RATE = 44100
 DURATION_SECONDS = 8
@@ -73,11 +76,18 @@ def make_svfilter_graph():
     return GainPE(filtered, gain=1.0)
 
 
-def run_profiled(renderer: NullRenderer, root_pe, duration_samples: int) -> None:
-    """Render the full extent in blocks with profiling enabled."""
+def run_profiled(root_pe, duration_samples: int) -> float:
+    """Render the full extent in blocks under diagnostics.
+
+    Returns total wall time in seconds; per-PE data accumulates in the
+    diagnostics module (print with diagnostics.get_block_report()).
+    """
+    renderer = NullRenderer(sample_rate=SAMPLE_RATE)
     cropped = CropPE(root_pe, 0, duration_samples)
     renderer.set_source(cropped)
     renderer.start()
+    diagnostics.reset_block()
+    t0 = time.perf_counter()
     num_blocks = (duration_samples + BLOCK_SIZE - 1) // BLOCK_SIZE
     for i in range(num_blocks):
         start = i * BLOCK_SIZE
@@ -85,12 +95,15 @@ def run_profiled(renderer: NullRenderer, root_pe, duration_samples: int) -> None
         if duration <= 0:
             break
         renderer.render(start, duration)
+    elapsed = time.perf_counter() - t0
     renderer.stop()
+    return elapsed
 
 
 def main():
+    pg.set_sample_rate(SAMPLE_RATE)
     duration_samples = int(DURATION_SECONDS * SAMPLE_RATE)
-    renderer = NullRenderer(sample_rate=SAMPLE_RATE)
+    diagnostics.enable(pull_count=True, timing=True)
 
     print("Profiling BiquadPE vs SVFilterPE (autowah-style graph)")
     print(
@@ -102,36 +115,29 @@ def main():
     print("=" * 70)
     print("RUN 1: BiquadPE (envelope -> freq -> BiquadPE lowpass)")
     print("=" * 70)
-    renderer.enable_profiling()
-    run_profiled(renderer, make_biquad_graph(), duration_samples)
-    renderer.print_profile_report()
-    report_biquad = renderer.get_profile_report()
+    t_biquad = run_profiled(make_biquad_graph(), duration_samples)
+    print(diagnostics.get_block_report())
 
     # --- SVFilterPE ---
     print()
     print("=" * 70)
     print("RUN 2: SVFilterPE (envelope -> freq -> SVFilterPE lowpass)")
     print("=" * 70)
-    renderer.enable_profiling()  # Reset report
-    run_profiled(renderer, make_svfilter_graph(), duration_samples)
-    renderer.print_profile_report()
-    report_svfilter = renderer.get_profile_report()
+    t_svfilter = run_profiled(make_svfilter_graph(), duration_samples)
+    print(diagnostics.get_block_report())
+
+    diagnostics.disable()
 
     # --- Comparison ---
-    if report_biquad and report_svfilter:
-        t_bq_ms = report_biquad.total_render_time_ns / 1_000_000
-        t_sv_ms = report_svfilter.total_render_time_ns / 1_000_000
-        print()
-        print("COMPARISON (total render time)")
-        print("-" * 70)
-        print(f"  BiquadPE:   {t_bq_ms:>10.2f} ms")
-        print(f"  SVFilterPE: {t_sv_ms:>10.2f} ms")
-        if t_bq_ms > 0:
-            ratio = t_sv_ms / t_bq_ms
-            print(f"  Ratio (SVF/Biquad): {ratio:.2f}x")
-        print()
+    print()
+    print("COMPARISON (total wall time)")
+    print("-" * 70)
+    print(f"  BiquadPE:   {t_biquad * 1000:>10.2f} ms")
+    print(f"  SVFilterPE: {t_svfilter * 1000:>10.2f} ms")
+    if t_biquad > 0:
+        print(f"  Ratio (SVF/Biquad): {t_svfilter / t_biquad:.2f}x")
+    print()
 
 
 if __name__ == "__main__":
     main()
-    sys.exit(0)

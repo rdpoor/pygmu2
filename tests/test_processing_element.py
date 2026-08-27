@@ -267,18 +267,6 @@ class TestMixPE:
         assert mix.inputs() == [source1, source2]
 
 
-class TestResolveOutputChannels:
-    """Test resolve_channel_count behavior."""
-
-    def test_default_resolution(self):
-        """Test default channel resolution uses first input."""
-        source = ConstantPE(1.0, 100, channels=2)
-        gain = GainPE(source, 0.5)
-        # Default resolution returns first input's channels
-        assert gain.resolve_channel_count([2]) == 2
-        assert gain.resolve_channel_count([2, 1, 4]) == 2
-
-
 class TestSampleRate:
     """Test global sample rate behavior."""
 

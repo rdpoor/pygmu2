@@ -72,25 +72,6 @@ class StatefulPE(ProcessingElement):
         return False
 
 
-class StereoRequiredPE(ProcessingElement):
-    """A processor that requires stereo input."""
-
-    def __init__(self, source: ProcessingElement):
-        self._source = source
-
-    def _render(self, start: int, duration: int) -> Snippet:
-        return self._source.render(start, duration)
-
-    def extent(self) -> Extent:
-        return self._source.extent()
-
-    def inputs(self) -> list[ProcessingElement]:
-        return [self._source]
-
-    def required_input_channels(self) -> int:
-        return 2  # Requires stereo
-
-
 class MixPE(ProcessingElement):
     """A multi-input mixer."""
 
@@ -152,7 +133,6 @@ class TestRendererBasics:
         source = ConstantPE(1.0, 100)
         renderer.set_source(source)
         assert renderer.source is source
-        assert renderer.channel_count == 1
 
     def test_render_without_source_raises(self):
         """Test that render without source raises error."""
@@ -191,82 +171,29 @@ class TestRendererBasics:
         renderer.stop()
 
 
-class TestGraphValidation:
-    """Test graph validation in Renderer."""
+class TestGraphAttachment:
+    """set_source() attaches the graph without validation (PD-2):
+    correctness is proven in CI; anything wrong surfaces at render."""
 
-    def test_valid_simple_graph(self):
-        """Test validating a simple graph."""
+    def test_simple_graph_renders(self):
         renderer = MockRenderer()
-        source = ConstantPE(1.0, 100)
-        gain = GainPE(source, 0.5)
+        gain = GainPE(ConstantPE(1.0, 100), 0.5)
         renderer.set_source(gain)
-        assert renderer.channel_count == 1
+        renderer.start()
+        renderer.render(0, 50)
+        assert renderer.output_snippets[0].duration == 50
+        renderer.stop()
 
-    def test_valid_chain(self):
-        """Test validating a chain of processors."""
+    def test_multi_sink_attaches_without_walking(self):
+        """No purity walk: a fan-out graph attaches; correctness of the
+        fan-out is the contiguity check's job at render time."""
         renderer = MockRenderer()
         source = ConstantPE(1.0, 100)
-        gain1 = GainPE(source, 0.5)
-        gain2 = GainPE(gain1, 0.5)
-        renderer.set_source(gain2)
-        assert renderer.channel_count == 1
-
-    def test_pure_pe_multi_sink_allowed(self):
-        """Test that pure PEs can have multiple sinks."""
-        renderer = MockRenderer()
-        source = ConstantPE(1.0, 100)  # Pure source
-        gain1 = GainPE(source, 0.5)
-        gain2 = GainPE(source, 0.3)  # Same source, different sink
-        mix = MixPE([gain1, gain2])
-
-        # Should not raise — source is pure
+        mix = MixPE([GainPE(source, 0.5), GainPE(source, 0.3)])
         renderer.set_source(mix)
+        assert renderer.source is mix
 
-    def test_non_pure_multi_sink_raises(self):
-        """Test that non-pure PEs with multiple sinks raise error."""
-        renderer = MockRenderer()
-        source = ConstantPE(1.0, 100)
-        stateful = StatefulPE(source)  # Non-pure
-        gain1 = GainPE(stateful, 0.5)
-        gain2 = GainPE(stateful, 0.3)  # Same stateful PE
-        mix = MixPE([gain1, gain2])
-
-        with pytest.raises(ValueError, match="not pure"):
-            renderer.set_source(mix)
-
-    def test_channel_mismatch_raises(self):
-        """Test that channel mismatch raises error."""
-        renderer = MockRenderer()
-        mono_source = ConstantPE(1.0, 100, channels=1)
-        stereo_required = StereoRequiredPE(mono_source)
-
-        with pytest.raises(ValueError, match="requires 2 channel"):
-            renderer.set_source(stereo_required)
-
-    def test_channel_match_succeeds(self):
-        """Test that matching channels succeeds."""
-        renderer = MockRenderer()
-        stereo_source = ConstantPE(1.0, 100, channels=2)
-        stereo_required = StereoRequiredPE(stereo_source)
-
-        renderer.set_source(stereo_required)
-        assert renderer.channel_count == 2
-
-    def test_passthrough_channels(self):
-        """Test channel pass-through in chain."""
-        renderer = MockRenderer()
-        stereo_source = ConstantPE(1.0, 100, channels=2)
-        gain = GainPE(stereo_source, 0.5)  # Pass-through
-
-        renderer.set_source(gain)
-        assert renderer.channel_count == 2
-
-
-class TestComplexGraphs:
-    """Test validation of complex graphs."""
-
-    def test_diamond_graph_pure(self):
-        """Test diamond-shaped graph with pure PEs."""
+    def test_diamond_graph_renders(self):
         renderer = MockRenderer()
         #     source
         #     /    \
@@ -274,23 +201,22 @@ class TestComplexGraphs:
         #     \    /
         #      mix
         source = ConstantPE(1.0, 100)
-        gain1 = GainPE(source, 0.5)
-        gain2 = GainPE(source, 0.3)
-        mix = MixPE([gain1, gain2])
-
+        mix = MixPE([GainPE(source, 0.5), GainPE(source, 0.3)])
         renderer.set_source(mix)
-        assert renderer.channel_count == 1
+        renderer.start()
+        renderer.render(0, 50)
+        assert renderer.output_snippets[0].duration == 50
+        renderer.stop()
 
-    def test_multi_level_reuse(self):
-        """Test multi-level reuse of pure PE."""
+    def test_multi_level_reuse_renders(self):
         renderer = MockRenderer()
         source = ConstantPE(1.0, 100)
         gain1 = GainPE(source, 0.5)
-        gain2 = GainPE(gain1, 0.3)
-        gain3 = GainPE(gain1, 0.2)  # Reuse gain1
-        mix = MixPE([gain2, gain3])
-
+        mix = MixPE([GainPE(gain1, 0.3), GainPE(gain1, 0.2)])
         renderer.set_source(mix)
+        renderer.start()
+        renderer.render(0, 50)
+        renderer.stop()
 
 
 class TestRendererConfiguration:

@@ -397,6 +397,22 @@ class TestCompositeGraphLifecycle:
     manual forwarding.
     """
 
+    @staticmethod
+    def _collect_pes(root):
+        """Walk inputs() and return every reachable PE."""
+        seen, out = set(), []
+
+        def visit(pe):
+            if id(pe) in seen:
+                return
+            seen.add(id(pe))
+            for inp in pe.inputs():
+                visit(inp)
+            out.append(pe)
+
+        visit(root)
+        return out
+
     @pytest.fixture
     def renderer(self):
         return NullRenderer(sample_rate=44100)
@@ -412,7 +428,7 @@ class TestCompositeGraphLifecycle:
         renderer.set_source(comp)
 
         # Collect all PEs the Renderer discovered
-        all_pes = renderer._pe_list
+        all_pes = self._collect_pes(renderer.source)
         pe_types = {type(pe) for pe in all_pes}
 
         assert (
@@ -433,7 +449,7 @@ class TestCompositeGraphLifecycle:
 
         renderer.set_source(gate)
 
-        all_pes = renderer._pe_list
+        all_pes = self._collect_pes(renderer.source)
         pe_types = {type(pe) for pe in all_pes}
 
         assert (

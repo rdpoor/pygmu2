@@ -190,41 +190,34 @@ class TestMixPEExtent:
 
 
 class TestMixPEChannels:
-    """Test MixPE channel handling."""
+    """MixPE channel handling. There is no up-front channel validation
+    (PD-2); a width mismatch surfaces as numpy's broadcast error when
+    the mix is rendered."""
 
     def setup_method(self):
         self.renderer = NullRenderer(sample_rate=44100)
 
     def test_channel_count_from_inputs(self):
-        """MixPE gets channel count from first input."""
-        source1 = ConstantPE(0.5, channels=2)
-        source2 = ConstantPE(0.3, channels=2)
-        mix = MixPE(source1, source2)
-
-        # channel_count returns first input's channel count
+        """MixPE reports its first input's channel count."""
+        mix = MixPE(ConstantPE(0.5, channels=2), ConstantPE(0.3, channels=2))
         assert mix.channel_count() == 2
 
-        # Renderer also reports same channel count
+    def test_matching_channels_render(self):
+        mix = MixPE(ConstantPE(0.5, channels=2), ConstantPE(0.3, channels=2))
         self.renderer.set_source(mix)
-        assert self.renderer.channel_count == 2
+        self.renderer.start()
+        snippet = mix.render(0, 16)
+        assert snippet.channels == 2
+        self.renderer.stop()
 
-    def test_resolve_channel_count_matches(self):
-        """resolve_channel_count succeeds when all match."""
-        source1 = ConstantPE(0.5, channels=2)
-        source2 = ConstantPE(0.3, channels=2)
-        mix = MixPE(source1, source2)
-
-        result = mix.resolve_channel_count([2, 2])
-        assert result == 2
-
-    def test_resolve_channel_count_mismatch(self):
-        """resolve_channel_count fails on mismatch."""
-        source1 = ConstantPE(0.5, channels=1)
-        source2 = ConstantPE(0.3, channels=2)
-        mix = MixPE(source1, source2)
-
-        with pytest.raises(ValueError, match="channel mismatch"):
-            mix.resolve_channel_count([1, 2])
+    def test_channel_mismatch_raises_at_render(self):
+        """Mono + stereo raises at render (never silently adapts, R3)."""
+        mix = MixPE(ConstantPE(0.5, channels=1), ConstantPE(0.3, channels=2))
+        self.renderer.set_source(mix)
+        self.renderer.start()
+        with pytest.raises(ValueError):
+            mix.render(0, 16)
+        self.renderer.stop()
 
 
 class TestMixPEIntegration:

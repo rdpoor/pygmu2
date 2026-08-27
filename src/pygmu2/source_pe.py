@@ -37,10 +37,6 @@ class SourcePE(ProcessingElement):
         """
         return True
 
-    def required_input_channels(self) -> int | None:
-        """Not applicable for sources."""
-        return None
-
     @abstractmethod
     def channel_count(self) -> int:
         """

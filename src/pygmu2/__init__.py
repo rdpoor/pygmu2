@@ -76,7 +76,7 @@ from pygmu2.random_select_pe import RandomSelectPE
 from pygmu2.random_step_pe import RandomStepPE
 from pygmu2.random_trigger_pe import RandomTriggerPE
 from pygmu2.random_value_pe import RandomValuePE
-from pygmu2.renderer import Renderer, ProfileReport, PEProfile
+from pygmu2.renderer import Renderer
 from pygmu2.resample_pe import ResamplePE
 from pygmu2.reverb_pe import ReverbPE
 from pygmu2.reverse_pitch_echo_pe import ReversePitchEchoPE
@@ -160,8 +160,6 @@ __all__ = [
     "GateToTriggerPE",
     "TriggerSignal",
     "Renderer",
-    "ProfileReport",
-    "PEProfile",
     "AudioRenderer",
     "NullRenderer",
     # Processing Elements

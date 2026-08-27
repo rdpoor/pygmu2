@@ -196,37 +196,6 @@ class ProcessingElement(ABC):
         """
         return None  # Default: pass-through
 
-    def required_input_channels(self) -> int | None:
-        """
-        Number of channels required from input(s).
-
-        Returns:
-            int: Requires exactly this many input channels
-            None: Accepts any channel count
-        """
-        return None  # Default: accept any
-
-    def resolve_channel_count(self, input_channel_counts: list[int]) -> int:
-        """
-        Resolve output channel count when channel_count() returns None.
-
-        Called by the graph validator when this PE has multiple inputs
-        with potentially different channel counts.
-
-        Default: Return the first input's channel count.
-
-        Args:
-            input_channel_counts: Channel counts of all inputs
-
-        Returns:
-            The output channel count for this PE
-        """
-        if input_channel_counts:
-            return input_channel_counts[0]
-        raise ValueError(
-            f"{self.__class__.__name__} has no inputs but channel_count() is None"
-        )
-
     def on_start(self) -> None:
         """
         Called once before first render, after configure().

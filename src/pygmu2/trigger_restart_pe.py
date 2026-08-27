@@ -50,12 +50,6 @@ class TriggerRestartPE(ProcessingElement):
     def channel_count(self) -> int | None:
         return self._src.channel_count()
 
-    def resolve_channel_count(self, input_channel_counts: list[int]) -> int:
-        # input_channel_counts: [trigger_cc, src_cc]
-        if len(input_channel_counts) != 2:
-            raise ValueError("TriggerRestartPE expects exactly two inputs")
-        return input_channel_counts[1]
-
     def _compute_extent(self) -> Extent:
         # Driven by trigger timing; conservative choice is trigger extent.
         return self._trigger.extent()

@@ -4,7 +4,10 @@
       "Bash(grep:*)",
       "Bash(uv run python -m pytest:*)",
       "Bash(uv run python -c ' *)",
-      "Bash(echo \"grep exit: $? \\(1 = clean\\)\")"
+      "Bash(echo \"grep exit: $? \\(1 = clean\\)\")",
+      "Bash(uv run *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

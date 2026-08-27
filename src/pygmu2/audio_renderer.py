@@ -156,7 +156,7 @@ class AudioRenderer(Renderer):
         if chunk_size is None:
             chunk_size = self._blocksize * 16
 
-        channels = self._channel_count or 1
+        channels = self._source.channel_count() or 1
 
         # Use a single continuous stream for gapless playback
         with sd.OutputStream(
@@ -204,7 +204,7 @@ class AudioRenderer(Renderer):
             raise RuntimeError("No source set.")
             return
 
-        channels = self._channel_count or 1
+        channels = self._source.channel_count() or 1
 
         self._stream_position = start
         self._stream_end = end
