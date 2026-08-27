@@ -11,7 +11,6 @@ import sounddevice as sd
 
 from pygmu2.renderer import Renderer
 from pygmu2.snippet import Snippet
-from pygmu2.config import handle_error
 from pygmu2.logger import get_logger
 
 logger = get_logger(__name__)
@@ -142,16 +141,15 @@ class AudioRenderer(Renderer):
             RuntimeError: If source has infinite extent
         """
         if self._source is None:
-            handle_error("No source set. Call set_source() first.", fatal=True)
+            raise RuntimeError("No source set. Call set_source() first.")
             return
 
         extent = self._source.extent()
 
         if extent.start is None or extent.end is None:
-            handle_error(
+            raise RuntimeError(
                 "Cannot play_extent() on infinite source. "
-                "Use CropPE to limit the extent, or use play_range().",
-                fatal=True,
+                "Use CropPE to limit the extent, or use play_range()."
             )
             return
 
@@ -195,15 +193,15 @@ class AudioRenderer(Renderer):
             RuntimeError: If already streaming or not started
         """
         if not self._started:
-            handle_error("Not started. Call start() first.", fatal=True)
+            raise RuntimeError("Not started. Call start() first.")
             return
 
         if self._stream is not None:
-            handle_error("Already streaming. Call stream_stop() first.", fatal=True)
+            raise RuntimeError("Already streaming. Call stream_stop() first.")
             return
 
         if self._source is None:
-            handle_error("No source set.", fatal=True)
+            raise RuntimeError("No source set.")
             return
 
         channels = self._channel_count or 1

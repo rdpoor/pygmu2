@@ -14,7 +14,6 @@ import time
 
 from pygmu2.config import (
     get_sample_rate,
-    handle_error,
 )
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
@@ -263,8 +262,7 @@ class Renderer(ABC):
                         channel mismatch, etc.)
         """
         if self._started:
-            if handle_error("Cannot set source while started. Call stop() first."):
-                return  # Lenient mode: warn and return
+            raise RuntimeError("Cannot set source while started. Call stop() first.")
 
         # Validate the graph
         self._channel_count = self._validate_graph(source)
@@ -291,11 +289,10 @@ class Renderer(ABC):
                           (in STRICT mode)
         """
         if self._source is None:
-            handle_error("No source set. Call set_source() first.", fatal=True)
+            raise RuntimeError("No source set. Call set_source() first.")
             return  # Never reached, but satisfies type checker
         if self._started:
-            if handle_error("Already started. Call stop() first."):
-                return  # Lenient mode: warn and return
+            raise RuntimeError("Already started. Call stop() first.")
 
         self._start_graph(self._source)
         self._started = True
@@ -329,16 +326,14 @@ class Renderer(ABC):
             ValueError: If duration < 1 (always fatal)
         """
         if self._source is None:
-            handle_error("No source set. Call set_source() first.", fatal=True)
+            raise RuntimeError("No source set. Call set_source() first.")
             return
         if not self._started:
-            handle_error("Not started. Call start() first.", fatal=True)
+            raise RuntimeError("Not started. Call start() first.")
             return
         if duration < 1:
-            handle_error(
-                "Renderer.render() requires duration >= 1 to prevent infinite loops.",
-                fatal=True,
-                exception_class=ValueError,
+            raise ValueError(
+                "Renderer.render() requires duration >= 1 to prevent infinite loops."
             )
             return
 

@@ -24,10 +24,6 @@ from pygmu2.cache_pe import CachePE
 from pygmu2.comb_pe import CombPE
 from pygmu2.compressor_pe import CompressorPE, LimiterPE, ExpanderPE
 from pygmu2.config import (
-    ErrorMode,
-    set_error_mode,
-    get_error_mode,
-    handle_error,
     set_sample_rate,
     get_sample_rate,
 )
@@ -153,10 +149,6 @@ def __getattr__(name):
 
 __all__ = [
     # Configuration
-    "ErrorMode",
-    "set_error_mode",
-    "get_error_mode",
-    "handle_error",
     "set_sample_rate",
     "get_sample_rate",
     # Core classes

@@ -16,7 +16,6 @@ from scipy import signal
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
-from pygmu2.config import handle_error
 
 # Try to import numba for JIT compilation (optional optimization)
 try:
@@ -332,11 +331,7 @@ class BiquadPE(ProcessingElement):
             a2 = (A + 1.0) - (A - 1.0) * cos_omega - 2.0 * sqrt_A * alpha
 
         else:
-            handle_error(
-                f"Unknown filter mode: {self._mode}",
-                fatal=True,
-                exception_class=ValueError,
-            )
+            raise ValueError(f"Unknown filter mode: {self._mode}")
             return (0.0, 0.0, 0.0, 0.0, 0.0)  # Unreachable, satisfies type checker
 
         # Normalize by a0

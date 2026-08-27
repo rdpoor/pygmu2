@@ -23,7 +23,6 @@ import soundfile as sf
 from scipy.signal import fftconvolve
 
 from pygmu2.assets import get_kemar_dir
-from pygmu2.config import handle_error
 from pygmu2.logger import get_logger
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
@@ -742,7 +741,6 @@ class SpatialHRTF(SpatialMethod):
         self._ir_cache: dict[str, tuple[np.ndarray, int]] = {}
         self._tail: np.ndarray | None = None
         self._last_render_end: int | None = None
-        self._warned_sr_mismatch: bool = False
 
     @property
     def output_channels(self) -> int:
@@ -777,13 +775,11 @@ class SpatialHRTF(SpatialMethod):
         sample_rate: int,
     ) -> np.ndarray:
         ir_data, ir_sr = self._load_ir()
-        if sample_rate != ir_sr and not self._warned_sr_mismatch:
-            handle_error(
-                f"SpatialHRTF: IR sample rate is {ir_sr} Hz but source is {sample_rate} Hz. "
-                "Proceeding without resampling.",
-                fatal=False,
+        if sample_rate != ir_sr:
+            raise ValueError(
+                f"SpatialHRTF: IR sample rate is {ir_sr} Hz but source is "
+                f"{sample_rate} Hz. Resample the IR (or run at {ir_sr} Hz)."
             )
-            self._warned_sr_mismatch = True
 
         # Mix M channels to mono
         source_data = source_snippet.data

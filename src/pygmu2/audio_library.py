@@ -34,7 +34,6 @@ from urllib.parse import quote, urlparse
 
 import soundfile as sf
 
-from pygmu2.config import handle_error
 from pygmu2.logger import get_logger
 from pygmu2.wav_reader_pe import WavReaderPE
 
@@ -235,7 +234,7 @@ class AudioLibrary:
 
         if self._is_remote(base):
             if not self._allow_remote:
-                handle_error(f"Remote base not allowed: {self._base!r}", fatal=True)
+                raise RuntimeError(f"Remote base not allowed: {self._base!r}")
             url = base + quote(rel_posix, safe="/:@!$&'()*+,;=")
             cached = self._cache_path(base, rel_posix)
             local_path = self._ensure_downloaded(url, cached)
@@ -290,7 +289,7 @@ class AudioLibrary:
     ) -> "AudioLibrary":
         """Internal helper to create AudioLibrary from parsed JSON data."""
         if not isinstance(data, dict):
-            handle_error("strudel.json must contain a top-level object.", fatal=True)
+            raise RuntimeError("strudel.json must contain a top-level object.")
 
         base = data.get("base") or data.get("_base") or ""
         if not base and base_override:
@@ -325,24 +324,18 @@ class AudioLibrary:
             elif isinstance(value, str):
                 audio_paths[str(key)] = [value]
             else:
-                handle_error(
-                    f"Sound map value for {key!r} must be str or list.",
-                    fatal=True,
-                )
+                raise RuntimeError(f"Sound map value for {key!r} must be str or list.")
         return audio_paths
 
     def _select_sound_path(self, name: str, index: int) -> str:
         """Get the relative path for a sound by name and index."""
         if name not in self._audio_paths:
-            handle_error(f"Sound name not found: {name!r}", fatal=True)
+            raise RuntimeError(f"Sound name not found: {name!r}")
         values = self._audio_paths[name]
         if not values:
-            handle_error(f"No paths defined for sound: {name!r}", fatal=True)
+            raise RuntimeError(f"No paths defined for sound: {name!r}")
         if index < 0 or index >= len(values):
-            handle_error(
-                f"Index {index} out of range for sound {name!r}.",
-                fatal=True,
-            )
+            raise RuntimeError(f"Index {index} out of range for sound {name!r}.")
         return values[index]
 
     def _maybe_select_pattern(self, name: str) -> str:
@@ -354,7 +347,7 @@ class AudioLibrary:
         pattern = "^" + escaped.replace(r"\?", ".*") + "$"
         matches = [key for key in self._audio_paths.keys() if re.match(pattern, key)]
         if not matches:
-            handle_error(f"No sounds match pattern: {name!r}", fatal=True)
+            raise RuntimeError(f"No sounds match pattern: {name!r}")
         return random.choice(matches)
 
     @staticmethod
@@ -363,10 +356,7 @@ class AudioLibrary:
         normalized = rel_path.replace("\\", "/")
         posix_path = PurePosixPath(normalized)
         if posix_path.is_absolute() or ".." in posix_path.parts:
-            handle_error(
-                f"Invalid relative path in audio map: {rel_path!r}",
-                fatal=True,
-            )
+            raise RuntimeError(f"Invalid relative path in audio map: {rel_path!r}")
         return posix_path.as_posix()
 
     @staticmethod
@@ -423,10 +413,10 @@ class AudioLibrary:
             tmp_path.replace(dest)
         except URLError as exc:
             if isinstance(exc.reason, ssl.SSLCertVerificationError):
-                handle_error(_format_ssl_error_message(url, exc.reason), fatal=True)
-            handle_error(f"Failed to download sound {url!r}: {exc}", fatal=True)
+                raise RuntimeError(_format_ssl_error_message(url, exc.reason))
+            raise RuntimeError(f"Failed to download sound {url!r}: {exc}")
         except Exception as exc:
-            handle_error(f"Failed to download sound {url!r}: {exc}", fatal=True)
+            raise RuntimeError(f"Failed to download sound {url!r}: {exc}")
         return dest
 
     def _maybe_convert_to_wav(self, path: Path) -> str:
@@ -446,9 +436,7 @@ class AudioLibrary:
             logger.info(f"Converted {path} to {wav_path}")
             return str(wav_path)
         except Exception as exc:
-            if handle_error(f"Failed to convert {path} to WAV: {exc}", fatal=False):
-                return str(path)
-            return str(path)
+            raise RuntimeError(f"Failed to convert {path} to WAV: {exc}") from exc
 
     @staticmethod
     def _default_cache_dir() -> Path:
@@ -487,10 +475,10 @@ class AudioLibrary:
             tmp_path.replace(json_path)
         except URLError as exc:
             if isinstance(exc.reason, ssl.SSLCertVerificationError):
-                handle_error(_format_ssl_error_message(url, exc.reason), fatal=True)
-            handle_error(f"Failed to download Strudel map {url!r}: {exc}", fatal=True)
+                raise RuntimeError(_format_ssl_error_message(url, exc.reason))
+            raise RuntimeError(f"Failed to download Strudel map {url!r}: {exc}")
         except Exception as exc:
-            handle_error(f"Failed to download Strudel map {url!r}: {exc}", fatal=True)
+            raise RuntimeError(f"Failed to download Strudel map {url!r}: {exc}")
         return json_path
 
     @staticmethod

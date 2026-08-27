@@ -12,7 +12,6 @@ import soundfile as sf
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
-from pygmu2.config import handle_error
 from pygmu2.logger import get_logger
 
 logger = get_logger(__name__)
@@ -111,10 +110,9 @@ class WavWriterPE(ProcessingElement):
                 channels = source_inputs[0].channel_count()
 
         if channels is None:
-            handle_error(
+            raise RuntimeError(
                 f"Cannot determine channel count for WavWriterPE. "
-                f"Source {self._source.__class__.__name__} returns None for channel_count().",
-                fatal=True,
+                f"Source {self._source.__class__.__name__} returns None for channel_count()."
             )
             return
 

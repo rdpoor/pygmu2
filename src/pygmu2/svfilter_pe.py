@@ -22,7 +22,6 @@ from scipy import signal
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
-from pygmu2.config import handle_error
 
 from pygmu2.biquad_pe import BiquadMode
 
@@ -230,10 +229,8 @@ def _svf_coefficients(
         out = C @ [x, y0, y1],  y_new = B*x + A @ y
     """
     if mode == BiquadMode.ALLPASS:
-        handle_error(
-            "SVFilterPE: ALLPASS mode is not supported by the state variable filter.",
-            fatal=True,
-            exception_class=ValueError,
+        raise ValueError(
+            "SVFilterPE: ALLPASS mode is not supported by the state variable filter."
         )
 
     # PEAKING (bell): res and k from Q and A: k = 1/(Q*A), res = 1 - 0.5*k
