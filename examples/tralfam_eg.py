@@ -101,13 +101,13 @@ def demo_padded_man_looped_tralfam():
 def demo_uke_tralfam_pitch_up():
     source = UKE_WAV
     tralfam = pg.TralfamPE(source, seed=42, normalize_peak=0.33, pitch_shift=7)
-    pg.play(pg.GainPE(tralfam, gain=1.52), SAMPLE_RATE)
+    pg.play(pg.GainPE(tralfam, gain=1.52))
 
 
 def demo_uke_tralfam_pitch_down():
     source = UKE_WAV
     tralfam = pg.TralfamPE(source, seed=42, normalize_peak=0.33, pitch_shift=-12)
-    pg.play(pg.GainPE(tralfam, gain=1.52), SAMPLE_RATE)
+    pg.play(pg.GainPE(tralfam, gain=1.52))
 
 
 DEMOS = [

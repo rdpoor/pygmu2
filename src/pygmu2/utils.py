@@ -66,7 +66,7 @@ def render_to_file(
             pos += chunk
 
 
-def play(source: ProcessingElement, device=None) -> None:
+def play(source: ProcessingElement, *, device=None) -> None:
     """
     Play a PE in real time using AudioRenderer.
     """
@@ -84,6 +84,7 @@ def play(source: ProcessingElement, device=None) -> None:
 
 def play_offline(
     source: ProcessingElement,
+    *,
     path: str | None = None,
 ) -> None:
     """
@@ -116,6 +117,7 @@ def play_offline(
 
 def browse(
     source: ProcessingElement,
+    *,
     path: str | None = None,
 ) -> None:
     """

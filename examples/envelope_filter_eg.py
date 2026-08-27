@@ -63,12 +63,12 @@ HIGH_FREQ = 4000.0  # Hz — bright (loud clap / envelope near 1)
 
 def demo_claps():
     """Play claps.wav unmodified."""
-    pg.play(pg.WavReaderPE(str(CLAPS_FILE)), SRATE)
+    pg.play(pg.WavReaderPE(str(CLAPS_FILE)))
 
 
 def demo_choir():
     """Play choir.wav unmodified."""
-    pg.play(pg.WavReaderPE(str(CHOIR_FILE)), SRATE)
+    pg.play(pg.WavReaderPE(str(CHOIR_FILE)))
 
 
 def demo_envelope_filter():

@@ -249,7 +249,7 @@ def _demo_wet_chorus_on_wet(
     )
     print()
 
-    pg.play_offline(pg.GainPE(out_stream, gain=norm_gain), sample_rate)
+    pg.play_offline(pg.GainPE(out_stream, gain=norm_gain))
 
 
 def demo_spoken_dry():
