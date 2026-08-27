@@ -1,5 +1,5 @@
 """
-Tests for FunctionGenPE (naive, no anti-aliasing).
+Tests for AnalogOscPE (naive, no anti-aliasing).
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
@@ -14,36 +14,38 @@ from pygmu2 import (
     ConstantPE,
     CropPE,
     Extent,
-    FunctionGenPE,
+    AnalogOscPE,
     NullRenderer,
 )
 
 
-class TestFunctionGenPEBasics:
+class TestAnalogOscPEBasics:
     def test_create_defaults(self):
-        pe = FunctionGenPE()
-        assert pe.frequency == 1.0
+        pe = AnalogOscPE(antialias=False)
+        assert pe.frequency == 440.0
         assert pe.duty_cycle == 0.5
         assert pe.waveform == "rectangle"
         assert pe.channel_count() == 1
 
     def test_waveform_validation(self):
         with pytest.raises(ValueError):
-            FunctionGenPE(waveform="nope")
+            AnalogOscPE(waveform="nope", antialias=False)
 
     def test_stateless_with_constants(self):
-        pe = FunctionGenPE(frequency=100.0, duty_cycle=0.25, waveform="rectangle")
+        pe = AnalogOscPE(
+            frequency=100.0, duty_cycle=0.25, waveform="rectangle", antialias=False
+        )
         assert not pe.stateful
         assert pe.inputs() == []
 
     def test_extent_with_disjoint_pe_inputs_is_empty(self):
         freq = CropPE(ConstantPE(100.0), 0, (10) - (0))
         duty = CropPE(ConstantPE(0.5), 20, (30) - (20))
-        pe = FunctionGenPE(frequency=freq, duty_cycle=duty)
+        pe = AnalogOscPE(frequency=freq, duty_cycle=duty, antialias=False)
         assert pe.extent().is_empty()
 
 
-class TestFunctionGenPERender:
+class TestAnalogOscPERender:
     def setup_method(self):
         import pygmu2 as pg
 
@@ -51,7 +53,9 @@ class TestFunctionGenPERender:
         self.renderer = NullRenderer(sample_rate=10_000)
 
     def test_rectangle_exact_plateaus(self):
-        pe = FunctionGenPE(frequency=100.0, duty_cycle=0.25, waveform="rectangle")
+        pe = AnalogOscPE(
+            frequency=100.0, duty_cycle=0.25, waveform="rectangle", antialias=False
+        )
         self.renderer.set_source(pe)
         y = pe.render(0, 100).data[:, 0]
 
@@ -62,7 +66,9 @@ class TestFunctionGenPERender:
         assert y[50] == pytest.approx(-1.0)
 
     def test_sawtooth_duty_0_is_rising_saw(self):
-        pe = FunctionGenPE(frequency=10.0, duty_cycle=0.0, waveform="sawtooth")
+        pe = AnalogOscPE(
+            frequency=10.0, duty_cycle=0.0, waveform="sawtooth", antialias=False
+        )
         self.renderer.set_source(pe)
         y = pe.render(0, 1000).data[:, 0]
 
@@ -71,7 +77,9 @@ class TestFunctionGenPERender:
         assert y[250] == pytest.approx(-0.5, abs=1e-6)
 
     def test_sawtooth_duty_1_is_falling_saw(self):
-        pe = FunctionGenPE(frequency=10.0, duty_cycle=1.0, waveform="sawtooth")
+        pe = AnalogOscPE(
+            frequency=10.0, duty_cycle=1.0, waveform="sawtooth", antialias=False
+        )
         self.renderer.set_source(pe)
         y = pe.render(0, 1000).data[:, 0]
 
@@ -80,7 +88,9 @@ class TestFunctionGenPERender:
         assert y[250] == pytest.approx(0.5, abs=1e-6)
 
     def test_sawtooth_duty_half_is_triangle(self):
-        pe = FunctionGenPE(frequency=10.0, duty_cycle=0.5, waveform="sawtooth")
+        pe = AnalogOscPE(
+            frequency=10.0, duty_cycle=0.5, waveform="sawtooth", antialias=False
+        )
         self.renderer.set_source(pe)
         y = pe.render(0, 1000).data[:, 0]
 
@@ -92,13 +102,13 @@ class TestFunctionGenPERender:
         n = 200
         freq_values = np.linspace(80.0, 220.0, n, dtype=np.float32)
 
-        pe_full = FunctionGenPE(
+        pe_full = AnalogOscPE(
             frequency=ArrayPE(freq_values), duty_cycle=0.3, waveform="rectangle"
         )
         self.renderer.set_source(pe_full)
         y_full = pe_full.render(0, n).data[:, 0]
 
-        pe_chunk = FunctionGenPE(
+        pe_chunk = AnalogOscPE(
             frequency=ArrayPE(freq_values), duty_cycle=0.3, waveform="rectangle"
         )
         self.renderer.set_source(pe_chunk)

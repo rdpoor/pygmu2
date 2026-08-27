@@ -109,7 +109,6 @@ FACTORIES = {
     ),
     "EnvelopePE": lambda: pg.EnvelopePE(_sine()),
     "ExpanderPE": lambda: pg.ExpanderPE(_sine(), threshold=-40.0),
-    "FunctionGenPE": lambda: pg.FunctionGenPE(frequency=440.0),
     "GainPE": lambda: pg.GainPE(_sine(), gain=0.5),
     "GateToTriggerPE": lambda: pg.GateToTriggerPE(pg.PeriodicGate(frequency=10.0)),
     "IdentityPE": lambda: pg.IdentityPE(),

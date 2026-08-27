@@ -98,7 +98,9 @@ def demo_drunken_robot():
     fo1 = pg.TransformPE(pg.RandomValuePE(rate=8), map(0, 1, 250, 900))
     fo2 = pg.TransformPE(pg.RandomValuePE(rate=10), map(0, 1, 700, 2500))
     fo3 = pg.TransformPE(pg.RandomValuePE(rate=12), map(0, 1, 1700, 3500))
-    src = pg.CachePE(pg.FunctionGenPE(frequency=pg.pitch_to_freq(42), duty_cycle=0.1))
+    src = pg.CachePE(
+        pg.AnalogOscPE(frequency=pg.pitch_to_freq(42), duty_cycle=0.1, antialias=False)
+    )
     raw_mix = pg.MixPE(
         pg.BiquadPE(src, frequency=fo1, q=5, mode=pg.BiquadMode.BANDPASS),
         pg.BiquadPE(src, frequency=fo2, q=8, mode=pg.BiquadMode.BANDPASS),

@@ -43,7 +43,6 @@ from pygmu2.delay_pe import DelayPE
 from pygmu2.dirac_pe import DiracPE
 from pygmu2.dynamics_pe import DynamicsPE, DynamicsMode
 from pygmu2.extent import Extent, ExtendMode
-from pygmu2.function_gen_pe import FunctionGenPE
 from pygmu2.gain_pe import GainPE
 from pygmu2.gate_signal import GateSignal
 from pygmu2.gate_to_trigger_pe import GateToTriggerPE
@@ -178,7 +177,6 @@ __all__ = [
     "AdsrTriggeredPE",
     "AnalogOscPE",
     "ArrayPE",
-    "FunctionGenPE",
     "PiecewisePE",
     "TransitionType",
     "BiquadPE",

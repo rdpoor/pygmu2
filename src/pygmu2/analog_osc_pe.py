@@ -1,20 +1,30 @@
 """
-AnalogOscPE - bandlimited analog-style oscillator (PWM + morphing saw/triangle).
+AnalogOscPE - analog-style oscillator (PWM rectangle + morphing saw/triangle),
+bandlimited or deliberately naive.
 
-This PE is intended to feel familiar to analog synth users:
+Waveforms:
 - "rectangle": a pulse wave with duty-cycle (PWM) control
 - "sawtooth": a duty-controlled morph where:
     duty=0.0   -> ascending ramp (saw up)
     duty=0.5   -> triangle
     duty=1.0   -> descending ramp (saw down)
 
-The output is bandlimited using polyBLEP-style discontinuity correction.
+The `antialias` flag selects the rendering math (this class absorbs the
+former FunctionGenPE, which was the naive variant):
+
+- antialias=True (default): polyBLEP-corrected, alias-free audio waveforms.
+  duty_cycle is clamped away from 0/1 (and away from the polyBLEP window),
+  so the exact saw endpoints are unreachable in this mode.
+- antialias=False: exact naive waveforms with hard edges — aliased at audio
+  rates, but exactly what LFOs, gates, and "raw DSP" experiments need.
+  duty=0 and duty=1 produce exact rising/falling saws.
 
 Notes:
-- No explicit "bandwidth" parameter is provided; patch a filter PE (e.g. LadderPE)
-  for classic subtractive synth tone shaping.
-- duty_cycle is clamped away from 0 and 1 (and away from the polyBLEP window
-  around discontinuities) to avoid degeneracies under modulation.
+- No explicit "bandwidth" parameter; patch a filter PE (e.g. LadderPE) for
+  classic subtractive tone shaping.
+- `phase` offsets the oscillator in cycles. Per-sample (PE-valued) phase
+  modulation is exact with antialias=False; with antialias=True the BLEP
+  correction assumes the offset changes slowly relative to the pitch.
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
@@ -33,12 +43,17 @@ from pygmu2.snippet import Snippet
 
 class AnalogOscPE(ProcessingElement):
     """
-    Bandlimited analog-style oscillator (PWM rectangle + duty-controlled saw/triangle morph).
+    Analog-style oscillator: PWM rectangle + duty-controlled saw/triangle
+    morph, bandlimited (polyBLEP) or naive per the `antialias` flag.
 
     Args:
-        frequency: Frequency in Hz, or PE providing per-sample frequency values.
-        duty_cycle: Duty cycle in [0, 1], or PE providing per-sample duty values.
+        frequency: Frequency in Hz, or PE providing per-sample values.
+        duty_cycle: Duty cycle in [0, 1], or PE providing per-sample values.
+        phase: Phase offset in cycles [0, 1), or PE providing per-sample
+               values (default 0.0).
         waveform: "rectangle" or "sawtooth"
+        antialias: True (default) for polyBLEP bandlimiting; False for the
+               exact naive waveform (the former FunctionGenPE).
         channels: Number of output channels (default: 1)
     """
 
@@ -49,12 +64,16 @@ class AnalogOscPE(ProcessingElement):
         self,
         frequency: float | ProcessingElement = 440.0,
         duty_cycle: float | ProcessingElement = 0.5,
+        phase: float | ProcessingElement = 0.0,
         waveform: str = "rectangle",
+        antialias: bool = True,
         channels: int = 1,
     ):
         self._frequency = frequency
         self._duty_cycle = duty_cycle
+        self._phase_in = phase
         self._waveform = str(waveform).lower()
+        self._antialias = bool(antialias)
         self._channels = int(channels)
 
         if self._waveform not in (self.WAVE_RECTANGLE, self.WAVE_SAWTOOTH):
@@ -64,7 +83,7 @@ class AnalogOscPE(ProcessingElement):
         if self._channels < 1:
             raise ValueError(f"channels must be >= 1, got {channels}")
 
-        # Stateful path: phase + (for saw/triangle morph) current output value
+        # Stateful path: phase + (for the bandlimited saw morph) current value
         self._phase: float = 0.0  # [0,1)
         self._saw_value: float = -1.0
         self._last_render_end: int | None = None
@@ -78,8 +97,16 @@ class AnalogOscPE(ProcessingElement):
         return self._duty_cycle
 
     @property
+    def phase(self) -> float | ProcessingElement:
+        return self._phase_in
+
+    @property
     def waveform(self) -> str:
         return self._waveform
+
+    @property
+    def antialias(self) -> bool:
+        return self._antialias
 
     def inputs(self) -> list[ProcessingElement]:
         result: list[ProcessingElement] = []
@@ -87,6 +114,8 @@ class AnalogOscPE(ProcessingElement):
             result.append(self._frequency)
         if isinstance(self._duty_cycle, ProcessingElement):
             result.append(self._duty_cycle)
+        if isinstance(self._phase_in, ProcessingElement):
+            result.append(self._phase_in)
         return result
 
     @property
@@ -117,6 +146,10 @@ class AnalogOscPE(ProcessingElement):
         for pe_input in self.inputs():
             result = result.intersection(pe_input.extent())
         return result
+
+    # ------------------------------------------------------------------
+    # polyBLEP machinery (antialias=True)
+    # ------------------------------------------------------------------
 
     @staticmethod
     def _blep(t: np.ndarray, dt: np.ndarray) -> np.ndarray:
@@ -154,12 +187,56 @@ class AnalogOscPE(ProcessingElement):
         t = np.mod(t, 1.0)
         return cls._blep(t, dt) - cls._blep(1.0 - t, dt)
 
-    @staticmethod
-    def _phase_pure(start: int, duration: int, dt: float) -> np.ndarray:
-        idx = np.arange(start, start + duration, dtype=np.float64)
-        return np.mod(idx * dt, 1.0)
+    # ------------------------------------------------------------------
+    # Naive waveform math (antialias=False; the former FunctionGenPE)
+    # ------------------------------------------------------------------
 
-    def _phase_stateful(self, start: int, dt: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _piecewise_linear(phase: np.ndarray, duty: np.ndarray) -> np.ndarray:
+        """
+        Duty-controlled saw/triangle morph:
+        duty=0 -> rising saw, duty=0.5 -> triangle, duty=1 -> falling saw.
+        """
+        duty = np.clip(duty, 0.0, 1.0)
+
+        # Peak location a = 1 - duty
+        a = 1.0 - duty
+
+        # Handle endpoints explicitly (avoid division by zero):
+        eps = 1e-12
+        m_up = duty <= eps
+        m_down = duty >= 1.0 - eps
+        m_mid = ~(m_up | m_down)
+
+        y = np.empty_like(phase, dtype=np.float64)
+        y[m_up] = 2.0 * phase[m_up] - 1.0
+        y[m_down] = 1.0 - 2.0 * phase[m_down]
+
+        if np.any(m_mid):
+            a_mid = np.clip(a[m_mid], eps, 1.0 - eps)
+            p = phase[m_mid]
+            rise = p < a_mid
+            y_mid = np.empty_like(p, dtype=np.float64)
+            # -1 -> +1 over [0,a)
+            y_mid[rise] = -1.0 + 2.0 * (p[rise] / a_mid[rise])
+            # +1 -> -1 over [a,1)
+            y_mid[~rise] = 1.0 - 2.0 * (
+                (p[~rise] - a_mid[~rise]) / (1.0 - a_mid[~rise])
+            )
+            y[m_mid] = y_mid
+
+        return y
+
+    # ------------------------------------------------------------------
+    # Rendering
+    # ------------------------------------------------------------------
+
+    def _base_phase(self, start: int, duration: int, dt: np.ndarray) -> np.ndarray:
+        """Un-offset oscillator phase, closed-form or accumulated."""
+        if not self.stateful:
+            idx = np.arange(start, start + duration, dtype=np.float64)
+            return np.mod(idx * float(dt[0]), 1.0)
+
         if self._last_render_end is None:
             # First render after start/reset. Non-contiguous renders never
             # reach here (the base class raises; stateful when PE-driven).
@@ -170,17 +247,8 @@ class AnalogOscPE(ProcessingElement):
         phase = np.mod(self._phase + increments, 1.0)
 
         self._phase = float(np.mod(self._phase + float(np.sum(dt)), 1.0))
-        self._last_render_end = start + len(dt)
+        self._last_render_end = start + duration
         return phase
-
-    @staticmethod
-    def _piecewise_linear_value(phase0: float, a: float) -> float:
-        """
-        Value of the naive piecewise-linear saw/triangle morph at phase0, with peak at a.
-        """
-        if phase0 < a:
-            return -1.0 + 2.0 * (phase0 / a)
-        return 1.0 - 2.0 * ((phase0 - a) / (1.0 - a))
 
     def _render(self, start: int, duration: int) -> Snippet:
         # Parameter streams
@@ -190,21 +258,33 @@ class AnalogOscPE(ProcessingElement):
         duty = self._scalar_or_pe_values(
             self._duty_cycle, start, duration, dtype=np.float64
         )
+        ph_in = self._scalar_or_pe_values(
+            self._phase_in, start, duration, dtype=np.float64
+        )
 
         # Phase increment per sample (can be negative for negative freq)
         dt = freq / float(self.sample_rate)
+
+        # Final phase: offset applied BEFORE any BLEP residual computation,
+        # so corrections align with the actual output discontinuities.
+        phase = np.mod(self._base_phase(start, duration, dt) + ph_in, 1.0)
+
+        if not self._antialias:
+            duty = np.clip(duty, 0.0, 1.0)
+            if self._waveform == self.WAVE_RECTANGLE:
+                y = np.where(phase < duty, 1.0, -1.0).astype(np.float64)
+            else:
+                y = self._piecewise_linear(phase, duty)
+            return self._shape(start, y)
+
+        # --- antialias=True: polyBLEP path ---
         dt_blep = np.clip(np.abs(dt), 1e-12, 0.5)
 
         # Clamp duty away from endpoints and away from BLEP windows
-        # (prevents overlapping correction regions at high frequencies)
+        # (prevents overlapping correction regions at high frequencies).
+        # Consequence: exact saw endpoints need antialias=False.
         edge = np.maximum(1e-5, 2.0 * dt_blep)
         duty = np.clip(duty, edge, 1.0 - edge)
-
-        # Phase per sample
-        if not self.stateful:
-            phase = self._phase_pure(start, duration, float(dt[0]))
-        else:
-            phase = self._phase_stateful(start, dt)
 
         if self._waveform == self.WAVE_RECTANGLE:
             base = np.where(phase < duty, 1.0, -1.0).astype(np.float64)
@@ -240,8 +320,7 @@ class AnalogOscPE(ProcessingElement):
 
             if not self.stateful:
                 # Deterministic start value from phase[0]
-                a0 = float(a[0])
-                y0 = self._piecewise_linear_value(float(phase[0]), a0)
+                y0 = float(self._piecewise_linear(phase[0:1], duty[0:1])[0])
             else:
                 # Stateful continuity
                 y0 = float(self._saw_value)
@@ -252,7 +331,9 @@ class AnalogOscPE(ProcessingElement):
             if self.stateful:
                 self._saw_value = float(y0 + float(np.sum(dy)))
 
-        # Shape and dtype
+        return self._shape(start, y)
+
+    def _shape(self, start: int, y: np.ndarray) -> Snippet:
         data = y.reshape(-1, 1)
         if self._channels > 1:
             data = np.tile(data, (1, self._channels))
@@ -269,7 +350,8 @@ class AnalogOscPE(ProcessingElement):
             if isinstance(self._duty_cycle, ProcessingElement)
             else str(self._duty_cycle)
         )
+        anti_str = "" if self._antialias else ", antialias=False"
         return (
             f"AnalogOscPE(frequency={freq_str}, duty_cycle={duty_str}, "
-            f"waveform={self._waveform!r}, channels={self._channels})"
+            f"waveform={self._waveform!r}{anti_str}, channels={self._channels})"
         )

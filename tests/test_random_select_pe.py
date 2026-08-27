@@ -15,10 +15,11 @@ def test_random_select_retrigger_resets_on_trigger():
     slice_a = pg.SlicePE(source, start=0, duration=5)
     slice_b = pg.SlicePE(source, start=3, duration=5)
 
-    trigger = pg.FunctionGenPE(
+    trigger = pg.AnalogOscPE(
         frequency=1.0,  # 1 Hz => 10-sample period at sr=10
         duty_cycle=0.5,  # 5 samples high, 5 samples low
         waveform="rectangle",
+        antialias=False,
         channels=1,
     )
 

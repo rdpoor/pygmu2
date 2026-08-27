@@ -10,7 +10,6 @@ import math
 
 from pygmu2 import (
     CropPE,
-    FunctionGenPE,
     GainPE,
     SinePE,
     pitch_to_freq,
@@ -56,32 +55,44 @@ def demo_sine_wave_half_amp():
 
 def demo_triangle_wave():
     print("=== Triangle Wave, 220 Hz ===")
-    tone = FunctionGenPE(
-        frequency=EXAMPLE_FREQUENCY, waveform="sawtooth", duty_cycle=0.5
+    tone = AnalogOscPE(
+        frequency=EXAMPLE_FREQUENCY,
+        waveform="sawtooth",
+        duty_cycle=0.5,
+        antialias=False,
     )
     pg.play(CropPE(GainPE(tone, gain=0.5), 0, EXAMPLE_DURATION))
 
 
 def demo_square_wave():
     print("=== Square Wave, 220 Hz ===")
-    tone = FunctionGenPE(
-        frequency=EXAMPLE_FREQUENCY, waveform="rectangle", duty_cycle=0.5
+    tone = AnalogOscPE(
+        frequency=EXAMPLE_FREQUENCY,
+        waveform="rectangle",
+        duty_cycle=0.5,
+        antialias=False,
     )
     pg.play(CropPE(GainPE(tone, gain=0.5), 0, EXAMPLE_DURATION))
 
 
 def demo_sawtooth_wave():
     print("=== Sawtooth Wave, 220 Hz ===")
-    tone = FunctionGenPE(
-        frequency=EXAMPLE_FREQUENCY, waveform="sawtooth", duty_cycle=0.0
+    tone = AnalogOscPE(
+        frequency=EXAMPLE_FREQUENCY,
+        waveform="sawtooth",
+        duty_cycle=0.0,
+        antialias=False,
     )
     pg.play(CropPE(GainPE(tone, gain=0.5), 0, EXAMPLE_DURATION))
 
 
 def demo_pulse_wave():
     print("=== Pulse Wave, 220 Hz, 5% ===")
-    tone = FunctionGenPE(
-        frequency=EXAMPLE_FREQUENCY, waveform="rectangle", duty_cycle=0.05
+    tone = AnalogOscPE(
+        frequency=EXAMPLE_FREQUENCY,
+        waveform="rectangle",
+        duty_cycle=0.05,
+        antialias=False,
     )
     pg.play(CropPE(GainPE(tone, gain=0.5), 0, EXAMPLE_DURATION))
 

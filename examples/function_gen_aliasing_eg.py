@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Example 22: FunctionGenPE - naive DSP-like function generator (aliased)
+AnalogOscPE antialias=False - the naive (aliased) oscillator mode
 
-This example demonstrates FunctionGenPE, a deliberately simple oscillator:
+This example demonstrates AnalogOscPE with antialias=False, the deliberately naive mode:
 - No anti-aliasing (no BLIT/BLEP)
 - Useful as a low-level DSP building block
 
 Demos:
 1) PWM Rectangle (naive)
 2) Saw/Triangle Morph (naive)
-3) A/B: FunctionGenPE vs AnalogOscPE at high pitch
+3) A/B: antialias=False vs antialias=True at high pitch
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
@@ -20,7 +20,6 @@ import numpy as np
 from pygmu2 import (
     AnalogOscPE,
     CropPE,
-    FunctionGenPE,
     GainPE,
     MixPE,
     PiecewisePE,
@@ -51,8 +50,11 @@ def demo_pwm_rectangle_naive():
         duty_lfo_stream, func=lambda x: 0.5 + 0.45 * x, name="duty_map"
     )
 
-    osc_stream = FunctionGenPE(
-        frequency=110.0, duty_cycle=duty_stream, waveform="rectangle"
+    osc_stream = AnalogOscPE(
+        frequency=110.0,
+        duty_cycle=duty_stream,
+        waveform="rectangle",
+        antialias=False,
     )
     out_stream = GainPE(osc_stream, gain=0.25)
     out_stream = CropPE(out_stream, 0, (dur) - (0))
@@ -71,8 +73,11 @@ def demo_morph_naive():
     dur = int(seconds_to_samples(8.0, SAMPLE_RATE))
     duty_stream = PiecewisePE([(0, 0.0), (dur, 1.0)])
 
-    osc_stream = FunctionGenPE(
-        frequency=220.0, duty_cycle=duty_stream, waveform="sawtooth"
+    osc_stream = AnalogOscPE(
+        frequency=220.0,
+        duty_cycle=duty_stream,
+        waveform="sawtooth",
+        antialias=False,
     )
     out_stream = GainPE(osc_stream, gain=0.35)
     out_stream = CropPE(out_stream, 0, (dur) - (0))
@@ -83,11 +88,11 @@ def demo_morph_naive():
 def demo_ab_high_pitch():
     """
     A/B comparison at high pitch to highlight aliasing:
-    - Left: FunctionGenPE (naive, aliased)
+    - Left: AnalogOscPE(antialias=False) — naive, aliased
     - Right: AnalogOscPE (bandlimited)
     """
     print("=== Demo: A/B at High Pitch (naive vs bandlimited) ===")
-    print("Left: FunctionGenPE (naive), Right: AnalogOscPE (bandlimited)")
+    print("Left: antialias=False (naive), Right: antialias=True (bandlimited)")
     print()
 
     dur = int(seconds_to_samples(6.0, SAMPLE_RATE))
@@ -98,8 +103,12 @@ def demo_ab_high_pitch():
     duty = 0.2
 
     # Make both sources explicitly 2-channel so AudioRenderer runs a 2-channel stream.
-    naive_stream = FunctionGenPE(
-        frequency=freq_stream, duty_cycle=duty, waveform="rectangle", channels=2
+    naive_stream = AnalogOscPE(
+        frequency=freq_stream,
+        duty_cycle=duty,
+        waveform="rectangle",
+        antialias=False,
+        channels=2,
     )
     aa_stream = AnalogOscPE(
         frequency=freq_stream, duty_cycle=duty, waveform="rectangle", channels=2

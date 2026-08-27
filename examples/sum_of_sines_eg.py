@@ -121,7 +121,8 @@ def demo_square():
 
     def square_wave():
         return pg.GainPE(
-            pg.FunctionGenPE(F0, duty_cycle=0.5, waveform="rectangle"), 0.5
+            pg.AnalogOscPE(F0, duty_cycle=0.5, waveform="rectangle", antialias=False),
+            0.5,
         )
 
     pg.play(make_demo_eg(SQUARE_WAVE, square_wave))
@@ -131,7 +132,10 @@ def demo_triangle():
     """Approximate triangle waveform as a sum of sines"""
 
     def triangle_wave():
-        return pg.GainPE(pg.FunctionGenPE(F0, duty_cycle=0.5, waveform="sawtooth"), 0.5)
+        return pg.GainPE(
+            pg.AnalogOscPE(F0, duty_cycle=0.5, waveform="sawtooth", antialias=False),
+            0.5,
+        )
 
     pg.play(make_demo_eg(TRIANGLE_WAVE, triangle_wave))
 
@@ -140,7 +144,10 @@ def demo_sawtooth():
     """Approximate sawtooth waveform as a sum of sines"""
 
     def sawtooth_wave():
-        return pg.GainPE(pg.FunctionGenPE(F0, duty_cycle=0.0, waveform="sawtooth"), 0.5)
+        return pg.GainPE(
+            pg.AnalogOscPE(F0, duty_cycle=0.0, waveform="sawtooth", antialias=False),
+            0.5,
+        )
 
     pg.play(make_demo_eg(SAWTOOTH_WAVE, sawtooth_wave))
 
@@ -150,7 +157,8 @@ def demo_pulse():
 
     def pulse_wave():
         return pg.GainPE(
-            pg.FunctionGenPE(F0, duty_cycle=0.05, waveform="rectangle"), 0.5
+            pg.AnalogOscPE(F0, duty_cycle=0.05, waveform="rectangle", antialias=False),
+            0.5,
         )
 
     pg.play(make_demo_eg(PULSE_WAVE, pulse_wave))

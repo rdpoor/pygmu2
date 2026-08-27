@@ -10,7 +10,8 @@
       "Bash(git commit -m ' *)",
       "Bash(awk -F:: '{print $1}')",
       "Bash(git push *)",
-      "Bash(git commit -q -m ' *)"
+      "Bash(git commit -q -m ' *)",
+      "Bash(git diff *)"
     ]
   }
 }

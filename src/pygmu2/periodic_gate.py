@@ -12,7 +12,7 @@ from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 from pygmu2.gate_signal import GateSignal
-from pygmu2.function_gen_pe import FunctionGenPE
+from pygmu2.analog_osc_pe import AnalogOscPE
 
 
 class PeriodicGate(GateSignal):
@@ -34,16 +34,17 @@ class PeriodicGate(GateSignal):
         phase: float | ProcessingElement = 0.0,
     ):
         # GateSignal is mono by definition; enforce here.
-        self._fg = FunctionGenPE(
+        self._fg = AnalogOscPE(
             frequency=frequency,
             duty_cycle=duty_cycle,
             phase=phase,
-            waveform=FunctionGenPE.WAVE_RECTANGLE,
+            waveform=AnalogOscPE.WAVE_RECTANGLE,
+            antialias=False,  # a gate needs exact hard edges, not BLEP ramps
             channels=1,
         )
 
     def inputs(self) -> list[ProcessingElement]:
-        # Expose the internal FunctionGenPE so the Renderer (and any graph
+        # Expose the internal oscillator so the Renderer (and any graph
         # walk) manages its lifecycle — the gate itself is a stateless map
         # of its output; the generator declares its own state.
         return [self._fg]

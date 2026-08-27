@@ -14,7 +14,6 @@ from pygmu2 import (
     CropPE,
     Extent,
     ExtendMode,
-    FunctionGenPE,
     GainPE,
     PiecewisePE,
     TransformPE,
@@ -52,7 +51,9 @@ def _make_triad(transition_type: TransitionType):
         extend_mode=ExtendMode.HOLD_LAST,
     )
     freq_pe = TransformPE(pitch_pe, func=pitch_to_freq, name="pitch_to_freq")
-    saw_pe = FunctionGenPE(frequency=freq_pe, duty_cycle=0.5, waveform="sawtooth")
+    saw_pe = AnalogOscPE(
+        frequency=freq_pe, duty_cycle=0.5, waveform="sawtooth", antialias=False
+    )
     return GainPE(saw_pe, 0.25)
 
 

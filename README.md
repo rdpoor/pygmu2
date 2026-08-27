@@ -135,7 +135,7 @@ checks that it matches the source.
 |----|-------------|
 | `AdsrGatedPE` | Gate-driven ADSR envelope generator. |
 | `AdsrTriggeredPE` | Trigger-driven one-shot ADSR envelope generator. |
-| `AnalogOscPE` | Bandlimited analog-style oscillator (PWM rectangle + duty-controlled saw/triangle morph). |
+| `AnalogOscPE` | Analog-style oscillator: PWM rectangle + duty-controlled saw/triangle. |
 | `ArrayPE` | A SourcePE that outputs values from a provided array. |
 | `AudioReaderPE` | A SourcePE that decodes a compressed audio file (MP3, FLAC, OGG, WAV). |
 | `BiquadPE` | Second-order IIR (biquad) filter. |
@@ -153,7 +153,6 @@ checks that it matches the source.
 | `DynamicsPE` | Flexible dynamics processor that applies compression, limiting,. |
 | `EnvelopePE` | Causal envelope follower with attack/release dynamics and optional lookahead. |
 | `ExpanderPE` | Downward expander / noise gate — attenuates signal below threshold. |
-| `FunctionGenPE` | Naive function generator (no anti-aliasing). |
 | `GainPE` | A ProcessingElement that applies gain (amplitude scaling) to its input. |
 | `GateToTriggerPE` | Converts a GateSignal to a TriggerSignal by emitting +1 at each. |
 | `HoldPE` | Follow `source` while `control` > 0; hold the last value while it is 0. |
@@ -230,7 +229,7 @@ uv run python examples/hello_sine_eg.py
 | `filtering_eg.py` | Filtering - Biquad filter with frequency sweep. |
 | `flanging_eg.py` | Flanging - Time-varying delay effect. |
 | `fold_4k_eg.py` | what does it sound like when you ring modulate a sound with high frequency. |
-| `function_gen_aliasing_eg.py` | Example 22: FunctionGenPE - naive DSP-like function generator (aliased). |
+| `function_gen_aliasing_eg.py` | AnalogOscPE antialias=False - the naive (aliased) oscillator mode. |
 | `function_generator_eg.py` | Function generator outputs for teaching. |
 | `hello_sine_eg.py` | Hello Sine - Introduction to pygmu2. |
 | `idiophone_eg.py` | Struck bar idiophone synthesis using IdiophonePE. |
