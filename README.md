@@ -244,6 +244,7 @@ uv run python examples/hello_sine_eg.py
 | `random_step_eg.py` | Example: Random Step - Poisson sample-and-hold random generator. |
 | `random_trigger_eg.py` | Example: random triggers, derived from a random gate. |
 | `random_value_eg.py` | Example: RandomValuePE - continuously wandering random voltage generator. |
+| `recording_eg.py` | Recording with DuplexRenderer: calibrate, record, punch in/out, mix back. |
 | `reverb_eg.py` | reverb_eg.py. |
 | `reverse_pitch_echo_eg.py` | Reverse Pitch Echo - block-based reverse playback. |
 | `ring_modulator_eg.py` | Example: Ring Modulator — Sideband synthesis and vocal morphing. |
@@ -351,6 +352,48 @@ set_reference_frequency(442.0)  # Some orchestras tune to A=442
 ```
 
 See `examples/temperaments_eg.py` for a detailed demonstration.
+
+## Recording
+
+`DuplexRenderer` plays a graph and records audio input on a single
+full-duplex stream — one device clock, so the capture is sample-accurate
+relative to playback up to a constant offset. `calibrate()` measures that
+offset exactly (speaker → room → mic), so takes land on the timeline they
+were performed against to sub-millisecond accuracy (each stream open
+contributes ±~20 samples of buffer alignment; measured end-to-end error
+on real hardware: 0.3 ms). Monitor your instrument externally
+(amp, acoustically); pygmu2 plays the backing and captures the mic.
+
+```python
+import pygmu2 as pg
+
+pg.set_sample_rate(44100)
+renderer = pg.DuplexRenderer()
+renderer.calibrate()                    # plays a click, measures the offset
+
+renderer.set_source(backing)            # any finite graph
+renderer.start()
+take = renderer.record_extent()         # blocking: plays backing, records
+renderer.stop()
+
+pg.play(pg.MixPE(backing, take.as_pe()))  # the aligned overdub
+```
+
+Punch-in/punch-out: a `Segment` pairs a finite `Extent` with a WAV
+filename. `transport()` records each segment over its extent (or until
+`stop()`) and writes the takes — auto-numbered (`riff-1.wav`, ...) so a
+take never destroys a previous one, or `on_exists="overwrite"`. In a
+calibrated session the file IS the musical region: sample 0 of the WAV is
+the performance at `extent.start`, so reloading is just
+`DelayPE(WavReaderPE(path), extent.start)`.
+
+```python
+seg = pg.Segment(pg.Extent(start, end), "verse.wav")
+transport = renderer.transport([seg])
+transport.wait()                        # or transport.stop() to punch out
+```
+
+See `examples/recording_eg.py` for a full session.
 
 ## Running Tests
 
