@@ -79,7 +79,7 @@ class TestKarplusStrongPEBasics:
     def test_is_impure(self):
         """KarplusStrongPE is impure (delay-line/cache state, contiguous requests)."""
         ks = KarplusStrongPE(frequency=440.0)
-        assert ks.is_pure() is False
+        assert ks.stateful
 
     def test_two_phase_repr(self):
         """Repr includes duration and rho_damping when both provided."""

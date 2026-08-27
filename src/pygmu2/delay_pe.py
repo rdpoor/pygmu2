@@ -98,10 +98,6 @@ class DelayPE(ProcessingElement):
             return [self._source, self._delay]
         return [self._source]
 
-    def is_pure(self) -> bool:
-        """DelayPE is pure - it's a stateless operation."""
-        return True
-
     def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()

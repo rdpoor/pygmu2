@@ -46,6 +46,23 @@ class ProcessingElement(ABC):
     # Cached extent (computed lazily on first access)
     _cached_extent: Extent | None = None
 
+    # True if this PE holds render state (phase accumulator, filter memory,
+    # delay line, ...). Stateful PEs must be rendered contiguously: each
+    # render(start, duration) must have start equal to the end of the
+    # previous request — enforced in render(). An explicit reset_state()
+    # is the sanctioned way to seek. Stateless PEs may be rendered at
+    # arbitrary positions in any order and shared by multiple sinks.
+    #
+    # Set `stateful = True` as a class attribute (or instance attribute in
+    # __init__ when statefulness depends on constructor arguments). The
+    # declaration is falsified by CI: the contract suite renders every PE
+    # in shuffled order and requires it to either match the contiguous
+    # reference (stateless) or raise (stateful).
+    stateful: bool = False
+
+    # Next expected start for stateful PEs (None = no render yet)
+    _expected_start: int | None = None
+
     def __new__(cls, *args, **kwargs):
         """
         Enforce global sample rate requirement before any PE is constructed.
@@ -99,6 +116,18 @@ class ProcessingElement(ABC):
                 # Default to mono when channel count is dynamic/unknown.
                 channels = 1
             return Snippet.from_zeros(start, 0, int(channels))
+
+        # Stateful PEs must be pulled contiguously; a gap or seek would
+        # silently produce wrong audio (e.g. a phase jump). Seeking is
+        # explicit: call reset_state() first.
+        if self.stateful:
+            if self._expected_start is not None and start != self._expected_start:
+                raise RuntimeError(
+                    f"{self!r}: non-contiguous render: expected start "
+                    f"{self._expected_start}, got {start}. "
+                    f"Call reset_state() to seek."
+                )
+            self._expected_start = start + duration
 
         if is_enabled() and timing_enabled():
             t0 = time.perf_counter_ns()
@@ -167,23 +196,6 @@ class ProcessingElement(ABC):
         """
         pass
 
-    def is_pure(self) -> bool:
-        """
-        Returns True if this PE is pure (arbitrary render times, multi-sink OK).
-
-        pure == True: render() may be called with arbitrary (start, duration)
-        in any order; same (start, duration) always yields the same output.
-        Multiple consumers (sinks) are allowed.
-
-        pure == False: the PE has state. After the first call, each
-        render(start, duration) must have start equal to the end of the
-        previous request (contiguous, no gaps, no out-of-order). The
-        framework enforces this. Exactly one consumer (sink) is allowed.
-
-        Default: False (safe default for stateful PEs)
-        """
-        return False
-
     def channel_count(self) -> int | None:
         """
         Number of output channels this PE produces.
@@ -204,6 +216,7 @@ class ProcessingElement(ABC):
         Calls _on_start() if the subclass implements it.
         Subclasses should override _on_start() (not this method).
         """
+        self._expected_start = None
         if hasattr(self, "_on_start"):
             self._on_start()
 
@@ -215,6 +228,7 @@ class ProcessingElement(ABC):
         Calls _on_stop() if the subclass implements it.
         Subclasses should override _on_stop() (not this method).
         """
+        self._expected_start = None
         if hasattr(self, "_on_stop"):
             self._on_stop()
 
@@ -222,10 +236,13 @@ class ProcessingElement(ABC):
         """
         Reset this PE's internal state.
 
-        Calls _reset_state() if the subclass implements it. Pure PEs typically
-        don't implement _reset_state() (no-op). Non-pure PEs can override
-        _reset_state() to reset their state (e.g., oscillator phase, filter
-        memory, envelope state).
+        Calls _reset_state() if the subclass implements it. Stateless PEs
+        typically don't implement _reset_state() (no-op). Stateful PEs can
+        override _reset_state() to reset their state (e.g., oscillator
+        phase, filter memory, envelope state).
+
+        This is also the sanctioned way to seek: it clears the contiguity
+        expectation, so the next render() may start anywhere.
 
         Useful for:
         - Resetting oscillators on gate/trigger events (analog-like behavior)
@@ -234,6 +251,7 @@ class ProcessingElement(ABC):
 
         Default implementation calls _reset_state() if it exists.
         """
+        self._expected_start = None
         if hasattr(self, "_reset_state"):
             self._reset_state()
 

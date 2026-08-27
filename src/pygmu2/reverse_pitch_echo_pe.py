@@ -453,9 +453,7 @@ class ReversePitchEchoPE(ProcessingElement):
             inputs.append(self._alternate_direction)
         return inputs
 
-    def is_pure(self) -> bool:
-        """ReversePitchEchoPE maintains state and is not pure."""
-        return False
+    stateful = True
 
     def channel_count(self) -> int | None:
         """Pass through channel count from source."""

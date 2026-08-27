@@ -67,7 +67,7 @@ class TestSuperSawPEBasics:
     def test_is_never_pure(self):
         """SuperSawPE is never pure due to internal oscillator state."""
         saw = SuperSawPE(frequency=440.0)
-        assert saw.is_pure() is False
+        assert saw.stateful
 
     def test_no_inputs_with_constants(self):
         """inputs() returns empty list with constant params."""

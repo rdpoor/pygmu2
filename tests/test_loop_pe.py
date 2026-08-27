@@ -56,12 +56,12 @@ class TestLoopPEBasics:
 
         assert loop.inputs() == [source]
 
-    def test_is_pure(self):
+    def test_stateful(self):
         """LoopPE is stateless, so is_pure() should return True."""
         source = PiecewisePE([(0, 0.0), (100, 1.0)])
         loop = LoopPE(source)
 
-        assert loop.is_pure() is True
+        assert not loop.stateful
 
     def test_channel_count_passthrough(self):
         source = ConstantPE(1.0, channels=2)

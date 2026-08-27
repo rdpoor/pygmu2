@@ -102,10 +102,6 @@ class LoopPE(ProcessingElement):
         """Return input PEs."""
         return [self._source]
 
-    def is_pure(self) -> bool:
-        """LoopPE is pure - just index remapping."""
-        return True
-
     def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()

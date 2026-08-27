@@ -45,8 +45,9 @@ class PeriodicGate(GateSignal):
     def inputs(self) -> list[ProcessingElement]:
         return self._fg.inputs()
 
-    def is_pure(self) -> bool:
-        return self._fg.is_pure()
+    @property
+    def stateful(self) -> bool:  # type: ignore[override]
+        return self._fg.stateful
 
     def _compute_extent(self) -> Extent:
         return self._fg.extent()

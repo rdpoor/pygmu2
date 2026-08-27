@@ -38,9 +38,6 @@ class ScheduledGatePE(GateSignal):
     def inputs(self) -> list[ProcessingElement]:
         return []
 
-    def is_pure(self) -> bool:
-        return True
-
     def _compute_extent(self) -> Extent:
         if len(self._notes) == 0:
             return Extent(None, None)

@@ -130,8 +130,9 @@ class SlicePE(ProcessingElement):
         # Delegate to the composed output graph so configure() reaches all internals.
         return [self._out]
 
-    def is_pure(self) -> bool:
-        return self._out.is_pure()
+    @property
+    def stateful(self) -> bool:  # type: ignore[override]
+        return self._out.stateful
 
     def channel_count(self):
         return self._out.channel_count()

@@ -69,10 +69,6 @@ class RingModulatorPE(ProcessingElement):
             result.append(self._mix)
         return result
 
-    def is_pure(self) -> bool:
-        """RingModulatorPE is pure — multiplication is stateless."""
-        return True
-
     def channel_count(self) -> int | None:
         """Returns carrier's channel count."""
         return self._carrier.channel_count()

@@ -174,8 +174,7 @@ class DecayingSinePE(SourcePE):
     def channel_count(self) -> int:
         return self._channels
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
     def __repr__(self) -> str:
         floor = f", db_floor={self._db_floor}" if self._db_floor != -60.0 else ""

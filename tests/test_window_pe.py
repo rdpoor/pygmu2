@@ -57,12 +57,12 @@ class TestWindowPEBasics:
 
         assert win.inputs() == [source]
 
-    def test_is_pure(self):
+    def test_stateful(self):
         """WindowPE is stateless, so is_pure() should return True."""
         source = ConstantPE(1.0)
         win = WindowPE(source)
 
-        assert win.is_pure() is True
+        assert not win.stateful
 
     def test_channel_count_passthrough(self):
         source = ConstantPE(1.0, channels=2)

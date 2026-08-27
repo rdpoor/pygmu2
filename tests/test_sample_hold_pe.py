@@ -28,9 +28,6 @@ class _ArrayTrigger(TriggerSignal):
     def inputs(self):
         return []
 
-    def is_pure(self):
-        return True
-
     def _compute_extent(self):
         return Extent(0, len(self._data))
 
@@ -70,7 +67,7 @@ class TestSampleHoldPEConstruction:
 
     def test_is_not_pure(self):
         sh = SampleHoldPE(pg.ConstantPE(1.0), _ArrayTrigger([0]))
-        assert sh.is_pure() is False
+        assert sh.stateful
 
     def test_channel_count_is_one(self):
         sh = SampleHoldPE(pg.ConstantPE(1.0), _ArrayTrigger([0]))

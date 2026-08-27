@@ -110,7 +110,7 @@ class TestBiquadPEBasics:
         source = ConstantPE(1.0)
         bq = BiquadPE(source, frequency=1000.0, q=1.0, mode=BiquadMode.LOWPASS)
 
-        assert bq.is_pure() is False
+        assert bq.stateful
 
     def test_channel_count_passthrough(self):
         source = ConstantPE(1.0, channels=2)

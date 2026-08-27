@@ -20,7 +20,7 @@ class TestRandomGatePEConstruction:
 
     def test_default_construction(self):
         rg = RandomGatePE()
-        assert rg.is_pure() is False
+        assert rg.stateful
         assert rg.channel_count() == 1
 
     def test_inputs_empty_for_scalar_rate(self):

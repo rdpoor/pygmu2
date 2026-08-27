@@ -99,12 +99,11 @@ class SinePE(ProcessingElement):
             result.append(self._phase)
         return result
 
-    def is_pure(self) -> bool:
-        """
-        Pure if all parameters are constants.
-        Non-pure if any parameter is a PE (requires state for FM).
-        """
-        return not self._has_pe_inputs()
+    @property
+    def stateful(self) -> bool:  # type: ignore[override]
+        # Stateful iff any parameter is a PE (phase accumulator for FM);
+        # with constant parameters the phase is closed-form.
+        return self._has_pe_inputs()
 
     def _on_start(self) -> None:
         """Reset phase accumulator on start."""
@@ -209,7 +208,7 @@ class SinePE(ProcessingElement):
         phase_increment = 2.0 * np.pi * frequency / self.sample_rate
 
         # Determine starting phase
-        # The base class enforces contiguous rendering for non-pure PEs,
+        # The base class enforces contiguous rendering for stateful PEs,
         # so we only need to detect the first render to set initial phase.
         if not self._phase_initialized:
             if isinstance(self._phase, (int, float)):

@@ -326,9 +326,7 @@ class LadderPE(ProcessingElement):
             inputs.append(self._drive)
         return inputs
 
-    def is_pure(self) -> bool:
-        """LadderPE maintains internal state and is not pure."""
-        return False
+    stateful = True
 
     def channel_count(self) -> int | None:
         """Pass through channel count from source."""

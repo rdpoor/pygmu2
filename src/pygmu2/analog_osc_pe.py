@@ -89,8 +89,10 @@ class AnalogOscPE(ProcessingElement):
             result.append(self._duty_cycle)
         return result
 
-    def is_pure(self) -> bool:
-        return not self.inputs()
+    @property
+    def stateful(self) -> bool:  # type: ignore[override]
+        # PE-driven parameters need a phase accumulator; constants are closed-form.
+        return bool(self.inputs())
 
     def channel_count(self) -> int:
         return self._channels
@@ -158,8 +160,9 @@ class AnalogOscPE(ProcessingElement):
         return np.mod(idx * dt, 1.0)
 
     def _phase_stateful(self, start: int, dt: np.ndarray) -> np.ndarray:
-        if self._last_render_end is None or start != self._last_render_end:
-            # Non-contiguous: restart
+        if self._last_render_end is None:
+            # First render after start/reset. Non-contiguous renders never
+            # reach here (the base class raises; stateful when PE-driven).
             self._phase = 0.0
             self._saw_value = -1.0
 
@@ -198,7 +201,7 @@ class AnalogOscPE(ProcessingElement):
         duty = np.clip(duty, edge, 1.0 - edge)
 
         # Phase per sample
-        if self.is_pure():
+        if not self.stateful:
             phase = self._phase_pure(start, duration, float(dt[0]))
         else:
             phase = self._phase_stateful(start, dt)
@@ -235,7 +238,7 @@ class AnalogOscPE(ProcessingElement):
 
             dy = u_corr * dt
 
-            if self.is_pure():
+            if not self.stateful:
                 # Deterministic start value from phase[0]
                 a0 = float(a[0])
                 y0 = self._piecewise_linear_value(float(phase[0]), a0)
@@ -246,7 +249,7 @@ class AnalogOscPE(ProcessingElement):
             increments = np.concatenate(([0.0], np.cumsum(dy[:-1], dtype=np.float64)))
             y = y0 + increments
 
-            if not self.is_pure():
+            if self.stateful:
                 self._saw_value = float(y0 + float(np.sum(dy)))
 
         # Shape and dtype

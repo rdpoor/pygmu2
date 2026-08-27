@@ -49,9 +49,6 @@ class GainPE(ProcessingElement):
     def inputs(self) -> list[ProcessingElement]:
         return [self._source]
 
-    def is_pure(self) -> bool:
-        return True  # Stateless
-
 
 class StatefulPE(ProcessingElement):
     """A stateful processor (not pure)."""
@@ -68,8 +65,7 @@ class StatefulPE(ProcessingElement):
     def inputs(self) -> list[ProcessingElement]:
         return [self._source]
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
 
 class MixPE(ProcessingElement):
@@ -96,9 +92,6 @@ class MixPE(ProcessingElement):
 
     def inputs(self) -> list[ProcessingElement]:
         return self._sources
-
-    def is_pure(self) -> bool:
-        return True
 
 
 class MockRenderer(Renderer):
@@ -288,9 +281,6 @@ class LifecycleTrackingProcessorPE(ProcessingElement):
 
     def inputs(self) -> list[ProcessingElement]:
         return [self._source]
-
-    def is_pure(self) -> bool:
-        return True
 
     def on_start(self) -> None:
         self.start_count += 1

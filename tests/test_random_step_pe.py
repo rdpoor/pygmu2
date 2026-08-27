@@ -20,7 +20,7 @@ class TestRandomStepPEConstruction:
 
     def test_default_construction(self):
         rs = RandomStepPE()
-        assert rs.is_pure() is False
+        assert rs.stateful
         assert rs.channel_count() == 1
 
     def test_inputs_empty_for_scalar_rate(self):

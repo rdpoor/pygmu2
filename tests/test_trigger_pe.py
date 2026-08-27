@@ -48,9 +48,6 @@ class MockPiecewisePE(ProcessingElement):
     def channel_count(self):
         return 1
 
-    def is_pure(self):
-        return True  # Stateless: output depends only on (start, duration)
-
     def _render(self, start: int, duration: int) -> Snippet:
         data = np.arange(start, start + duration, dtype=np.float32).reshape(-1, 1)
         return Snippet(start, data)

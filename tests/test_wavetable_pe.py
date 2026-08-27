@@ -59,12 +59,12 @@ class TestWavetablePEBasics:
         assert wavetable in inputs
         assert indexer in inputs
 
-    def test_is_pure(self):
+    def test_stateful(self):
         wavetable = PiecewisePE([(0, 0.0), (100, 1.0)])
         indexer = ConstantPE(50.0)
 
         wt_pe = WavetablePE(wavetable, indexer)
-        assert wt_pe.is_pure() is True
+        assert not wt_pe.stateful
 
     def test_channel_count_from_wavetable(self):
         wavetable = PiecewisePE([(0, 0.0), (100, 1.0)], channels=2)

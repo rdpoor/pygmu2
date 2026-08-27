@@ -39,7 +39,7 @@ class TestControlPEBasics:
 
     def test_is_impure(self):
         pe = ControlPE()
-        assert pe.is_pure() is False
+        assert pe.stateful
 
     def test_no_inputs(self):
         pe = ControlPE()

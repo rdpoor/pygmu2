@@ -49,12 +49,12 @@ class TestTransformPEBasics:
 
         assert transform.inputs() == [source]
 
-    def test_is_pure(self):
+    def test_stateful(self):
         """TransformPE should be pure (stateless)."""
         source = ConstantPE(1.0)
         transform = TransformPE(source, func=np.abs)
 
-        assert transform.is_pure() is True
+        assert not transform.stateful
 
     def test_channel_count_passthrough(self):
         source = ConstantPE(1.0, channels=2)

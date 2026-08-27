@@ -105,9 +105,9 @@ class TestAdsrGatedPEBasics:
     def setup_method(self):
         self.renderer = setup_renderer()
 
-    def test_is_pure(self):
+    def test_stateful(self):
         adsr = AdsrGatedPE(ConstantPE(1.0))
-        assert adsr.is_pure() is False
+        assert adsr.stateful
 
     def test_channel_count(self):
         adsr = AdsrGatedPE(ConstantPE(1.0))
@@ -431,9 +431,9 @@ class TestAdsrTriggeredPEBasics:
     def setup_method(self):
         self.renderer = setup_renderer()
 
-    def test_is_pure(self):
+    def test_stateful(self):
         adsr = AdsrTriggeredPE(ArrayPE(np.zeros(10, dtype=np.float32)))
-        assert adsr.is_pure() is False
+        assert adsr.stateful
 
     def test_channel_count(self):
         adsr = AdsrTriggeredPE(ArrayPE(np.zeros(10, dtype=np.float32)))

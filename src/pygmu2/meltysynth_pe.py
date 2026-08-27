@@ -99,8 +99,7 @@ class MeltysynthPE(SourcePE):
     def channel_count(self) -> int:
         return 2
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
     def __repr__(self) -> str:
         prog = f", program={self._program}" if self._program is not None else ""

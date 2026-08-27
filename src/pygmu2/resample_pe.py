@@ -37,7 +37,7 @@ class ResamplePE(ProcessingElement):
     For each output sample at absolute position t, reads the source at t * rate.
     Equivalent to playing a tape at a fixed speed ratio: faster = higher pitch.
 
-    This PE is pure (is_pure() == True), meaning it can be rendered at any
+    This PE is stateless, meaning it can be rendered at any
     position in any order. The source PE should also be pure for correct results.
 
     Args:
@@ -83,9 +83,6 @@ class ResamplePE(ProcessingElement):
 
     def inputs(self) -> list[ProcessingElement]:
         return [self._source]
-
-    def is_pure(self) -> bool:
-        return True
 
     def channel_count(self) -> int | None:
         return self._source.channel_count()

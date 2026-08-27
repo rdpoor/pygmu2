@@ -78,9 +78,7 @@ class NoisePE(SourcePE):
     def inputs(self) -> list:
         return []
 
-    def is_pure(self) -> bool:
-        # RNG and filter states are mutable.
-        return False
+    stateful = True
 
     def channel_count(self) -> int:
         return 1

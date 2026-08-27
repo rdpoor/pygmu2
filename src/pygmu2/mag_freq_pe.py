@@ -64,9 +64,6 @@ class MagFreqPE(ProcessingElement):
     def channel_count(self) -> int | None:
         return self._source.channel_count()
 
-    def is_pure(self) -> bool:
-        return True
-
     def _mogrify(self) -> np.ndarray:
         """Render full source, FFT → mangler → IFFT; cache and return (samples, channels)."""
         if self._mogrified is not None:

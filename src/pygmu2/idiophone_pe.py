@@ -248,9 +248,7 @@ class IdiophonePE(SourcePE):
     def channel_count(self) -> int:
         return self._channels
 
-    def is_pure(self) -> bool:
-        # Stateful: each DecayingSinePE inside carries recurrence state.
-        return False
+    stateful = True
 
     def __repr__(self) -> str:
         return (

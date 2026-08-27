@@ -52,9 +52,9 @@ class TestSinePEBasics:
         assert extent.start is None
         assert extent.end is None
 
-    def test_is_pure_with_constants(self):
+    def test_stateless_with_constants(self):
         sine = SinePE(frequency=440.0)
-        assert sine.is_pure() is True
+        assert not sine.stateful
 
     def test_no_inputs_with_constants(self):
         sine = SinePE(frequency=440.0)
@@ -243,19 +243,19 @@ class TestSinePEModulation:
         """SinePE is non-pure when frequency is a PE."""
         freq_pe = ConstantPE(440.0)
         sine = SinePE(frequency=freq_pe)
-        assert sine.is_pure() is False
+        assert sine.stateful
 
     def test_is_not_pure_with_pe_amplitude(self):
         """SinePE is non-pure when amplitude is a PE."""
         amp_pe = ConstantPE(0.5)
         sine = SinePE(frequency=440.0, amplitude=amp_pe)
-        assert sine.is_pure() is False
+        assert sine.stateful
 
     def test_is_not_pure_with_pe_phase(self):
         """SinePE is non-pure when phase is a PE."""
         phase_pe = ConstantPE(0.0)
         sine = SinePE(frequency=440.0, phase=phase_pe)
-        assert sine.is_pure() is False
+        assert sine.stateful
 
     def test_inputs_returns_pe_inputs(self):
         """inputs() should return all PE inputs."""

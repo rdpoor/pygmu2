@@ -49,6 +49,8 @@ class ConvolvePE(ProcessingElement):
                   If None, a default is chosen based on filter length.
     """
 
+    stateful = True
+
     def __init__(
         self,
         src: ProcessingElement,
@@ -106,10 +108,6 @@ class ConvolvePE(ProcessingElement):
         data = filter_pe.render(extent.start, duration).data
         energy_norm = np.sqrt(np.sum(data.astype(np.float64) ** 2))
         return float(energy_norm) if energy_norm > 1e-10 else 1.0
-
-    def is_pure(self) -> bool:
-        # Keeps history for streaming overlap-save
-        return False
 
     def channel_count(self) -> int | None:
         """
@@ -265,8 +263,9 @@ class ConvolvePE(ProcessingElement):
             self._fir_len is not None and self._H is not None and self._tail is not None
         )
 
-        # Handle non-contiguous render: clear history
-        if self._last_render_end is None or start != self._last_render_end:
+        # First render after start/reset: clear history. Non-contiguous
+        # renders never reach here (the base class raises; stateful = True).
+        if self._last_render_end is None:
             self._tail[:] = 0.0
 
         nfft = int(self._fft_size)  # type: ignore[arg-type]

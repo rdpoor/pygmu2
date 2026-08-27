@@ -31,7 +31,7 @@ class SampleHoldPE(ProcessingElement):
         initial_value: Output before the first trigger event (default 0.0).
 
     Notes:
-        - is_pure() is False; state (held value) persists between renders.
+        - stateful = True; state (held value) persists between renders.
         - source is rendered for the full buffer on every render call so that
           impure sources (e.g. NoisePE) advance their internal state correctly.
         - Only channel 0 of a multi-channel source is used.
@@ -55,8 +55,7 @@ class SampleHoldPE(ProcessingElement):
     def inputs(self) -> list[ProcessingElement]:
         return [self._source, self._trigger]
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
     def channel_count(self) -> int:
         return 1

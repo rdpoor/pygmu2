@@ -3,7 +3,7 @@ CompressorPE, LimiterPE, ExpanderPE — dynamics processors.
 
 All three are built on the shared _DynamicsProcessorPE base which wires
 together a CachePE, EnvelopePE, and DynamicsPE and provides the common
-infrastructure (inputs, is_pure, channel_count, extent, render).
+infrastructure (inputs, stateful, channel_count, extent, render).
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
@@ -83,8 +83,7 @@ class _DynamicsProcessorPE(ProcessingElement):
         """Expose the internal graph so the Renderer manages all lifecycle."""
         return [self._dynamics_pe]
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
     def channel_count(self) -> int | None:
         return self._dynamics_pe.channel_count()

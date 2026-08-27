@@ -28,9 +28,6 @@ class _ArrayGate(GateSignal):
     def inputs(self):
         return []
 
-    def is_pure(self):
-        return True
-
     def _compute_extent(self):
         return Extent(0, len(self._data))
 
@@ -70,7 +67,7 @@ class TestTrackHoldPEConstruction:
 
     def test_is_not_pure(self):
         th = TrackHoldPE(pg.ConstantPE(1.0), _ArrayGate([1]))
-        assert th.is_pure() is False
+        assert th.stateful
 
     def test_channel_count_is_one(self):
         th = TrackHoldPE(pg.ConstantPE(1.0), _ArrayGate([1]))

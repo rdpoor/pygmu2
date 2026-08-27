@@ -53,7 +53,7 @@ class AudioReaderPE(SourcePE):
             headroom). None (default) leaves the decoded samples unchanged.
 
     Notes:
-        - is_pure() is True: the in-memory buffer supports arbitrary
+        - stateless: the in-memory buffer supports arbitrary
           (start, duration) requests in any order and by multiple sinks.
         - Requires the miniaudio package: pip install miniaudio.
         - To shift playback position in time, use DelayPE.
@@ -83,9 +83,6 @@ class AudioReaderPE(SourcePE):
     # ------------------------------------------------------------------
     # SourcePE / ProcessingElement interface
     # ------------------------------------------------------------------
-
-    def is_pure(self) -> bool:
-        return True
 
     def channel_count(self) -> int:
         self._ensure_file_info()

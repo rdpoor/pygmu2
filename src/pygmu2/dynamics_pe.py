@@ -161,13 +161,6 @@ class DynamicsPE(ProcessingElement):
         """Return input PEs."""
         return [self._source, self._envelope]
 
-    def is_pure(self) -> bool:
-        """
-        DynamicsPE is pure - output depends only on current inputs.
-        (State is maintained by the envelope PE, not here.)
-        """
-        return True
-
     def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()

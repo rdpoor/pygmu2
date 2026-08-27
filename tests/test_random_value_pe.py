@@ -20,7 +20,7 @@ class TestRandomValuePEConstruction:
 
     def test_default_construction(self):
         rv = RandomValuePE()
-        assert rv.is_pure() is False
+        assert rv.stateful
         assert rv.channel_count() == 1
 
     def test_inputs_empty_for_scalar_rate(self):

@@ -139,6 +139,8 @@ class CombPE(ProcessingElement):
 
     _MAX_FEEDBACK = 0.995
 
+    stateful = True
+
     def __init__(
         self,
         source: ProcessingElement,
@@ -183,10 +185,6 @@ class CombPE(ProcessingElement):
         if self._fb_is_pe:
             inputs.append(self._feedback)
         return inputs
-
-    def is_pure(self) -> bool:
-        """CombPE maintains state and is not pure."""
-        return False
 
     def channel_count(self) -> int | None:
         """Pass through channel count from source."""

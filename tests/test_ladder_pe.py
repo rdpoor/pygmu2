@@ -35,7 +35,7 @@ class TestLadderPEBasics:
     def test_is_not_pure(self):
         source = ConstantPE(1.0)
         ladder = LadderPE(source, frequency=1000.0, resonance=0.5)
-        assert ladder.is_pure() is False
+        assert ladder.stateful
 
     def test_extent_from_source(self):
         source = PiecewisePE([(0, 0.0), (500, 1.0)])

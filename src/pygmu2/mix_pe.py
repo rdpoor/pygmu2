@@ -61,15 +61,6 @@ class MixPE(ProcessingElement):
         """Return the list of input PEs."""
         return self._inputs
 
-    def is_pure(self) -> bool:
-        """
-        MixPE is pure - it performs a stateless operation (addition).
-
-        Note: Graph validation will still check that non-pure inputs
-        aren't used in multiple places.
-        """
-        return True
-
     def _render(self, start: int, duration: int) -> Snippet:
         """
         Mix all inputs by adding their samples together.

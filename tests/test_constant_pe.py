@@ -30,9 +30,9 @@ class TestConstantPEBasics:
         assert extent.start is None
         assert extent.end is None
 
-    def test_is_pure(self):
+    def test_stateful(self):
         const = ConstantPE(1.0)
-        assert const.is_pure() is True
+        assert not const.stateful
 
     def test_no_inputs(self):
         const = ConstantPE(1.0)

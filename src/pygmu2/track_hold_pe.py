@@ -31,7 +31,7 @@ class TrackHoldPE(ProcessingElement):
         initial_value: Output before the first gate-open period (default 0.0).
 
     Notes:
-        - is_pure() is False; the held value persists between renders.
+        - stateful = True; the held value persists between renders.
         - Both source and gate are rendered for the full block each call so
           that impure sources advance their internal state correctly.
         - Only channel 0 of a multi-channel source is used.
@@ -55,8 +55,7 @@ class TrackHoldPE(ProcessingElement):
     def inputs(self) -> list[ProcessingElement]:
         return [self._source, self._gate]
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
     def channel_count(self) -> int:
         return 1

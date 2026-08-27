@@ -47,11 +47,11 @@ class TestAdsrGatedPEBasics:
         self.renderer.set_source(adsr)
         assert adsr is not None
 
-    def test_is_pure(self):
+    def test_stateful(self):
         """AdsrGatedPE is not pure (maintains state)."""
         gate = ConstantPE(1.0)
         adsr = AdsrGatedPE(gate)
-        assert adsr.is_pure() is False
+        assert adsr.stateful
 
     def test_channel_count(self):
         """AdsrGatedPE outputs mono control signal."""

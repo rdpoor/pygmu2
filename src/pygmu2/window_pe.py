@@ -89,13 +89,6 @@ class WindowPE(ProcessingElement):
         """Return input PEs."""
         return [self._source]
 
-    def is_pure(self) -> bool:
-        """
-        WindowPE is pure - it has no state between render calls.
-        Each output sample depends only on the input window around it.
-        """
-        return True
-
     def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()

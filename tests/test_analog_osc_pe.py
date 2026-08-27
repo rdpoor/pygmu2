@@ -27,9 +27,9 @@ class TestAnalogOscPEBasics:
         assert osc.waveform == "rectangle"
         assert osc.channel_count() == 1
 
-    def test_is_pure_with_constants(self):
+    def test_stateless_with_constants(self):
         osc = AnalogOscPE(frequency=220.0, duty_cycle=0.25, waveform="rectangle")
-        assert osc.is_pure() is True
+        assert not osc.stateful
         assert osc.inputs() == []
 
     def test_infinite_extent_constant_params(self):

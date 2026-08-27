@@ -49,11 +49,11 @@ class TestRingModulatorPEBasics:
         rm = RingModulatorPE(carrier, modulator, bias=bias_pe, mix=mix_pe)
         assert rm.inputs() == [carrier, modulator, bias_pe, mix_pe]
 
-    def test_is_pure(self):
+    def test_stateful(self):
         carrier = ConstantPE(1.0)
         modulator = ConstantPE(0.5)
         rm = RingModulatorPE(carrier, modulator)
-        assert rm.is_pure() is True
+        assert not rm.stateful
 
     def test_channel_count_from_carrier(self):
         carrier = ConstantPE(1.0, channels=2)

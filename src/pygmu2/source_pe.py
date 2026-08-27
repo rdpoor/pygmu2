@@ -28,15 +28,6 @@ class SourcePE(ProcessingElement):
         """Sources have no inputs."""
         return []
 
-    def is_pure(self) -> bool:
-        """
-        Sources are typically pure (arbitrary render times, multi-sink OK).
-
-        Override and return False for sources with state that require
-        contiguous render requests.
-        """
-        return True
-
     @abstractmethod
     def channel_count(self) -> int:
         """

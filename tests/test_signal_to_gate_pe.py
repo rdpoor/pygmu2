@@ -27,7 +27,7 @@ class TestSignalToGatePEConstruction:
 
     def test_is_not_pure(self):
         pe = SignalToGatePE(pg.ConstantPE(0.0))
-        assert pe.is_pure() is False
+        assert pe.stateful
 
     def test_channel_count(self):
         pe = SignalToGatePE(pg.ConstantPE(0.0))

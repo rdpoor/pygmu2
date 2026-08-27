@@ -216,7 +216,7 @@ class NotesPE(ProcessingElement):
 
         This is called once during construction, before note chains are built.
         """
-        if self._src_pe.is_pure():
+        if not self._src_pe.stateful:
             return self._src_pe
 
         if not self._note_list:
@@ -269,9 +269,6 @@ class NotesPE(ProcessingElement):
 
     def inputs(self) -> list[ProcessingElement]:
         return [self._src_pe]
-
-    def is_pure(self) -> bool:
-        return True
 
     def channel_count(self) -> int | None:
         return self._src_pe.channel_count()

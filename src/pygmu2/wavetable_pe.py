@@ -98,10 +98,6 @@ class WavetablePE(ProcessingElement):
         """Return both wavetable and indexer as inputs."""
         return [self._wavetable, self._indexer]
 
-    def is_pure(self) -> bool:
-        """WavetablePE is pure - interpolated lookup is stateless."""
-        return True
-
     def channel_count(self) -> int | None:
         """Output channels match the wavetable's channel count."""
         return self._wavetable.channel_count()

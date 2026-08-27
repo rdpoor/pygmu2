@@ -27,7 +27,7 @@ class TestPeriodicTriggerConstruction:
     def test_default_hz(self):
         """Default hz=1.0 constructs without error."""
         pt = PeriodicTrigger()
-        assert pt.is_pure() is True
+        assert not pt.stateful
 
     def test_zero_hz_raises(self):
         with pytest.raises(ValueError, match="hz"):
@@ -37,9 +37,9 @@ class TestPeriodicTriggerConstruction:
         with pytest.raises(ValueError, match="hz"):
             PeriodicTrigger(hz=-1.0)
 
-    def test_is_pure_for_float_hz(self):
+    def test_stateless_for_float_hz(self):
         pt = PeriodicTrigger(hz=2.0)
-        assert pt.is_pure() is True
+        assert not pt.stateful
 
     def test_inputs_empty_for_float_hz(self):
         pt = PeriodicTrigger(hz=2.0)
@@ -47,7 +47,7 @@ class TestPeriodicTriggerConstruction:
 
     def test_is_not_pure_for_pe_hz(self):
         pt = PeriodicTrigger(hz=pg.ConstantPE(2.0))
-        assert pt.is_pure() is False
+        assert pt.stateful
 
     def test_inputs_contains_pe_hz(self):
         hz_pe = pg.ConstantPE(2.0)

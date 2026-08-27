@@ -34,7 +34,7 @@ class TestCombPEBasics:
     def test_is_not_pure(self):
         source = ConstantPE(1.0)
         comb = CombPE(source, frequency=440.0)
-        assert comb.is_pure() is False
+        assert comb.stateful
 
 
 class TestCombPERender:

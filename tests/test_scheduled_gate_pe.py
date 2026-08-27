@@ -34,8 +34,8 @@ class TestScheduledGatePEConstruction:
     def test_inputs_is_empty(self):
         assert ScheduledGatePE([]).inputs() == []
 
-    def test_is_pure(self):
-        assert ScheduledGatePE([]).is_pure() is True
+    def test_stateful(self):
+        assert not ScheduledGatePE([]).stateful
 
     def test_channel_count(self):
         assert ScheduledGatePE([]).channel_count() == 1

@@ -412,15 +412,15 @@ class TestSpatialPEBasics:
         panned = SpatialPE(mono_source, method=SpatialLinear(azimuth=0.0))
         assert panned.extent() == mono_source.extent()
 
-    def test_is_pure(self):
+    def test_stateful(self):
         """SpatialPE should be pure (stateless)."""
         mono_source = ArrayPE(np.array([1.0], dtype=np.float32).reshape(-1, 1))
 
         adapter = SpatialPE(mono_source, method=SpatialAdapter(channels=2))
-        assert adapter.is_pure() is True
+        assert not adapter.stateful
 
         panned = SpatialPE(mono_source, method=SpatialLinear(azimuth=0.0))
-        assert panned.is_pure() is True
+        assert not panned.stateful
 
     def test_repr(self):
         """__repr__ should show source and method."""

@@ -35,8 +35,7 @@ class GateToTriggerPE(TriggerSignal):
     def inputs(self) -> list:
         return [self._gate]
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
     def _compute_extent(self) -> Extent:
         return self._gate.extent()

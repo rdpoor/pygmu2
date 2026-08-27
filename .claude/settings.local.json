@@ -7,7 +7,8 @@
       "Bash(echo \"grep exit: $? \\(1 = clean\\)\")",
       "Bash(uv run *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(awk -F:: '{print $1}')"
     ]
   }
 }

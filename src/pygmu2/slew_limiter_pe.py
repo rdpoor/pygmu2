@@ -53,7 +53,7 @@ class SlewLimiterPE(ProcessingElement):
                 SlewMode.LOGARITHMIC.
 
     Notes:
-        - is_pure() is False; the current output value is state.
+        - stateful = True; the current output value is state.
         - LINEAR: output moves toward source at ≤ rate units/second.
         - EXPONENTIAL: per-sample coefficient derived so that the initial
           velocity at maximum error matches LINEAR.  Asymptotically approaches
@@ -94,8 +94,7 @@ class SlewLimiterPE(ProcessingElement):
             return [self._source, self._rate]
         return [self._source]
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
     def channel_count(self) -> int:
         return 1

@@ -49,12 +49,12 @@ class TestBlitSawPEBasics:
     def test_is_never_pure(self):
         """BlitSawPE is never pure due to integrator state."""
         saw = BlitSawPE(frequency=440.0)
-        assert saw.is_pure() is False
+        assert saw.stateful
 
         # Even with PE inputs, still not pure
         freq_pe = ConstantPE(440.0)
         saw_pe = BlitSawPE(frequency=freq_pe)
-        assert saw_pe.is_pure() is False
+        assert saw_pe.stateful
 
     def test_no_inputs_with_constants(self):
         """inputs() returns empty list with constant params."""
@@ -449,15 +449,18 @@ class TestBlitSawPEStateManagement:
 
         self.renderer.stop()
 
-    def test_discontinuous_render_resets_state(self):
-        """Non-contiguous render on BlitSawPE resets state instead of raising."""
+    def test_discontinuous_render_raises(self):
+        """Non-contiguous render on BlitSawPE raises; reset_state() seeks."""
         saw = BlitSawPE(frequency=440.0)
         self.renderer.set_source(saw)
         self.renderer.start()
 
         saw.render(0, 1000)
 
-        # Skip ahead: BlitSawPE resets its internal state and continues
+        with pytest.raises(RuntimeError, match="non-contiguous render"):
+            saw.render(5000, 1000)
+
+        saw.reset_state()
         snippet = saw.render(5000, 1000)
         assert snippet.duration == 1000
 

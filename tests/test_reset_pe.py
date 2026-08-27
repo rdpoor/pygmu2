@@ -37,12 +37,12 @@ class TestResetPEBasics(unittest.TestCase):
         assert reset_pe.source is source
         assert reset_pe.trigger is trigger
 
-    def test_is_pure(self):
+    def test_stateful(self):
         """ResetPE is not pure (maintains trigger state)."""
         source = IdentityPE()
         trigger = ConstantPE(1.0)
         reset_pe = ResetPE(source, trigger)
-        assert reset_pe.is_pure() is False
+        assert reset_pe.stateful
 
     def test_channel_count(self):
         """ResetPE passes through channel count from source."""

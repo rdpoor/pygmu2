@@ -88,9 +88,9 @@ class TestAudioReaderPEConstruction:
         pe = pg.AudioReaderPE("song.mp3")
         assert pe.path == "song.mp3"
 
-    def test_is_pure(self):
+    def test_stateful(self):
         pe = pg.AudioReaderPE("song.mp3")
-        assert pe.is_pure() is True
+        assert not pe.stateful
 
     def test_no_inputs(self):
         pe = pg.AudioReaderPE("song.mp3")

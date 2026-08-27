@@ -69,8 +69,7 @@ class ControlPE(SourcePE):
         """Infinite extent, like ConstantPE."""
         return Extent(None, None)
 
-    def is_pure(self) -> bool:
-        return False  # value can change between renders
+    stateful = True
 
     def channel_count(self) -> int:
         return self._channels

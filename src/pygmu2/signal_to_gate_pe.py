@@ -57,8 +57,7 @@ class SignalToGatePE(GateSignal):
     def inputs(self) -> list[ProcessingElement]:
         return [self._source]
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
     def _compute_extent(self) -> Extent:
         return self._source.extent()

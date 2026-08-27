@@ -84,7 +84,7 @@ class TestConstruction:
 
     def test_is_not_pure(self):
         # Stateful recurrence; must not be cached or reordered by the framework.
-        assert IdiophonePE(MARIMBA).is_pure() is False
+        assert IdiophonePE(MARIMBA).stateful
 
 
 # ---------------------------------------------------------------------------

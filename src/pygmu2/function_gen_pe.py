@@ -99,8 +99,10 @@ class FunctionGenPE(ProcessingElement):
             result.append(self._phase_in)
         return result
 
-    def is_pure(self) -> bool:
-        return not self.inputs()
+    @property
+    def stateful(self) -> bool:  # type: ignore[override]
+        # PE-driven parameters need a phase accumulator; constants are closed-form.
+        return bool(self.inputs())
 
     def channel_count(self) -> int:
         return self._channels
@@ -173,7 +175,7 @@ class FunctionGenPE(ProcessingElement):
         # Phase increment per sample (cycles/sample)
         dt = freq / float(get_sample_rate())  # or your existing sr variable
 
-        if self.is_pure():
+        if not self.stateful:
             idx = np.arange(start, start + duration, dtype=np.float64)
             base_phase = np.mod(idx * float(dt[0]), 1.0)
         else:

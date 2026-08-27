@@ -51,10 +51,10 @@ class TestDelayPEIntegerBasics:
         # Integer delay: only source in inputs
         assert delay.inputs() == [source]
 
-    def test_is_pure(self):
+    def test_stateful(self):
         source = ConstantPE(1.0)
         delay = DelayPE(source, delay=100)
-        assert delay.is_pure() is True
+        assert not delay.stateful
 
     def test_channel_count_passthrough(self):
         source = ConstantPE(1.0, channels=2)
@@ -516,7 +516,7 @@ class TestDelayPEChaining:
         delay1 = DelayPE(source, delay=10)
         delay2 = DelayPE(delay1, delay=20)
 
-        assert delay2.is_pure() is True
+        assert not delay2.stateful
 
 
 class TestDelayPEIntegration:

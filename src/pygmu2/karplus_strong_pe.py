@@ -216,9 +216,7 @@ class KarplusStrongPE(SourcePE):
     def channel_count(self) -> int:
         return self._channels
 
-    def is_pure(self) -> bool:
-        """KarplusStrongPE maintains delay-line state; requires contiguous requests."""
-        return False
+    stateful = True
 
     def __repr__(self) -> str:
         if self._duration_param is not None and self._rho_damping is not None:

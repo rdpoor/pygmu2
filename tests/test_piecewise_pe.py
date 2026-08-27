@@ -55,9 +55,9 @@ class TestPiecewisePEBasics:
         assert extent.start is None
         assert extent.end is None
 
-    def test_is_pure(self):
+    def test_stateful(self):
         pw = PiecewisePE([(0, 0.0), (100, 1.0)])
-        assert pw.is_pure() is True
+        assert not pw.stateful
 
     def test_no_inputs(self):
         pw = PiecewisePE([(0, 0.0), (100, 1.0)])

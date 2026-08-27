@@ -62,10 +62,10 @@ class TestCropPEBasics:
         crop = CropPE(source, 0, (100) - (0))
         assert crop.inputs() == [source]
 
-    def test_is_pure(self):
+    def test_stateful(self):
         source = ConstantPE(1.0)
         crop = CropPE(source, 0, (100) - (0))
-        assert crop.is_pure() is True
+        assert not crop.stateful
 
     def test_channel_count_passthrough(self):
         source = ConstantPE(1.0, channels=2)

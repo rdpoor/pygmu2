@@ -261,11 +261,7 @@ class SuperSawPE(ProcessingElement):
             result.append(self._amplitude)
         return result
 
-    def is_pure(self) -> bool:
-        """
-        SuperSawPE is not pure due to internal oscillator state.
-        """
-        return False
+    stateful = True
 
     def channel_count(self) -> int:
         """Return the number of output channels."""

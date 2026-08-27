@@ -78,7 +78,7 @@ class TestCompressorPEBasics:
         source = SinePE(frequency=440.0)
         comp = CompressorPE(source)
 
-        assert comp.is_pure() is False
+        assert comp.stateful
 
     def test_channel_count_passthrough(self):
         """Channel count comes from source."""
@@ -336,7 +336,7 @@ class TestExpanderPE:
         source = SinePE(frequency=440.0)
         gate = ExpanderPE(source)
 
-        assert gate.is_pure() is False
+        assert gate.stateful
 
     def test_repr(self):
         """Test string representation."""

@@ -20,7 +20,7 @@ class TestRandomTriggerPEConstruction:
 
     def test_default_construction(self):
         rt = RandomTriggerPE()
-        assert rt.is_pure() is False
+        assert rt.stateful
         assert rt.channel_count() == 1
 
     def test_inputs_empty_for_scalar_rate(self):

@@ -26,7 +26,11 @@ class CachePE(ProcessingElement):
         source: Input ProcessingElement to cache.
 
     Notes:
-        - CachePE is impure (stateful cache).
+        - CachePE declares stateful = False (the default): the memoizer is
+          order-safe by design. Identical repeated requests are served from
+          cache; a diverging request re-renders the source — and if the
+          source is stateful, the source's own contiguity check raises,
+          naming the actual offender.
         - Only identical (start, duration) requests are cached.
         - Cache is cleared on on_start(), on_stop(), and reset_state().
     """
@@ -43,11 +47,6 @@ class CachePE(ProcessingElement):
 
     def inputs(self) -> list[ProcessingElement]:
         return [self._source]
-
-    def is_pure(self) -> bool:
-        # CachePE does not change the signal; it memoizes renders.
-        # It is safe to treat as pure to allow multiple sinks.
-        return True
 
     def channel_count(self) -> int | None:
         return self._source.channel_count()

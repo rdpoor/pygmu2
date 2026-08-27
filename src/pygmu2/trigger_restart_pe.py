@@ -44,8 +44,7 @@ class TriggerRestartPE(ProcessingElement):
     def inputs(self) -> list[ProcessingElement]:
         return [self._trigger, self._src]
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
     def channel_count(self) -> int | None:
         return self._src.channel_count()

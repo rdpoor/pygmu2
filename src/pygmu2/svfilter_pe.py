@@ -306,7 +306,7 @@ class SVFilterPE(ProcessingElement):
 
     State update: y_{n+1} = B*x_n + A*y_n,  out_n = C @ [x_n, y_0, y_1].
 
-    This filter maintains internal state; is_pure() returns False.
+    This filter maintains internal state (stateful = True).
     State is reset on on_start() and on_stop().
 
     Args:
@@ -370,8 +370,7 @@ class SVFilterPE(ProcessingElement):
             result.append(self._q)
         return result
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
     def channel_count(self) -> int | None:
         return self._source.channel_count()

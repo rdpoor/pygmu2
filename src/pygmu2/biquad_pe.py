@@ -97,7 +97,7 @@ class BiquadPE(ProcessingElement):
     Coefficients are calculated using Robert Bristow-Johnson's Audio EQ
     Cookbook formulas.
 
-    This filter maintains internal state, so is_pure() returns False.
+    This filter maintains internal state (stateful = True).
     The state is reset on on_start() and on_stop().
 
     Args:
@@ -182,11 +182,7 @@ class BiquadPE(ProcessingElement):
             result.append(self._q)
         return result
 
-    def is_pure(self) -> bool:
-        """
-        BiquadPE is NOT pure - it maintains internal filter state.
-        """
-        return False
+    stateful = True
 
     def channel_count(self) -> int | None:
         """Pass through channel count from source."""

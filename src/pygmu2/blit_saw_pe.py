@@ -130,11 +130,7 @@ class BlitSawPE(ProcessingElement):
             result.append(self._m)
         return result
 
-    def is_pure(self) -> bool:
-        """
-        BlitSawPE is never pure due to integrator state.
-        """
-        return False
+    stateful = True
 
     def channel_count(self) -> int:
         """Return the number of output channels."""

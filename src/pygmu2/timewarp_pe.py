@@ -46,6 +46,8 @@ class TimeWarpPE(ProcessingElement):
         interpolation: Linear or cubic interpolation (default: LINEAR)
     """
 
+    stateful = True
+
     def __init__(
         self,
         source: ProcessingElement,
@@ -77,9 +79,6 @@ class TimeWarpPE(ProcessingElement):
         if self._rate_is_pe:
             return [self._source, self._rate]
         return [self._source]
-
-    def is_pure(self) -> bool:
-        return False
 
     def channel_count(self) -> int | None:
         return self._source.channel_count()

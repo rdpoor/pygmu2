@@ -104,7 +104,7 @@ class TestConstruction:
         assert not hasattr(DecayingSinePE, "rho_for_decay_db")
 
     def test_is_not_pure(self):
-        assert DecayingSinePE(frequency=440.0, tau=0.5).is_pure() is False
+        assert DecayingSinePE(frequency=440.0, tau=0.5).stateful
 
 
 # ---------------------------------------------------------------------------

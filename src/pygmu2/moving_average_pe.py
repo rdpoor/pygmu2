@@ -145,9 +145,6 @@ class MovingAveragePE(ProcessingElement):
             return [self._source, self._window]
         return [self._source]
 
-    def is_pure(self) -> bool:
-        return True
-
     def channel_count(self) -> int | None:
         return self._source.channel_count()
 

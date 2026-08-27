@@ -31,9 +31,9 @@ class TestFunctionGenPEBasics:
         with pytest.raises(ValueError):
             FunctionGenPE(waveform="nope")
 
-    def test_is_pure_with_constants(self):
+    def test_stateless_with_constants(self):
         pe = FunctionGenPE(frequency=100.0, duty_cycle=0.25, waveform="rectangle")
-        assert pe.is_pure() is True
+        assert not pe.stateful
         assert pe.inputs() == []
 
     def test_extent_with_disjoint_pe_inputs_is_empty(self):

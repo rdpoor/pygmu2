@@ -83,12 +83,6 @@ class GainPE(ProcessingElement):
             return [self._source, self._gain]
         return [self._source]
 
-    def is_pure(self) -> bool:
-        """
-        GainPE is pure - multiplication is stateless.
-        """
-        return True
-
     def _render(self, start: int, duration: int) -> Snippet:
         """
         Render gain-adjusted audio.

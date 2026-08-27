@@ -75,7 +75,7 @@ class TestEnvelopePEBasics:
         source = ConstantPE(1.0)
         env = EnvelopePE(source)
 
-        assert env.is_pure() is False
+        assert env.stateful
 
     def test_channel_count_passthrough(self):
         source = ConstantPE(1.0, channels=2)

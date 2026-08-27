@@ -271,10 +271,6 @@ class PortamentoPE(SourcePE):
         """Return inputs (the internal SequencePE)."""
         return [self._sequence_pe] if self._sequence_pe is not None else []
 
-    def is_pure(self) -> bool:
-        """PortamentoPE is pure - it's a stateless composition."""
-        return True
-
     def channel_count(self) -> int | None:
         """Return channel count."""
         return self._channels

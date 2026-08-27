@@ -193,8 +193,7 @@ class _CountingPE(ProcessingElement):
     def inputs(self) -> list[ProcessingElement]:
         return [self._source]
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
     def channel_count(self) -> Optional[int]:
         return self._source.channel_count()

@@ -56,9 +56,6 @@ class _ExtentWindowPE(ProcessingElement):
     def inputs(self) -> list[ProcessingElement]:
         return [self._source]
 
-    def is_pure(self) -> bool:
-        return True
-
     def _get_first_value(self) -> np.ndarray | None:
         if self._first_value is not None:
             return self._first_value

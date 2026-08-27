@@ -100,11 +100,7 @@ class EnvelopePE(ProcessingElement):
         """Return input PEs."""
         return [self._source]
 
-    def is_pure(self) -> bool:
-        """
-        EnvelopePE is NOT pure - it maintains envelope state.
-        """
-        return False
+    stateful = True
 
     def channel_count(self) -> int | None:
         """Pass through channel count from source."""

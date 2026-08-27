@@ -61,8 +61,10 @@ class PeriodicTrigger(TriggerSignal):
             return [self._hz]
         return []
 
-    def is_pure(self) -> bool:
-        return not self._hz_is_pe
+    @property
+    def stateful(self) -> bool:  # type: ignore[override]
+        # A PE-driven rate needs a phase accumulator; a constant rate is closed-form.
+        return self._hz_is_pe
 
     def _compute_extent(self) -> Extent:
         return Extent(None, None)

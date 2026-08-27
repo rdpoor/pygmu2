@@ -112,8 +112,7 @@ class MidiInPE(SourcePE):
     def channel_count(self) -> int:
         return 1
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
     def __repr__(self) -> str:
         name = repr(self._port_name) if self._port_name is not None else "default"

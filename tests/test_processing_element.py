@@ -75,8 +75,7 @@ class StatefulPE(ProcessingElement):
     def inputs(self) -> list[ProcessingElement]:
         return [self._source]
 
-    def is_pure(self) -> bool:
-        return False  # Has state
+    stateful = True
 
 
 class MixPE(ProcessingElement):
@@ -117,18 +116,22 @@ class TestSourcePE:
         source = ConstantPE(1.0, 100)
         assert source.inputs() == []
 
-    def test_source_is_pure_by_default(self):
+    def test_source_stateless_by_default(self):
         """Test that sources are pure by default (arbitrary render times, multi-sink OK)."""
         source = ConstantPE(1.0, 100)
-        assert source.is_pure() is True
+        assert not source.stateful
 
-    def test_impure_pe_allows_non_contiguous_requests(self):
-        """Non-contiguous renders on impure PEs are allowed; the PE handles state internally."""
+    def test_stateful_pe_rejects_non_contiguous_requests(self):
+        """A gap or seek on a stateful PE raises; reset_state() is the
+        sanctioned way to seek (DESIGN_PHILOSOPHY.md R2)."""
         source = ConstantPE(1.0, 100)
-        stateful = StatefulPE(source)  # StatefulPE is impure
-        stateful.render(0, 10)  # First request
-        # Non-contiguous: base class no longer enforces contiguity; PE manages its own state
-        snippet = stateful.render(20, 10)
+        stateful = StatefulPE(source)
+        stateful.render(0, 10)
+        stateful.render(10, 10)  # contiguous: fine
+        with pytest.raises(RuntimeError, match="non-contiguous render"):
+            stateful.render(40, 10)
+        stateful.reset_state()
+        snippet = stateful.render(40, 10)  # explicit seek: fine
         assert snippet.duration == 10
 
     def test_source_must_declare_channels(self):
@@ -171,12 +174,12 @@ class TestProcessingElement:
         gain = GainPE(source, 0.5)
         assert gain.inputs() == [source]
 
-    def test_processor_default_not_pure(self):
-        """Test that processors are not pure by default."""
+    def test_processor_default_stateless(self):
+        """Processors are stateless by default; PEs holding render state
+        must declare stateful = True (falsified by the contract suite)."""
         source = ConstantPE(1.0, 100)
         gain = GainPE(source, 0.5)
-        # GainPE doesn't override is_pure, so it uses default False
-        assert gain.is_pure() is False
+        assert not gain.stateful
 
     def test_processor_passthrough_channels(self):
         """Test that processors pass through channels by default."""

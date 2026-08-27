@@ -53,9 +53,9 @@ class TestRandomPEBasics:
         pe = RandomPE(trigger=trigger)
         assert pe.inputs() == [trigger]
 
-    def test_is_pure(self):
+    def test_stateful(self):
         pe = RandomPE()
-        assert pe.is_pure() is False
+        assert pe.stateful
 
     def test_channel_count(self):
         pe = RandomPE()

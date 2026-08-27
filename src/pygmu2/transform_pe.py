@@ -79,12 +79,6 @@ class TransformPE(ProcessingElement):
         """Return input PEs."""
         return [self._source]
 
-    def is_pure(self) -> bool:
-        """
-        TransformPE is pure - the function is applied statelessly.
-        """
-        return True
-
     def channel_count(self) -> int | None:
         """Pass through channel count from source."""
         return self._source.channel_count()

@@ -39,6 +39,12 @@ class SpatialMethod(ABC):
     and determines the output channel count.
     """
 
+    # True if the method holds render state (e.g. a convolution tail).
+    stateful: bool = False
+
+    def reset(self) -> None:
+        """Clear any render state. No-op for stateless methods."""
+
     @property
     @abstractmethod
     def output_channels(self) -> int:
@@ -742,6 +748,12 @@ class SpatialHRTF(SpatialMethod):
         self._tail: np.ndarray | None = None
         self._last_render_end: int | None = None
 
+    stateful = True  # convolution tail
+
+    def reset(self) -> None:
+        self._tail = None
+        self._last_render_end = None
+
     @property
     def output_channels(self) -> int:
         return 2  # Stereo
@@ -763,8 +775,10 @@ class SpatialHRTF(SpatialMethod):
         self._ir_cache[filename] = (data, int(sr))
         return self._ir_cache[filename]
 
-    def _reset_tail_if_noncontiguous(self, start: int) -> None:
-        if self._last_render_end is None or start != self._last_render_end:
+    def _reset_tail_if_first_render(self) -> None:
+        # Non-contiguous renders never reach here (SpatialPE raises via the
+        # base class when the method is stateful).
+        if self._last_render_end is None:
             self._tail = None
 
     def render(
@@ -794,7 +808,7 @@ class SpatialHRTF(SpatialMethod):
         ir_len = left_ir.shape[0]
         tail_len = max(ir_len - 1, 0)
 
-        self._reset_tail_if_noncontiguous(start)
+        self._reset_tail_if_first_render()
 
         if tail_len == 0:
             x = mono_data
@@ -918,6 +932,7 @@ class SpatialPE(ProcessingElement):
 
         self._source = source
         self._method = method
+        self.stateful = method.stateful
 
         # TODO: Implementation - validate method
 
@@ -931,10 +946,14 @@ class SpatialPE(ProcessingElement):
         """
         return [self._source, *self._method.inputs()]
 
-    def is_pure(self) -> bool:
-        """SpatialPE is pure - it's a stateless transformation."""
-        # TODO: Implementation
-        return True
+    def _on_start(self) -> None:
+        self._method.reset()
+
+    def _on_stop(self) -> None:
+        self._method.reset()
+
+    def _reset_state(self) -> None:
+        self._method.reset()
 
     def channel_count(self) -> int | None:
         """Return output channel count (determined by method)."""

@@ -63,8 +63,7 @@ class RandomStepPE(ProcessingElement):
     def _on_stop(self) -> None:
         self._rng = None
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
     def channel_count(self) -> int:
         return 1

@@ -64,7 +64,7 @@ class AdsrGatedPE(ProcessingElement):
       - When Release reaches 0, returns to IDLE.
 
     Notes:
-      - This PE is stateful (is_pure() == False) and therefore must be rendered
+      - This PE is stateful and therefore must be rendered
         with contiguous render requests.
       - Internally it uses segment-based vectorized rendering: the buffer is split
         at gate transitions and ADSR phase boundaries, then filled with numpy slices.
@@ -105,9 +105,7 @@ class AdsrGatedPE(ProcessingElement):
         # Initialize runtime state.
         self._reset_state()
 
-    def is_pure(self) -> bool:
-        # Envelope evolution depends on internal state, not solely on (start, duration).
-        return False
+    stateful = True
 
     def channel_count(self) -> int:
         # Mono control signal
@@ -288,8 +286,7 @@ class AdsrTriggeredPE(ProcessingElement):
 
         self._reset_state()
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
     def channel_count(self) -> int:
         return 1

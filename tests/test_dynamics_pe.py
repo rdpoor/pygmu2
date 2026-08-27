@@ -69,13 +69,13 @@ class TestDynamicsPEBasics:
         assert source in inputs
         assert envelope in inputs
 
-    def test_is_pure(self):
+    def test_stateful(self):
         """DynamicsPE is pure (state is in envelope PE)."""
         source = ConstantPE(1.0)
         envelope = ConstantPE(0.5)
         dynamics = DynamicsPE(source, envelope)
 
-        assert dynamics.is_pure() is True
+        assert not dynamics.stateful
 
     def test_channel_count_passthrough(self):
         """Channel count comes from source."""

@@ -28,9 +28,9 @@ class TestIdentityPEBasics:
         identity = IdentityPE(channels=2)
         assert identity.channel_count() == 2
 
-    def test_is_pure(self):
+    def test_stateful(self):
         identity = IdentityPE()
-        assert identity.is_pure() is True
+        assert not identity.stateful
 
     def test_no_inputs(self):
         identity = IdentityPE()
@@ -145,9 +145,9 @@ class TestDiracPEBasics:
         dirac = DiracPE(channels=2)
         assert dirac.channel_count() == 2
 
-    def test_is_pure(self):
+    def test_stateful(self):
         dirac = DiracPE()
-        assert dirac.is_pure() is True
+        assert not dirac.stateful
 
     def test_no_inputs(self):
         dirac = DiracPE()

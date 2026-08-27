@@ -118,9 +118,7 @@ class ReverbPE(ProcessingElement):
         # Delegate to the composed output graph so configure() reaches all internals.
         return [self._out]
 
-    def is_pure(self) -> bool:
-        # Convolution is stateful; require contiguous renders.
-        return False
+    stateful = True
 
     def channel_count(self) -> int | None:
         return self._out.channel_count()

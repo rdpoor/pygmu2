@@ -45,7 +45,7 @@ class TestSlewLimiterPEConstruction:
 
     def test_is_not_pure(self):
         sl = SlewLimiterPE(pg.ConstantPE(1.0), rate=1.0)
-        assert sl.is_pure() is False
+        assert sl.stateful
 
     def test_channel_count_is_one(self):
         sl = SlewLimiterPE(pg.ConstantPE(1.0), rate=1.0)

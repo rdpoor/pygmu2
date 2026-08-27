@@ -88,11 +88,7 @@ class WavWriterPE(ProcessingElement):
         """Return the input PE."""
         return [self._source]
 
-    def is_pure(self) -> bool:
-        """
-        WavWriterPE is NOT pure - it has file I/O side effects.
-        """
-        return False
+    stateful = True
 
     def _on_start(self) -> None:
         """Open the WAV file for writing."""

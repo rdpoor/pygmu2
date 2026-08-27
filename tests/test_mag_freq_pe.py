@@ -89,9 +89,9 @@ class TestMagFreqPEConstruction:
 
 class TestMagFreqPEInterface:
 
-    def test_is_pure(self):
+    def test_stateful(self):
         pe = MagFreqPE(make_source(sine_signal()), identity_mangler)
-        assert pe.is_pure() is True
+        assert not pe.stateful
 
     def test_channel_count_mono(self):
         pe = MagFreqPE(make_source(sine_signal()), identity_mangler)

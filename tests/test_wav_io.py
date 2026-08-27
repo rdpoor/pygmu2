@@ -52,10 +52,10 @@ class TestWavReaderPEBasics:
         reader = WavReaderPE(path)
         assert reader.path == path
 
-    def test_is_pure(self, temp_wav_mono):
+    def test_stateful(self, temp_wav_mono):
         path, _ = temp_wav_mono
         reader = WavReaderPE(path)
-        assert reader.is_pure() is True
+        assert not reader.stateful
 
     def test_no_inputs(self, temp_wav_mono):
         path, _ = temp_wav_mono
@@ -220,7 +220,7 @@ class TestWavWriterPEBasics:
         source = ConstantPE(0.5)
         path = str(tmp_path / "output.wav")
         writer = WavWriterPE(source, path)
-        assert writer.is_pure() is False
+        assert writer.stateful
 
     def test_repr(self, tmp_path):
         source = ConstantPE(0.5)

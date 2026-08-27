@@ -36,11 +36,11 @@ class TestMixPEBasics:
         with pytest.raises(ValueError, match="at least 1 input"):
             MixPE()
 
-    def test_is_pure(self):
+    def test_stateful(self):
         source1 = ConstantPE(0.5)
         source2 = ConstantPE(0.3)
         mix = MixPE(source1, source2)
-        assert mix.is_pure() is True
+        assert not mix.stateful
 
     def test_inputs_returns_all_inputs(self):
         source1 = ConstantPE(0.5)

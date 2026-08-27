@@ -51,9 +51,7 @@ class _RandomSelectSourcePE(ProcessingElement):
         # This wrapper depends on all sources.
         return list(self._inputs)
 
-    def is_pure(self) -> bool:
-        # Randomness + internal selection state
-        return False
+    stateful = True
 
     def channel_count(self) -> int | None:
         return self._inputs[0].channel_count()
@@ -119,8 +117,7 @@ class RandomSelectPE(ProcessingElement):
         # Expose the true dependency set for graph validation/traversal.
         return [self._trigger] + self._sources
 
-    def is_pure(self) -> bool:
-        return False  # selection + trigger restart are stateful
+    stateful = True
 
     def channel_count(self) -> int | None:
         return self._selector.channel_count()

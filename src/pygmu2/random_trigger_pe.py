@@ -59,8 +59,7 @@ class RandomTriggerPE(TriggerSignal):
     def _on_stop(self) -> None:
         self._rng = None
 
-    def is_pure(self) -> bool:
-        return False
+    stateful = True
 
     def _compute_extent(self) -> Extent:
         return Extent(None, None)

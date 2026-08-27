@@ -79,7 +79,7 @@ class TestSVFilterPEBasics:
     def test_is_not_pure(self):
         source = ConstantPE(1.0)
         svf = SVFilterPE(source, frequency=1000.0, q=1.0, mode=BiquadMode.LOWPASS)
-        assert svf.is_pure() is False
+        assert svf.stateful
 
     def test_channel_count_passthrough(self):
         source = ConstantPE(1.0, channels=2)

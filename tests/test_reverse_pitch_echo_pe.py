@@ -16,7 +16,7 @@ class TestReversePitchEchoPEBasics:
         rpe = ReversePitchEchoPE(source)
 
         assert rpe.source is source
-        assert rpe.is_pure() is False
+        assert rpe.stateful
 
     def test_create_with_all_parameters(self):
         source = ConstantPE(1.0)

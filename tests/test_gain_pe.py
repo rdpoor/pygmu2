@@ -53,16 +53,16 @@ class TestGainPEBasics:
         gain = GainPE(source, gain=gain_pe)
         assert gain.inputs() == [source, gain_pe]
 
-    def test_is_pure(self):
+    def test_stateful(self):
         source = ConstantPE(1.0)
         gain = GainPE(source, gain=0.5)
-        assert gain.is_pure() is True
+        assert not gain.stateful
 
-    def test_is_pure_with_pe_gain(self):
+    def test_stateful_with_pe_gain(self):
         source = ConstantPE(1.0)
         gain_pe = PiecewisePE([(0, 0.0), (100, 1.0)])
         gain = GainPE(source, gain=gain_pe)
-        assert gain.is_pure() is True
+        assert not gain.stateful
 
     def test_channel_count_passthrough(self):
         source = ConstantPE(1.0, channels=2)
