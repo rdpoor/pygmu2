@@ -127,3 +127,24 @@ def test_readme_tables_match_code():
         timeout=120,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_import_hygiene():
+    """`import pygmu2` must not load the heavy optional dependencies —
+    they are served by the lazy registry on first use. Budget is generous
+    for CI jitter; the <100 ms target is verified manually (plan P2.5)."""
+    code = (
+        "import time, sys\n"
+        "t0 = time.perf_counter()\n"
+        "import pygmu2\n"
+        "elapsed_ms = (time.perf_counter() - t0) * 1000\n"
+        "heavy = [m for m in ('scipy', 'numba', 'mido', 'miniaudio', 'sounddevice')\n"
+        "         if any(k == m or k.startswith(m + '.') for k in sys.modules)]\n"
+        "assert not heavy, f'heavy modules loaded eagerly: {heavy}'\n"
+        "assert elapsed_ms < 500, f'import pygmu2 took {elapsed_ms:.0f} ms'\n"
+        "print('ok')\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, timeout=60
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

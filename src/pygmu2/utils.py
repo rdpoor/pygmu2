@@ -16,7 +16,6 @@ from pathlib import Path
 
 from pygmu2.config import get_sample_rate
 from pygmu2.processing_element import ProcessingElement
-from pygmu2.audio_renderer import AudioRenderer
 from pygmu2.null_renderer import NullRenderer
 from pygmu2.wav_reader_pe import WavReaderPE
 from pygmu2.wav_writer_pe import WavWriterPE
@@ -74,6 +73,8 @@ def play(source: ProcessingElement, device=None) -> None:
     sr = get_sample_rate()
     if sr is None:
         raise RuntimeError("Sample rate not set. Call pg.set_sample_rate() first.")
+    from pygmu2.audio_renderer import AudioRenderer  # defers sounddevice
+
     renderer = AudioRenderer(sample_rate=sr, device=device)
     renderer.set_source(source)
     with renderer:

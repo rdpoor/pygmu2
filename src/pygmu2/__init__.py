@@ -18,11 +18,7 @@ from pygmu2.asset_manager import (
     GithubUserContentAssetLoader,
 )
 from pygmu2.audio_library import AudioLibrary
-from pygmu2.audio_renderer import AudioRenderer
-from pygmu2.blit_saw_pe import BlitSawPE
 from pygmu2.cache_pe import CachePE
-from pygmu2.comb_pe import CombPE
-from pygmu2.compressor_pe import CompressorPE, LimiterPE, ExpanderPE
 from pygmu2.config import (
     set_sample_rate,
     get_sample_rate,
@@ -46,7 +42,6 @@ from pygmu2.decaying_sine_pe import DecayingSinePE
 from pygmu2.delay_pe import DelayPE
 from pygmu2.dirac_pe import DiracPE
 from pygmu2.dynamics_pe import DynamicsPE, DynamicsMode
-from pygmu2.envelope_pe import EnvelopePE, DetectionMode
 from pygmu2.extent import Extent, ExtendMode
 from pygmu2.function_gen_pe import FunctionGenPE
 from pygmu2.gain_pe import GainPE
@@ -55,15 +50,11 @@ from pygmu2.gate_to_trigger_pe import GateToTriggerPE
 from pygmu2.identity_pe import IdentityPE
 from pygmu2.idiophone_pe import IdiophonePE
 from pygmu2.karplus_strong_pe import KarplusStrongPE, rho_for_decay_db
-from pygmu2.ladder_pe import LadderPE, LadderMode
 from pygmu2.logger import set_global_logging, setup_logging, get_logger
 from pygmu2.loop_pe import LoopPE
 from pygmu2.mag_freq_pe import MagFreqPE
-from pygmu2.meltysynth_pe import MeltysynthPE
-from pygmu2.midi_in_pe import MidiInPE
 from pygmu2.mix_pe import MixPE
 from pygmu2.moving_average_pe import MovingAveragePE, window_for_cutoff
-from pygmu2.notes_pe import Note, NotesPE, get_notes_from_midi
 from pygmu2.noise_pe import NoisePE, NoiseMode
 from pygmu2.null_renderer import NullRenderer
 from pygmu2.periodic_gate import PeriodicGate
@@ -79,7 +70,6 @@ from pygmu2.random_value_pe import RandomValuePE
 from pygmu2.renderer import Renderer
 from pygmu2.resample_pe import ResamplePE
 from pygmu2.reverb_pe import ReverbPE
-from pygmu2.reverse_pitch_echo_pe import ReversePitchEchoPE
 from pygmu2.ring_modulator_pe import RingModulatorPE
 from pygmu2.sample_hold_pe import SampleHoldPE
 from pygmu2.scheduled_gate_pe import ScheduledGatePE
@@ -90,15 +80,6 @@ from pygmu2.set_extent_pe import SetExtentPE
 from pygmu2.sine_pe import SinePE
 from pygmu2.slice_pe import SlicePE
 from pygmu2.snippet import Snippet
-from pygmu2.spatial_pe import (
-    SpatialPE,
-    SpatialMethod,
-    SpatialAdapter,
-    SpatialLinear,
-    SpatialConstantPower,
-    SpatialHRTF,
-)
-from pygmu2.super_saw_pe import SuperSawPE
 from pygmu2.temperament import (
     Temperament,
     EqualTemperament,
@@ -123,17 +104,45 @@ from pygmu2.utils import browse, play, play_offline, render_to_file
 from pygmu2.wav_reader_pe import WavReaderPE
 from pygmu2.wav_writer_pe import WavWriterPE
 from pygmu2.wavetable_pe import WavetablePE, InterpolationMode, OutOfBoundsMode
-from pygmu2.window_pe import WindowPE, WindowMode
 
 __version__ = "0.2.0"
 
-# Lazy imports for modules with heavy dependencies (scipy)
-# These are loaded on first access to avoid slow startup for simple scripts
+# Lazy imports for modules with heavy dependencies (scipy, numba, mido,
+# miniaudio, vendored meltysynth). Loaded on first access so that
+# `import pygmu2` stays fast and works without the optional extras; using
+# one of these without its dependency raises the natural ImportError at
+# first use (DESIGN_PHILOSOPHY.md PD-2). The import-hygiene test in
+# tests/test_boundaries.py asserts scipy/numba stay out of a bare import.
 _lazy_imports = {
-    "BiquadPE": ("pygmu2.biquad_pe", "BiquadPE"),
-    "BiquadMode": ("pygmu2.biquad_pe", "BiquadMode"),
     "AudioReaderPE": ("pygmu2.audio_reader_pe", "AudioReaderPE"),
+    "AudioRenderer": ("pygmu2.audio_renderer", "AudioRenderer"),
+    "BiquadMode": ("pygmu2.biquad_pe", "BiquadMode"),
+    "BiquadPE": ("pygmu2.biquad_pe", "BiquadPE"),
+    "BlitSawPE": ("pygmu2.blit_saw_pe", "BlitSawPE"),
+    "CombPE": ("pygmu2.comb_pe", "CombPE"),
+    "CompressorPE": ("pygmu2.compressor_pe", "CompressorPE"),
+    "DetectionMode": ("pygmu2.envelope_pe", "DetectionMode"),
+    "EnvelopePE": ("pygmu2.envelope_pe", "EnvelopePE"),
+    "ExpanderPE": ("pygmu2.compressor_pe", "ExpanderPE"),
+    "LadderMode": ("pygmu2.ladder_pe", "LadderMode"),
+    "LadderPE": ("pygmu2.ladder_pe", "LadderPE"),
+    "LimiterPE": ("pygmu2.compressor_pe", "LimiterPE"),
+    "MeltysynthPE": ("pygmu2.meltysynth_pe", "MeltysynthPE"),
+    "MidiInPE": ("pygmu2.midi_in_pe", "MidiInPE"),
+    "Note": ("pygmu2.notes_pe", "Note"),
+    "NotesPE": ("pygmu2.notes_pe", "NotesPE"),
+    "ReversePitchEchoPE": ("pygmu2.reverse_pitch_echo_pe", "ReversePitchEchoPE"),
     "SVFilterPE": ("pygmu2.svfilter_pe", "SVFilterPE"),
+    "SpatialAdapter": ("pygmu2.spatial_pe", "SpatialAdapter"),
+    "SpatialConstantPower": ("pygmu2.spatial_pe", "SpatialConstantPower"),
+    "SpatialHRTF": ("pygmu2.spatial_pe", "SpatialHRTF"),
+    "SpatialLinear": ("pygmu2.spatial_pe", "SpatialLinear"),
+    "SpatialMethod": ("pygmu2.spatial_pe", "SpatialMethod"),
+    "SpatialPE": ("pygmu2.spatial_pe", "SpatialPE"),
+    "SuperSawPE": ("pygmu2.super_saw_pe", "SuperSawPE"),
+    "WindowMode": ("pygmu2.window_pe", "WindowMode"),
+    "WindowPE": ("pygmu2.window_pe", "WindowPE"),
+    "get_notes_from_midi": ("pygmu2.notes_pe", "get_notes_from_midi"),
 }
 
 
