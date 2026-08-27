@@ -62,12 +62,10 @@ def test_benchmark_suite_discovers():
     assert "benchmark configurations" in result.stdout
 
 
-# Complete, working PEs that are deliberately not exported yet. Each entry
-# needs a decision (export or delete — no limbo, DESIGN_PHILOSOPHY.md R7);
-# tracked as IMPLEMENTATION_PLAN.md P3.2.
-_EXPORT_OPT_OUT = {
-    "pygmu2.portamento_pe.PortamentoPE",
-}
+# PEs deliberately not exported. Empty today: every concrete PE in the
+# tree is public. An entry here needs a comment saying why, and a plan to
+# either export or delete it (no limbo, DESIGN_PHILOSOPHY.md R7).
+_EXPORT_OPT_OUT: set[str] = set()
 
 # Names served by the lazy-import registry in __init__.py (part of the
 # public surface even though not eagerly imported).
