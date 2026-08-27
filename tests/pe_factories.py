@@ -149,7 +149,7 @@ FACTORIES = {
     ),
     "RingModulatorPE": lambda: pg.RingModulatorPE(_sine(), pg.SinePE(frequency=30.0)),
     "SVFilterPE": lambda: pg.SVFilterPE(_sine(), frequency=1000.0, q=0.707),
-    "SampleHoldPE": lambda: pg.SampleHoldPE(_sine(), pg.PeriodicTrigger(hz=50.0)),
+    "HoldPE": lambda: pg.HoldPE(_sine(), pg.PeriodicTrigger(hz=50.0)),
     "ScheduledGatePE": lambda: pg.ScheduledGatePE([(0, 100), (200, 100)]),
     "SequencePE": lambda: pg.SequencePE(
         (_finite_sine(256), 0), (pg.CropPE(pg.SinePE(frequency=550.0), 0, 256), 256)
@@ -164,7 +164,6 @@ FACTORIES = {
     "SpatialPE": lambda: pg.SpatialPE(_sine(), method=pg.SpatialLinear(azimuth=30.0)),
     "SuperSawPE": lambda: pg.SuperSawPE(frequency=440.0, voices=3),
     "TimeWarpPE": lambda: pg.TimeWarpPE(_sine(), rate=1.5),
-    "TrackHoldPE": lambda: pg.TrackHoldPE(_sine(), pg.PeriodicGate(frequency=10.0)),
     "TralfamPE": lambda: pg.TralfamPE(_finite_sine(), seed=42),
     "TransformPE": lambda: pg.TransformPE(_sine(), func=lambda x: x * 0.5),
     "TriggerRestartPE": lambda: pg.TriggerRestartPE(

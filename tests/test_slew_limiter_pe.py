@@ -273,14 +273,14 @@ class TestSlewLimiterPEComposed:
 
     def test_slew_smooths_stepped_signal(self):
         """SlewLimiter on a stepped S&H source produces a smooth ramp."""
-        from pygmu2.sample_hold_pe import SampleHoldPE
+        from pygmu2.hold_pe import HoldPE
 
         pg.set_sample_rate(100)
 
         # Stepped source: NoisePE with fixed seed triggered at 10 Hz
         src = pg.NoisePE(min_value=0.0, max_value=1.0, seed=7)
         trig = pg.PeriodicTrigger(hz=10.0)  # every 10 samples
-        stepped = SampleHoldPE(src, trig)
+        stepped = HoldPE(src, trig)
 
         # Slew-limit the steps (rate = 5 units/s → 0.05/sample)
         slewed = SlewLimiterPE(stepped, rate=5.0)

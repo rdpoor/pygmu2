@@ -246,7 +246,7 @@ def demo_rhythmic_gate():
 
     # ── Pitch: sample noise at each beat onset ────────────────────────────────
     noise_cv = pg.NoisePE(min_value=0.0, max_value=1.0, seed=RUN_SEED + 11)
-    pitch_cv = pg.TrackHoldPE(noise_cv, gate, initial_value=0.5)
+    pitch_cv = pg.HoldPE(noise_cv, gate, initial_value=0.5)
     freq_stepped = pg.TransformPE(pitch_cv, func=random_to_pitch_freq)
     freq = pg.SlewLimiterPE(freq_stepped, rate=PITCH_SLEW_RATE, mode=pg.SlewMode.LINEAR)
 

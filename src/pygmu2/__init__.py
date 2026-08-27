@@ -47,6 +47,7 @@ from pygmu2.function_gen_pe import FunctionGenPE
 from pygmu2.gain_pe import GainPE
 from pygmu2.gate_signal import GateSignal
 from pygmu2.gate_to_trigger_pe import GateToTriggerPE
+from pygmu2.hold_pe import HoldPE
 from pygmu2.identity_pe import IdentityPE
 from pygmu2.idiophone_pe import IdiophonePE
 from pygmu2.karplus_strong_pe import KarplusStrongPE, rho_for_decay_db
@@ -71,7 +72,6 @@ from pygmu2.renderer import Renderer
 from pygmu2.resample_pe import ResamplePE
 from pygmu2.reverb_pe import ReverbPE
 from pygmu2.ring_modulator_pe import RingModulatorPE
-from pygmu2.sample_hold_pe import SampleHoldPE
 from pygmu2.scheduled_gate_pe import ScheduledGatePE
 from pygmu2.signal_to_gate_pe import SignalToGatePE
 from pygmu2.sequence_pe import SequencePE, SequenceMode
@@ -95,7 +95,6 @@ from pygmu2.temperament import (
     set_baroque_pitch,
 )
 from pygmu2.timewarp_pe import TimeWarpPE
-from pygmu2.track_hold_pe import TrackHoldPE
 from pygmu2.tralfam_pe import TralfamPE
 from pygmu2.transform_pe import TransformPE
 from pygmu2.trigger_restart_pe import TriggerRestartPE
@@ -231,11 +230,10 @@ __all__ = [
     "RandomStepPE",
     "RandomTriggerPE",
     "RandomValuePE",
-    "SampleHoldPE",
+    "HoldPE",
     "ScheduledGatePE",
     "SignalToGatePE",
     "SlewLimiterPE",
-    "TrackHoldPE",
     "TriggerRestartPE",
     "SlicePE",
     "SequencePE",

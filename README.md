@@ -156,6 +156,7 @@ checks that it matches the source.
 | `FunctionGenPE` | Naive function generator (no anti-aliasing). |
 | `GainPE` | A ProcessingElement that applies gain (amplitude scaling) to its input. |
 | `GateToTriggerPE` | Converts a GateSignal to a TriggerSignal by emitting +1 at each. |
+| `HoldPE` | Follow `source` while `control` > 0; hold the last value while it is 0. |
 | `IdentityPE` | A SourcePE that outputs the sample index as the sample value. |
 | `IdiophonePE` | Struck bar idiophone synthesis PE. |
 | `KarplusStrongPE` | Plucked string using the classic Karplus-Strong algorithm. |
@@ -182,7 +183,6 @@ checks that it matches the source.
 | `ReversePitchEchoPE` | Pitch-shifted reverse echo effect. |
 | `RingModulatorPE` | A ProcessingElement that ring-modulates a carrier signal with a modulator signal. |
 | `SVFilterPE` | Second-order state variable filter with the same API as BiquadPE. |
-| `SampleHoldPE` | Sample-and-Hold processing element. |
 | `ScheduledGatePE` | Convert note durations into gate signals, specifically for feeding into an. |
 | `SequencePE` | Schedule PEs at specific start times. |
 | `SetExtentPE` | Force a PE to a specified extent, padding or truncating as needed. |
@@ -193,7 +193,6 @@ checks that it matches the source.
 | `SpatialPE` | Spatial audio processing and channel conversion PE. |
 | `SuperSawPE` | Detuned unison sawtooth oscillator for warm, analog-like sounds. |
 | `TimeWarpPE` | Resample a source at a time-varying rate. |
-| `TrackHoldPE` | Track-and-Hold processing element. |
 | `TralfamPE` | PE that spreads a finite source's spectrum randomly across its time span. |
 | `TransformPE` | Apply an arbitrary transformation function to audio samples. |
 | `TriggerRestartPE` | Trigger-controlled restart/time-remap. |
