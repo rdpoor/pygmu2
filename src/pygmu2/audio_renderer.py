@@ -142,7 +142,6 @@ class AudioRenderer(Renderer):
         """
         if self._source is None:
             raise RuntimeError("No source set. Call set_source() first.")
-            return
 
         extent = self._source.extent()
 
@@ -151,30 +150,19 @@ class AudioRenderer(Renderer):
                 "Cannot play_extent() on infinite source. "
                 "Use CropPE to limit the extent, or use play_range()."
             )
-            return
 
         if chunk_size is None:
             chunk_size = self._blocksize * 16
 
-        channels = self._source.channel_count() or 1
-
-        # Use a single continuous stream for gapless playback
-        with sd.OutputStream(
-            samplerate=self._sample_rate,
-            channels=channels,
-            dtype="float32",
-            device=self._device,
-        ) as stream:
-            position = extent.start
-            while position < extent.end:
-                remaining = extent.end - position
-                this_chunk = min(chunk_size, remaining)
-                snippet = self._source.render(position, this_chunk)
-                data = snippet.data
-                if data.dtype != np.float32:
-                    data = data.astype(np.float32, copy=False)
-                stream.write(data)
-                position += this_chunk
+        # One playback path: render() -> _output() uses the single
+        # long-lived stream, which honors blocksize/latency/device (the
+        # previous private stream here silently ignored blocksize and
+        # latency — R4: one concept, one home).
+        position = extent.start
+        while position < extent.end:
+            this_chunk = min(chunk_size, extent.end - position)
+            self.render(position, this_chunk)
+            position += this_chunk
 
         logger.info(f"Played {extent.end - extent.start} samples")
 
