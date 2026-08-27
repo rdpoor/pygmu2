@@ -40,4 +40,5 @@ def make_tralfam(extent):
 # Use python's "list comprehensions" to make the complete mix
 mix = pg.MixPE(*[make_tralfam(extent) for extent in EXTENTS])
 
-pg.play_offline(mix)
+if __name__ == "__main__":
+    pg.play_offline(mix)
