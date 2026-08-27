@@ -252,6 +252,7 @@ pipenv run python examples/01_hello_sine.py
 | `21_analog_osc.py` | Example 21: AnalogOscPE - bandlimited PWM + saw/triangle morph oscillator. |
 | `22_function_gen.py` | Example 22: FunctionGenPE - naive DSP-like function generator (aliased). |
 | `23_convolution.py` | Example 23: ConvolvePE - convolution reverb (room impulse responses). |
+| `24_slice.py` | Example 24: SlicePE - quick snippet audition framework. |
 | `27_spatial.py` | Example 27: Spatial Audio - Panning and Channel Conversion. |
 | `29_karplus_strong.py` | Example 29: Karplus-Strong plucked string synthesis. |
 | `33_piecewise.py` | Example 33: PiecewisePE - piecewise (sample_index, value) curves. |
