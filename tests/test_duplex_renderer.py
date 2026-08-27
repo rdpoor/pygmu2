@@ -66,21 +66,45 @@ class FakeDuplexStream:
         out = np.repeat(take.reshape(-1, 1), self.in_channels, axis=1)
         return out.astype(np.float32)
 
-    def __enter__(self):
+    manual = False  # True: test drives blocks via pump(); False: run to end
+
+    def _run_block(self) -> bool:
+        """Run one callback iteration; False when the stream finished."""
         frames = self.blocksize
-        while True:
-            indata = self._pop_input(frames)
-            outdata = np.zeros((frames, self.out_channels), dtype=np.float32)
-            try:
-                self.callback(indata, outdata, frames, None, "")
-            except sd.CallbackStop:
-                self.pending.append(outdata[:, 0].copy())
-                break
-            except sd.CallbackAbort:
-                break
+        indata = self._pop_input(frames)
+        outdata = np.zeros((frames, self.out_channels), dtype=np.float32)
+        try:
+            self.callback(indata, outdata, frames, None, "")
+        except (sd.CallbackStop, sd.CallbackAbort):
             self.pending.append(outdata[:, 0].copy())
-        if self.finished_callback:
-            self.finished_callback()
+            if self.finished_callback:
+                self.finished_callback()
+            return False
+        self.pending.append(outdata[:, 0].copy())
+        return True
+
+    def _run_loop(self):
+        while self._run_block():
+            pass
+
+    def pump(self, blocks: int) -> None:
+        """Manual mode: advance the stream by N callback blocks."""
+        for _ in range(blocks):
+            if not self._run_block():
+                break
+
+    def start(self):
+        if not FakeDuplexStream.manual:
+            self._run_loop()
+
+    def stop(self):
+        pass
+
+    def close(self):
+        pass
+
+    def __enter__(self):
+        self._run_loop()
         return self
 
     def __exit__(self, *exc):
@@ -264,3 +288,159 @@ class TestCalibration:
             renderer = DuplexRenderer(sample_rate=44100, blocksize=BLOCK)
             with pytest.raises(RuntimeError, match="no dominant click"):
                 renderer.calibrate(duration_seconds=0.25)
+
+
+class TestSegmentTransport:
+    """Punch-in/punch-out via Segments (extent + WAV file)."""
+
+    def _segment(self, start, end, path):
+        from pygmu2 import Segment
+
+        return Segment(pg.Extent(start, end), str(path))
+
+    @patch("pygmu2.duplex_renderer.sd.Stream", FakeDuplexStream)
+    def test_compensated_capture_file_is_the_musical_region(self, tmp_path):
+        """The headline property: with a calibrated session and a
+        k-sample loopback, a segment's file contains EXACTLY the output
+        that played over its extent — sample 0 == extent.start."""
+        import soundfile as sf
+
+        k = 2 * BLOCK + 37
+        FakeDuplexStream.loopback_delay = k
+        FakeDuplexStream.manual = False
+        renderer = DuplexRenderer(sample_rate=44100, blocksize=BLOCK)
+        renderer.calibrate(duration_seconds=0.5)
+        assert renderer.calibration_offset == k
+
+        total = 12 * BLOCK
+        renderer.set_source(_ramp_source(total))
+        renderer.start()
+        a, b = 3 * BLOCK + 10, 5 * BLOCK - 20
+        seg = self._segment(a, b, tmp_path / "verse.wav")
+        t = renderer.transport([seg])
+        t.wait()
+
+        assert seg.complete
+        assert seg.written_path == str(tmp_path / "verse.wav")
+        data, sr = sf.read(seg.written_path, dtype="float32")
+        assert sr == 44100
+        assert len(data) == b - a
+        # loopback: input == output delayed k; compensation removes k, so
+        # the file content is the ramp values a..b-1 exactly
+        np.testing.assert_allclose(data, np.arange(a, b, dtype=np.float32))
+
+    @patch("pygmu2.duplex_renderer.sd.Stream", FakeDuplexStream)
+    def test_multiple_and_overlapping_segments(self, tmp_path):
+        FakeDuplexStream.loopback_delay = 0
+        FakeDuplexStream.manual = False
+        renderer = _renderer(_ramp_source(8 * BLOCK))
+        s1 = self._segment(0, 2 * BLOCK, tmp_path / "a.wav")
+        s2 = self._segment(BLOCK, 3 * BLOCK, tmp_path / "b.wav")  # overlaps s1
+        t = renderer.transport([s1, s2])
+        t.wait()
+        assert s1.complete and s2.complete
+        assert s1.captured == 2 * BLOCK
+        assert s2.captured == 2 * BLOCK
+        assert s2.recording.start == BLOCK
+
+    @patch("pygmu2.duplex_renderer.sd.Stream", FakeDuplexStream)
+    def test_stop_punches_out_partial_take(self, tmp_path):
+        """Transport.stop() before the extent end writes the partial."""
+        import soundfile as sf
+
+        FakeDuplexStream.loopback_delay = 0
+        FakeDuplexStream.manual = True
+        try:
+            renderer = _renderer(_ramp_source(20 * BLOCK))
+            seg = self._segment(0, 10 * BLOCK, tmp_path / "take.wav")
+            later = self._segment(15 * BLOCK, 16 * BLOCK, tmp_path / "never.wav")
+            t = renderer.transport([seg, later])
+            FakeDuplexStream.last_instance.pump(3)  # 3 blocks in
+            t.stop()
+            assert not seg.complete
+            assert seg.written_path is not None  # partial written
+            data, _ = sf.read(seg.written_path, dtype="float32")
+            assert len(data) == 3 * BLOCK
+            # a segment never reached writes nothing
+            assert later.captured == 0 and later.written_path is None
+        finally:
+            FakeDuplexStream.manual = False
+
+    @patch("pygmu2.duplex_renderer.sd.Stream", FakeDuplexStream)
+    def test_take_numbering_never_clobbers(self, tmp_path):
+        import soundfile as sf
+
+        FakeDuplexStream.loopback_delay = 0
+        FakeDuplexStream.manual = False
+        path = tmp_path / "riff.wav"
+        written = []
+        for _ in range(3):
+            renderer = _renderer(_ramp_source(2 * BLOCK))
+            seg = self._segment(0, BLOCK, path)
+            renderer.transport([seg]).wait()
+            written.append(seg.written_path)
+        assert written == [
+            str(path),
+            str(tmp_path / "riff-1.wav"),
+            str(tmp_path / "riff-2.wav"),
+        ]
+        for w in written:
+            data, _ = sf.read(w, dtype="float32")
+            assert len(data) == BLOCK
+
+    @patch("pygmu2.duplex_renderer.sd.Stream", FakeDuplexStream)
+    def test_overwrite_policy(self, tmp_path):
+        FakeDuplexStream.loopback_delay = 0
+        FakeDuplexStream.manual = False
+        path = tmp_path / "riff.wav"
+        for _ in range(2):
+            renderer = _renderer(_ramp_source(2 * BLOCK))
+            seg = self._segment(0, BLOCK, path)
+            renderer.transport([seg], on_exists="overwrite").wait()
+            assert seg.written_path == str(path)
+        assert not (tmp_path / "riff-1.wav").exists()
+
+    @patch("pygmu2.duplex_renderer.sd.Stream", FakeDuplexStream)
+    def test_segment_as_pe_positions_on_extent(self, tmp_path):
+        FakeDuplexStream.loopback_delay = 0
+        FakeDuplexStream.manual = False
+        renderer = _renderer(_ramp_source(4 * BLOCK))
+        a, b = BLOCK, 3 * BLOCK
+        seg = self._segment(a, b, tmp_path / "mid.wav")
+        renderer.transport([seg]).wait()
+        pe = seg.as_pe()
+        assert pe.extent() == pg.Extent(a, b)
+
+    @patch("pygmu2.duplex_renderer.sd.Stream", FakeDuplexStream)
+    def test_transport_end_covers_segment_tail(self, tmp_path):
+        """With calibration, the stream runs past the last punch-out by
+        the offset so the compensated window is fully captured — even
+        when the source extent ends earlier."""
+        k = BLOCK + 5
+        FakeDuplexStream.loopback_delay = k
+        FakeDuplexStream.manual = False
+        renderer = DuplexRenderer(sample_rate=44100, blocksize=BLOCK)
+        renderer.calibrate(duration_seconds=0.5)
+        total = 4 * BLOCK
+        renderer.set_source(_ramp_source(total))
+        renderer.start()
+        seg = self._segment(2 * BLOCK, total, tmp_path / "tail.wav")
+        t = renderer.transport([seg])
+        t.wait()
+        assert seg.complete
+        assert seg.captured == total - 2 * BLOCK
+
+    def test_bad_policy_raises(self):
+        renderer = DuplexRenderer(sample_rate=44100)
+        renderer.set_source(pg.ConstantPE(0.5))
+        renderer.start()
+        with pytest.raises(ValueError, match="on_exists"):
+            renderer.transport([], on_exists="clobber")
+
+    def test_segment_validation(self):
+        from pygmu2 import Segment
+
+        with pytest.raises(ValueError, match="finite"):
+            Segment(pg.Extent(0, None), "x.wav")
+        with pytest.raises(ValueError, match="non-empty"):
+            Segment(pg.Extent(5, 5), "x.wav")

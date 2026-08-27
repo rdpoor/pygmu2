@@ -33,7 +33,7 @@ import threading
 import numpy as np
 import sounddevice as sd
 
-from pygmu2.recording import Recording
+from pygmu2.recording import Recording, Segment
 from pygmu2.renderer import Renderer
 from pygmu2.snippet import Snippet
 from pygmu2.logger import get_logger
@@ -285,6 +285,55 @@ class DuplexRenderer(Renderer):
         )
         return offset
 
+    # ------------------------------------------------------------------
+    # Segment transport (punch-in / punch-out)
+    # ------------------------------------------------------------------
+
+    def transport(
+        self,
+        segments: list[Segment],
+        start: int = 0,
+        end: int | None = None,
+        on_exists: str = "number",
+    ) -> "Transport":
+        """
+        Start non-blocking playback with punch-in/punch-out recording.
+
+        Playback of the source begins at `start` and runs until `end`
+        (default: computed from the source extent and the last segment's
+        punch-out) or Transport.stop(). Each Segment records over its own
+        extent: capture punches in at the extent onset and out at the
+        extent end or at stop(), whichever comes first, and the take is
+        then written to the segment's WAV file.
+
+        In a calibrated session, capture windows are shifted by the
+        measured offset so each file IS its musical region (sample 0 ==
+        extent.start as performed).
+
+        Args:
+            segments: Segments to record (extents may overlap).
+            start: Playback start position on the render timeline.
+            end: Playback end, or None to infer (requires a finite source
+                extent or at least one segment).
+            on_exists: File policy when a segment's WAV already exists —
+                "number" (default) writes foo-1.wav, foo-2.wav, ... so a
+                take never destroys a previous one; "overwrite" replaces.
+
+        Returns:
+            A running Transport; call wait() to block until it finishes
+            (files are written as segments complete), or stop() to punch
+            out early (partial takes are written).
+        """
+        if self._source is None:
+            raise RuntimeError("No source set. Call set_source() first.")
+        if not self._started:
+            raise RuntimeError("Not started. Call start() first.")
+        if on_exists not in ("number", "overwrite"):
+            raise ValueError(
+                f"on_exists must be 'number' or 'overwrite', got {on_exists!r}"
+            )
+        return Transport(self, list(segments), start, end, on_exists)
+
     def __repr__(self) -> str:
         return (
             f"DuplexRenderer(sample_rate={self._sample_rate}, "
@@ -292,3 +341,186 @@ class DuplexRenderer(Renderer):
             f"input_channels={self._input_channels}, "
             f"calibration_offset={self.calibration_offset})"
         )
+
+
+def _numbered_path(path: str) -> str:
+    """foo.wav -> foo.wav if free, else foo-1.wav, foo-2.wav, ..."""
+    from pathlib import Path
+
+    p = Path(path)
+    if not p.exists():
+        return str(p)
+    n = 1
+    while True:
+        candidate = p.with_name(f"{p.stem}-{n}{p.suffix}")
+        if not candidate.exists():
+            return str(candidate)
+        n += 1
+
+
+class Transport:
+    """
+    A running play-and-record session over a set of Segments.
+
+    Created by DuplexRenderer.transport(). Playback runs in the audio
+    callback; each captured block is sliced into whichever segments are
+    armed at that position. Files are written (per the on_exists policy)
+    by wait()/stop() as segments complete — never from the audio thread.
+    """
+
+    def __init__(
+        self,
+        renderer: DuplexRenderer,
+        segments: list[Segment],
+        start: int,
+        end: int | None,
+        on_exists: str,
+    ):
+        self._renderer = renderer
+        self._segments = segments
+        self._on_exists = on_exists
+        self._offset = renderer.calibration_offset or 0
+        self._sample_rate = renderer.sample_rate
+        source = renderer.source
+
+        for seg in segments:
+            seg.recording = Recording(
+                sample_rate=self._sample_rate,
+                channels=renderer._input_channels,
+                calibration=renderer.calibration_offset,
+            )
+            seg._complete = False
+            seg.written_path = None
+
+        # Stream end (in stamped/render positions): explicit end, else the
+        # later of the source's extent end and the last punch-out point
+        # (+offset so a compensated capture window collects its tail).
+        candidates = []
+        if end is not None:
+            candidates.append(int(end))
+        else:
+            src_extent = source.extent()
+            if src_extent.end is not None:
+                candidates.append(src_extent.end)
+            if segments:
+                candidates.append(max(s.extent.end for s in segments) + self._offset)
+        self._end: int | None = max(candidates) if candidates else None
+
+        self._position = int(start)
+        self._stop_requested = threading.Event()
+        self._done = threading.Event()
+        self._errors: list[BaseException] = []
+
+        out_channels = source.channel_count() or 1
+        self._stream = sd.Stream(
+            samplerate=self._sample_rate,
+            blocksize=renderer._blocksize,
+            device=renderer._device,
+            channels=(renderer._input_channels, out_channels),
+            dtype="float32",
+            latency=renderer._latency,
+            callback=self._callback,
+            finished_callback=self._done.set,
+        )
+        self._source = source
+        self._stream.start()
+
+    # -- audio thread ---------------------------------------------------
+
+    def _callback(self, indata, outdata, frames, time_info, status):
+        try:
+            if self._stop_requested.is_set() or (
+                self._end is not None and self._position >= self._end
+            ):
+                outdata.fill(0)
+                raise sd.CallbackStop()
+
+            pos = self._position
+            n = frames
+            if self._end is not None:
+                n = min(n, self._end - pos)
+
+            snippet = self._source.render(pos, n)
+            outdata[:n] = snippet.data
+            if n < frames:
+                outdata[n:] = 0
+
+            # Compensated musical span of this input block
+            mus_lo = pos - self._offset
+            mus_hi = pos + n - self._offset
+            for seg in self._segments:
+                if seg._complete:
+                    continue
+                lo = max(mus_lo, seg.extent.start)
+                hi = min(mus_hi, seg.extent.end)
+                if lo < hi:
+                    i0 = lo - mus_lo
+                    seg.recording._append(
+                        lo, np.copy(indata[i0 : i0 + (hi - lo)]), status
+                    )
+                if mus_hi >= seg.extent.end:
+                    seg._complete = True
+
+            self._position = pos + n
+        except sd.CallbackStop:
+            raise
+        except BaseException as exc:  # surface, never swallow (R2)
+            self._errors.append(exc)
+            raise sd.CallbackAbort() from exc
+
+    # -- control thread -------------------------------------------------
+
+    @property
+    def position(self) -> int:
+        """Current playback position on the render timeline."""
+        return self._position
+
+    @property
+    def done(self) -> bool:
+        """True once playback has finished (naturally or via stop())."""
+        return self._done.is_set()
+
+    @property
+    def segments(self) -> list[Segment]:
+        return self._segments
+
+    def stop(self) -> None:
+        """Punch out and stop playback now. Partial takes are written."""
+        self._stop_requested.set()
+        self._stream.stop()
+        self._stream.close()
+        self._done.set()
+        self._flush_writes(finalize_partials=True)
+        if self._errors:
+            raise self._errors[0]
+
+    def wait(self, poll_seconds: float = 0.05) -> list[Segment]:
+        """
+        Block until playback finishes, writing each segment's file as it
+        completes. Returns the segments.
+        """
+        while not self._done.wait(timeout=poll_seconds):
+            self._flush_writes(finalize_partials=False)
+        self._stream.close()
+        self._flush_writes(finalize_partials=True)
+        if self._errors:
+            raise self._errors[0]
+        return self._segments
+
+    def _flush_writes(self, finalize_partials: bool) -> None:
+        for seg in self._segments:
+            if seg.written_path is not None:
+                continue
+            ready = seg._complete or (finalize_partials and seg.captured > 0)
+            if not ready:
+                continue
+            path = (
+                seg.path if self._on_exists == "overwrite" else _numbered_path(seg.path)
+            )
+            seg.recording.save(path)
+            seg.written_path = path
+            logger.info(
+                f"Segment written: {path} "
+                f"({seg.captured} samples"
+                f"{'' if seg._complete else ', partial'})"
+            )

@@ -67,7 +67,7 @@ from pygmu2.piecewise_pe import PiecewisePE, TransitionType
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.source_pe import SourcePE
 from pygmu2.random_gate_pe import RandomGatePE
-from pygmu2.recording import Recording
+from pygmu2.recording import Recording, Segment
 from pygmu2.random_select_pe import RandomSelectPE
 from pygmu2.random_value_pe import RandomValuePE
 from pygmu2.renderer import Renderer
@@ -122,6 +122,7 @@ _lazy_imports = {
     "AudioReaderPE": ("pygmu2.audio_reader_pe", "AudioReaderPE"),
     "AudioRenderer": ("pygmu2.audio_renderer", "AudioRenderer"),
     "DuplexRenderer": ("pygmu2.duplex_renderer", "DuplexRenderer"),
+    "Transport": ("pygmu2.duplex_renderer", "Transport"),
     "BiquadMode": ("pygmu2.biquad_pe", "BiquadMode"),
     "BiquadPE": ("pygmu2.biquad_pe", "BiquadPE"),
     "BlitSawPE": ("pygmu2.blit_saw_pe", "BlitSawPE"),
@@ -179,6 +180,8 @@ __all__ = [
     "DuplexRenderer",
     "NullRenderer",
     "Recording",
+    "Segment",
+    "Transport",
     # Processing Elements
     "AdsrGatedPE",
     "AdsrTriggeredPE",

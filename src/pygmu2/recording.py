@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from pygmu2.extent import Extent
 from pygmu2.processing_element import ProcessingElement
 
 
@@ -121,10 +122,12 @@ class Recording:
         return DelayPE(ArrayPE(self.data), self.start - offset)
 
     def save(self, path: str) -> None:
-        """Write the captured audio to a sound file (format from suffix)."""
+        """Write the captured audio to a sound file (format from suffix).
+        WAV files are written as 32-bit float so the capture is lossless."""
         import soundfile as sf
 
-        sf.write(path, self.data, self.sample_rate)
+        subtype = "FLOAT" if str(path).lower().endswith(".wav") else None
+        sf.write(path, self.data, self.sample_rate, subtype=subtype)
 
     def summary(self) -> str:
         """Human-readable description, including any dropout events."""
@@ -156,4 +159,64 @@ class Recording:
             f"Recording(duration={self.duration}, channels={self.channels}, "
             f"start={self._start}, calibration={self.calibration}, "
             f"status_events={len(self.status_events)})"
+        )
+
+
+class Segment:
+    """
+    A punch-in/punch-out recording segment: a finite Extent on the render
+    timeline plus the WAV file its capture is written to.
+
+    Recording starts at the extent's onset and stops at its end or at
+    Transport.stop(), whichever comes first; the captured audio is then
+    written to the file (auto-numbered by default — see
+    DuplexRenderer.transport()).
+
+    In a calibrated session the capture window is shifted by the measured
+    round-trip offset, so the FILE IS THE MUSICAL REGION: sample 0 of the
+    WAV is exactly the performance at extent.start. Reloading later is
+    simply ``DelayPE(WavReaderPE(path), extent.start)`` — no metadata, no
+    post-hoc alignment.
+
+    Args:
+        extent: Finite Extent [start, end) on the render timeline.
+        path:  WAV filename to write the captured take to.
+    """
+
+    def __init__(self, extent: Extent, path: str):
+        if extent.start is None or extent.end is None:
+            raise ValueError(f"Segment extent must be finite, got {extent}")
+        if extent.is_empty():
+            raise ValueError(f"Segment extent must be non-empty, got {extent}")
+        self.extent = extent
+        self.path = str(path)
+        self.recording: Recording | None = None  # filled during transport
+        self.written_path: str | None = None  # actual file written (policy)
+        self._complete = False
+
+    @property
+    def complete(self) -> bool:
+        """True once the punch-out point was reached during capture."""
+        return self._complete
+
+    @property
+    def captured(self) -> int:
+        """Samples captured so far (may be < extent duration if stopped)."""
+        return self.recording.duration if self.recording is not None else 0
+
+    def as_pe(self) -> ProcessingElement:
+        """The captured take as timeline-positioned PE material (the
+        capture was compensated, so it sits exactly on the extent)."""
+        if self.recording is None or self.recording.duration == 0:
+            raise RuntimeError(f"Segment {self.path!r}: nothing captured yet.")
+        from pygmu2.array_pe import ArrayPE
+        from pygmu2.delay_pe import DelayPE
+
+        return DelayPE(ArrayPE(self.recording.data), self.extent.start)
+
+    def __repr__(self) -> str:
+        return (
+            f"Segment(extent={self.extent}, path={self.path!r}, "
+            f"captured={self.captured}, complete={self._complete}, "
+            f"written={self.written_path!r})"
         )
