@@ -13,13 +13,14 @@ from pygmu2 import (
     ConstantPE,
     PiecewisePE,
     SinePE,
-    IdentityPE,
     DelayPE,
     MixPE,
     NullRenderer,
     Extent,
     ExtendMode,
 )
+
+from tests.probes import IdentityPE
 
 
 class TestCropPEBasics:

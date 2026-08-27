@@ -30,7 +30,7 @@ from pygmu2 import (
     AudioRenderer,
     BlitSawPE,
     CachePE,
-    ControlPE,
+    SettableValuePE,
     DelayPE,
     GainPE,
     LadderPE,
@@ -133,8 +133,8 @@ class FlutterEnvelope:
 
     def __init__(
         self,
-        filter_rate_ctrl: ControlPE,
-        range_ctrl: ControlPE,
+        filter_rate_ctrl: SettableValuePE,
+        range_ctrl: SettableValuePE,
         settle_time: float = SETTLE_TIME,
     ):
         self._filter_rate_ctrl = filter_rate_ctrl
@@ -190,7 +190,7 @@ class FlutterEnvelope:
 
 
 def make_voice(
-    freq_ctrl: ControlPE,
+    freq_ctrl: SettableValuePE,
     freq_cached,
     amp_cached,
     resonance: float,
@@ -203,7 +203,7 @@ def make_voice(
     Build one independent filter voice for a polyphony slot.
 
     Args:
-        freq_ctrl:   Raw ControlPE (read by filter_freq_func closure for .value).
+        freq_ctrl:   Raw SettableValuePE (read by filter_freq_func closure for .value).
         freq_cached: CachePE(SlewLimiterPE(freq_ctrl)) — shared slewed pitch.
         amp_cached:  CachePE(amp_ctrl) — shared note gate.
         resonance:   Moog ladder resonance.
@@ -216,8 +216,8 @@ def make_voice(
         (stereo_pe, FlutterEnvelope)
     """
     # Per-voice filter controls owned exclusively by this voice
-    filter_rate_ctrl = ControlPE(initial_value=MIN_RANDOMNESS)
-    range_ctrl = ControlPE(initial_value=MIN_RANGE)
+    filter_rate_ctrl = SettableValuePE(initial_value=MIN_RANDOMNESS)
+    range_ctrl = SettableValuePE(initial_value=MIN_RANGE)
     envelope = FlutterEnvelope(filter_rate_ctrl, range_ctrl, settle_time=settle_time)
 
     # Oscillator: driven by the slot-shared slewed frequency
@@ -264,7 +264,7 @@ class NoteSlot:
     NUM_SYNTHS_PER_NOTE independent filter voices.
 
     The voices share pitch/amplitude but have independent filter steps.
-    All ControlPEs are wrapped in CachePE before fanning out to voices,
+    All SettableValuePEs are wrapped in CachePE before fanning out to voices,
     satisfying the renderer's rule that stateful PEs may only have one sink.
     """
 
@@ -278,8 +278,8 @@ class NoteSlot:
     ):
         self.note: int | None = None  # MIDI note number currently held, or None
 
-        self.freq_ctrl = ControlPE(initial_value=INITIAL_FREQ_HZ)
-        self.amp_ctrl = ControlPE(initial_value=INITIAL_AMP)
+        self.freq_ctrl = SettableValuePE(initial_value=INITIAL_FREQ_HZ)
+        self.amp_ctrl = SettableValuePE(initial_value=INITIAL_AMP)
 
         # One portamento stage shared by all voices; CachePE makes it pure so
         # multiple voice oscillators can consume it without triggering the

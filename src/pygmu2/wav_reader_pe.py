@@ -65,12 +65,6 @@ class WavReaderPE(SourcePE):
         self._ensure_file_info()
         return self._file_sample_rate
 
-    @property
-    def native_rate(self) -> int | None:
-        """Sample rate of the WAV file (reads file metadata if needed)."""
-        self._ensure_file_info()
-        return self._file_sample_rate
-
     def _ensure_file_info(self) -> None:
         """Read file metadata if not already loaded."""
         if self._frame_count is None:
@@ -78,18 +72,34 @@ class WavReaderPE(SourcePE):
                 self._frame_count = f.frames
                 self._channels = f.channels
                 self._file_sample_rate = f.samplerate
-            if (
-                self._sample_rate is not None
-                and self._file_sample_rate != self._sample_rate
-            ):
-                logger.warning(
-                    f"WAV file sample rate ({self._file_sample_rate} Hz) differs from "
-                    f"global sample rate ({self._sample_rate} Hz). File: {self._path}"
-                )
+
+    def _check_rate(self) -> None:
+        """Raise if rendering would be pitch-shifted (file vs session rate).
+
+        Metadata queries (file_sample_rate) stay legal at any rate, so the
+        probe idiom works:
+            rate = WavReaderPE(path).file_sample_rate
+            pg.set_sample_rate(rate)
+        """
+        if (
+            self._sample_rate is not None
+            and self._file_sample_rate is not None
+            and self._file_sample_rate != self._sample_rate
+        ):
+            raise ValueError(
+                f"WAV file sample rate ({self._file_sample_rate} Hz) differs "
+                f"from this PE's sample rate ({self._sample_rate} Hz); "
+                f"rendering it would be pitch-shifted. File: {self._path}. "
+                f"Run at the file's rate (pg.set_sample_rate("
+                f"{self._file_sample_rate}) before constructing PEs), "
+                "resample the file, or use AudioReaderPE, which resamples "
+                "on load."
+            )
 
     def _on_start(self) -> None:
         """Ensure file metadata is loaded at start."""
         self._ensure_file_info()
+        self._check_rate()
         logger.info(
             f"Opened {self._path}: {self._frame_count} frames, "
             f"{self._channels} channels, {self._file_sample_rate} Hz"
@@ -100,6 +110,8 @@ class WavReaderPE(SourcePE):
         logger.info(f"Stopped reading {self._path}")
 
     def _render(self, start: int, duration: int) -> Snippet:
+        self._ensure_file_info()
+        self._check_rate()
         """
         Read audio samples from the WAV file.
 

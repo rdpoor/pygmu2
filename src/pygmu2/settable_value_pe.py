@@ -1,5 +1,5 @@
 """
-ControlPE - a source PE whose value can be set from an external thread.
+SettableValuePE - a source PE whose value can be set from an external thread.
 
 Like ConstantPE, but with a thread-safe mutable value.  The GUI (or any
 external thread) calls ``set_value(v)`` which pushes *v* onto a
@@ -25,7 +25,7 @@ from pygmu2.source_pe import SourcePE
 from pygmu2.snippet import Snippet
 
 
-class ControlPE(SourcePE):
+class SettableValuePE(SourcePE):
     """
     A SourcePE whose output value can be changed at any time from any thread.
 
@@ -34,7 +34,7 @@ class ControlPE(SourcePE):
         channels: Number of output channels (default: 1)
 
     Example:
-        rate_control = ControlPE(initial_value=1.0)
+        rate_control = SettableValuePE(initial_value=1.0)
         warped = TimeWarpPE(source, rate=rate_control)
 
         # From the GUI thread:
@@ -75,4 +75,4 @@ class ControlPE(SourcePE):
         return self._channels
 
     def __repr__(self) -> str:
-        return f"ControlPE(value={self._value}, channels={self._channels})"
+        return f"SettableValuePE(value={self._value}, channels={self._channels})"

@@ -2,6 +2,8 @@ import numpy as np
 
 import pygmu2 as pg
 
+from tests.probes import IdentityPE
+
 
 def _seg(val: float, dur: int) -> pg.ProcessingElement:
     return pg.CropPE(pg.ConstantPE(val), 0, dur)
@@ -44,8 +46,8 @@ def test_sequence_cut_stops_previous():
 def test_sequence_auto_start_none():
     sample_rate = 10
     pg.set_sample_rate(sample_rate)
-    a = pg.SlicePE(pg.IdentityPE(), start=0, duration=5)
-    b = pg.SlicePE(pg.IdentityPE(), start=10, duration=5)
+    a = pg.SlicePE(IdentityPE(), start=0, duration=5)
+    b = pg.SlicePE(IdentityPE(), start=10, duration=5)
 
     seq = pg.SequencePE(
         (a, None),  # auto -> 0
@@ -59,7 +61,7 @@ def test_sequence_auto_start_none():
 
 
 def test_sequence_auto_start_none_after_infinite_extent_raises():
-    a = pg.IdentityPE()  # infinite extent
+    a = IdentityPE()  # infinite extent
     b = pg.SinePE()
 
     try:

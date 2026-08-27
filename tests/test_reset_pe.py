@@ -15,11 +15,12 @@ pytest.importorskip("pygmu2.reset_pe", reason="reset_pe module not yet implement
 from pygmu2 import (
     ResetPE,
     ArrayPE,
-    IdentityPE,
     BlitSawPE,
     ConstantPE,
     NullRenderer,
 )
+
+from tests.probes import IdentityPE
 
 
 class TestResetPEBasics(unittest.TestCase):

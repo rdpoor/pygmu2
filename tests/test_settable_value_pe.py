@@ -1,5 +1,5 @@
 """
-Tests for ControlPE.
+Tests for SettableValuePE.
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
@@ -11,56 +11,56 @@ import threading
 import numpy as np
 import pytest
 
-from pygmu2 import ControlPE, NullRenderer
+from pygmu2 import SettableValuePE, NullRenderer
 
 
-class TestControlPEBasics:
-    """Test basic ControlPE creation and properties."""
+class TestSettableValuePEBasics:
+    """Test basic SettableValuePE creation and properties."""
 
     def test_create_default(self):
-        pe = ControlPE()
+        pe = SettableValuePE()
         assert pe.value == 0.0
         assert pe.channel_count() == 1
 
     def test_create_with_initial_value(self):
-        pe = ControlPE(initial_value=1.5)
+        pe = SettableValuePE(initial_value=1.5)
         assert pe.value == 1.5
 
     def test_create_with_channels(self):
-        pe = ControlPE(initial_value=0.5, channels=2)
+        pe = SettableValuePE(initial_value=0.5, channels=2)
         assert pe.value == 0.5
         assert pe.channel_count() == 2
 
     def test_infinite_extent(self):
-        pe = ControlPE()
+        pe = SettableValuePE()
         extent = pe.extent()
         assert extent.start is None
         assert extent.end is None
 
     def test_is_impure(self):
-        pe = ControlPE()
+        pe = SettableValuePE()
         assert pe.stateful
 
     def test_no_inputs(self):
-        pe = ControlPE()
+        pe = SettableValuePE()
         assert pe.inputs() == []
 
     def test_repr(self):
-        pe = ControlPE(initial_value=0.5, channels=2)
+        pe = SettableValuePE(initial_value=0.5, channels=2)
         r = repr(pe)
-        assert "ControlPE" in r
+        assert "SettableValuePE" in r
         assert "0.5" in r
         assert "2" in r
 
 
-class TestControlPERender:
-    """Test ControlPE rendering."""
+class TestSettableValuePERender:
+    """Test SettableValuePE rendering."""
 
     def setup_method(self):
         self.renderer = NullRenderer(sample_rate=44100)
 
     def test_render_initial_value(self):
-        pe = ControlPE(initial_value=0.75)
+        pe = SettableValuePE(initial_value=0.75)
         self.renderer.set_source(pe)
         self.renderer.start()
 
@@ -73,7 +73,7 @@ class TestControlPERender:
         )
 
     def test_render_after_set_value(self):
-        pe = ControlPE(initial_value=0.0)
+        pe = SettableValuePE(initial_value=0.0)
         self.renderer.set_source(pe)
         self.renderer.start()
 
@@ -85,7 +85,7 @@ class TestControlPERender:
         )
 
     def test_set_value_multiple_times_keeps_latest(self):
-        pe = ControlPE(initial_value=0.0)
+        pe = SettableValuePE(initial_value=0.0)
         self.renderer.set_source(pe)
         self.renderer.start()
 
@@ -101,7 +101,7 @@ class TestControlPERender:
         assert pe.value == 3.0
 
     def test_value_persists_across_renders(self):
-        pe = ControlPE(initial_value=0.0)
+        pe = SettableValuePE(initial_value=0.0)
         self.renderer.set_source(pe)
         self.renderer.start()
 
@@ -115,7 +115,7 @@ class TestControlPERender:
         )
 
     def test_render_stereo(self):
-        pe = ControlPE(initial_value=0.5, channels=2)
+        pe = SettableValuePE(initial_value=0.5, channels=2)
         self.renderer.set_source(pe)
         self.renderer.start()
 
@@ -127,7 +127,7 @@ class TestControlPERender:
         )
 
     def test_render_negative_value(self):
-        pe = ControlPE(initial_value=-1.0)
+        pe = SettableValuePE(initial_value=-1.0)
         self.renderer.set_source(pe)
         self.renderer.start()
 
@@ -138,14 +138,14 @@ class TestControlPERender:
         )
 
 
-class TestControlPEThreadSafety:
+class TestSettableValuePEThreadSafety:
     """Test that set_value works from another thread."""
 
     def setup_method(self):
         self.renderer = NullRenderer(sample_rate=44100)
 
     def test_set_value_from_thread(self):
-        pe = ControlPE(initial_value=0.0)
+        pe = SettableValuePE(initial_value=0.0)
         self.renderer.set_source(pe)
         self.renderer.start()
 

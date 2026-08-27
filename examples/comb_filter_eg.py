@@ -21,7 +21,7 @@ pg.set_sample_rate(44100)
 
 
 AUDIO_DIR = Path(__file__).parent / "audio"
-WAV_FILE = AUDIO_DIR / "djembe.wav"
+WAV_FILE = AUDIO_DIR / "djembe44.wav"  # 44.1 kHz variant (djembe.wav is 96 kHz)
 
 DURATION_SECONDS = 6
 

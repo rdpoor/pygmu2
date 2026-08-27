@@ -3,6 +3,8 @@ import pytest
 
 import pygmu2 as pg
 
+from tests.probes import IdentityPE
+
 
 @pytest.mark.skip(
     reason="requires TriggerMode.RETRIGGER (rising-edge detection) not yet implemented"
@@ -11,7 +13,7 @@ def test_random_select_retrigger_resets_on_trigger():
     sample_rate = 10  # small for easy reasoning
     pg.set_sample_rate(sample_rate)
 
-    source = pg.IdentityPE()
+    source = IdentityPE()
     slice_a = pg.SlicePE(source, start=0, duration=5)
     slice_b = pg.SlicePE(source, start=3, duration=5)
 
@@ -50,7 +52,7 @@ def test_random_select_dirac_low_sample_retrigger():
     period = sample_rate  # 1 Hz
     pg.set_sample_rate(sample_rate)
 
-    source = pg.IdentityPE()
+    source = IdentityPE()
     slice_a = pg.SlicePE(source, start=0, duration=5)
     slice_b = pg.SlicePE(source, start=3, duration=5)
 
@@ -80,7 +82,7 @@ def test_random_select_dirac_low_sample_retrigger():
 def test_random_select_verify_trigger():
     sample_rate = 44100
     pg.set_sample_rate(sample_rate)
-    source_stream = pg.IdentityPE()
+    source_stream = IdentityPE()
 
     slices = [
         pg.SlicePE(source_stream, 10, 15),  # start at 10, end at 15, dur = 5
@@ -127,7 +129,7 @@ def test_random_select_slice_shorter_than_retrigger():
     pg.set_sample_rate(sample_rate)
 
     slices = [
-        pg.SlicePE(pg.IdentityPE(), 10, 5),  # start at 10, end before 15, dur = 5
+        pg.SlicePE(IdentityPE(), 10, 5),  # start at 10, end before 15, dur = 5
     ]
 
     trigger = pg.ArrayPE(
@@ -200,7 +202,7 @@ def test_random_select_slice_longer_than_retrigger():
     pg.set_sample_rate(sample_rate)
 
     slices = [
-        pg.SlicePE(pg.IdentityPE(), 10, 15),  # start at 10, end before 25, dur = 15
+        pg.SlicePE(IdentityPE(), 10, 15),  # start at 10, end before 25, dur = 15
     ]
 
     trigger = pg.ArrayPE(
@@ -269,7 +271,7 @@ def test_random_select_crop():
     sample_rate = 44100
     pg.set_sample_rate(sample_rate)
 
-    cropped = pg.SlicePE(pg.IdentityPE(), 10, 5)  # start at 10, end before 15, dur = 5
+    cropped = pg.SlicePE(IdentityPE(), 10, 5)  # start at 10, end before 15, dur = 5
 
     snippet = cropped.render(0, 10)  # render from 0 to 10
     out = snippet.data[:, 0]

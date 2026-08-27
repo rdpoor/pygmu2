@@ -22,7 +22,7 @@ pg.set_sample_rate(44100)
 
 
 AUDIO_DIR = Path(__file__).parent / "audio"
-WAV_FILE = AUDIO_DIR / "spoken_voice.wav"
+WAV_FILE = AUDIO_DIR / "spoken_voice44.wav"  # 44.1 kHz variant
 
 DURATION_SECONDS = 8
 

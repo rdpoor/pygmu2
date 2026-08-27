@@ -1,9 +1,17 @@
 """
+Test probes.
+
 IdentityPE - outputs the sample index as the sample value.
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 
 MIT License
+
+Demoted from the public API (PE_CONSOLIDATION.md E5/F3): it had zero
+example or library usage — its real role is a test fixture whose output
+value tells you the timestamp it was rendered at, which makes time-
+manipulating PEs (Delay, Crop, TimeWarp, Sequence, ...) trivially
+verifiable.
 """
 
 import numpy as np

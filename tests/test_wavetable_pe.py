@@ -14,10 +14,11 @@ from pygmu2 import (
     OutOfBoundsMode,
     ConstantPE,
     PiecewisePE,
-    IdentityPE,
     NullRenderer,
     Extent,
 )
+
+from tests.probes import IdentityPE
 
 
 class TestWavetablePEBasics:

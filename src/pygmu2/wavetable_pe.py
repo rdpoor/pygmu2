@@ -52,13 +52,15 @@ class WavetablePE(ProcessingElement):
 
         # Phase accumulator that wraps at wavetable length
         # (This would need a custom PE or combination of PEs)
-        phase_stream = PhaseAccumulatorPE(frequency=440.0, table_length=1024)
+        # ramp through the table at 440 Hz: naive saw scaled to table length
+        saw = AnalogOscPE(frequency=440.0, duty_cycle=0.0, waveform="sawtooth", antialias=False)
+        phase_stream = TransformPE(saw, func=lambda x: (x + 1.0) * 512.0)
 
         # Output: interpolated wavetable lookup
         output_stream = WavetablePE(wavetable_stream, phase_stream, out_of_bounds=OutOfBoundsMode.WRAP)
 
         # Granular-style random access
-        random_indices = RandomPE(0, 1024)  # Hypothetical
+        random_indices = TransformPE(RandomValuePE(rate=100.0), func=lambda x: x * 1024)
         grains = WavetablePE(wavetable, random_indices)
     """
 

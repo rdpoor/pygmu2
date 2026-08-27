@@ -13,10 +13,11 @@ from pygmu2 import (
     ConstantPE,
     CropPE,
     Extent,
-    IdentityPE,
     NullRenderer,
     TimeWarpPE,
 )
+
+from tests.probes import IdentityPE
 
 
 class TestTimeWarpPEBasics:

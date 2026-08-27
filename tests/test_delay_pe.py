@@ -15,11 +15,12 @@ from pygmu2 import (
     PiecewisePE,
     SinePE,
     MixPE,
-    IdentityPE,
     NullRenderer,
     Extent,
     CropPE,
 )
+
+from tests.probes import IdentityPE
 
 # =============================================================================
 # Integer Delay Tests (Fast Path)

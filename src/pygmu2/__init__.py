@@ -24,7 +24,7 @@ from pygmu2.config import (
     get_sample_rate,
 )
 from pygmu2.constant_pe import ConstantPE
-from pygmu2.control_pe import ControlPE
+from pygmu2.settable_value_pe import SettableValuePE
 from pygmu2.conversions import (
     pitch_to_freq,
     freq_to_pitch,
@@ -47,7 +47,6 @@ from pygmu2.gain_pe import GainPE
 from pygmu2.gate_signal import GateSignal
 from pygmu2.gate_to_trigger_pe import GateToTriggerPE
 from pygmu2.hold_pe import HoldPE
-from pygmu2.identity_pe import IdentityPE
 from pygmu2.idiophone_pe import IdiophonePE
 from pygmu2.karplus_strong_pe import KarplusStrongPE, rho_for_decay_db
 from pygmu2.logger import set_global_logging, setup_logging, get_logger
@@ -181,7 +180,7 @@ __all__ = [
     "BlitSawPE",
     "CompressorPE",
     "ConstantPE",
-    "ControlPE",
+    "SettableValuePE",
     "CropPE",
     "DecayingSinePE",
     "DelayPE",
@@ -190,7 +189,6 @@ __all__ = [
     "EnvelopePE",
     "GainPE",
     "ExpanderPE",
-    "IdentityPE",
     "IdiophonePE",
     "KarplusStrongPE",
     "rho_for_decay_db",

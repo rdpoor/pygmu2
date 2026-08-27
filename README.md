@@ -144,7 +144,6 @@ checks that it matches the source.
 | `CombPE` | Feedback comb filter tuned by a target frequency. |
 | `CompressorPE` | All-in-one audio compressor with integrated envelope follower. |
 | `ConstantPE` | A SourcePE that outputs a constant value. |
-| `ControlPE` | A SourcePE whose output value can be changed at any time from any thread. |
 | `ConvolvePE` | Streaming convolution: y = x * h. |
 | `CropPE` | A ProcessingElement that imposes a time window on its input. |
 | `DecayingSinePE` | Exponentially decaying sine tone. |
@@ -156,7 +155,6 @@ checks that it matches the source.
 | `GainPE` | A ProcessingElement that applies gain (amplitude scaling) to its input. |
 | `GateToTriggerPE` | Converts a GateSignal to a TriggerSignal by emitting +1 at each. |
 | `HoldPE` | Follow `source` while `control` > 0; hold the last value while it is 0. |
-| `IdentityPE` | A SourcePE that outputs the sample index as the sample value. |
 | `IdiophonePE` | Struck bar idiophone synthesis PE. |
 | `KarplusStrongPE` | Plucked string using the classic Karplus-Strong algorithm. |
 | `LadderPE` | Moog-style ladder filter with non-linear saturation. |
@@ -181,6 +179,7 @@ checks that it matches the source.
 | `SVFilterPE` | Second-order state variable filter with the same API as BiquadPE. |
 | `ScheduledGatePE` | Convert note (start, duration) pairs into a gate signal: 1.0 while a. |
 | `SequencePE` | Schedule PEs at specific start times. |
+| `SettableValuePE` | A SourcePE whose output value can be changed at any time from any thread. |
 | `SignalToGatePE` | Schmitt-trigger gate: converts an analog signal to a gate signal. |
 | `SinePE` | A ProcessingElement that generates a sine wave. |
 | `SlewLimiterPE` | Slew-rate limiter for control signals. |

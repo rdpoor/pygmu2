@@ -65,7 +65,7 @@ from PySide6.QtCore import QPointF
 import pygmu2 as pg
 from pygmu2 import (
     AudioRenderer,
-    ControlPE,
+    SettableValuePE,
     GainPE,
     MixPE,
     TimeWarpPE,
@@ -862,9 +862,9 @@ class JogShuttleApp(QMainWindow):
         # Stem state
         self._stem_paths: list[str] = []
         self._stem_names: list[str] = []
-        self._stem_rate_controls: list[ControlPE] = []
+        self._stem_rate_controls: list[SettableValuePE] = []
         self._stem_timewarps: list[TimeWarpPE] = []
-        self._stem_gain_controls: list[ControlPE] = []
+        self._stem_gain_controls: list[SettableValuePE] = []
         self._stem_muted: list[bool] = []
         self._stem_solo: list[bool] = []
         self._stem_volumes: list[float] = []
@@ -876,7 +876,7 @@ class JogShuttleApp(QMainWindow):
         # PE graph
         self._wav_pe: WavReaderPE | None = None
         self._timewarp: TimeWarpPE | None = None
-        self._rate_control: ControlPE | None = None
+        self._rate_control: SettableValuePE | None = None
         self._renderer: AudioRenderer | None = None
 
         # Transport state
@@ -1194,7 +1194,7 @@ class JogShuttleApp(QMainWindow):
             self._build_single_file_graph(path)
 
     def _build_single_file_graph(self, path: str) -> None:
-        self._rate_control = ControlPE(initial_value=self._shuttle_rest)
+        self._rate_control = SettableValuePE(initial_value=self._shuttle_rest)
         self._wav_pe = WavReaderPE(path)
         self._timewarp = TimeWarpPE(self._wav_pe, rate=self._rate_control)
         output = GainPE(self._timewarp, gain=0.8)
@@ -1208,16 +1208,16 @@ class JogShuttleApp(QMainWindow):
         self._renderer.start()
 
     def _build_stems_graph(self) -> None:
-        self._stem_rate_controls: list[ControlPE] = []
+        self._stem_rate_controls: list[SettableValuePE] = []
         self._stem_timewarps = []
         self._stem_gain_controls = []
         stem_outputs = []
 
         for i, stem_path in enumerate(self._stem_paths):
-            rate_ctl = ControlPE(initial_value=self._shuttle_rest)
+            rate_ctl = SettableValuePE(initial_value=self._shuttle_rest)
             wav_pe = WavReaderPE(stem_path)
             timewarp = TimeWarpPE(wav_pe, rate=rate_ctl)
-            gain_ctl = ControlPE(initial_value=self._stem_volumes[i])
+            gain_ctl = SettableValuePE(initial_value=self._stem_volumes[i])
             stem_out = GainPE(timewarp, gain=gain_ctl)
             self._stem_rate_controls.append(rate_ctl)
             self._stem_timewarps.append(timewarp)
@@ -1471,7 +1471,7 @@ class JogShuttleApp(QMainWindow):
         return gains
 
     def _apply_stem_gains(self) -> None:
-        """Push current effective gains to all stem ControlPEs."""
+        """Push current effective gains to all stem SettableValuePEs."""
         gains = self._compute_stem_gains()
         for gain_ctl, g in zip(self._stem_gain_controls, gains):
             gain_ctl.set_value(g)

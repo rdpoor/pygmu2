@@ -239,7 +239,6 @@ def setup_fallback_configs():
         SinePE,
         ConstantPE,
         PiecewisePE,
-        IdentityPE,
         DiracPE,
         BlitSawPE,
         SuperSawPE,
@@ -296,13 +295,6 @@ def setup_fallback_configs():
             BenchmarkConfig(
                 "PiecewisePE", lambda: PiecewisePE([(0, 0.0), (44100, 1.0)]), "source"
             ),
-        ],
-    )
-
-    register_fallback(
-        "IdentityPE",
-        [
-            BenchmarkConfig("IdentityPE", lambda: IdentityPE(), "source"),
         ],
     )
 

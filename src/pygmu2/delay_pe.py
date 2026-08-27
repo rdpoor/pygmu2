@@ -159,7 +159,7 @@ class DelayPE(ProcessingElement):
         """Fast path for integer delay - no interpolation."""
         # Delay "looks into the past": at output time t, we read source time (t - delay)
         # This means we can request negative source times, which the source will handle
-        # appropriately (e.g., IdentityPE returns negative values, ArrayPE returns zeros)
+        # appropriately (e.g., an identity ramp (sample index as value) returns negative values, ArrayPE returns zeros)
         source_start = start - self._delay
         source_snippet = self._source.render(source_start, duration)
         return Snippet(start, source_snippet.data)

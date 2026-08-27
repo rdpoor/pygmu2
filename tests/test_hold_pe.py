@@ -16,10 +16,11 @@ from pygmu2 import (
     ConstantPE,
     GateToTriggerPE,
     HoldPE,
-    IdentityPE,
     NullRenderer,
     PeriodicGatePE,
 )
+
+from tests.probes import IdentityPE
 
 
 def _started(pe):

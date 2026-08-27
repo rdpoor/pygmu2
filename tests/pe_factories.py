@@ -25,6 +25,8 @@ import numpy as np
 
 import pygmu2 as pg
 
+from tests.probes import IdentityPE
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SOUNDFONT = REPO_ROOT / "examples" / "audio" / "TimGM6mb.sf2"
 
@@ -80,6 +82,11 @@ def _finite_sine(duration=1024):
     return pg.CropPE(_sine(), 0, duration)
 
 
+def _index_ramp():
+    # sample-index ramp (test probe; not part of the public API)
+    return IdentityPE()
+
+
 def _fir():
     # short finite impulse (identity-ish filter)
     return pg.CropPE(pg.DiracPE(), 0, 64)
@@ -100,7 +107,7 @@ FACTORIES = {
     "CombPE": lambda: pg.CombPE(_sine(), frequency=440.0, feedback=0.5),
     "CompressorPE": lambda: pg.CompressorPE(_sine(), threshold=-12.0),
     "ConstantPE": lambda: pg.ConstantPE(0.5),
-    "ControlPE": lambda: pg.ControlPE(initial_value=0.25),
+    "SettableValuePE": lambda: pg.SettableValuePE(initial_value=0.25),
     "ConvolvePE": lambda: pg.ConvolvePE(_sine(), _fir()),
     "CropPE": lambda: _finite_sine(),
     "DecayingSinePE": lambda: pg.DecayingSinePE(frequency=440.0, tau=0.1),
@@ -113,7 +120,6 @@ FACTORIES = {
     "ExpanderPE": lambda: pg.ExpanderPE(_sine(), threshold=-40.0),
     "GainPE": lambda: pg.GainPE(_sine(), gain=0.5),
     "GateToTriggerPE": lambda: pg.GateToTriggerPE(pg.PeriodicGatePE(frequency=10.0)),
-    "IdentityPE": lambda: pg.IdentityPE(),
     "IdiophonePE": lambda: pg.IdiophonePE(
         __import__("pygmu2.idiophone_pe", fromlist=["GLOCKENSPIEL"]).GLOCKENSPIEL,
         frequency=880.0,
@@ -172,7 +178,7 @@ FACTORIES = {
     "WavReaderPE": lambda: pg.WavReaderPE(_test_wav()),
     "WavWriterPE": lambda: pg.WavWriterPE(_sine(), _tmp_path(".wav")),
     "WavetablePE": lambda: pg.WavetablePE(
-        pg.ArrayPE(np.sin(2 * np.pi * np.arange(64) / 64)), pg.IdentityPE()
+        pg.ArrayPE(np.sin(2 * np.pi * np.arange(64) / 64)), _index_ramp()
     ),
     "WindowPE": lambda: pg.WindowPE(_sine(), window=0.01),
 }
