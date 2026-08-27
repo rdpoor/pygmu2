@@ -452,3 +452,69 @@ baseline, not a judgement call.
 
 The last two rows are the real ones. If the core got bigger, PD-2 was violated in spirit; if an
 un-propagated rename can still land green, nothing structural has changed.
+
+---
+
+## 11. Field report — the first feature built under this document
+
+The recording feature (`DuplexRenderer`, 2026-08-27; `IMPLEMENTATION_PLAN.md` §6) was the
+first substantial work *governed* by this philosophy rather than the work that produced it.
+Its live hardware validation surfaced lessons that confirm some rules, extend others, and
+add one distinction the original text lacked. Recorded here so the next hardware-facing
+feature starts from them.
+
+### 11.1 R1 extends below the API: hardware declarations lie too
+
+Every rate query in the chain — PortAudio, both CoreAudio devices, the aggregate — reported
+48000 Hz while the physical unit was clocked at 44100. The declarations were sincere and
+wrong, exactly the `GainPE.is_pure()` shape, one layer further down. What exposed it was a
+*behavioural* check: the measured input slip was 8.2 % of the stream rate, which is
+`1 − 44100/48000` to three digits. The fix for R1's gate at this layer is the same as in
+code: measure conduct, don't read self-description. `calibrate()` is R1 as a runtime
+instrument — it exists because no queryable number (device latency, buffer sizes) can be
+trusted the way a cross-correlation peak can.
+
+### 11.2 R2's "never silently" needs a courier for out-of-band facts
+
+Driver-dropped samples are silent corruption by nature: the audio keeps flowing, nothing
+raises, alignment is quietly destroyed. The one channel the driver offers — PortAudio
+status flags — arrives out of band, in a callback where raising is not an option. The
+resolution that satisfies R2: **record the fact where it surfaces, act on it at the first
+decision point.** `Recording` stores status events as data; `calibrate()` *refuses to
+report a number* when any landed in its capture; recordings and takes warn loudly. The
+generalisable rule: when a failure can't raise where it happens, it must be carried as a
+fact to somewhere that can — storage is not acceptance.
+
+### 11.3 Measurement procedures are not magic numbers
+
+The owner's directive for this feature was "no magic numbers, no manual tuning." That
+turned out to mean: **no *estimate* may stand in for a measurement** — it does not mean the
+measuring instrument has no constants. The sweep length (0.2 s), its band, and the 3×
+peak-dominance threshold are procedure parameters of an instrument that *fails loudly when
+its answer is unclear*; a hard-coded latency offset would be an estimate substituting for
+the answer itself. The distinction: a parameter of a check that can refuse is fine; a
+parameter that silently becomes the result is forbidden.
+
+### 11.4 Device-free tests prove logic; only hardware proves physics
+
+All 25 mocked-stream tests were green while the feature was broken on real hardware in
+three independent ways: the calibration click couldn't out-correlate room noise, the
+measurement ran inside the stream's settling transient, and two-device duplex slipped its
+clocks. None of these *could* appear in a simulated loopback — the fake stream is causal,
+noiseless, and single-clocked by construction. This is not an argument against the mocked
+tier (it caught real logic bugs and pins the algorithm exactly); it is the reason the
+feature-branch workflow ends with an owner hardware pass **as a distinct gate, not a
+formality**. For hardware-facing work the tiers are: CI proves the logic, the bench proves
+the physics, and neither substitutes for the other.
+
+### 11.5 The second-pass ledger works when the measurement rides along
+
+The session ended with a known imperfection: per-stream-open buffer alignment adds a
+±~20-sample residual (0.29 ms measured end-to-end). The fix — one persistent stream shared
+by calibration and recording — is designed, understood, and *not built*, because 0.29 ms is
+inaudible for the overdub use case. It sits in `BACKLOG.md` with its measurement attached,
+which is §4 operating as intended: the day a use case needs sample-exactness across
+streams, the evidence and the design are already paired. Corollary applied the same day:
+the README's "sample-exact" claim was tempered to the measured bound — **prose claims are
+subject to PD-1 too**, and "accurate to a measured 0.29 ms" is an executable-shaped claim
+where "sample-exact" was not.
