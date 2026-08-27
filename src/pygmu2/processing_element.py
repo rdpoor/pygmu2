@@ -264,7 +264,7 @@ class ProcessingElement(ABC):
         start: int,
         duration: int,
         *,
-        dtype: object = None,
+        dtype: "np.typing.DTypeLike | None" = None,
         channel: int = 0,
         allow_multichannel: bool = False,
         channels: int | None = None,
@@ -288,7 +288,7 @@ class ProcessingElement(ABC):
             param: scalar (float/int) or a ProcessingElement
             start: start sample index to render (if param is a PE)
             duration: number of samples
-            dtype: numpy dtype (default: np.float64)
+            dtype: numpy dtype-like (default: np.float64)
             channel: which channel to select when returning 1D from a multi-channel PE
             allow_multichannel: if True, return the full (duration, channels) array
             channels: required when allow_multichannel=True and param is scalar

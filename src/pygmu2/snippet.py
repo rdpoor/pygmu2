@@ -81,17 +81,17 @@ class Snippet:
     @property
     def end(self) -> int:
         """Ending sample index (exclusive) of this snippet."""
-        return self._start + self._data.shape[0]
+        return self._start + int(self._data.shape[0])
 
     @property
     def duration(self) -> int:
         """Number of samples in this snippet."""
-        return self._data.shape[0]
+        return int(self._data.shape[0])
 
     @property
     def channels(self) -> int:
         """Number of audio channels."""
-        return self._data.shape[1]
+        return int(self._data.shape[1])
 
     @property
     def data(self) -> NDArray[np.floating]:
