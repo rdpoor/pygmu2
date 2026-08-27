@@ -11,6 +11,26 @@ import numpy as np
 from numpy.typing import NDArray
 
 
+def broadcast_channels(data: NDArray, channels: int, what: str = "signal") -> NDArray:
+    """
+    Match a (N, M) control/modulator array to a (N, channels) target.
+
+    - M == channels: returned unchanged.
+    - M == 1: broadcast across channels (read-only view, no copy).
+    - anything else raises — narrowing or reshaping a multichannel signal
+      would silently change the audio (DESIGN_PHILOSOPHY.md R3).
+    """
+    m = data.shape[1]
+    if m == channels:
+        return data
+    if m == 1:
+        return np.broadcast_to(data, (data.shape[0], channels))
+    raise ValueError(
+        f"cannot broadcast {m}-channel {what} to {channels} channels "
+        f"(only mono broadcasts; convert explicitly, e.g. with SpatialAdapter)"
+    )
+
+
 class Snippet:
     """
     A thin wrapper around a numpy array containing audio samples.

@@ -10,7 +10,7 @@ import numpy as np
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
-from pygmu2.snippet import Snippet
+from pygmu2.snippet import Snippet, broadcast_channels
 
 
 class RingModulatorPE(ProcessingElement):
@@ -87,9 +87,9 @@ class RingModulatorPE(ProcessingElement):
         carrier_data = self._carrier.render(start, duration).data  # (N, ch)
         mod_data = self._modulator.render(start, duration).data  # (N, 1) or (N, ch)
 
-        # Broadcast mono modulator to match stereo carrier
-        if mod_data.shape[1] == 1 and carrier_data.shape[1] > 1:
-            mod_data = np.broadcast_to(mod_data, carrier_data.shape)
+        # Broadcast mono modulator across carrier channels (view);
+        # a multichannel mismatch raises rather than silently adapting.
+        mod_data = broadcast_channels(mod_data, carrier_data.shape[1], what="modulator")
 
         # Get bias and mix as (N, 1) arrays for broadcasting across channels
         bias_data = self._scalar_or_pe_values(

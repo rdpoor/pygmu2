@@ -587,3 +587,20 @@ class TestDelayPEStereo:
 
         snippet = delay.render(50, 10)
         assert snippet.channels == 2
+
+
+class TestDelayPEHalfBoundedExtent:
+    """Regression: half-bounded sources previously skipped the OOB mask
+    entirely (finite-start check used `and` instead of `or`), so samples
+    before the source's start leaked edge-clamped values."""
+
+    def test_half_bounded_source_zeros_before_start(self):
+        renderer = NullRenderer(sample_rate=44100)
+        src = CropPE(ConstantPE(1.0), 0, None)  # Extent(0, None)
+        delayed = DelayPE(src, delay=10.5)  # fractional -> interpolated path
+        renderer.set_source(delayed)
+        renderer.start()
+        data = delayed.render(0, 20).data[:, 0]
+        assert np.all(data[:10] == 0.0), "pre-extent samples must be zero"
+        assert np.any(data[11:] != 0.0)
+        renderer.stop()

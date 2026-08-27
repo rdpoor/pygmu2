@@ -27,7 +27,7 @@ from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 from pygmu2.wavetable_pe import InterpolationMode
-from pygmu2.interpolated_lookup import interpolated_lookup
+from pygmu2.interpolated_lookup import interpolated_lookup, extent_oob_mask
 
 
 class ResamplePE(ProcessingElement):
@@ -38,6 +38,12 @@ class ResamplePE(ProcessingElement):
     Equivalent to playing a tape at a fixed speed ratio: faster = higher pitch.
 
     This PE is stateless, meaning it can be rendered at any
+    Contract (vs TimeWarpPE): ResamplePE maps ABSOLUTE positions — output
+    sample n reads source index n * rate — so it is seekable and can be
+    shared by multiple sinks (NotesPE relies on this for parallel notes).
+    Rate must be a positive constant. For an integrated, variable-speed
+    (including reversed) playback head, use TimeWarpPE.
+
     position in any order. The source PE should also be pure for correct results.
 
     Args:
@@ -107,17 +113,8 @@ class ResamplePE(ProcessingElement):
         """
         indices = np.arange(start, start + duration, dtype=np.float64) * self._rate
 
-        # Build out-of-bounds mask against source extent
-        src_extent = self._source.extent()
-        oob_mask: np.ndarray | None = None
-        if src_extent.start is not None or src_extent.end is not None:
-            oob = np.zeros(duration, dtype=bool)
-            if src_extent.start is not None:
-                oob |= indices < float(src_extent.start)
-            if src_extent.end is not None:
-                oob |= indices >= float(src_extent.end)
-            if np.any(oob):
-                oob_mask = oob
+        # Out-of-bounds mask against source extent
+        oob_mask = extent_oob_mask(indices, self._source.extent())
 
         return interpolated_lookup(
             self._source,

@@ -236,9 +236,10 @@ class SuperSawPE(ProcessingElement):
 
             # Create frequency source for this voice
             if isinstance(self._frequency, ProcessingElement):
-                # For PE frequency, apply detune ratio via GainPE
-                # GainPE multiplies the input by the gain value
-                freq = GainPE(self._frequency, gain=ratio)
+                # Detune via GainPE over the SHARED CachePE, so a PE-valued
+                # frequency renders once per block instead of once per voice
+                # (and a stateful frequency PE survives the multi-voice pull).
+                freq = GainPE(freq_src, gain=ratio)
             else:
                 freq = self._frequency * ratio
 
@@ -246,7 +247,9 @@ class SuperSawPE(ProcessingElement):
                 frequency=freq,
                 amplitude=gain,  # Individual voice gain
                 channels=1,  # Mix to mono first, then expand
-                initial_phase=self._rng.random(1) if self._randomize_phase else 0.0,
+                initial_phase=(
+                    float(self._rng.random()) if self._randomize_phase else 0.0
+                ),
             )
             oscillators.append(osc)
 

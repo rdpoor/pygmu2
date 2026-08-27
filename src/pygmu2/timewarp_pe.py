@@ -15,6 +15,18 @@ where `rate` is measured in (source samples) / (output sample). For example:
 The PE is stateful: the read head position is preserved across render calls,
 and reset to 0.0 on on_start()/on_stop()/reset_state().
 
+Contract (vs ResamplePE): TimeWarpPE INTEGRATES — the read position is a
+persisted head advanced by rate each sample, so output depends on how many
+samples have been pulled, not on the request's absolute position. It is
+stateful (contiguous pulls only), and supports negative, zero, and
+PE-valued rates. For an absolute-position (seekable, stateless) constant-
+rate mapping, use ResamplePE.
+
+Extent rule when rate is a PE: the output extent is the RATE's extent (the
+source extent cannot be mapped statically through an arbitrary rate
+signal). This differs from DelayPE, which intersects source and delay
+extents — each PE documents its own rule.
+
 Out-of-bounds behavior: when the read head falls outside the source extent,
 the output is forced to 0.0 for those samples.
 
@@ -32,7 +44,7 @@ from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 from pygmu2.wavetable_pe import InterpolationMode
-from pygmu2.interpolated_lookup import interpolated_lookup
+from pygmu2.interpolated_lookup import interpolated_lookup, extent_oob_mask
 
 
 class TimeWarpPE(ProcessingElement):
@@ -166,16 +178,7 @@ class TimeWarpPE(ProcessingElement):
         self._last_render_end = start + duration
 
         # Out-of-bounds mask against source extent (force zeros when outside)
-        src_extent = self._source.extent()
-        oob_mask: np.ndarray | None = None
-        if src_extent.start is not None or src_extent.end is not None:
-            oob = np.zeros((duration,), dtype=bool)
-            if src_extent.start is not None:
-                oob |= indices < float(src_extent.start)
-            if src_extent.end is not None:
-                oob |= indices >= float(src_extent.end)
-            if np.any(oob):
-                oob_mask = oob
+        oob_mask = extent_oob_mask(indices, self._source.extent())
 
         return interpolated_lookup(
             self._source,

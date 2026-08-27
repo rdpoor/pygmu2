@@ -47,7 +47,7 @@ class TestDynamicsPEBasics:
             ratio=8.0,
             knee=6.0,
             makeup_gain=3.0,
-            mode=DynamicsMode.LIMIT,
+            mode=DynamicsMode.COMPRESS,
             stereo_link=False,
         )
 
@@ -55,7 +55,7 @@ class TestDynamicsPEBasics:
         assert dynamics.ratio == 8.0
         assert dynamics.knee == 6.0
         assert dynamics.makeup_gain == 3.0
-        assert dynamics.mode == DynamicsMode.LIMIT
+        assert dynamics.mode == DynamicsMode.COMPRESS
         assert dynamics.stereo_link is False
 
     def test_inputs(self):
@@ -228,7 +228,10 @@ class TestDynamicsPELimiter:
             source,
             envelope,
             threshold=-6,
-            mode=DynamicsMode.LIMIT,
+            # limiting == compression with an infinite ratio (the LIMIT enum
+            # member duplicated this and was removed)
+            mode=DynamicsMode.COMPRESS,
+            ratio=float("inf"),
             makeup_gain=0,
         )
 

@@ -8,7 +8,9 @@
       "Bash(uv run *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(awk -F:: '{print $1}')"
+      "Bash(awk -F:: '{print $1}')",
+      "Bash(git push *)",
+      "Bash(git commit -q -m ' *)"
     ]
   }
 }

@@ -12,12 +12,16 @@ from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
 from pygmu2.snippet import Snippet
 from pygmu2.wavetable_pe import InterpolationMode
-from pygmu2.interpolated_lookup import interpolated_lookup
+from pygmu2.interpolated_lookup import interpolated_lookup, extent_oob_mask
 
 
 class DelayPE(ProcessingElement):
     """
     A ProcessingElement that delays its input by a specified amount.
+
+    Extent rule when delay is a PE: the output extent is the intersection
+    of the source and delay extents. (TimeWarpPE uses a different rule for
+    its PE-valued rate — see its docstring.)
 
     Supports three modes based on the delay argument type:
 
@@ -194,18 +198,9 @@ class DelayPE(ProcessingElement):
         Returns:
             Interpolated snippet
         """
-        # Get source extent for out-of-bounds detection
-        source_extent = self._source.extent()
-        src_start = source_extent.start
-        src_end = source_extent.end
-
-        has_finite_extent = src_start is not None and src_end is not None
-
-        # Track out-of-bounds indices
-        if has_finite_extent:
-            oob_mask = (indices < src_start) | (indices >= src_end)
-        else:
-            oob_mask = None
+        # Out-of-bounds mask against source extent (half-bounded extents
+        # included — previously skipped, leaking edge-clamped samples)
+        oob_mask = extent_oob_mask(indices, self._source.extent())
 
         return interpolated_lookup(
             self._source,

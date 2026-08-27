@@ -82,13 +82,13 @@ class TestConstruction:
     def test_repr_contains_instrument_name(self):
         assert "marimba" in repr(IdiophonePE(MARIMBA))
 
-    def test_graph_is_stateful(self):
-        # The composite itself is stateless; its DecayingSinePE partials
-        # carry the stateful recurrence and are exposed via inputs().
+    def test_graph_is_stateless(self):
+        # Composite and partials are all closed-form: the whole graph is
+        # stateless, so idiophone notes can be shared and seeked freely.
         pe = IdiophonePE(MARIMBA)
         assert not pe.stateful
         mix = pe.inputs()[0]
-        assert all(partial.stateful for partial in mix.inputs())
+        assert all(not partial.stateful for partial in mix.inputs())
 
 
 # ---------------------------------------------------------------------------

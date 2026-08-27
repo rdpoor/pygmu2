@@ -43,23 +43,13 @@ class PeriodicGate(GateSignal):
         )
 
     def inputs(self) -> list[ProcessingElement]:
-        return self._fg.inputs()
-
-    @property
-    def stateful(self) -> bool:  # type: ignore[override]
-        return self._fg.stateful
+        # Expose the internal FunctionGenPE so the Renderer (and any graph
+        # walk) manages its lifecycle — the gate itself is a stateless map
+        # of its output; the generator declares its own state.
+        return [self._fg]
 
     def _compute_extent(self) -> Extent:
         return self._fg.extent()
-
-    def _on_start(self) -> None:
-        self._fg.on_start()
-
-    def _on_stop(self) -> None:
-        self._fg.on_stop()
-
-    def _reset_state(self) -> None:
-        self._fg.reset_state()
 
     def _render_gate(self, start: int, duration: int) -> Snippet:
         # FunctionGen rectangle yields exactly -1 or +1, so mapping yields exactly 0 or 1.

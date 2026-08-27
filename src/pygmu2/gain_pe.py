@@ -10,7 +10,7 @@ import numpy as np
 
 from pygmu2.processing_element import ProcessingElement
 from pygmu2.extent import Extent
-from pygmu2.snippet import Snippet
+from pygmu2.snippet import Snippet, broadcast_channels
 
 
 class GainPE(ProcessingElement):
@@ -107,10 +107,11 @@ class GainPE(ProcessingElement):
                 allow_multichannel=True,
             )
 
-            # Broadcast gain across channels if needed
-            # gain_snippet is typically mono, source may be stereo
-            if gain_data.shape[1] == 1 and source_snippet.channels > 1:
-                gain_data = np.tile(gain_data, (1, source_snippet.channels))
+            # Broadcast mono gain across channels (view, no copy);
+            # a multichannel mismatch raises rather than silently adapting.
+            gain_data = broadcast_channels(
+                gain_data, source_snippet.channels, what="gain"
+            )
 
             # Apply gain
             result = source_snippet.data * gain_data

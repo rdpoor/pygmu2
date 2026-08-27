@@ -103,8 +103,9 @@ class TestConstruction:
         """Static helper was removed along with the rho parameter."""
         assert not hasattr(DecayingSinePE, "rho_for_decay_db")
 
-    def test_is_not_pure(self):
-        assert DecayingSinePE(frequency=440.0, tau=0.5).stateful
+    def test_stateless(self):
+        # Closed-form generation: random access, no state to corrupt.
+        assert not DecayingSinePE(frequency=440.0, tau=0.5).stateful
 
 
 # ---------------------------------------------------------------------------
@@ -259,10 +260,10 @@ class TestCropAndExtent:
         assert pe._compute_extent().end is not None
 
     def test_extent_survives_reset(self):
-        """Extent depends only on tau and db_floor, not recurrence state."""
+        """Extent depends only on tau and db_floor."""
         pe = DecayingSinePE(frequency=440.0, tau=0.1)
         pe._render(0, BLOCK_SIZE)
-        pe._reset_state()
+        pe.reset_state()  # no-op for a stateless PE
         assert pe._compute_extent().end == expected_crop_samples(0.1)
 
 

@@ -23,7 +23,6 @@ class DynamicsMode(Enum):
 
     COMPRESS = "compress"  # Reduce gain above threshold
     EXPAND = "expand"  # Reduce gain below threshold
-    LIMIT = "limit"  # Hard ceiling (infinite ratio compression)
     GATE = "gate"  # Hard cutoff below threshold
 
 
@@ -69,7 +68,7 @@ class DynamicsPE(ProcessingElement):
 
         # Lookahead limiting
         env_stream = EnvelopePE(audio_stream, attack=0.005, release=0.05, lookahead=0.005)
-        limited_stream = DynamicsPE(audio_stream, env_stream, threshold=-1, mode=DynamicsMode.LIMIT)
+        limited_stream = LimiterPE(audio_stream, ceiling=-1.0)
 
         # Noise gate
         env_stream = EnvelopePE(audio_stream, attack=0.001, release=0.05)
@@ -185,11 +184,7 @@ class DynamicsPE(ProcessingElement):
         ratio = self._ratio
         knee = self._knee
 
-        if self._mode == DynamicsMode.LIMIT:
-            # Infinite ratio above threshold
-            ratio = float("inf")
-
-        if self._mode in (DynamicsMode.COMPRESS, DynamicsMode.LIMIT):
+        if self._mode == DynamicsMode.COMPRESS:
             # Compression: reduce gain above threshold
             return self._compute_compression_gain(level_db, threshold, ratio, knee)
 
@@ -241,7 +236,6 @@ class DynamicsPE(ProcessingElement):
                 full_gain = overshoot * (1.0 / ratio - 1.0)
 
             # In knee: quadratic transition
-            in_knee = ~below_knee & ~above_knee
             x = level_db - threshold + half_knee  # 0 to knee
             if np.isinf(ratio):
                 knee_gain = -(x**2) / (2 * knee)
@@ -281,7 +275,6 @@ class DynamicsPE(ProcessingElement):
             undershoot = threshold - level_db
             full_gain = -undershoot * (ratio - 1.0)
 
-            in_knee = ~below_knee & ~above_knee
             x = threshold + half_knee - level_db  # 0 to knee
             knee_gain = -(ratio - 1.0) * (x**2) / (2 * knee)
 
@@ -313,7 +306,6 @@ class DynamicsPE(ProcessingElement):
             below_knee = level_db < (threshold - half_knee)
 
             # In knee: linear transition from 0 to range_db
-            in_knee = ~below_knee & ~above_knee
             t = (threshold + half_knee - level_db) / knee  # 0 to 1
             knee_gain = t * range_db
 

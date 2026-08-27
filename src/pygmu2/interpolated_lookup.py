@@ -87,6 +87,26 @@ def _cubic_interp(
     )
 
 
+def extent_oob_mask(indices: np.ndarray, extent) -> np.ndarray | None:
+    """
+    Boolean mask of `indices` lying outside `extent`, or None if all are
+    inside (or the extent is unbounded on both sides).
+
+    Half-bounded extents are handled: any finite bound contributes to the
+    mask. This is the single OOB rule for every interpolating PE (DelayPE,
+    TimeWarpPE, ResamplePE) — samples read from outside the source's
+    extent are forced to zero rather than edge-clamped.
+    """
+    if extent.start is None and extent.end is None:
+        return None
+    oob = np.zeros(len(indices), dtype=bool)
+    if extent.start is not None:
+        oob |= indices < float(extent.start)
+    if extent.end is not None:
+        oob |= indices >= float(extent.end)
+    return oob if np.any(oob) else None
+
+
 def interpolated_lookup(
     source: ProcessingElement,
     out_start: int,

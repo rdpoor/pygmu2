@@ -1,13 +1,11 @@
 """
-DecayingSinePE - Exponentially decaying sine tone using a recurrence formula.
+DecayingSinePE - Exponentially decaying sine tone.
 
-Generates  x[n] = A · rho^n · sin(2π·f·n / sr)  via the two-sample recurrence
-
-    x[n] = 2·rho·cos(ω)·x[n−1] − rho²·x[n−2]          (ω = 2π·f / sr)
-
-which requires only two multiplies and one add per sample in the inner loop.
-Startup: x[-1]=0, x[0] = amplitude · rho · sin(ω), so the first true peak
-falls at n=1 and the envelope is exactly amplitude · rho^n for all n ≥ 0.
+Generates  x[n] = A · rho^n · sin(2π·f·n / sr)  directly from the closed
+form (vectorized), so the PE is stateless and can be rendered at any
+position in any order.  (An earlier version used a two-sample recurrence
+in a Python loop — measured slower than the vectorized closed form, and
+it forced stateful/contiguous rendering.)
 
 Extent is finite: (0, crop_samples), where crop_samples is the sample index
 at which the envelope reaches db_floor.
@@ -32,10 +30,8 @@ class DecayingSinePE(SourcePE):
     """
     Exponentially decaying sine tone.
 
-    Algorithm (inner loop):
-        x[n] = 2·rho·cos(ω)·x[n−1] − rho²·x[n−2]     ω = 2π·f / sr
-
-    Output matches A · rho^n · sin(n·ω) for all n ≥ 0.
+    Output is A · rho^n · sin(n·ω) for all n ≥ 0 (ω = 2π·f / sr),
+    computed in closed form — stateless, random-access.
 
     Extent is finite: the stream is cropped at the sample where the envelope
     reaches db_floor, computed as:
@@ -86,12 +82,6 @@ class DecayingSinePE(SourcePE):
         self._crop_samples = math.ceil(
             -self._tau * self.sample_rate * (self._db_floor / 20.0) * math.log(10)
         )
-        # Recurrence state (initialised on first render)
-        self._x_prev: float = 0.0
-        self._x_prev2: float = 0.0
-        self._coeff: float = 0.0
-        self._rho2: float = 0.0
-        self._ready: bool = False
 
     # ------------------------------------------------------------------
     # SourcePE interface
@@ -101,19 +91,6 @@ class DecayingSinePE(SourcePE):
         # Always finite — crop_samples is known at construction time.
         return Extent(0, self._crop_samples)
 
-    def _reset_state(self) -> None:
-        self._x_prev = 0.0
-        self._x_prev2 = 0.0
-        self._coeff = 0.0
-        self._rho2 = 0.0
-        self._ready = False
-
-    def _on_start(self) -> None:
-        self._reset_state()
-
-    def _on_stop(self) -> None:
-        self._reset_state()
-
     def _render(self, start: int, duration: int) -> Snippet:
         if duration <= 0:
             return Snippet.from_zeros(start, 0, self._channels)
@@ -121,60 +98,22 @@ class DecayingSinePE(SourcePE):
         data = np.zeros((duration, self._channels), dtype=np.float32)
 
         ks_start = max(0, start)
-        ks_end = max(0, start + duration)
-        need = ks_end - ks_start
-        if need <= 0:
+        ks_end = min(start + duration, self._crop_samples)
+        if ks_end <= ks_start:
             return Snippet(start, data)
 
-        if not self._ready:
-            sr = self.sample_rate
-            rho = math.exp(-1.0 / (self._tau * sr))
-            omega = 2.0 * math.pi * self._frequency / sr
-
-            self._coeff = np.float32(2.0 * rho * math.cos(omega))
-            self._rho2 = np.float32(rho * rho)
-            self._x_prev = np.float32(0.0)
-            self._x_prev2 = np.float32(-self._amplitude * math.sin(omega) / rho)
-
-            self._crop_samples = math.ceil(
-                -self._tau * sr * (self._db_floor / 20.0) * math.log(10)
-            )
-            self._ready = True
-
-        # No output past the crop point.
-        ks_end = min(ks_end, self._crop_samples)
-        need = max(0, ks_end - ks_start)
-        if need == 0:
-            return Snippet(start, data)
-
-        coeff = self._coeff
-        rho2 = self._rho2
-        x_prev = self._x_prev
-        x_prev2 = self._x_prev2
-
-        # ----------------------------------------------------------------
-        # Inner loop — recurrence relation
-        # ----------------------------------------------------------------
-        out = np.empty(need, dtype=np.float32)
-        for i in range(need):
-            out[i] = x_prev
-            x_new = coeff * x_prev - rho2 * x_prev2
-            x_prev2 = x_prev
-            x_prev = x_new
-
-        self._x_prev = x_prev
-        self._x_prev2 = x_prev2
+        sr = self.sample_rate
+        n = np.arange(ks_start, ks_end, dtype=np.float64)
+        omega = 2.0 * math.pi * self._frequency / sr
+        env = self._amplitude * np.exp(-n / (self._tau * sr))
+        out = (env * np.sin(n * omega)).astype(np.float32)
 
         offset = ks_start - start
-        data[offset : offset + need] = np.broadcast_to(
-            out[:, np.newaxis], (need, self._channels)
-        )
+        data[offset : offset + len(out)] = out[:, np.newaxis]
         return Snippet(start, data)
 
     def channel_count(self) -> int:
         return self._channels
-
-    stateful = True
 
     def __repr__(self) -> str:
         floor = f", db_floor={self._db_floor}" if self._db_floor != -60.0 else ""
