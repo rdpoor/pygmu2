@@ -148,6 +148,27 @@ def demo_record_and_mix():
     pg.play(MixPE(clicks, GainPE(seg.as_pe(), 0.8)))
 
 
+def demo_record_stereo_compare():
+    print("=== Record 8 beats; playback: clicks left, take right ===")
+    renderer = require_calibration()
+    if renderer is None:
+        return
+    period = s2s(60.0 / BPM)
+    clicks = main_clicks(8)
+    renderer.set_source(MixPE(count_in(), clicks))
+    renderer.start()
+    seg = Segment(Extent(LEAD_IN * period, (LEAD_IN + 8) * period), "stereo_take.wav")
+    print("Four high ticks count you in, then recording starts — play along!")
+    renderer.transport([seg]).wait()
+    renderer.stop()
+    _takes.append(seg.written_path)
+    print(seg.recording.summary())
+    print("Playing clicks in the LEFT channel, take in the RIGHT...")
+    left = pg.SpatialPE(clicks, method=pg.SpatialLinear(azimuth=-90.0))
+    right = pg.SpatialPE(seg.as_pe(), method=pg.SpatialLinear(azimuth=90.0))
+    pg.play(MixPE(left, right))
+
+
 def demo_punch_in_punch_out():
     print("=== Punch-in/punch-out: record beats 4-8 to a WAV file ===")
     renderer = require_calibration()
@@ -175,6 +196,7 @@ def demo_punch_in_punch_out():
 DEMOS = [
     ("Calibrate: measure the round-trip offset (mic in earcup)", demo_calibrate),
     ("Record 8 beats against a click, then play the mix", demo_record_and_mix),
+    ("Record 8 beats; playback: clicks left, take right", demo_record_stereo_compare),
     ("Punch-in/punch-out: record beats 4-8 to a WAV file", demo_punch_in_punch_out),
 ]
 
