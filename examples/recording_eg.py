@@ -55,15 +55,25 @@ def tick(frequency):
     return DecayingSinePE(frequency=frequency, amplitude=0.5, tau=0.02)
 
 
-def click_track(n_beats, bpm=BPM, lead_in=0):
-    """One tick per beat; lead-in ticks ring an octave higher so the
-    count-in is unmistakable."""
+def ticks(n_beats, frequency, start_beat=0, bpm=BPM):
+    """One tick per beat, starting at start_beat."""
     period = s2s(60.0 / bpm)
-    beats = [
-        pg.DelayPE(tick(2217 if i < lead_in else 1109), i * period)
-        for i in range(lead_in + n_beats)
-    ]
-    return MixPE(*beats)
+    return MixPE(
+        *[
+            pg.DelayPE(tick(frequency), (start_beat + i) * period)
+            for i in range(n_beats)
+        ]
+    )
+
+
+def main_clicks(n_beats):
+    """The clicks of the recorded section (starts after the count-in)."""
+    return ticks(n_beats, 1109, start_beat=LEAD_IN)
+
+
+def count_in():
+    """Lead-in ticks, an octave higher so the count-in is unmistakable."""
+    return ticks(LEAD_IN, 2217)
 
 
 # Take files are temporary demo output — remove them on exit.
@@ -125,8 +135,8 @@ def demo_record_and_mix():
     if renderer is None:
         return
     period = s2s(60.0 / BPM)
-    backing = click_track(8, lead_in=LEAD_IN)
-    renderer.set_source(backing)
+    clicks = main_clicks(8)
+    renderer.set_source(MixPE(count_in(), clicks))
     renderer.start()
     seg = Segment(Extent(LEAD_IN * period, (LEAD_IN + 8) * period), "mix_take.wav")
     print("Four high ticks count you in, then recording starts — play along!")
@@ -134,8 +144,8 @@ def demo_record_and_mix():
     renderer.stop()
     _takes.append(seg.written_path)
     print(seg.recording.summary())
-    print("Playing backing + aligned take...")
-    pg.play(MixPE(backing, GainPE(seg.as_pe(), 0.8)))
+    print("Playing clicks + aligned take (count-in omitted)...")
+    pg.play(MixPE(clicks, GainPE(seg.as_pe(), 0.8)))
 
 
 def demo_punch_in_punch_out():
@@ -144,8 +154,8 @@ def demo_punch_in_punch_out():
     if renderer is None:
         return
     period = s2s(60.0 / BPM)
-    backing = click_track(8, lead_in=LEAD_IN)
-    renderer.set_source(backing)
+    clicks = main_clicks(8)
+    renderer.set_source(MixPE(count_in(), clicks))
     renderer.start()
     a = (LEAD_IN + 4) * period
     b = (LEAD_IN + 8) * period
@@ -157,9 +167,9 @@ def demo_punch_in_punch_out():
     _takes.append(seg.written_path)
     print(f"Wrote {seg.written_path} ({seg.captured} samples)")
     print("The file IS the musical region: sample 0 == beat 4.")
-    print("Playing backing + take reloaded from disk...")
+    print("Playing clicks + take reloaded from disk (count-in omitted)...")
     reloaded = pg.DelayPE(pg.WavReaderPE(seg.written_path), seg.extent.start)
-    pg.play(MixPE(backing, GainPE(reloaded, 0.8)))
+    pg.play(MixPE(clicks, GainPE(reloaded, 0.8)))
 
 
 DEMOS = [
