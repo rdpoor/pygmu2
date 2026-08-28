@@ -65,6 +65,17 @@ class DuplexRenderer(Renderer):
         blocksize: Frames per callback (default 1024).
         latency: sounddevice latency setting ('low', 'high', or seconds).
         input_channels: Channels to capture (default 1).
+        calibration_offset: A round-trip offset in samples, PREVIOUSLY
+            MEASURED by calibrate() on this exact configuration — same
+            device, sample rate, blocksize, and latency setting. Passing
+            it skips the per-session calibration run. It remains a
+            measurement, just persisted: never hand-tune it, and re-run
+            calibrate() after any configuration change (the offset is a
+            property of the whole buffering chain, so a different
+            blocksize or rate invalidates it, and on some hardware each
+            stream open adds its own small variance — see calibrate()).
+            `calibration_offset` is also an ordinary public attribute,
+            settable after construction.
     """
 
     def __init__(
@@ -75,13 +86,16 @@ class DuplexRenderer(Renderer):
         latency: str | float = "low",
         *,
         input_channels: int = 1,
+        calibration_offset: int | None = None,
     ):
         super().__init__(sample_rate=sample_rate)
         self._device = device
         self._blocksize = int(blocksize)
         self._latency = latency
         self._input_channels = int(input_channels)
-        self.calibration_offset: int | None = None
+        self.calibration_offset: int | None = (
+            int(calibration_offset) if calibration_offset is not None else None
+        )
 
     # ------------------------------------------------------------------
     # Renderer interface

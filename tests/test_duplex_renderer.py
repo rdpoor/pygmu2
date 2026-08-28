@@ -444,3 +444,40 @@ class TestSegmentTransport:
             Segment(pg.Extent(0, None), "x.wav")
         with pytest.raises(ValueError, match="non-empty"):
             Segment(pg.Extent(5, 5), "x.wav")
+
+
+class TestManualCalibrationOffset:
+    """A previously measured offset can be supplied without re-running
+    calibrate() — as a constructor argument or by assignment."""
+
+    @patch("pygmu2.duplex_renderer.sd.Stream", FakeDuplexStream)
+    def test_constructor_offset_stamps_recordings(self):
+        FakeDuplexStream.loopback_delay = 0
+        renderer = DuplexRenderer(
+            sample_rate=44100, blocksize=BLOCK, calibration_offset=3266
+        )
+        assert renderer.calibration_offset == 3266
+        renderer.set_source(_ramp_source(2 * BLOCK))
+        renderer.start()
+        rec = renderer.record_extent()
+        renderer.stop()
+        assert rec.calibration == 3266
+        # as_pe applies it: material placed at start - offset
+        assert rec.as_pe().extent().start == 0 - 3266
+
+    @patch("pygmu2.duplex_renderer.sd.Stream", FakeDuplexStream)
+    def test_assigned_offset_equivalent_to_measured(self):
+        """Manually assigning the offset behaves identically to having
+        measured it via calibrate() on simulated-loopback hardware."""
+        k = BLOCK + 7
+        FakeDuplexStream.loopback_delay = k
+        measured = DuplexRenderer(sample_rate=44100, blocksize=BLOCK)
+        measured.calibrate(duration_seconds=0.5)
+        manual = DuplexRenderer(sample_rate=44100, blocksize=BLOCK)
+        manual.calibration_offset = measured.calibration_offset
+        for r in (measured, manual):
+            r.set_source(_ramp_source(4 * BLOCK))
+            r.start()
+            rec = r.record_extent()
+            r.stop()
+            assert rec.calibration == k
