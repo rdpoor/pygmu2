@@ -4,11 +4,14 @@ Recording with DuplexRenderer: calibrate, record, punch in/out, mix back.
 
 The recorded input shares the render clock (one full-duplex stream), so a
 take is sample-accurate relative to playback up to a constant offset.
-calibrate() measures that offset exactly — speaker to mic, room included —
-so takes land sample-exact on the timeline they were performed against.
+calibrate() measures that offset exactly — output to mic, path included —
+so takes land on the timeline they were performed against.
 
-Monitor your instrument externally (amp, acoustically); pygmu2 only plays
-the backing track and captures the mic.
+Run demo 1 (calibrate) once per session, with the mic coupled to the
+playback path (e.g. resting in a headphone earcup); then move the mic to
+its stand and run the recording demos. Monitor your instrument externally
+(amp, direct monitor, acoustically); pygmu2 only plays the backing track
+and captures the mic.
 
 Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
@@ -78,11 +81,25 @@ def _cleanup_takes():
 atexit.register(_cleanup_takes)
 
 
-def make_renderer():
-    renderer = DuplexRenderer(sample_rate=SAMPLE_RATE, device=DEVICE)
-    print("Measuring round-trip offset (a short sweep will play)...")
-    offset = renderer.calibrate()
-    print(f"Calibration: {offset} samples " f"({1000.0 * offset / SAMPLE_RATE:.1f} ms)")
+# One renderer shared across demos, so demo 1's calibration carries into
+# the recording demos.
+_renderer = None
+
+
+def get_renderer():
+    global _renderer
+    if _renderer is None:
+        _renderer = DuplexRenderer(sample_rate=SAMPLE_RATE, device=DEVICE)
+    return _renderer
+
+
+def require_calibration():
+    """The recording demos apply the measured offset — refuse to run
+    without one rather than silently recording misaligned takes."""
+    renderer = get_renderer()
+    if renderer.calibration_offset is None:
+        print("Not calibrated yet — run demo 1 first (mic in earcup).")
+        return None
     return renderer
 
 
@@ -91,9 +108,22 @@ def make_renderer():
 # ---------------------------------------------------------------------------
 
 
+def demo_calibrate():
+    print("=== Calibrate: measure the round-trip offset ===")
+    print("Couple the mic to the playback path (rest it in a headphone")
+    print("earcup); a short sweep will play.")
+    renderer = get_renderer()
+    offset = renderer.calibrate()
+    print(f"Calibration: {offset} samples " f"({1000.0 * offset / SAMPLE_RATE:.1f} ms)")
+    print("Done — return the mic to its stand. Calibration holds for the")
+    print("whole session (re-run only if device/rate/blocksize change).")
+
+
 def demo_record_and_mix():
     print("=== Record 8 beats against a click, then play the mix ===")
-    renderer = make_renderer()
+    renderer = require_calibration()
+    if renderer is None:
+        return
     period = s2s(60.0 / BPM)
     backing = click_track(8, lead_in=LEAD_IN)
     renderer.set_source(backing)
@@ -110,7 +140,9 @@ def demo_record_and_mix():
 
 def demo_punch_in_punch_out():
     print("=== Punch-in/punch-out: record beats 4-8 to a WAV file ===")
-    renderer = make_renderer()
+    renderer = require_calibration()
+    if renderer is None:
+        return
     period = s2s(60.0 / BPM)
     backing = click_track(8, lead_in=LEAD_IN)
     renderer.set_source(backing)
@@ -131,6 +163,7 @@ def demo_punch_in_punch_out():
 
 
 DEMOS = [
+    ("Calibrate: measure the round-trip offset (mic in earcup)", demo_calibrate),
     ("Record 8 beats against a click, then play the mix", demo_record_and_mix),
     ("Punch-in/punch-out: record beats 4-8 to a WAV file", demo_punch_in_punch_out),
 ]
