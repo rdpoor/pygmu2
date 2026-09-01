@@ -374,3 +374,78 @@ class TestOAuthTokenRecovery:
         assert token.read_text() == '{"fresh": true}'
         session_cls.assert_called_once_with(fresh_creds)
         assert session is session_cls.return_value
+
+
+class TestLoadAssetsPlural:
+    def test_loads_every_match_mirroring_paths(self, manager, loader):
+        paths = manager.load_assets("loops/groove_*.wav")
+        assert [p.name for p in paths] == ["groove_01.wav", "groove_02.wav"]
+        assert all(p.parent.name == "loops" for p in paths)
+        assert [p.read_bytes() for p in paths] == [b"G1", b"G2"]
+
+    def test_cached_files_not_refetched(self, manager, loader):
+        manager.load_assets("drums/*.wav")
+        calls = loader.load_calls
+        manager.load_assets("drums/*.wav")
+        assert loader.load_calls == calls  # all served from cache
+
+    def test_force_refetches_all(self, manager, loader):
+        paths = manager.load_assets("drums/*.wav")
+        for p in paths:
+            p.write_bytes(b"MODIFIED")
+        refreshed = manager.load_assets("drums/*.wav", force=True)
+        assert [p.read_bytes() for p in refreshed] == [b"KICK", b"SNARE"]
+
+    def test_no_match_raises(self, manager):
+        with pytest.raises(AssetNotFound):
+            manager.load_assets("*.flac")
+
+    def test_no_loader_raises(self, tmp_path):
+        lonely = AssetManager(cache_dir=tmp_path / "c5")
+        with pytest.raises(AssetLoadFailed, match="not configured"):
+            lonely.load_assets("*.wav")
+
+
+class TestGithubDirectoryPrefix:
+    """Spec subfolders are appended to the API path and mirrored into
+    the cache-relative names."""
+
+    PAYLOAD = [
+        {"type": "file", "name": "sn_b.wav", "download_url": "https://dl/sn_b.wav"},
+        {"type": "file", "name": "sn_a.wav", "download_url": "https://dl/sn_a.wav"},
+    ]
+
+    def _loader(self):
+        return GithubUserContentAssetLoader(
+            owner="o", repo="r", branch="main", root_path="one_shots"
+        )
+
+    def test_prefix_extends_api_path_and_names(self):
+        with patch.object(
+            am.request,
+            "urlopen",
+            return_value=_FakeResponse(json.dumps(self.PAYLOAD).encode()),
+        ) as fake:
+            names = self._loader().list_remote_assets("snares/sn_*.wav")
+        requested_url = fake.call_args[0][0]
+        assert "/contents/one_shots/snares?" in requested_url
+        assert names == ["snares/sn_a.wav", "snares/sn_b.wav"]
+
+    def test_load_mirrors_directory_into_cache(self, tmp_path):
+        listing = _FakeResponse(json.dumps(self.PAYLOAD).encode())
+        audio = _FakeResponse(b"SNARE")
+        with patch.object(am.request, "urlopen", side_effect=[listing, audio]):
+            path = self._loader().load_remote_asset("snares/sn_*.wav", tmp_path)
+        assert path == tmp_path / "snares" / "sn_a.wav"
+        assert path.read_bytes() == b"SNARE"
+
+    def test_no_prefix_unchanged(self):
+        with patch.object(
+            am.request,
+            "urlopen",
+            return_value=_FakeResponse(json.dumps(self.PAYLOAD).encode()),
+        ) as fake:
+            names = self._loader().list_remote_assets("sn_*.wav")
+        requested_url = fake.call_args[0][0]
+        assert "/contents/one_shots?" in requested_url
+        assert names == ["sn_a.wav", "sn_b.wav"]

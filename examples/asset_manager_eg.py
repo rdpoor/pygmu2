@@ -14,6 +14,9 @@ An AssetManager is a local cache directory in front of one remote folder
 - If a cached file already matches, it is returned with NO network
   traffic. Otherwise the first remote match (alphabetical) is downloaded
   into the cache and returned. Pass force=True to re-download.
+- load_assets(spec) (plural) fetches EVERY match, mirroring any
+  directory prefix in the spec into the cache — e.g. "snares/*.wav"
+  appears as snares/ inside the cache directory.
 - list_remote_assets(spec) lists every remote match without downloading;
   list_cached_assets(spec) / has_cached_asset(spec) inspect the cache.
 
@@ -152,30 +155,50 @@ def demo_github():
     fetch_and_play(manager, "SOBR_136_Full_Drum_Loop_*.wav")
 
 
+def play_all(paths):
+    """Audition a list of local .wav files back to back, letting each
+    file set the session rate before its graph is built."""
+    for path in paths:
+        file_rate = sf.info(path).samplerate
+        pg.set_sample_rate(file_rate)
+        print(f"playing {path.parent.name}/{path.name} ({file_rate} Hz)")
+        pg.play(pg.WavReaderPE(str(path)))
+
+
 def demo_github_kiks():
-    """Fetch EVERY .wav in a GitHub folder (one_shots/kiks), then play
-    them one after another. Unlike load_asset(wildcard) — which fetches
-    only the first match — this lists the matches and loads each by its
-    exact name. Second run: everything is cache-served, no network."""
-    print("=== GitHub: fetch a whole folder of kicks, play them all ===")
+    """Fetch EVERY .wav in the repo's one_shots/kiks folder with one
+    load_assets() call, then play them one after another. The 'kiks/'
+    spec prefix is mirrored into the cache, so the files land in
+    asset_cache/kiks/. Second run: everything cache-served, no network."""
+    print("=== GitHub: fetch the whole kiks/ folder, play them all ===")
     loader = GithubUserContentAssetLoader(
         owner="tomandandy",
         repo="go",
         branch="main",
-        root_path="one_shots/kiks",
+        root_path="one_shots",
     )
     manager = AssetManager(asset_loader=loader)
     print(f"cache directory: {manager.cache_path()}")
+    paths = manager.load_assets("kiks/*.wav")
+    print(f"fetched {len(paths)} kicks into {manager.cache_path() / 'kiks'}")
+    play_all(paths)
 
-    names = manager.list_remote_assets("*.wav")
-    print(f"remote matches: {len(names)}")
-    paths = [manager.load_asset(str(name)) for name in names]
 
-    for path in paths:
-        file_rate = sf.info(path).samplerate
-        pg.set_sample_rate(file_rate)
-        print(f"playing {path.name} ({file_rate} Hz)")
-        pg.play(pg.WavReaderPE(str(path)))
+def demo_github_snares():
+    """Same as the kiks demo, for one_shots/snares — the remote folder
+    appears as snares/ inside the local cache directory."""
+    print("=== GitHub: mirror the snares/ folder, play them all ===")
+    loader = GithubUserContentAssetLoader(
+        owner="tomandandy",
+        repo="go",
+        branch="main",
+        root_path="one_shots",
+    )
+    manager = AssetManager(asset_loader=loader)
+    print(f"cache directory: {manager.cache_path()}")
+    paths = manager.load_assets("snares/*.wav")
+    print(f"fetched {len(paths)} snares into {manager.cache_path() / 'snares'}")
+    play_all(paths)
 
 
 DEMOS = [
@@ -188,7 +211,8 @@ DEMOS = [
         demo_google_drive_api_key,
     ),
     ("GitHub public repo: list, fetch through cache, play", demo_github),
-    ("GitHub kick folder: fetch all .wavs, play back to back", demo_github_kiks),
+    ("GitHub kiks/ folder: mirror into cache, play back to back", demo_github_kiks),
+    ("GitHub snares/ folder: mirror into cache, play back to back", demo_github_snares),
 ]
 
 if __name__ == "__main__":

@@ -111,6 +111,23 @@ class AssetLoader(ABC):
         """
         raise NotImplementedError
 
+    @staticmethod
+    def _split_spec(wildcard_spec: str) -> tuple[str, str]:
+        """
+        Split a wildcard spec into a fixed folder prefix and a filename
+        pattern. The prefix names literal subfolders below the loader's
+        root; the last component is the fnmatch pattern.
+
+        Example:
+            "a/b/c*.wav" -> ("a/b/", "c*.wav")
+            "*.wav" -> ("", "*.wav")
+        """
+        wildcard_spec = wildcard_spec.lstrip("/")
+        parts = wildcard_spec.split("/")
+        if len(parts) == 1:
+            return "", parts[0]
+        return "/".join(parts[:-1]) + "/", parts[-1]
+
 
 class AssetManager:
 
@@ -169,6 +186,30 @@ class AssetManager:
             # failed to find named asset
             raise AssetNotFound(f"could not find asset named {asset_specification}")
         return resolved_name
+
+    def load_assets(self, asset_specification: str, force: bool = False) -> list[Path]:
+        """
+        Load EVERY remote asset matching the specification into the cache
+        (mirroring any directory prefix in the spec), and return the local
+        paths, alphabetically sorted.
+
+        Unlike load_asset(), which returns only the first match, this
+        fetches the whole matching set — e.g. load_assets("snares/*.wav")
+        mirrors the remote snares/ folder into the cache. Already-cached
+        files are not re-downloaded (unless force=True).
+
+        Raises:
+            AssetLoadFailed if no loader is configured or a download fails
+            AssetNotFound if nothing matched
+        """
+        if self._asset_loader is None:
+            raise AssetLoadFailed(
+                "remote asset loading is not configured for this AssetManager"
+            )
+        names = self._asset_loader.list_remote_assets(asset_specification)
+        if not names:
+            raise AssetNotFound(f"could not find assets named {asset_specification}")
+        return [self.load_asset(name, force=force) for name in names]
 
     def list_remote_assets(self, asset_specification: str) -> list[Path]:
         """
@@ -417,20 +458,6 @@ class GoogleDriveAssetLoader(AssetLoader):
 
         return items
 
-    def _split_spec(self, wildcard_spec: str) -> tuple[str, str]:
-        """
-        Split wildcard spec into a fixed folder prefix and filename pattern.
-
-        Example:
-            "a/b/c*.wav" -> ("a/b/", "c*.wav")
-            "*.wav" -> ("", "*.wav")
-        """
-        wildcard_spec = wildcard_spec.lstrip("/")
-        parts = wildcard_spec.split("/")
-        if len(parts) == 1:
-            return "", parts[0]
-        return "/".join(parts[:-1]) + "/", parts[-1]
-
     def _resolve_prefix_folder(self, prefix: str) -> tuple[str | None, str]:
         """
         Resolve a folder prefix like "a/b/" to a Drive folder ID.
@@ -577,6 +604,15 @@ class GoogleDriveAssetLoader(AssetLoader):
 
 
 class GithubUserContentAssetLoader(AssetLoader):
+    """
+    AssetLoader backed by a directory of a public GitHub repo.
+
+    root_path anchors the loader's root inside the repo; specs may name
+    subfolders below it, and those subfolders are mirrored into the
+    cache. E.g. with root_path="one_shots", the spec "snares/*.wav"
+    lists one_shots/snares/ and caches files as snares/<name>.
+    """
+
     def __init__(
         self,
         owner: str,
@@ -658,9 +694,11 @@ class GithubUserContentAssetLoader(AssetLoader):
     def _list_remote_assets_with_urls(
         self, wildcard_spec: str
     ) -> list[tuple[str, str]]:
+        prefix, pattern = self._split_spec(wildcard_spec)
         base_url = f"https://api.github.com/repos/{self._owner}/{self._repo}/contents"
-        if self._root_path:
-            base_url = f"{base_url}/{quote(self._root_path)}"
+        path_parts = [p for p in (self._root_path, prefix.strip("/")) if p]
+        if path_parts:
+            base_url = f"{base_url}/{quote('/'.join(path_parts))}"
         query = urlencode({"ref": self._branch})
         url = f"{base_url}?{query}"
 
@@ -687,8 +725,8 @@ class GithubUserContentAssetLoader(AssetLoader):
             download_url = item.get("download_url")
             if not name or not download_url:
                 continue
-            if fnmatch.fnmatchcase(name, wildcard_spec):
-                results.append((name, download_url))
+            if fnmatch.fnmatchcase(name, pattern):
+                results.append((f"{prefix}{name}", download_url))
 
         results.sort(key=lambda x: x[0].casefold())
         return results
