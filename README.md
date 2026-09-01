@@ -211,7 +211,7 @@ uv run python examples/hello_sine_eg.py
 |---------|-------------|
 | `adsr_eg.py` | adsr_eg.py  ADSR demos using the new GateSignal / TriggerSignal ADSR classes. |
 | `analog_osc_eg.py` | Example 21: AnalogOscPE - bandlimited PWM + saw/triangle morph oscillator. |
-| `asset_manager_eg.py` | demo_asset_mgr.py. |
+| `asset_manager_eg.py` | AssetManager: fetch audio from a remote folder through a local cache. |
 | `audio_library_eg.py` | Strudel Audio Library - Lazy downloading and playback. |
 | `audio_reader_eg.py` | audio_reader_eg.py. |
 | `audio_slew_rate_limit_eg.py` | Example: Slew Rate Limiting on a stringed instrument. |
