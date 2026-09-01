@@ -35,6 +35,7 @@ class FakeLoader(AssetLoader):
         self.assets = assets
         self.load_calls = 0
         self.list_calls = 0
+        self.downloads = 0  # actual writes (cache misses)
 
     def list_remote_assets(self, wildcard_spec: str) -> list[str]:
         self.list_calls += 1
@@ -49,8 +50,10 @@ class FakeLoader(AssetLoader):
             return None
         name = matches[0]
         dest = cache_dir / name
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(self.assets[name])
+        if not dest.exists():  # like the real loaders, cache wins
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(self.assets[name])
+            self.downloads += 1
         return dest
 
 
@@ -385,9 +388,9 @@ class TestLoadAssetsPlural:
 
     def test_cached_files_not_refetched(self, manager, loader):
         manager.load_assets("drums/*.wav")
-        calls = loader.load_calls
+        assert loader.downloads == 2
         manager.load_assets("drums/*.wav")
-        assert loader.load_calls == calls  # all served from cache
+        assert loader.downloads == 2  # all served from cache
 
     def test_force_refetches_all(self, manager, loader):
         paths = manager.load_assets("drums/*.wav")
@@ -427,7 +430,7 @@ class TestGithubDirectoryPrefix:
             return_value=_FakeResponse(json.dumps(self.PAYLOAD).encode()),
         ) as fake:
             names = self._loader().list_remote_assets("snares/sn_*.wav")
-        requested_url = fake.call_args[0][0]
+        requested_url = fake.call_args[0][0].full_url
         assert "/contents/one_shots/snares?" in requested_url
         assert names == ["snares/sn_a.wav", "snares/sn_b.wav"]
 
@@ -446,6 +449,83 @@ class TestGithubDirectoryPrefix:
             return_value=_FakeResponse(json.dumps(self.PAYLOAD).encode()),
         ) as fake:
             names = self._loader().list_remote_assets("sn_*.wav")
-        requested_url = fake.call_args[0][0]
+        requested_url = fake.call_args[0][0].full_url
         assert "/contents/one_shots?" in requested_url
         assert names == ["sn_a.wav", "sn_b.wav"]
+
+
+class TestGithubApiEconomy:
+    """The rate-limited resource is the LISTING call; batch loading must
+    spend exactly one per load_assets(), and tokens must be honored."""
+
+    PAYLOAD = [
+        {"type": "file", "name": "a.wav", "download_url": "https://dl/a.wav"},
+        {"type": "file", "name": "b.wav", "download_url": "https://dl/b.wav"},
+        {"type": "file", "name": "c.wav", "download_url": "https://dl/c.wav"},
+    ]
+
+    def _loader(self):
+        return GithubUserContentAssetLoader(owner="o", repo="r")
+
+    def test_load_assets_lists_once(self, tmp_path):
+        """One API listing + one download per file — never a listing per
+        file (the N+1 that exhausted the unauthenticated rate limit)."""
+        listing = _FakeResponse(json.dumps(self.PAYLOAD).encode())
+        files = [_FakeResponse(b"X") for _ in self.PAYLOAD]
+        with patch.object(am.request, "urlopen", side_effect=[listing, *files]) as fake:
+            manager = AssetManager(
+                cache_dir=tmp_path / "cache", asset_loader=self._loader()
+            )
+            paths = manager.load_assets("*.wav")
+        assert [p.name for p in paths] == ["a.wav", "b.wav", "c.wav"]
+        api_calls = [
+            c
+            for c in fake.call_args_list
+            if "api.github.com" in getattr(c[0][0], "full_url", str(c[0][0]))
+        ]
+        assert len(api_calls) == 1
+
+    def test_cached_load_assets_lists_once_downloads_nothing(self, tmp_path):
+        listing = _FakeResponse(json.dumps(self.PAYLOAD).encode())
+        files = [_FakeResponse(b"X") for _ in self.PAYLOAD]
+        manager = AssetManager(
+            cache_dir=tmp_path / "cache", asset_loader=self._loader()
+        )
+        with patch.object(am.request, "urlopen", side_effect=[listing, *files]):
+            manager.load_assets("*.wav")
+        relisting = _FakeResponse(json.dumps(self.PAYLOAD).encode())
+        with patch.object(am.request, "urlopen", side_effect=[relisting]) as fake:
+            manager.load_assets("*.wav")
+        assert fake.call_count == 1  # the listing only; zero downloads
+
+    def test_token_env_var_sets_auth_header(self, monkeypatch):
+        monkeypatch.setenv("GITHUB_TOKEN", "ghp_test123")
+        with patch.object(
+            am.request,
+            "urlopen",
+            return_value=_FakeResponse(json.dumps(self.PAYLOAD).encode()),
+        ) as fake:
+            self._loader().list_remote_assets("*.wav")
+        req = fake.call_args[0][0]
+        assert req.get_header("Authorization") == "Bearer ghp_test123"
+
+    def test_no_token_no_header(self, monkeypatch):
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        with patch.object(
+            am.request,
+            "urlopen",
+            return_value=_FakeResponse(json.dumps(self.PAYLOAD).encode()),
+        ) as fake:
+            self._loader().list_remote_assets("*.wav")
+        assert fake.call_args[0][0].get_header("Authorization") is None
+
+    def test_rate_limit_error_names_the_fix(self, monkeypatch):
+        from urllib.error import HTTPError
+
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        err = HTTPError(
+            "https://api.github.com/x", 403, "rate limit exceeded", {}, None
+        )
+        with patch.object(am.request, "urlopen", side_effect=err):
+            with pytest.raises(AssetLoadFailed, match="GITHUB_TOKEN"):
+                self._loader().list_remote_assets("*.wav")

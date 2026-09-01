@@ -111,6 +111,23 @@ class AssetLoader(ABC):
         """
         raise NotImplementedError
 
+    def load_remote_assets(self, wildcard_spec: str, cache_dir: Path) -> list[Path]:
+        """
+        Download EVERY matching remote asset into cache_dir; return the
+        local paths, alphabetically sorted. Files already present in
+        cache_dir are not re-downloaded.
+
+        The default implementation loads each match individually, which
+        may repeat remote listings; loaders override it to list once and
+        then download (one API call total).
+        """
+        paths = []
+        for name in self.list_remote_assets(wildcard_spec):
+            path = self.load_remote_asset(name, cache_dir)
+            if path is not None:
+                paths.append(path)
+        return paths
+
     @staticmethod
     def _split_spec(wildcard_spec: str) -> tuple[str, str]:
         """
@@ -206,10 +223,18 @@ class AssetManager:
             raise AssetLoadFailed(
                 "remote asset loading is not configured for this AssetManager"
             )
-        names = self._asset_loader.list_remote_assets(asset_specification)
-        if not names:
+        if force:
+            for cached in self.list_cached_assets(asset_specification):
+                try:
+                    cached.unlink()
+                except FileNotFoundError:
+                    pass
+        paths = self._asset_loader.load_remote_assets(
+            asset_specification, self._cache_dir
+        )
+        if not paths:
             raise AssetNotFound(f"could not find assets named {asset_specification}")
-        return [self.load_asset(name, force=force) for name in names]
+        return paths
 
     def list_remote_assets(self, asset_specification: str) -> list[Path]:
         """
@@ -611,6 +636,13 @@ class GithubUserContentAssetLoader(AssetLoader):
     subfolders below it, and those subfolders are mirrored into the
     cache. E.g. with root_path="one_shots", the spec "snares/*.wav"
     lists one_shots/snares/ and caches files as snares/<name>.
+
+    Rate limits: only folder LISTINGS hit the GitHub API (downloads go
+    to raw.githubusercontent.com, which is uncounted). Unauthenticated
+    API access allows 60 requests/hour per IP; with a token (classic or
+    fine-grained, no scopes needed for public repos) it is 5000/hour.
+    Export one in the environment variable named by token_env_var
+    (default GITHUB_TOKEN) and it is used automatically.
     """
 
     def __init__(
@@ -619,11 +651,13 @@ class GithubUserContentAssetLoader(AssetLoader):
         repo: str,
         branch: str = "main",
         root_path: str = "",
+        token_env_var: str = "GITHUB_TOKEN",
     ):
         self._owner = owner
         self._repo = repo
         self._branch = branch
         self._root_path = root_path.strip("/")
+        self._token_env_var = token_env_var
 
     def list_remote_assets(self, wildcard_spec: str) -> list[str]:
         logger.debug(
@@ -660,8 +694,18 @@ class GithubUserContentAssetLoader(AssetLoader):
                 self._repo,
             )
             return None
-
         name, download_url = assets[0]
+        return self._fetch(name, download_url, cache_dir)
+
+    def load_remote_assets(self, wildcard_spec: str, cache_dir: Path) -> list[Path]:
+        """One folder listing (one API call), then a download per file
+        that is not already cached."""
+        assets = self._list_remote_assets_with_urls(wildcard_spec)
+        return [
+            self._fetch(name, download_url, cache_dir) for name, download_url in assets
+        ]
+
+    def _fetch(self, name: str, download_url: str, cache_dir: Path) -> Path:
         local_path = cache_dir / name
 
         candidate = Path(name)
@@ -702,12 +746,26 @@ class GithubUserContentAssetLoader(AssetLoader):
         query = urlencode({"ref": self._branch})
         url = f"{base_url}?{query}"
 
+        headers = {}
+        token = os.environ.get(self._token_env_var or "")
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
         try:
             ssl_context = self._create_ssl_context()
-            with request.urlopen(url, context=ssl_context) as response:
+            req = request.Request(url, headers=headers)
+            with request.urlopen(req, context=ssl_context) as response:
                 payload = json.loads(response.read().decode("utf-8"))
         except URLError as exc:
             logger.error("Failed to list GitHub assets: %s", exc)
+            status = getattr(exc, "code", None)
+            if status == 403 and "rate limit" in str(exc).lower():
+                raise AssetLoadFailed(
+                    "GitHub API rate limit exceeded (unauthenticated: 60 "
+                    "requests/hour per IP; resets hourly). Export a GitHub "
+                    f"token in ${self._token_env_var} to raise the limit to "
+                    "5000/hour, or retry later."
+                ) from exc
             raise AssetLoadFailed(f"failed to list assets: {exc}") from exc
         except json.JSONDecodeError as exc:
             logger.error("Invalid JSON from GitHub API: %s", exc)

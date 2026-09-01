@@ -43,7 +43,10 @@ Two modes, chosen by the GoogleDriveAssetLoader arguments:
   Pass api_key_env_var="MY_DRIVE_KEY" and export a Drive API key in that
   environment variable.
 
-GitHub needs no authentication for public repos.
+GitHub needs no authentication for public repos, but the API allows
+only 60 listing calls/hour per IP unauthenticated. Export a GitHub
+token as GITHUB_TOKEN to raise that to 5000/hour (any token works for
+public repos — no scopes needed). Downloads themselves are uncounted.
 
 Troubleshooting
 ---------------
