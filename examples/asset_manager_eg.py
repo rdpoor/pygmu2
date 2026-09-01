@@ -67,8 +67,10 @@ from pygmu2.asset_manager import (
 import pygmu2 as pg
 from examples_helper import run_demos
 
-SAMPLE_RATE = 44100
-pg.set_sample_rate(SAMPLE_RATE)
+# The session sample rate is deliberately NOT set here: PEs capture the
+# rate at construction, so nothing needs it until we build the playback
+# graph — and by then we know the fetched file's actual rate and can
+# adopt it (see fetch_and_play).
 
 
 def fetch_and_play(manager, asset_spec):
@@ -90,16 +92,13 @@ def fetch_and_play(manager, asset_spec):
     assert manager.load_asset(asset_spec) == path
     print("second load_asset() served from cache")
 
+    # Adopt the file's own sample rate as the session rate, then build
+    # the graph. (WavReaderPE raises on a rate mismatch, so setting the
+    # rate BEFORE construction is the whole trick.)
     file_rate = sf.info(path).samplerate
-    if file_rate == SAMPLE_RATE:
-        print("playing...")
-        pg.play(pg.WavReaderPE(str(path)))
-    else:
-        print(
-            f"not playing: file is {file_rate} Hz but the session is "
-            f"{SAMPLE_RATE} Hz (WavReaderPE would raise; resample or "
-            "match the session rate to play it)"
-        )
+    pg.set_sample_rate(file_rate)
+    print(f"playing at the file's rate ({file_rate} Hz)...")
+    pg.play(pg.WavReaderPE(str(path)))
 
 
 # ------------------------------------------------------------------------------
