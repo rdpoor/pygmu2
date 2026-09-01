@@ -152,6 +152,32 @@ def demo_github():
     fetch_and_play(manager, "SOBR_136_Full_Drum_Loop_*.wav")
 
 
+def demo_github_kiks():
+    """Fetch EVERY .wav in a GitHub folder (one_shots/kiks), then play
+    them one after another. Unlike load_asset(wildcard) — which fetches
+    only the first match — this lists the matches and loads each by its
+    exact name. Second run: everything is cache-served, no network."""
+    print("=== GitHub: fetch a whole folder of kicks, play them all ===")
+    loader = GithubUserContentAssetLoader(
+        owner="tomandandy",
+        repo="go",
+        branch="main",
+        root_path="one_shots/kiks",
+    )
+    manager = AssetManager(asset_loader=loader)
+    print(f"cache directory: {manager.cache_path()}")
+
+    names = manager.list_remote_assets("*.wav")
+    print(f"remote matches: {len(names)}")
+    paths = [manager.load_asset(str(name)) for name in names]
+
+    for path in paths:
+        file_rate = sf.info(path).samplerate
+        pg.set_sample_rate(file_rate)
+        print(f"playing {path.name} ({file_rate} Hz)")
+        pg.play(pg.WavReaderPE(str(path)))
+
+
 DEMOS = [
     (
         "Google Drive via OAuth: list, fetch through cache, play",
@@ -162,6 +188,7 @@ DEMOS = [
         demo_google_drive_api_key,
     ),
     ("GitHub public repo: list, fetch through cache, play", demo_github),
+    ("GitHub kick folder: fetch all .wavs, play back to back", demo_github_kiks),
 ]
 
 if __name__ == "__main__":
