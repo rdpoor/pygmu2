@@ -218,7 +218,14 @@ def demo_github_token():
     Getting a token: github.com -> Settings -> Developer settings ->
     Personal access tokens -> Fine-grained tokens -> Generate new token.
     For public repos, no repository access or permissions are needed —
-    the default read-only public token is enough. Then:
+    the default read-only public token is enough. Suggested fields:
+
+        Token name:  pygmu2-asset-fetch
+        Description: Rate-limit relief for pygmu2 AssetManager listings
+                     of public repos. Read-only public access; no
+                     repository or account permissions granted.
+
+    Then:
 
         export GITHUB_TOKEN=github_pat_...
 
