@@ -322,3 +322,55 @@ class TestGithubUserContentAssetLoader:
             return_value=_FakeResponse(json.dumps(self.PAYLOAD).encode()),
         ):
             assert self._loader().load_remote_asset("*.flac", tmp_path) is None
+
+
+class TestOAuthTokenRecovery:
+    """A stale refresh token (invalid_grant) must fall back to the
+    interactive flow instead of crashing (device-free: google-auth
+    objects are mocked)."""
+
+    def test_refresh_failure_reauthorizes(self, tmp_path, monkeypatch):
+        google = pytest.importorskip("google.auth.exceptions")
+
+        monkeypatch.setattr(am, "_default_config_base", lambda: tmp_path / "cfg")
+        secrets = tmp_path / "client_secrets.json"
+        secrets.write_text("{}")
+        token = tmp_path / "gdrive_token.json"
+        token.write_text('{"stale": true}')
+        loader = GoogleDriveAssetLoader(
+            folder_id="root",
+            oauth_client_secrets=secrets,
+            token_path=token,
+        )
+
+        from unittest.mock import MagicMock
+
+        stale_creds = MagicMock()
+        stale_creds.expired = True
+        stale_creds.refresh_token = "r"
+        stale_creds.refresh.side_effect = google.RefreshError("invalid_grant")
+
+        fresh_creds = MagicMock()
+        fresh_creds.valid = True
+        fresh_creds.to_json.return_value = '{"fresh": true}'
+        flow = MagicMock()
+        flow.run_local_server.return_value = fresh_creds
+
+        with (
+            patch(
+                "google.oauth2.credentials.Credentials.from_authorized_user_file",
+                return_value=stale_creds,
+            ),
+            patch(
+                "google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file",
+                return_value=flow,
+            ),
+            patch("google.auth.transport.requests.AuthorizedSession") as session_cls,
+        ):
+            session = loader._get_authorized_session()
+
+        # interactive flow ran, fresh token written, session built on it
+        flow.run_local_server.assert_called_once()
+        assert token.read_text() == '{"fresh": true}'
+        session_cls.assert_called_once_with(fresh_creds)
+        assert session is session_cls.return_value

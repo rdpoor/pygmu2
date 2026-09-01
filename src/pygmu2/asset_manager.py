@@ -527,6 +527,7 @@ class GoogleDriveAssetLoader(AssetLoader):
 
     def _get_authorized_session(self):
         try:
+            from google.auth.exceptions import RefreshError
             from google.auth.transport.requests import Request, AuthorizedSession
             from google.oauth2.credentials import Credentials
             from google_auth_oauthlib.flow import InstalledAppFlow
@@ -543,7 +544,19 @@ class GoogleDriveAssetLoader(AssetLoader):
             )
 
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+            try:
+                creds.refresh(Request())
+            except RefreshError as exc:
+                # The cached refresh token is expired or revoked
+                # (invalid_grant). Discard it and fall through to the
+                # interactive flow below, which opens a browser and
+                # writes a fresh token.
+                logger.warning(
+                    f"Cached Google OAuth token is no longer valid ({exc}); "
+                    "re-authorizing — a browser window will open."
+                )
+                self._token_path.unlink(missing_ok=True)
+                creds = None
 
         if not creds or not creds.valid:
             if self._oauth_client_secrets is None:

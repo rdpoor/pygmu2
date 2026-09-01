@@ -44,8 +44,10 @@ GitHub needs no authentication for public repos.
 
 Troubleshooting
 ---------------
-"invalid_grant: Token has been expired or revoked" — delete the cached
-token and re-run (a browser window will open to re-authorize):
+A stale/revoked OAuth token ("invalid_grant") is handled automatically:
+the loader discards the cached token and re-opens the browser to
+re-authorize. If auth misbehaves in some other way, deleting the cached
+token by hand forces a completely fresh start:
 
     macOS:   rm ~/Library/Application\\ Support/pygmu2/gdrive_oauth/gdrive_token.json
     Linux:   rm ~/.config/pygmu2/gdrive_oauth/gdrive_token.json
