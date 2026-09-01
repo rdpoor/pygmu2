@@ -63,6 +63,11 @@ Copyright (c) 2026 R. Dunbar Poor, Andy Milburn and pygmu2 contributors
 MIT License
 """
 
+import json
+import os
+import time
+from urllib import request
+
 import soundfile as sf
 
 from pygmu2.asset_manager import (
@@ -204,6 +209,39 @@ def demo_github_snares():
     play_all(paths)
 
 
+def demo_github_token():
+    """Check your GitHub API setup: token presence and current rate
+    budget. GITHUB_TOKEN is used AUTOMATICALLY by
+    GithubUserContentAssetLoader — no code changes — so this demo just
+    verifies it and reports what GitHub says your quota is.
+
+    Getting a token: github.com -> Settings -> Developer settings ->
+    Personal access tokens -> Fine-grained tokens -> Generate new token.
+    For public repos, no repository access or permissions are needed —
+    the default read-only public token is enough. Then:
+
+        export GITHUB_TOKEN=github_pat_...
+
+    (The /rate_limit endpoint itself is free — this demo never spends
+    any of your quota.)"""
+    print("=== GitHub token check: API rate budget ===")
+    token = os.environ.get("GITHUB_TOKEN")
+    print(f"GITHUB_TOKEN: {'set' if token else 'not set'}")
+
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    req = request.Request("https://api.github.com/rate_limit", headers=headers)
+    with request.urlopen(req) as resp:
+        core = json.loads(resp.read())["resources"]["core"]
+    reset_at = time.strftime("%H:%M:%S", time.localtime(core["reset"]))
+    print(
+        f"listing budget: {core['remaining']} of {core['limit']} "
+        f"calls remaining this hour (resets at {reset_at})"
+    )
+    if not token:
+        print("Export a token to raise the limit from 60 to 5000/hour")
+        print("(see this demo's docstring for where to get one).")
+
+
 DEMOS = [
     (
         "Google Drive via OAuth: list, fetch through cache, play",
@@ -216,6 +254,7 @@ DEMOS = [
     ("GitHub public repo: list, fetch through cache, play", demo_github),
     ("GitHub kiks/ folder: mirror into cache, play back to back", demo_github_kiks),
     ("GitHub snares/ folder: mirror into cache, play back to back", demo_github_snares),
+    ("GitHub token check: show your API rate budget (free call)", demo_github_token),
 ]
 
 if __name__ == "__main__":
