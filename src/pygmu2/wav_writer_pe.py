@@ -157,6 +157,15 @@ class WavWriterPE(ProcessingElement):
         """Extent matches the source's extent."""
         return self._source.extent()
 
+    def channel_count(self) -> int | None:
+        """Pass through the source's channel count.
+
+        Consumers that need the count before rendering (ConvolvePE, and so
+        ReverbPE) otherwise probe with render(0, 1). Behind a CachePE that
+        probe misses the cache and reaches this stateful writer out of order.
+        """
+        return self._source.channel_count()
+
     def __repr__(self) -> str:
         return (
             f"WavWriterPE(source={self._source.__class__.__name__}, "

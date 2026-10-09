@@ -11,6 +11,10 @@ import numpy as np
 import os
 import soundfile as sf
 from pygmu2 import (
+    ArrayPE,
+    CachePE,
+    GainPE,
+    ReverbPE,
     WavReaderPE,
     WavWriterPE,
     SinePE,
@@ -220,6 +224,13 @@ class TestWavWriterPEBasics:
         writer = WavWriterPE(source, path)
         assert writer.stateful
 
+    def test_channel_count_passes_through(self, tmp_path):
+        mono = WavWriterPE(ConstantPE(0.5), str(tmp_path / "m.wav"))
+        assert mono.channel_count() == 1
+        stereo_src = ArrayPE(np.zeros((10, 2), dtype=np.float32))
+        stereo = WavWriterPE(stereo_src, str(tmp_path / "s.wav"))
+        assert stereo.channel_count() == 2
+
     def test_repr(self, tmp_path):
         source = ConstantPE(0.5)
         path = str(tmp_path / "output.wav")
@@ -378,3 +389,29 @@ class TestWavRoundTrip:
         # Verify output exists and has correct shape
         output_data, _ = sf.read(output_path)
         assert len(output_data) == 1000
+
+    def test_cached_writer_feeds_mix_and_reverb(self, tmp_path):
+        """A tapped track feeding both a mix and a reverb send writes each sample once.
+
+        Regression: WavWriterPE reported channel_count() None, so ConvolvePE
+        probed it with render(0, 1); behind a CachePE that probe missed the
+        cache and raised "non-contiguous render" in the writer.
+        """
+        rng = np.random.default_rng(0)
+        data = rng.standard_normal((5000, 2)).astype(np.float32) * 0.1
+        ir = np.zeros((300, 2), dtype=np.float32)
+        ir[0] = 1.0
+        ir[100:] = rng.standard_normal((200, 2)) * 0.01
+        path = str(tmp_path / "tap.wav")
+        tap = CachePE(WavWriterPE(ArrayPE(data), path, subtype="FLOAT"))
+        out = MixPE(tap, ReverbPE(GainPE(tap, 0.3), ArrayPE(ir), mix=1.0))
+
+        renderer = NullRenderer(sample_rate=44100)
+        renderer.set_source(out)
+        renderer.start()
+        for pos in range(0, 5000, 1024):
+            renderer.render(pos, min(1024, 5000 - pos))
+        renderer.stop()
+
+        written, _ = sf.read(path, dtype="float32")
+        np.testing.assert_array_equal(written, data)
